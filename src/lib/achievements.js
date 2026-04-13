@@ -62,6 +62,96 @@ export async function revokeAchievementsIfNeeded(userId, baseId, currentCount) {
   return toRevoke.map(ua => ua.achievement_id)
 }
 
+// ── PEŁNA RESYNC STAGED ACHIEVEMENTS ─────────────────────────────────────────
+// Przelicza wszystkie staged achievements dla użytkownika na podstawie
+// aktualnych danych w DB i usuwa te które nie są już zasłużone.
+// Wywołuj po każdym cofnięciu treningu.
+
+export async function revokeStaleAchievements(userId) {
+  const catalog = await fetchAchievementsCatalog()
+  const stagedAchs = catalog.filter(a => a.type === 'staged')
+  if (!stagedAchs.length) return
+
+  // Pobierz wszystkie earned achievements tego użytkownika
+  const { data: userAchs } = await supabase
+    .from('user_achievements')
+    .select('achievement_id, base_id')
+    .eq('user_id', userId)
+  if (!userAchs?.length) return
+
+  // Pobierz dane potrzebne do przeliczenia
+  const [
+    { data: logs },
+    { data: recoveryTrainings },
+    { data: shootingTrainings },
+    { data: shotSessions },
+  ] = await Promise.all([
+    supabase.from('activity_log').select('trainings_completed, all_done').eq('user_id', userId),
+    supabase.from('trainings').select('id').in('category', ['recovery', 'conditioning']),
+    supabase.from('trainings').select('id').eq('category', 'shooting'),
+    supabase.from('shooting_sessions').select('made, attempted, shot_type').eq('user_id', userId),
+  ])
+
+  const recoveryIds = new Set((recoveryTrainings || []).map(t => t.id))
+  const shootingIds = new Set((shootingTrainings || []).map(t => t.id))
+
+  let recoveryCount = 0, allDayCount = 0, totalTrainingsCount = 0, shootingSessionsCount = 0
+  for (const log of (logs || [])) {
+    if (log.all_done) allDayCount++
+    for (const tid of (log.trainings_completed || [])) {
+      if (recoveryIds.has(tid)) recoveryCount++
+      if (shootingIds.has(tid)) shootingSessionsCount++
+      totalTrainingsCount++
+    }
+  }
+
+  // Liczniki dla shot achievements
+  const shotCounts = {}
+  const perfectCounts = {}
+  for (const s of (shotSessions || [])) {
+    shotCounts[s.shot_type] = (shotCounts[s.shot_type] || 0) + (s.made || 0)
+    if (s.made === s.attempted && s.attempted > 0)
+      perfectCounts[s.shot_type] = (perfectCounts[s.shot_type] || 0) + 1
+  }
+
+  const stageProgress = {
+    regeneracja: recoveryCount,
+    allday: allDayCount,
+    the_grind: totalTrainingsCount,
+    shooting_sessions: shootingSessionsCount,
+  }
+
+  // Dla shot achievements — dynamicznie z shot_type
+  for (const ach of stagedAchs) {
+    if (ach.shot_type) {
+      const isP = ach.id.startsWith('perfect_')
+      stageProgress[ach.id] = isP
+        ? (perfectCounts[ach.shot_type] || 0)
+        : (shotCounts[ach.shot_type] || 0)
+    }
+  }
+
+  // Sprawdź każde earned staged achievement i cofnij jeśli próg nie jest spełniony
+  const toRevoke = []
+  for (const ua of userAchs) {
+    const ach = stagedAchs.find(a => a.id === ua.base_id)
+    if (!ach) continue
+    const stage = (ach.stages || []).find(s => `${ach.id}_${s.medal}` === ua.achievement_id)
+    if (!stage) continue
+    const count = stageProgress[ach.id] ?? 0
+    if (count < stage.threshold) toRevoke.push(ua.achievement_id)
+  }
+
+  if (!toRevoke.length) return
+
+  for (const achId of toRevoke) {
+    await supabase.from('user_achievements')
+      .delete()
+      .eq('user_id', userId)
+      .eq('achievement_id', achId)
+  }
+}
+
 // Wygodny wrapper — sprawdza wszystkie shot achievements po cofnięciu sesji
 export async function revokeShotAchievementsIfNeeded(userId, shotType) {
   const catalog = await fetchAchievementsCatalog()

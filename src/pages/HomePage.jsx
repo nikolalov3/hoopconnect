@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import TrainingCard from '../components/training/TrainingCard'
-import { fetchAchievementsCatalog, getNewlyUnlocked, awardMedalPoints, revokeAchievementsIfNeeded } from '../lib/achievements'
+import { fetchAchievementsCatalog, getNewlyUnlocked, awardMedalPoints, revokeStaleAchievements } from '../lib/achievements'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -554,28 +554,8 @@ export default function HomePage() {
 
     setActivityLog(prev => ({ ...prev, trainings_completed: newCompleted, all_done: false }))
 
-    // Cofnij osiągnięcia — przelicz aktualne liczniki z DB
-    const [logsResult, allDayResult] = await Promise.all([
-      supabase.from('activity_log').select('trainings_completed').eq('user_id', profile.id),
-      supabase.from('activity_log').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('all_done', true),
-    ])
-
-    const logs = logsResult.data || []
-    const allTrainingsCount = logs.reduce((sum, row) => sum + (row.trainings_completed?.length || 0), 0)
-    const allDayCount = allDayResult.count || 0
-
-    // Licznik recovery-type treningów dla osiągnięcia 'regeneracja'
-    const { data: recoveryTrainings } = await supabase
-      .from('trainings').select('id').in('category', ['recovery', 'conditioning'])
-    const recoveryIds = new Set((recoveryTrainings || []).map(t => t.id))
-    const recoveryCount = logs.reduce((sum, row) =>
-      sum + (row.trainings_completed || []).filter(id => recoveryIds.has(id)).length, 0)
-
-    await Promise.all([
-      revokeAchievementsIfNeeded(profile.id, 'the_grind', allTrainingsCount),
-      revokeAchievementsIfNeeded(profile.id, 'allday', allDayCount),
-      revokeAchievementsIfNeeded(profile.id, 'regeneracja', recoveryCount),
-    ])
+    // Cofnij wszystkie staged achievements które nie są już zasłużone
+    await revokeStaleAchievements(profile.id)
   }
 
   // ── Sprawdź czy odblokowano nowe osiągnięcie ─────────────────────────────
