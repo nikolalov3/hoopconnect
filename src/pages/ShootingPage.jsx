@@ -214,6 +214,9 @@ export default function ShootingPage() {
   const [saving, setSaving] = useState(false)
   const [finalStats, setFinalStats] = useState({ made: 0, attempted: 0 })
   const [newAchievements, setNewAchievements] = useState([])
+  const [showManualInput, setShowManualInput] = useState(false)
+  const [manualMade, setManualMade] = useState('')
+  const [manualMissed, setManualMissed] = useState('')
 
   const made = history.filter(Boolean).length
   const attempted = history.length
@@ -282,6 +285,58 @@ export default function ShootingPage() {
     }
   }
 
+  async function handleManualSubmit() {
+    const m = parseInt(manualMade) || 0
+    const miss = parseInt(manualMissed) || 0
+    const total = m + miss
+    if (total === 0 || total > target) return
+    setSaving(true)
+    setShowManualInput(false)
+
+    await supabase.from('shooting_sessions').insert({
+      user_id: profile.id,
+      training_id: id,
+      shot_type: config.shotType,
+      made: m,
+      attempted: total,
+    })
+
+    const { data: existingLog } = await supabase
+      .from('activity_log')
+      .select('*')
+      .eq('user_id', profile.id)
+      .eq('date', TODAY)
+      .single()
+
+    const prevCompleted = existingLog?.trainings_completed || []
+    if (!prevCompleted.includes(id)) {
+      const newCompleted = [...prevCompleted, id]
+      if (existingLog) {
+        await supabase.from('activity_log')
+          .update({ trainings_completed: newCompleted })
+          .eq('id', existingLog.id)
+      } else {
+        await supabase.from('activity_log')
+          .insert({ user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: false })
+      }
+    }
+
+    setFinalStats({ made: m, attempted: total })
+    clearSession()
+
+    const daysSinceJoin = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
+    const weekNumber = Math.floor(daysSinceJoin / 7) + 1
+    const [unlocked, perfect] = await Promise.all([
+      checkShotAchievements(profile.id, config.shotType, weekNumber),
+      checkPerfectSession(profile.id, config.shotType, m, total, weekNumber),
+    ])
+    const allNew = [...unlocked, ...perfect]
+    if (allNew.length > 0) setNewAchievements(allNew)
+
+    setSaving(false)
+    setFinished(true)
+  }
+
   if (!training) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
       <div className="spinner" />
@@ -314,6 +369,97 @@ export default function ShootingPage() {
             newAchievements={newAchievements}
           />
         )}
+      </AnimatePresence>
+
+      {/* Manual Input Modal */}
+      <AnimatePresence>
+        {showManualInput && (() => {
+          const m = parseInt(manualMade) || 0
+          const miss = parseInt(manualMissed) || 0
+          const total = m + miss
+          const overLimit = total > target
+          const canSubmit = total > 0 && !overLimit
+          return (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowManualInput(false)}
+              style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+            >
+              <motion.div
+                initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+                transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                  background: 'rgba(14,10,6,0.97)',
+                  borderTop: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: '24px 24px 0 0',
+                  padding: '24px 20px 40px',
+                }}
+              >
+                <div style={{ width: 36, height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 2, margin: '0 auto 20px' }} />
+                <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+                  Wpisz ręcznie
+                </p>
+                <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 20 }}>
+                  Limit: {target} rzutów łącznie
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                  {[
+                    { label: 'Trafione', color: 'var(--green-shot)', val: manualMade, set: setManualMade },
+                    { label: 'Pudła',    color: 'var(--red-shot)',   val: manualMissed, set: setManualMissed },
+                  ].map(({ label, color, val, set }) => (
+                    <div key={label}>
+                      <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color, fontWeight: 700, marginBottom: 8 }}>{label}</p>
+                      <input
+                        type="number" inputMode="numeric" min="0" max={target}
+                        value={val}
+                        onChange={e => set(e.target.value.replace(/[^0-9]/g, ''))}
+                        placeholder="0"
+                        style={{
+                          width: '100%', background: 'rgba(255,255,255,0.06)',
+                          border: `1px solid ${color}40`,
+                          borderRadius: 14, padding: '16px 12px',
+                          fontFamily: 'var(--font-display)', fontWeight: 900,
+                          fontSize: 32, color, textAlign: 'center',
+                          outline: 'none', boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Suma */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '12px 16px',
+                  background: overLimit ? 'rgba(255,61,61,0.10)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${overLimit ? 'rgba(255,61,61,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                  borderRadius: 12, marginBottom: 16,
+                }}>
+                  <span style={{ color: 'var(--text-dim)', fontSize: 12, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>Suma</span>
+                  <span style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
+                    color: overLimit ? 'var(--red-shot)' : total > 0 ? 'var(--text-primary)' : 'var(--text-dim)',
+                  }}>
+                    {total} / {target}
+                    {overLimit && <span style={{ fontSize: 13, marginLeft: 8 }}>— za dużo!</span>}
+                  </span>
+                </div>
+
+                <button
+                  onClick={handleManualSubmit}
+                  disabled={!canSubmit}
+                  className="btn-primary"
+                  style={{ width: '100%', opacity: canSubmit ? 1 : 0.35 }}
+                >
+                  Zatwierdź trening
+                </button>
+              </motion.div>
+            </motion.div>
+          )
+        })()}
       </AnimatePresence>
 
       {/* Header */}
@@ -441,8 +587,15 @@ export default function ShootingPage() {
         </motion.button>
       </div>
 
-      {/* Undo */}
-      <div style={{ padding: '0 20px 20px', flexShrink: 0 }}>
+      {/* Manual input + Undo */}
+      <div style={{ padding: '0 20px 20px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <button
+          className="btn-ghost"
+          onClick={() => { setManualMade(''); setManualMissed(''); setShowManualInput(true) }}
+          style={{ width: '100%', padding: '11px', fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--font-display)', fontWeight: 600 }}
+        >
+          ✎ Wpisz ręcznie
+        </button>
         <button className="btn-ghost" onClick={undoShot} disabled={history.length === 0}
           style={{ width: '100%', padding: '11px', fontSize: 13, letterSpacing: 1, opacity: history.length === 0 ? 0.25 : 1, textTransform: 'uppercase', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
           ↩ Cofnij
@@ -456,3 +609,4 @@ export default function ShootingPage() {
     </div>
   )
 }
+
