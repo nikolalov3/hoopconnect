@@ -49,8 +49,12 @@ export function AuthProvider({ children }) {
     if (user) await fetchProfile(user.id)
   }
 
+  function setProfileData(data) {
+    setProfile(prev => ({ ...prev, ...data }))
+  }
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut, refreshProfile, setProfileData }}>
       {children}
     </AuthContext.Provider>
   )

@@ -14,7 +14,7 @@ const DAYS_OPTIONS = [
 const STEP_COUNT = 3
 
 export default function OnboardingPage() {
-  const { user, refreshProfile } = useAuth()
+  const { user, setProfileData } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [name, setName] = useState('')
@@ -55,7 +55,7 @@ export default function OnboardingPage() {
         if (insertErr) throw insertErr
       }
 
-      await refreshProfile()
+      setProfileData({ ...profileData })
       navigate('/', { replace: true })
     } catch(e) {
       setError('Błąd zapisu: ' + e.message)

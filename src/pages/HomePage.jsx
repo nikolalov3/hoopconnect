@@ -417,7 +417,6 @@ export default function HomePage() {
   const [quote, setQuote] = useState(null)
   const [showQuote, setShowQuote] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [touchStart, setTouchStart] = useState(null)
   const [dayType, setDayType] = useState('T')
   const [reportScore, setReportScore] = useState(0)
   const [reportLoading, setReportLoading] = useState(true)
@@ -737,12 +736,6 @@ export default function HomePage() {
   const completed = activityLog?.trainings_completed || []
   const progress = trainings.length > 0 ? (completed.length / trainings.length) * 100 : 0
 
-  function handleTouchStart(e) { setTouchStart(e.touches[0].clientY) }
-  function handleTouchEnd(e) {
-    if (touchStart === null) return
-    if (touchStart - e.changedTouches[0].clientY > 60) setShowQuote(true)
-    setTouchStart(null)
-  }
 
   const greeting = profile?.name ? `Cześć, ${profile.name}` : 'Dzisiaj'
   const dateStr = new Date().toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -757,7 +750,7 @@ export default function HomePage() {
   const scoreLabel = reportScore >= 750 ? 'ŚWIETNA REGULARNOŚĆ' : reportScore >= 500 ? 'DOBRY POSTĘP' : reportScore >= 250 ? 'ZACZNIJ SERIĘ' : 'TRENUJESZ?'
 
   return (
-    <div className="page-content" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <div className="page-content">
       <AnimatePresence>{showQuote && <QuotePanel quote={quote} onClose={() => setShowQuote(false)} />}</AnimatePresence>
       <AnimatePresence>
         {achievementToast && (
