@@ -29,6 +29,68 @@ export function clearAchievementsCache() {
   _catalogCache = null
 }
 
+// ── COFNIĘCIE OSIĄGNIĘĆ ───────────────────────────────────────────────────────
+// Sprawdza czy użytkownik nadal spełnia progi dla osiągnięć danego base_id.
+// Jeśli currentCount spadł poniżej progu — usuwa osiągnięcie z user_achievements.
+// Wywołuj po każdym cofnięciu treningu/aktywności.
+
+export async function revokeAchievementsIfNeeded(userId, baseId, currentCount) {
+  const catalog = await fetchAchievementsCatalog()
+  const ach = catalog.find(a => a.id === baseId)
+  if (!ach) return []
+
+  const { data: userAchs } = await supabase
+    .from('user_achievements')
+    .select('achievement_id')
+    .eq('user_id', userId)
+    .eq('base_id', baseId)
+
+  if (!userAchs?.length) return []
+
+  const toRevoke = userAchs.filter(ua => {
+    const stage = (ach.stages || []).find(s => `${ach.id}_${s.medal}` === ua.achievement_id)
+    return stage && currentCount < stage.threshold
+  })
+
+  for (const ua of toRevoke) {
+    await supabase.from('user_achievements')
+      .delete()
+      .eq('user_id', userId)
+      .eq('achievement_id', ua.achievement_id)
+  }
+
+  return toRevoke.map(ua => ua.achievement_id)
+}
+
+// Wygodny wrapper — sprawdza wszystkie shot achievements po cofnięciu sesji
+export async function revokeShotAchievementsIfNeeded(userId, shotType) {
+  const catalog = await fetchAchievementsCatalog()
+  const shotAchs = catalog.filter(
+    a => a.type === 'staged' && a.shot_type === shotType
+  )
+
+  // Aktualna suma trafionych rzutów danego typu
+  const { data: sessions } = await supabase
+    .from('shooting_sessions')
+    .select('made')
+    .eq('user_id', userId)
+    .eq('shot_type', shotType)
+  const totalMade = (sessions || []).reduce((sum, r) => sum + (r.made || 0), 0)
+
+  // Aktualna liczba perfekcyjnych sesji
+  const perfectCount = (sessions || []).filter(
+    s => s.made === s.attempted && s.attempted > 0
+  ).length
+
+  const allRevoked = []
+  for (const ach of shotAchs) {
+    const count = ach.id.startsWith('perfect_') ? perfectCount : totalMade
+    const revoked = await revokeAchievementsIfNeeded(userId, ach.id, count)
+    allRevoked.push(...revoked)
+  }
+  return allRevoked
+}
+
 // ── PUNKTY ZA MEDALE ─────────────────────────────────────────────────────────
 export const MEDAL_POINTS = { bronze: 20, silver: 25, gold: 50, diamond: 75, platinum: 100 }
 

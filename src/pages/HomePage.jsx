@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import TrainingCard from '../components/training/TrainingCard'
-import { fetchAchievementsCatalog, getNewlyUnlocked, awardMedalPoints } from '../lib/achievements'
+import { fetchAchievementsCatalog, getNewlyUnlocked, awardMedalPoints, revokeAchievementsIfNeeded } from '../lib/achievements'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -541,6 +541,29 @@ export default function HomePage() {
       .eq('training_id', trainingId)
       .eq('date', TODAY)
     setActivityLog(prev => ({ ...prev, trainings_completed: newCompleted, all_done: false }))
+
+    // Cofnij osiągnięcia jeśli progi nie są już spełnione
+    const { count: totalTrainings } = await supabase
+      .from('activity_log')
+      .select('trainings_completed', { count: 'exact', head: false })
+      .eq('user_id', profile.id)
+    const allTrainingsCount = (await supabase
+      .from('activity_log')
+      .select('trainings_completed')
+      .eq('user_id', profile.id)
+    ).data?.reduce((sum, row) => sum + (row.trainings_completed?.length || 0), 0) || 0
+
+    const allDayCount = (await supabase
+      .from('activity_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', profile.id)
+      .eq('all_done', true)
+    ).count || 0
+
+    await Promise.all([
+      revokeAchievementsIfNeeded(profile.id, 'the_grind', allTrainingsCount),
+      revokeAchievementsIfNeeded(profile.id, 'allday', allDayCount),
+    ])
   }
 
   // ── Sprawdź czy odblokowano nowe osiągnięcie ─────────────────────────────
