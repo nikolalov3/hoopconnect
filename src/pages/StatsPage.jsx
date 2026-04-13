@@ -262,7 +262,7 @@ export default function StatsPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 32 }}>
           {filtered.map(s => {
-            const pct  = Math.round(s.pct)
+            const pct  = s.attempted > 0 ? Math.round((s.made / s.attempted) * 100) : 0
             const good = pct >= 50
             return (
               <div key={s.id} style={{
