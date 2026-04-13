@@ -1,0 +1,92 @@
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import AuthPage from './pages/AuthPage'
+import OnboardingPage from './pages/OnboardingPage'
+import HomePage from './pages/HomePage'
+import ShootingPage from './pages/ShootingPage'
+import StatsPage from './pages/StatsPage'
+import AchievementsPage from './pages/AchievementsPage'
+import RecoveryPage from './pages/RecoveryPage'
+import BottomNav from './components/ui/BottomNav'
+
+const pageVariants = {
+  initial: { opacity: 0, y: 14, scale: 0.985 },
+  animate: { opacity: 1, y: 0,  scale: 1 },
+  exit:    { opacity: 0, y: -8, scale: 0.99 },
+}
+const pageTransition = { duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }
+
+function Tab({ children, fast }) {
+  return (
+    <motion.div
+      variants={pageVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={fast ? { duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] } : pageTransition}
+      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+function AppShell() {
+  const { user, profile, loading } = useAuth()
+  const location = useLocation()
+  const inShooting = location.pathname.startsWith('/shooting')
+
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: '100%', flexDirection: 'column', gap: 16,
+      }}>
+        <div className="spinner" />
+      </div>
+    )
+  }
+
+  if (!user) return <Navigate to="/auth" replace />
+
+  if (profile && !profile.onboarding_done && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />
+  }
+
+  return (
+    <div className="app-shell">
+      <AnimatePresence mode="wait" initial={false}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/"             element={<Tab><HomePage /></Tab>} />
+          <Route path="/shooting/:id" element={<ShootingPage />} />
+          <Route path="/stats"        element={<Tab><StatsPage /></Tab>} />
+          <Route path="/achievements" element={<Tab><AchievementsPage /></Tab>} />
+          <Route path="/recovery"     element={<Tab fast><RecoveryPage /></Tab>} />
+          <Route path="/onboarding"   element={<OnboardingPage />} />
+        </Routes>
+      </AnimatePresence>
+      {!inShooting && location.pathname !== '/onboarding' && <BottomNav />}
+    </div>
+  )
+}
+
+function AuthRoute() {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (user) return <Navigate to="/" replace />
+  return <AuthPage />
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/auth" element={<AuthRoute />} />
+          <Route path="/*"    element={<AppShell />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
+  )
+}

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Regulamin usług · NotASlop</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📍</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --cream: #FAF7F2;
+  --warm-white: #FFFDF9;
+  --sand: #F0EAE0;
+  --terracotta: #D4704A;
+  --terracotta-light: #E8906E;
+  --terracotta-dark: #B85A35;
+  --charcoal: #1E1A16;
+  --brown: #5C3D2E;
+  --muted: #8A7568;
+  --green: #4A7C59;
+  --green-light: #6A9E78;
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --radius: 16px;
+  --shadow: 0 4px 32px rgba(30,26,22,0.10);
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--font-body); background: var(--cream); color: var(--charcoal); overflow-x: hidden; }
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(255,253,249,0.92); backdrop-filter: blur(14px);
+  border-bottom: 1.5px solid var(--sand);
+  padding: 0 clamp(1rem,5vw,3rem);
+  height: 64px; display: flex; align-items: center; justify-content: space-between;
+}
+.nav-logo { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; letter-spacing: -0.03em; color: var(--charcoal); text-decoration: none; }
+.nav-logo span { color: var(--terracotta); }
+.nav-back { font-size: 0.85rem; color: var(--muted); text-decoration: none; font-weight: 500; transition: color 0.2s; }
+.nav-back:hover { color: var(--terracotta); }
+
+/* HERO */
+.page-hero {
+  padding-top: 64px;
+  background: linear-gradient(160deg, #1E1A16 0%, #2A1E14 60%, #1E1A16 100%);
+  position: relative; overflow: hidden;
+}
+.page-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 55% 60% at 30% 50%, rgba(212,112,74,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.page-hero-inner {
+  max-width: 860px; margin: 0 auto;
+  padding: 4rem clamp(1.5rem,5vw,3rem) 3.5rem;
+  position: relative; z-index: 1;
+}
+.page-hero-label {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-display); font-weight: 700; font-size: 0.78rem;
+  color: var(--terracotta-light); letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+.page-hero-label::before { content: ''; width: 20px; height: 2px; background: var(--terracotta-light); }
+.page-hero h1 {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(2rem,5vw,3.2rem); letter-spacing: -0.04em; line-height: 1.05;
+  color: #fff; margin-bottom: 1rem;
+}
+.page-hero h1 span { color: var(--terracotta-light); }
+.page-hero-meta {
+  display: flex; gap: 2rem; flex-wrap: wrap;
+  margin-top: 1.5rem; padding-top: 1.5rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.meta-item { font-size: 0.82rem; color: rgba(255,255,255,0.45); }
+.meta-item strong { color: rgba(255,255,255,0.7); font-weight: 500; }
+
+/* CONTENT */
+.content-wrap { max-width: 860px; margin: 0 auto; padding: 4rem clamp(1.5rem,5vw,3rem) 5rem; }
+
+.toc-box {
+  background: var(--warm-white); border: 1.5px solid var(--sand);
+  border-radius: var(--radius); padding: 1.75rem 2rem;
+  margin-bottom: 3rem;
+}
+.toc-box h3 {
+  font-family: var(--font-display); font-weight: 700; font-size: 0.85rem;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 1rem;
+}
+.toc-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.toc-list li a {
+  font-size: 0.88rem; color: var(--charcoal); text-decoration: none;
+  font-weight: 500; transition: color 0.2s;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.toc-list li a::before { content: '→'; color: var(--terracotta); font-size: 0.78rem; }
+.toc-list li a:hover { color: var(--terracotta); }
+
+/* Sections */
+.reg-section {
+  margin-bottom: 3rem; padding-top: 0.5rem;
+}
+.reg-section h2 {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: 1.3rem; letter-spacing: -0.02em;
+  color: var(--charcoal); margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem; border-bottom: 2px solid var(--sand);
+  display: flex; align-items: center; gap: 10px;
+}
+.reg-section h2 .sec-num {
+  background: var(--terracotta); color: #fff;
+  font-size: 0.72rem; font-weight: 800; letter-spacing: 0.02em;
+  border-radius: 8px; padding: 3px 10px; flex-shrink: 0;
+}
+.reg-section p {
+  font-size: 0.93rem; color: var(--muted); line-height: 1.8;
+  margin-bottom: 1rem;
+}
+.reg-section p:last-child { margin-bottom: 0; }
+.reg-section p strong { color: var(--charcoal); font-weight: 600; }
+
+.def-table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.88rem; }
+.def-table td { padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--sand); vertical-align: top; line-height: 1.65; }
+.def-table td:first-child { font-family: var(--font-display); font-weight: 700; color: var(--charcoal); white-space: nowrap; width: 30%; }
+.def-table td:last-child { color: var(--muted); }
+.def-table tr:last-child td { border-bottom: none; }
+
+.plan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.25rem 0; }
+.plan-box { background: var(--warm-white); border: 1.5px solid var(--sand); border-radius: 14px; padding: 1.25rem 1.1rem; }
+.plan-box.featured { background: var(--charcoal); border-color: var(--charcoal); }
+.plan-name { font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.4rem; }
+.plan-box.featured .plan-name { color: rgba(255,255,255,0.45); }
+.plan-price { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; letter-spacing: -0.03em; color: var(--charcoal); line-height: 1; margin-bottom: 0.25rem; }
+.plan-box.featured .plan-price { color: var(--terracotta-light); }
+.plan-desc { font-size: 0.76rem; color: var(--muted); line-height: 1.55; }
+.plan-box.featured .plan-desc { color: rgba(255,255,255,0.45); }
+
+.notice-box {
+  background: rgba(212,112,74,0.08); border: 1.5px solid rgba(212,112,74,0.3);
+  border-radius: 12px; padding: 1.1rem 1.25rem;
+  margin: 1.25rem 0;
+  font-size: 0.88rem; color: var(--charcoal); line-height: 1.7;
+}
+.notice-box strong { color: var(--terracotta-dark); }
+
+.info-box {
+  background: rgba(74,124,89,0.07); border: 1.5px solid rgba(74,124,89,0.25);
+  border-radius: 12px; padding: 1.1rem 1.25rem;
+  margin: 1.25rem 0;
+  font-size: 0.88rem; color: var(--charcoal); line-height: 1.7;
+}
+.info-box strong { color: var(--green); }
+
+ol.reg-list, ul.reg-list {
+  margin: 0.75rem 0 1rem; padding-left: 1.4rem;
+  display: flex; flex-direction: column; gap: 6px;
+}
+ol.reg-list li, ul.reg-list li {
+  font-size: 0.91rem; color: var(--muted); line-height: 1.75;
+}
+ol.reg-list li strong, ul.reg-list li strong { color: var(--charcoal); }
+
+/* Footer */
+footer {
+  background: var(--charcoal); color: rgba(255,255,255,0.45);
+  font-size: 0.82rem; text-align: center;
+  padding: 2rem clamp(1.5rem,5vw,3rem);
+  display: flex; flex-direction: column; gap: 0.5rem; align-items: center;
+}
+footer a { color: var(--terracotta-light); text-decoration: none; }
+footer .foot-logo { font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; color: #fff; margin-bottom: 0.25rem; }
+footer .foot-logo span { color: var(--terracotta); }
+
+@media (max-width: 640px) {
+  .plan-grid { grid-template-columns: 1fr; }
+  .page-hero-meta { gap: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="https://notaslop.com" class="nav-logo">Not<span>A</span>Slop</a>
+  <a href="https://notaslop.com/krakow" class="nav-back">← Powrót do oferty</a>
+</nav>
+
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="page-hero-label">Dokumenty prawne</div>
+    <h1>Regulamin<br><span>świadczenia usług</span></h1>
+    <div class="page-hero-meta">
+      <div class="meta-item"><strong>Wersja:</strong> 1.0</div>
+      <div class="meta-item"><strong>Data wejścia w życie:</strong> 1 lipca 2025 r.</div>
+      <div class="meta-item"><strong>Usługodawca:</strong> NotASlop</div>
+    </div>
+  </div>
+</div>
+
+<div class="content-wrap">
+
+  <div class="toc-box">
+    <h3>Spis treści</h3>
+    <ol class="toc-list">
+      <li><a href="#s1">§1 Definicje</a></li>
+      <li><a href="#s2">§2 Usługodawca i dane kontaktowe</a></li>
+      <li><a href="#s3">§3 Przedmiot i zakres usług</a></li>
+      <li><a href="#s4">§4 Zawarcie umowy</a></li>
+      <li><a href="#s5">§5 Cennik i warunki płatności</a></li>
+      <li><a href="#s6">§6 Realizacja usług i terminy</a></li>
+      <li><a href="#s7">§7 Obowiązki Usługobiorcy</a></li>
+      <li><a href="#s8">§8 Wypowiedzenie i rezygnacja</a></li>
+      <li><a href="#s9">§9 Odpowiedzialność</a></li>
+      <li><a href="#s10">§10 Ochrona danych osobowych (RODO)</a></li>
+      <li><a href="#s11">§11 Własność intelektualna</a></li>
+      <li><a href="#s12">§12 Reklamacje</a></li>
+      <li><a href="#s13">§13 Postanowienia końcowe</a></li>
+    </ol>
+  </div>
+
+  <!-- §1 -->
+  <div class="reg-section" id="s1">
+    <h2><span class="sec-num">§1</span> Definicje</h2>
+    <p>Na potrzeby niniejszego Regulaminu użyte poniżej pojęcia mają następujące znaczenie:</p>
+    <table class="def-table">
+      <tr>
+        <td>Regulamin</td>
+        <td>Niniejszy dokument określający warunki świadczenia usług przez Usługodawcę.</td>
+      </tr>
+      <tr>
+        <td>Usługodawca</td>
+        <td><strong>NotASlop</strong> — marka świadcząca usługi zarządzania obecnością w Apple Maps oraz powiązane usługi marketingowe, z siedzibą w Krakowie. Dane kontaktowe wskazane w §2.</td>
+      </tr>
+      <tr>
+        <td>Usługobiorca / Klient</td>
+        <td>Podmiot (osoba fizyczna prowadząca działalność gospodarczą, spółka, stowarzyszenie lub inna jednostka) zawierający z Usługodawcą umowę o świadczenie usług.</td>
+      </tr>
+      <tr>
+        <td>Umowa</td>
+        <td>Umowa o świadczenie usług zawarta między Usługodawcą a Usługobiorcą na podstawie niniejszego Regulaminu, potwierdzona przyjęciem zamówienia lub realizacją płatności.</td>
+      </tr>
+      <tr>
+        <td>Wizytówka</td>
+        <td>Profil lokalu Usługobiorcy w serwisie Apple Maps / Apple Business Connect.</td>
+      </tr>
+      <tr>
+        <td>Pakiet Elastyczny</td>
+        <td>Abonament miesięczny, płatny co miesiąc, bez zobowiązania długoterminowego.</td>
+      </tr>
+      <tr>
+        <td>Pakiet 3 Miesiące</td>
+        <td>Pakiet obejmujący 3 miesiące pełnej obsługi z wdrożeniem, płatny jednorazowo z góry.</td>
+      </tr>
+      <tr>
+        <td>Pakiet Jednorazowy</td>
+        <td>Jednorazowa usługa konfiguracji wizytówki bez abonamentu.</td>
+      </tr>
+      <tr>
+        <td>Wdrożenie</td>
+        <td>Jednorazowa konfiguracja i optymalizacja wizytówki Usługobiorcy w Apple Maps.</td>
+      </tr>
+      <tr>
+        <td>Raport widoczności</td>
+        <td>Miesięczne zestawienie danych z Apple Business Connect przekazywane Klientowi.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- §2 -->
+  <div class="reg-section" id="s2">
+    <h2><span class="sec-num">§2</span> Usługodawca i dane kontaktowe</h2>
+    <p>Usługi świadczone są przez <strong>NotASlop</strong>, Kraków, Polska.</p>
+    <p>Dane kontaktowe Usługodawcy:</p>
+    <ul class="reg-list">
+      <li><strong>E-mail:</strong> kontakt@notaslop.com</li>
+      <li><strong>WhatsApp / telefon:</strong> +48 607 118 228</li>
+      <li><strong>Strona internetowa:</strong> notaslop.com</li>
+    </ul>
+  </div>
+
+  <!-- §3 -->
+  <div class="reg-section" id="s3">
+    <h2><span class="sec-num">§3</span> Przedmiot i zakres usług</h2>
+    <p>Usługodawca świadczy usługi zarządzania obecnością lokali gastronomicznych w serwisie Apple Maps, obejmujące w szczególności:</p>
+    <ol class="reg-list">
+      <li><strong>Konfigurację i optymalizację wizytówki</strong> — ustawienie nazwy, kategorii, podkategorii, opisu w języku polskim i angielskim, godzin otwarcia (w tym w dni świąteczne), linków do rezerwacji i menu, a także przesłanie i optymalizację zdjęć.</li>
+      <li><strong>Aktywne pozycjonowanie</strong> — codzienny monitoring opinii, wdrożenie strategii pozyskiwania 5-gwiazdkowych ocen, bieżące aktualizacje danych lokalu, monitorowanie pozycji w wynikach wyszukiwania Apple Maps.</li>
+      <li><strong>Bieżące utrzymanie wizytówki</strong> — aktualizacje godzin otwarcia (sezon, święta), dodawanie nowych zdjęć, informacji o promocjach i wydarzeniach, aktualizacja linku do rezerwacji.</li>
+      <li><strong>Miesięczny raport widoczności</strong> — zestawienie danych z Apple Business Connect: liczba wyświetleń, kliknięcia „Trasa", „Zadzwoń" i „Strona internetowa", porównanie z poprzednim miesiącem oraz zalecenia na kolejny okres.</li>
+    </ol>
+    <p>Dokładny zakres usług w danym pakiecie określa §5 niniejszego Regulaminu oraz aktualny cennik dostępny na stronie.</p>
+    <div class="notice-box">
+      <strong>Ważne:</strong> Usługi świadczone przez NotASlop dotyczą wyłącznie zarządzania wizytówką w Apple Maps. Usługodawca nie świadczy usług w zakresie Google Maps, TripAdvisor ani innych platform, o ile nie zostało to odrębnie uzgodnione na piśmie.
+    </div>
+  </div>
+
+  <!-- §4 -->
+  <div class="reg-section" id="s4">
+    <h2><span class="sec-num">§4</span> Zawarcie umowy</h2>
+    <p>Umowa między Usługodawcą a Usługobiorcą zostaje zawarta w następujący sposób:</p>
+    <ol class="reg-list">
+      <li>Usługobiorca przesyła zapytanie przez formularz kontaktowy, e-mail lub wiadomość WhatsApp.</li>
+      <li>Usługodawca potwierdza dostępność i przedstawia ofertę.</li>
+      <li>Usługobiorca akceptuje ofertę i dokonuje płatności zgodnie z wybranym pakietem.</li>
+      <li><strong>Umowa zostaje zawarta z chwilą zaksięgowania płatności.</strong> Potwierdzenie zawarcia umowy przesyłane jest e-mailem na adres wskazany przez Usługobiorcę.</li>
+    </ol>
+    <p>Usługobiorca, dokonując płatności, oświadcza, że zapoznał się z niniejszym Regulaminem i akceptuje jego warunki.</p>
+    <p>Umowa zawierana jest w języku polskim. Usługodawca może zawrzeć umowę w języku angielskim na pisemne życzenie Usługobiorcy.</p>
+  </div>
+
+  <!-- §5 -->
+  <div class="reg-section" id="s5">
+    <h2><span class="sec-num">§5</span> Cennik i warunki płatności</h2>
+    <p>Aktualne ceny usług są następujące (ceny netto):</p>
+
+    <div class="plan-grid">
+      <div class="plan-box">
+        <div class="plan-name">Pakiet Elastyczny</div>
+        <div class="plan-price">299 zł/mies.</div>
+        <div class="plan-desc">+ jednorazowa opłata startowa 220 zł netto. Płatność co miesiąc. Bez zobowiązania długoterminowego.</div>
+      </div>
+      <div class="plan-box featured">
+        <div class="plan-name">⭐ 3 Miesiące z góry</div>
+        <div class="plan-price">899 zł</div>
+        <div class="plan-desc">3 miesiące pełnej obsługi + wdrożenie w cenie. Płatność jednorazowa z góry.</div>
+      </div>
+      <div class="plan-box">
+        <div class="plan-name">Jednorazowy</div>
+        <div class="plan-price">279 zł</div>
+        <div class="plan-desc">Jednorazowa konfiguracja wizytówki. Brak abonamentu. Płatność z góry.</div>
+      </div>
+    </div>
+
+    <ol class="reg-list">
+      <li><strong>Pakiet Elastyczny:</strong> Płatność abonamentowa pobierana jest z góry za każdy miesiąc obsługi, w dniu rocznicy zawarcia umowy lub wedle harmonogramu ustalonego przy zakupie. Opłata startowa pobierana jest jednorazowo przy pierwszej płatności.</li>
+      <li><strong>Pakiet 3 Miesiące:</strong> Pełna kwota 899 zł płatna jednorazowo z góry przed rozpoczęciem prac. Wdrożenie wliczone w cenę.</li>
+      <li><strong>Pakiet Jednorazowy:</strong> Kwota 279 zł płatna jednorazowo z góry przed rozpoczęciem konfiguracji.</li>
+    </ol>
+
+    <p>Płatności realizowane są za pośrednictwem bezpiecznego systemu płatności Stripe lub przelewem bankowym na dane wskazane w potwierdzeniu zamówienia.</p>
+    <p>Wszystkie ceny podane są w złotych polskich. Do podanych kwot nie doliczany jest podatek VAT.</p>
+    <div class="notice-box">
+      <strong>Uwaga dotycząca zmiany cennika:</strong> Usługodawca zastrzega prawo zmiany cen usług z co najmniej <strong>30-dniowym</strong> wyprzedzeniem, poinformowaniem Klientów abonamentowych drogą e-mailową. Zmiana cennika nie dotyczy opłaconych już okresów rozliczeniowych.
+    </div>
+  </div>
+
+  <!-- §6 -->
+  <div class="reg-section" id="s6">
+    <h2><span class="sec-num">§6</span> Realizacja usług i terminy</h2>
+    <ol class="reg-list">
+      <li>Usługodawca przystępuje do realizacji usług niezwłocznie po zaksięgowaniu płatności oraz po przekazaniu przez Usługobiorcę wszystkich niezbędnych danych i materiałów (formularz startowy).</li>
+      <li><strong>Termin wdrożenia wizytówki wynosi 5–7 dni roboczych</strong> od daty przekazania kompletnego formularza startowego.</li>
+      <li>Miesięczne raporty widoczności przekazywane są do <strong>10. dnia każdego miesiąca</strong> za miesiąc poprzedni (dotyczy Pakietu Elastycznego i Pakietu 3 Miesiące).</li>
+      <li>Aktualizacje zlecone przez Usługobiorcę (np. zmiana godzin, nowe zdjęcia) realizowane są w ciągu <strong>2 dni roboczych</strong> od ich zgłoszenia, a w przypadku Klientów z priorytetowym kontaktem (Pakiet 3 Miesiące) — w ciągu <strong>1 dnia roboczego</strong>.</li>
+      <li>Usługodawca zastrzega możliwość przedłużenia terminów o dodatkowe 3 dni robocze w przypadku siły wyższej lub braku dostępu do platformy Apple Business Connect z przyczyn niezależnych od Usługodawcy.</li>
+    </ol>
+    <div class="info-box">
+      <strong>Formularz startowy:</strong> Uruchomienie usługi wymaga jednorazowego wypełnienia przez Klienta formularza startowego zawierającego dane lokalu, zdjęcia, linki i inne materiały niezbędne do konfiguracji. Termin wdrożenia biegnie od daty przekazania <em>kompletnego</em> formularza.
+    </div>
+  </div>
+
+  <!-- §7 -->
+  <div class="reg-section" id="s7">
+    <h2><span class="sec-num">§7</span> Obowiązki Usługobiorcy</h2>
+    <p>Usługobiorca zobowiązuje się do:</p>
+    <ol class="reg-list">
+      <li>Podania prawdziwych i aktualnych danych dotyczących lokalu (nazwa, adres, godziny otwarcia, kategoria, zdjęcia).</li>
+      <li>Niezwłocznego informowania Usługodawcy o wszelkich zmianach danych lokalu mających wpływ na treść wizytówki (np. zmiana godzin otwarcia, adresu, zamknięcie lokalu).</li>
+      <li>Współpracy przy wdrożeniu poprzez terminowe wypełnienie formularza startowego.</li>
+      <li>Nieudzielania dostępu do konta Apple Business Connect lokalu osobom trzecim bez uprzedniego powiadomienia Usługodawcy.</li>
+      <li>Nieinterweniowania samodzielnie w wizytówkę w sposób mogący zakłócić prowadzone działania optymalizacyjne — wszelkie zmiany należy zgłaszać Usługodawcy.</li>
+      <li>Terminowego regulowania płatności zgodnie z wybranym pakietem.</li>
+    </ol>
+    <p>Usługodawca nie ponosi odpowiedzialności za opóźnienia lub gorsze wyniki wynikające z niewykonania powyższych obowiązków przez Usługobiorcę.</p>
+  </div>
+
+  <!-- §8 -->
+  <div class="reg-section" id="s8">
+    <h2><span class="sec-num">§8</span> Wypowiedzenie i rezygnacja</h2>
+
+    <p><strong>Pakiet Elastyczny (miesięczny):</strong></p>
+    <ol class="reg-list">
+      <li>Usługobiorca może zrezygnować z pakietu abonamentowego w dowolnym momencie, <strong>z zachowaniem 30-dniowego okresu wypowiedzenia</strong>, złożonego drogą e-mailową na adres kontakt@notaslop.com.</li>
+      <li>Okres wypowiedzenia biegnie od końca bieżącego okresu rozliczeniowego. Już opłacony miesiąc nie podlega zwrotowi.</li>
+      <li>Opłata startowa (220 zł) jest bezzwrotna niezależnie od momentu rezygnacji.</li>
+    </ol>
+
+    <p><strong>Pakiet 3 Miesiące:</strong></p>
+    <ol class="reg-list">
+      <li>Płatność za Pakiet 3 Miesiące jest <strong>bezzwrotna</strong> po rozpoczęciu wdrożenia (tj. po przekazaniu danych przez Usługobiorcę i przystąpieniu do prac).</li>
+      <li>W przypadku rezygnacji przed przekazaniem formularza startowego — Usługodawca zwróci pełną kwotę w terminie 14 dni.</li>
+    </ol>
+
+    <p><strong>Pakiet Jednorazowy:</strong></p>
+    <ol class="reg-list">
+      <li>Płatność za Pakiet Jednorazowy jest <strong>bezzwrotna</strong> po rozpoczęciu prac konfiguracyjnych.</li>
+      <li>W przypadku rezygnacji przed przekazaniem formularza startowego — Usługodawca zwróci pełną kwotę w terminie 14 dni.</li>
+    </ol>
+
+    <p><strong>Wypowiedzenie przez Usługodawcę:</strong></p>
+    <ol class="reg-list">
+      <li>Usługodawca może rozwiązać umowę z zachowaniem 14-dniowego okresu wypowiedzenia w przypadku: braku płatności trwającego ponad 14 dni, naruszenia przez Usługobiorcę postanowień niniejszego Regulaminu lub okoliczności uniemożliwiających dalsze świadczenie usług.</li>
+      <li>W przypadku rozwiązania umowy przez Usługodawcę z przyczyn leżących po stronie Usługodawcy — niewykorzystana część opłaconego abonamentu zostanie zwrócona proporcjonalnie.</li>
+    </ol>
+
+    <div class="notice-box">
+      <strong>Jak zrezygnować?</strong> Wyślij wiadomość e-mail na adres kontakt@notaslop.com lub wiadomość WhatsApp na numer +48 607 118 228 z informacją o rezygnacji. Potwierdzenie przyjęcia rezygnacji przesyłamy w ciągu 1 dnia roboczego.
+    </div>
+  </div>
+
+  <!-- §9 -->
+  <div class="reg-section" id="s9">
+    <h2><span class="sec-num">§9</span> Odpowiedzialność</h2>
+    <ol class="reg-list">
+      <li>Usługodawca zobowiązuje się świadczyć usługi z należytą starannością, zgodnie z aktualną wiedzą i najlepszymi praktykami branżowymi.</li>
+      <li><strong>Usługodawca nie gwarantuje osiągnięcia konkretnych pozycji</strong> w wynikach wyszukiwania Apple Maps ani określonej liczby wyświetleń, tras czy rezerwacji — algorytmy Apple Maps są autonomiczne i podlegają zmianom niezależnie od Usługodawcy.</li>
+      <li>Usługodawca nie ponosi odpowiedzialności za zmiany algorytmów, polityk lub funkcjonalności platformy Apple Maps / Apple Business Connect dokonywane przez Apple Inc.</li>
+      <li>Usługodawca nie ponosi odpowiedzialności za treść opinii wystawianych przez użytkowników Apple Maps — strategia pozyskiwania opinii nie obejmuje działań niezgodnych z polityką Apple.</li>
+      <li>Odpowiedzialność Usługodawcy z tytułu niewykonania lub nienależytego wykonania umowy jest ograniczona do wysokości wynagrodzenia zapłaconego przez Usługobiorcę za ostatni miesiąc rozliczeniowy.</li>
+      <li>Usługodawca nie ponosi odpowiedzialności za szkody pośrednie, utracone korzyści ani straty wynikające z przerw w działaniu platformy Apple Maps lub awarii systemów Apple Inc.</li>
+    </ol>
+  </div>
+
+  <!-- §10 -->
+  <div class="reg-section" id="s10">
+    <h2><span class="sec-num">§10</span> Ochrona danych osobowych (RODO)</h2>
+    <ol class="reg-list">
+      <li>Administratorem danych osobowych przekazanych przez Usługobiorcę jest Usługodawca — NotASlop, Kraków (dane kontaktowe w §2).</li>
+      <li>Dane osobowe Usługobiorcy (imię i nazwisko lub nazwa firmy, adres e-mail, numer telefonu, dane lokalu) przetwarzane są w celu:
+        <ul class="reg-list" style="margin-top:0.5rem;">
+          <li>zawarcia i realizacji umowy o świadczenie usług (art. 6 ust. 1 lit. b RODO);</li>
+          <li>wypełnienia obowiązków wynikających z przepisów prawa (art. 6 ust. 1 lit. c RODO);</li>
+          <li>prawnie uzasadnionego interesu Usługodawcy — kontaktu w sprawach obsługi (art. 6 ust. 1 lit. f RODO).</li>
+        </ul>
+      </li>
+      <li>Dane osobowe przechowywane są przez okres trwania umowy oraz przez 3 lata po jej zakończeniu (na potrzeby ewentualnych roszczeń).</li>
+      <li>Dane nie są przekazywane podmiotom trzecim, z wyjątkiem operatorów płatności (Stripe) oraz platform komunikacyjnych (WhatsApp / Meta) w zakresie niezbędnym do świadczenia usług.</li>
+      <li>Usługobiorca ma prawo do: dostępu do swoich danych, ich sprostowania, usunięcia, ograniczenia przetwarzania, przenoszenia danych oraz wniesienia sprzeciwu wobec przetwarzania.</li>
+      <li>W przypadku wątpliwości dotyczących przetwarzania danych osobowych prosimy o kontakt: kontakt@notaslop.com. Przysługuje również prawo wniesienia skargi do Prezesa Urzędu Ochrony Danych Osobowych (PUODO).</li>
+    </ol>
+  </div>
+
+  <!-- §11 -->
+  <div class="reg-section" id="s11">
+    <h2><span class="sec-num">§11</span> Własność intelektualna</h2>
+    <ol class="reg-list">
+      <li>Materiały dostarczone przez Usługobiorcę (zdjęcia, opisy, logotypy) pozostają własnością Usługobiorcy. Usługobiorca udziela Usługodawcy niewyłącznej licencji na ich wykorzystanie wyłącznie w celu realizacji usług objętych umową.</li>
+      <li>Raporty widoczności, szablony i materiały opracowane przez Usługodawcę stanowią własność Usługodawcy i nie mogą być udostępniane osobom trzecim ani komercyjnie wykorzystywane bez zgody Usługodawcy.</li>
+      <li>Usługobiorca oświadcza, że posiada prawa do dostarczonych materiałów (zdjęć, opisów) i nie naruszają one praw osób trzecich. W przypadku roszczeń osób trzecich z tego tytułu Usługobiorca przejmuje odpowiedzialność na siebie.</li>
+    </ol>
+  </div>
+
+  <!-- §12 -->
+  <div class="reg-section" id="s12">
+    <h2><span class="sec-num">§12</span> Reklamacje</h2>
+    <ol class="reg-list">
+      <li>Usługobiorca ma prawo zgłosić reklamację dotyczącą niewykonania lub nienależytego wykonania usługi.</li>
+      <li>Reklamację należy zgłosić <strong>drogą e-mailową na adres kontakt@notaslop.com</strong> w terminie 14 dni od dnia stwierdzenia nieprawidłowości, opisując szczegółowo zgłaszany problem.</li>
+      <li>Usługodawca rozpatruje reklamację i udziela pisemnej odpowiedzi w terminie <strong>14 dni roboczych</strong> od jej otrzymania.</li>
+      <li>W przypadku uwzględnienia reklamacji Usługodawca zaproponuje stosowne naprawienie szkody — w szczególności powtórzenie lub uzupełnienie usługi, lub proporcjonalne obniżenie wynagrodzenia.</li>
+    </ol>
+  </div>
+
+  <!-- §13 -->
+  <div class="reg-section" id="s13">
+    <h2><span class="sec-num">§13</span> Postanowienia końcowe</h2>
+    <ol class="reg-list">
+      <li>Regulamin wchodzi w życie z dniem 1 lipca 2025 r. i obowiązuje wszystkie umowy zawarte od tej daty.</li>
+      <li>Usługodawca zastrzega prawo zmiany Regulaminu. O zmianie Klienci posiadający aktywne abonamenty zostaną poinformowan

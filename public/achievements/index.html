@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polityka Prywatności – NotASlop</title>
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/32/2541/2541988.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #FAF7F2;
+      --warm-white: #FFFDF9;
+      --sand: #F0EAE0;
+      --terracotta: #D4704A;
+      --terracotta-light: #E8906E;
+      --terracotta-dark: #B85A35;
+      --charcoal: #1E1A16;
+      --brown: #5C3D2E;
+      --muted: #8A7568;
+      --green: #4A7C59;
+      --font-display: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --radius: 16px;
+      --shadow: 0 4px 32px rgba(30,26,22,0.10);
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font-body); background: var(--cream); color: var(--charcoal); line-height: 1.7; }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(250,247,242,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1.5px solid var(--sand);
+      padding: 0 clamp(1rem,5vw,3rem);
+      display: flex; align-items: center; justify-content: center;
+      height: 64px;
+    }
+    .nav-logo {
+      font-family: var(--font-display); font-weight: 800; font-size: 1.2rem;
+      color: var(--charcoal); text-decoration: none; letter-spacing: -0.02em;
+    }
+    .nav-logo span { color: var(--terracotta); }
+
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, var(--charcoal) 0%, #2E2420 100%);
+      padding: 4rem clamp(1rem,5vw,4rem) 3.5rem;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(212,112,74,0.18);
+      border: 1.5px solid var(--terracotta);
+      border-radius: 20px; padding: 6px 18px;
+      margin-bottom: 1.5rem;
+    }
+    .hero-badge span { font-family: var(--font-display); font-weight: 700; font-size: 0.82rem; color: var(--terracotta-light); }
+    .hero h1 {
+      font-family: var(--font-display); font-size: clamp(2rem,5vw,3.2rem);
+      font-weight: 800; letter-spacing: -0.03em; color: #fff;
+      margin-bottom: 0.75rem;
+    }
+    .hero p {
+      color: rgba(255,255,255,0.55); font-size: 0.95rem;
+    }
+
+    /* LAYOUT */
+    .container {
+      max-width: 860px; margin: 0 auto;
+      padding: 3.5rem clamp(1rem,5vw,3rem) 5rem;
+    }
+
+    /* TOC */
+    .toc {
+      background: var(--warm-white);
+      border: 2px solid var(--sand);
+      border-radius: var(--radius);
+      padding: 1.75rem 2rem;
+      margin-bottom: 3rem;
+    }
+    .toc h2 {
+      font-family: var(--font-display); font-weight: 700; font-size: 1rem;
+      margin-bottom: 1rem; color: var(--brown);
+    }
+    .toc ol { padding-left: 1.25rem; }
+    .toc li { margin-bottom: 0.45rem; }
+    .toc a {
+      color: var(--terracotta); text-decoration: none; font-size: 0.9rem; font-weight: 500;
+      transition: opacity 0.2s;
+    }
+    .toc a:hover { opacity: 0.7; }
+
+    /* SECTIONS */
+    section { margin-bottom: 3rem; scroll-margin-top: 80px; }
+    section h2 {
+      font-family: var(--font-display); font-weight: 800;
+      font-size: clamp(1.2rem,3vw,1.5rem); letter-spacing: -0.02em;
+      color: var(--charcoal); margin-bottom: 1.25rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid var(--sand);
+      display: flex; align-items: center; gap: 10px;
+    }
+    section h2 .icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 8px;
+      background: rgba(212,112,74,0.12); font-size: 1rem; flex-shrink: 0;
+    }
+    section h3 {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: 1rem; margin: 1.5rem 0 0.6rem;
+      color: var(--brown);
+    }
+    p { margin-bottom: 0.9rem; font-size: 0.96rem; color: #2E2420; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.4rem; font-size: 0.95rem; }
+
+    /* INFO BOX */
+    .info-box {
+      background: rgba(212,112,74,0.08);
+      border: 1.5px solid rgba(212,112,74,0.3);
+      border-radius: 12px; padding: 1.25rem 1.5rem;
+      margin: 1.25rem 0;
+    }
+    .info-box p { margin-bottom: 0; font-size: 0.9rem; color: var(--brown); }
+    .info-box strong { color: var(--terracotta-dark); }
+
+    /* STRIPE HIGHLIGHT */
+    .stripe-box {
+      background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%);
+      border: 1.5px solid #c7d0f5;
+      border-radius: 12px; padding: 1.25rem 1.5rem;
+      margin: 1.25rem 0;
+    }
+    .stripe-box p { margin-bottom: 0.4rem; font-size: 0.9rem; color: #1a1f5c; }
+    .stripe-box a { color: #635bff; font-weight: 600; }
+
+    /* DATA TABLE */
+    .data-table {
+      width: 100%; border-collapse: collapse;
+      margin: 1rem 0 1.5rem; font-size: 0.88rem;
+      border-radius: 12px; overflow: hidden;
+      border: 2px solid var(--sand);
+    }
+    .data-table th {
+      background: var(--charcoal); color: #fff;
+      font-family: var(--font-display); font-weight: 700; font-size: 0.82rem;
+      padding: 10px 14px; text-align: left;
+    }
+    .data-table td {
+      padding: 10px 14px; border-bottom: 1px solid var(--sand);
+      vertical-align: top; color: #2E2420;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:nth-child(even) td { background: rgba(240,234,224,0.4); }
+
+    @media (max-width: 640px) {
+      .data-table { font-size: 0.8rem; }
+      .data-table th, .data-table td { padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="https://notaslop.com" class="nav-logo">Not<span>A</span>Slop</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge">
+    <span>🔒 RODO / GDPR Compliant</span>
+  </div>
+  <h1>Polityka Prywatności</h1>
+  <p>Ostatnia aktualizacja: 30 marca 2026 r.</p>
+</div>
+
+<div class="container">
+
+  <div class="toc">
+    <h2>📋 Spis treści</h2>
+    <ol>
+      <li><a href="#admin">Administrator danych</a></li>
+      <li><a href="#zakres">Jakie dane zbieramy</a></li>
+      <li><a href="#podstawy">Podstawy prawne przetwarzania</a></li>
+      <li><a href="#cele">Cele przetwarzania danych</a></li>
+      <li><a href="#platnosci">Płatności – Stripe</a></li>
+      <li><a href="#cookies">Pliki cookies i śledzenie</a></li>
+      <li><a href="#google">Google Analytics i reCAPTCHA</a></li>
+      <li><a href="#odbiorcy">Odbiorcy danych</a></li>
+      <li><a href="#prawa">Twoje prawa</a></li>
+      <li><a href="#przechowywanie">Okres przechowywania danych</a></li>
+      <li><a href="#bezpieczenstwo">Bezpieczeństwo danych</a></li>
+      <li><a href="#dzieci">Dane dzieci</a></li>
+      <li><a href="#zmiany">Zmiany polityki</a></li>
+      <li><a href="#kontakt">Kontakt</a></li>
+    </ol>
+  </div>
+
+  <!-- 1 -->
+  <section id="admin">
+    <h2><span class="icon">🏢</span> 1. Administrator danych osobowych</h2>
+    <p>Administratorem Twoich danych osobowych jest:</p>
+    <div class="info-box">
+      <p><strong>NotASlop</strong><br>
+      E-mail: <strong><a href="mailto:kontakt@notaslop.com">kontakt@notaslop.com</a></strong><br>
+      Telefon: <strong>+48 607 118 228</strong><br>
+      Działamy na terenie Polski, świadczymy usługi zdalnie.</p>
+    </div>
+    <p>W sprawach dotyczących ochrony danych osobowych możesz kontaktować się z nami pod adresem e-mail: <strong><a href="mailto:kontakt@notaslop.com">kontakt@notaslop.com</a></strong>.</p>
+  </section>
+
+  <!-- 2 -->
+  <section id="zakres">
+    <h2><span class="icon">📂</span> 2. Jakie dane zbieramy</h2>
+    <p>Zbieramy dane osobowe wyłącznie w zakresie niezbędnym do świadczenia naszych usług.</p>
+
+    <h3>Dane podawane przez Ciebie dobrowolnie</h3>
+    <ul>
+      <li>Imię i nazwisko</li>
+      <li>Adres e-mail</li>
+      <li>Numer telefonu (opcjonalnie)</li>
+      <li>Treść wiadomości przesyłanych przez formularz kontaktowy</li>
+      <li>Informacja o usłudze, którą jesteś zainteresowany/a</li>
+    </ul>
+
+    <h3>Dane zbierane automatycznie</h3>
+    <ul>
+      <li>Adres IP</li>
+      <li>Typ przeglądarki i systemu operacyjnego</li>
+      <li>Strony, które odwiedzasz w naszym serwisie</li>
+      <li>Data i godzina wizyty</li>
+      <li>Pliki cookies i podobne technologie śledzące</li>
+    </ul>
+
+    <h3>Dane płatnicze (przetwarzane przez Stripe)</h3>
+    <p>Przy zakupie usług (np. AI Agent for Traders) przetwarzane są dane płatnicze: numer karty, data ważności, kod CVV, dane rozliczeniowe. <strong>Dane te nie są przechowywane przez NotASlop</strong> – są przekazywane bezpośrednio do zewnętrznego operatora płatności Stripe (patrz sekcja 5).</p>
+  </section>
+
+  <!-- 3 -->
+  <section id="podstawy">
+    <h2><span class="icon">⚖️</span> 3. Podstawy prawne przetwarzania</h2>
+    <p>Przetwarzamy Twoje dane osobowe na następujących podstawach prawnych (art. 6 RODO):</p>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Podstawa prawna</th>
+          <th>Sytuacja</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Art. 6 ust. 1 lit. b RODO</strong><br>Wykonanie umowy</td>
+          <td>Przetwarzanie niezbędne do wykonania umowy lub podjęcia działań na żądanie przed jej zawarciem (np. realizacja zamówionej usługi, obsługa płatności)</td>
+        </tr>
+        <tr>
+          <td><strong>Art. 6 ust. 1 lit. a RODO</strong><br>Zgoda</td>
+          <td>Obsługa formularza kontaktowego, wysyłka cookies analitycznych i marketingowych, newsletter (jeśli dotyczy)</td>
+        </tr>
+        <tr>
+          <td><strong>Art. 6 ust. 1 lit. c RODO</strong><br>Obowiązek prawny</td>
+          <td>Przechowywanie dokumentów finansowych i rozliczeniowych zgodnie z przepisami podatkowymi</td>
+        </tr>
+        <tr>
+          <td><strong>Art. 6 ust. 1 lit. f RODO</strong><br>Prawnie uzasadniony interes</td>
+          <td>Zapobieganie nadużyciom, zapewnienie bezpieczeństwa serwisu (reCAPTCHA), analityka ruchu w celach statystycznych</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 4 -->
+  <section id="cele">
+    <h2><span class="icon">🎯</span> 4. Cele przetwarzania danych</h2>
+    <p>Twoje dane osobowe przetwarzamy w następujących celach:</p>
+    <ul>
+      <li><strong>Obsługa formularza kontaktowego</strong> – odpowiedź na zapytania i prowadzenie korespondencji</li>
+      <li><strong>Realizacja usług</strong> – wykonanie zamówionych przez Ciebie usług (automatyzacje AI, social media, obsługa płatności)</li>
+      <li><strong>Obsługa płatności</strong> – przetwarzanie transakcji za pośrednictwem Stripe</li>
+      <li><strong>Bezpieczeństwo</strong> – ochrona przed spamem i nadużyciami (Google reCAPTCHA)</li>
+      <li><strong>Analityka</strong> – analiza ruchu w serwisie w celach statystycznych i optymalizacyjnych (Google Analytics)</li>
+      <li><strong>Obowiązki prawne</strong> – przechowywanie dokumentacji finansowej i podatkowej</li>
+    </ul>
+  </section>
+
+  <!-- 5 -->
+  <section id="platnosci">
+    <h2><span class="icon">💳</span> 5. Płatności – Stripe</h2>
+    <p>Do obsługi płatności online (w tym subskrypcji usługi <strong>AI Agent for Traders</strong>) korzystamy z usług firmy <strong>Stripe, Inc.</strong> z siedzibą przy 354 Oyster Point Blvd, South San Francisco, CA 94080, USA.</p>
+
+    <div class="stripe-box">
+      <p><strong>🔒 Stripe jest certyfikowanym dostawcą płatności poziomu PCI DSS Level 1</strong> – najwyższy standard bezpieczeństwa w branży płatniczej.</p>
+      <p>Stripe przetwarza dane płatnicze zgodnie z własną polityką prywatności dostępną pod adresem: <a href="https://stripe.com/en-pl/privacy" target="_blank" rel="noopener noreferrer">stripe.com/en-pl/privacy</a></p>
+    </div>
+
+    <h3>Jakie dane przekazujemy do Stripe?</h3>
+    <ul>
+      <li>Dane niezbędne do identyfikacji transakcji (kwota, waluta, opis zamówienia)</li>
+      <li>Adres e-mail użytkownika</li>
+      <li>Dane rozliczeniowe (imię, nazwisko, adres, kraj) – podawane bezpośrednio w formularzu Stripe</li>
+      <li>Dane karty płatniczej – <strong>przetwarzane wyłącznie przez Stripe, nigdy nie są przechowywane przez NotASlop</strong></li>
+    </ul>
+
+    <h3>Przekazywanie danych do USA</h3>
+    <p>Stripe przetwarza dane w Stanach Zjednoczonych. Przekazanie danych odbywa się na podstawie <strong>Standardowych Klauzul Umownych (SCC)</strong> zatwierdzonych przez Komisję Europejską, co zapewnia odpowiedni poziom ochrony danych zgodnie z RODO.</p>
+
+    <h3>Cel przetwarzania</h3>
+    <p>Dane przekazywane do Stripe są przetwarzane wyłącznie w celu:</p>
+    <ul>
+      <li>Autoryzacji i realizacji płatności</li>
+      <li>Obsługi ewentualnych zwrotów i sporów</li>
+      <li>Zapobiegania oszustwom (fraud prevention)</li>
+      <li>Spełnienia wymogów regulacyjnych i prawnych (AML, KYC)</li>
+    </ul>
+
+    <div class="info-box">
+      <p><strong>Ważne:</strong> Korzystając z płatności przez naszą stronę, akceptujesz warunki korzystania z usług Stripe. Stripe działa jako niezależny administrator danych w zakresie danych płatniczych. Masz prawo kontaktować się bezpośrednio ze Stripe w sprawach dotyczących Twoich danych płatniczych: <strong><a href="mailto:privacy@stripe.com">privacy@stripe.com</a></strong></p>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section id="cookies">
+    <h2><span class="icon">🍪</span> 6. Pliki cookies i śledzenie</h2>
+    <p>Nasza strona używa plików cookies oraz podobnych technologii śledzących. Zarządzanie zgodą na cookies odbywa się za pośrednictwem platformy <strong>CookieYes</strong>.</p>
+
+    <h3>Rodzaje cookies</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Kategoria</th>
+          <th>Cel</th>
+          <th>Podstawa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Niezbędne</strong></td>
+          <td>Zapewnienie działania strony, zapamiętanie preferencji cookie</td>
+          <td>Prawnie uzasadniony interes</td>
+        </tr>
+        <tr>
+          <td><strong>Analityczne</strong></td>
+          <td>Analiza ruchu i zachowania użytkowników (Google Analytics)</td>
+          <td>Zgoda użytkownika</td>
+        </tr>
+        <tr>
+          <td><strong>Funkcjonalne</strong></td>
+          <td>Zapamiętanie wybranych ustawień (np. język)</td>
+          <td>Zgoda użytkownika</td>
+        </tr>
+        <tr>
+          <td><strong>Marketingowe</strong></td>
+          <td>Targetowanie reklam i remarketing</td>
+          <td>Zgoda użytkownika</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Zarządzanie cookies</h3>
+    <p>Możesz zarządzać swoimi preferencjami dotyczącymi cookies w dowolnym momencie, klikając przycisk zarządzania cookies w stopce strony lub zmieniając ustawienia swojej przeglądarki. Wycofanie zgody nie wpływa na zgodność z prawem przetwarzania, które miało miejsce przed jej wycofaniem.</p>
+  </section>
+
+  <!-- 7 -->
+  <section id="google">
+    <h2><span class="icon">📊</span> 7. Google Analytics i reCAPTCHA</h2>
+
+    <h3>Google Analytics 4</h3>
+    <p>Używamy <strong>Google Analytics 4</strong> (Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043, USA) do analizy ruchu na stronie. Google Analytics zbiera anonimowe dane statystyczne dotyczące korzystania z serwisu.</p>
+    <ul>
+      <li>Dane mogą być przetwarzane w USA – na podstawie Standardowych Klauzul Umownych</li>
+      <li>Korzystamy z anonimizacji adresów IP (funkcja anonymizeIP)</li>
+      <li>Możesz wyłączyć Google Analytics instalując rozszerzenie przeglądarki: <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer">tools.google.com/dlpage/gaoptout</a></li>
+    </ul>
+
+    <h3>Google reCAPTCHA v3</h3>
+    <p>Używamy <strong>Google reCAPTCHA v3</strong> w celu ochrony formularzy przed spamem i botami. reCAPTCHA analizuje zachowanie użytkownika na stronie (ruchy myszy, kliknięcia, czas spędzony) i przypisuje mu wynik ryzyka. Przetwarzanie odbywa się na podstawie naszego prawnie uzasadnionego interesu (bezpieczeństwo serwisu).</p>
+    <p>Polityka prywatności Google: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">policies.google.com/privacy</a></p>
+  </section>
+
+  <!-- 8 -->
+  <section id="odbiorcy">
+    <h2><span class="icon">🤝</span> 8. Odbiorcy danych osobowych</h2>
+    <p>Twoje dane mogą być przekazywane następującym kategoriom odbiorców:</p>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Odbiorca</th>
+          <th>Cel</th>
+          <th>Kraj</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Stripe, Inc.</strong></td>
+          <td>Obsługa płatności</td>
+          <td>USA (SCC)</td>
+        </tr>
+        <tr>
+          <td><strong>Google LLC</strong></td>
+          <td>Analytics, reCAPTCHA</td>
+          <td>USA (SCC)</td>
+        </tr>
+        <tr>
+          <td><strong>CookieYes Ltd.</strong></td>
+          <td>Zarządzanie zgodami cookie</td>
+          <td>UE / UK</td>
+        </tr>
+        <tr>
+          <td><strong>Dostawca hostingu</strong></td>
+          <td>Utrzymanie infrastruktury strony</td>
+          <td>UE</td>
+        </tr>
+        <tr>
+          <td><strong>Organy publiczne</strong></td>
+          <td>Na żądanie (obowiązek prawny)</td>
+          <td>Polska</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Nie sprzedajemy Twoich danych osobowych podmiotom trzecim. Nie udostępniamy danych w celach marketingowych innym firmom.</p>
+  </section>
+
+  <!-- 9 -->
+  <section id="prawa">
+    <h2><span class="icon">✅</span> 9. Twoje prawa</h2>
+    <p>Na podstawie RODO przysługują Ci następujące prawa:</p>
+    <ul>
+      <li><strong>Prawo dostępu</strong> – możesz zażądać informacji o tym, jakie dane przetwarzamy</li>
+      <li><strong>Prawo do sprostowania</strong> – możesz żądać poprawienia nieprawidłowych danych</li>
+      <li><strong>Prawo do usunięcia</strong> – „prawo do bycia zapomnianym" (jeśli nie ma podstawy do dalszego przetwarzania)</li>
+      <li><strong>Prawo do ograniczenia przetwarzania</strong> – możesz ograniczyć zakres przetwarzania w określonych sytuacjach</li>
+      <li><strong>Prawo do przenoszenia danych</strong> – możesz otrzymać swoje dane w formacie nadającym się do odczytu maszynowego</li>
+      <li><strong>Prawo do sprzeciwu</strong> – możesz sprzeciwić się przetwarzaniu na podstawie prawnie uzasadnionego interesu</li>
+      <li><strong>Prawo do cofnięcia zgody</strong> – w każdej chwili możesz wycofać zgodę (bez wpływu na zgodność z prawem wcześniejszego przetwarzania)</li>
+    </ul>
+    <p>Aby skorzystać z powyższych praw, skontaktuj się z nami: <strong><a href="mailto:kontakt@notaslop.com">kontakt@notaslop.com</a></strong>. Odpowiemy w terminie do 30 dni.</p>
+    <div class="info-box">
+      <p><strong>Prawo do skargi:</strong> Jeśli uważasz, że przetwarzamy Twoje dane niezgodnie z prawem, możesz złożyć skargę do <strong>Prezesa Urzędu Ochrony Danych Osobowych (UODO)</strong>, ul. Stawki 2, 00-193 Warszawa, <a href="https://uodo.gov.pl" target="_blank" rel="noopener noreferrer">uodo.gov.pl</a>.</p>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section id="przechowywanie">
+    <h2><span class="icon">🗓️</span> 10. Okres przechowywania danych</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Kategoria danych</th>
+          <th>Okres przechowywania</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Dane z formularza kontaktowego</td>
+          <td>Do 3 lat od ostatniego kontaktu lub do cofnięcia zgody</td>
+        </tr>
+        <tr>
+          <td>Dane niezbędne do realizacji umowy</td>
+          <td>Do czasu wykonania umowy + 3 lata (przedawnienie roszczeń)</td>
+        </tr>
+        <tr>
+          <td>Dokumenty finansowe / podatkowe</td>
+          <td>5 lat od końca roku podatkowego (obowiązek prawny)</td>
+        </tr>
+        <tr>
+          <td>Dane płatnicze (Stripe)</td>
+          <td>Zgodnie z polityką Stripe – zazwyczaj do 7 lat (wymogi AML)</td>
+        </tr>
+        <tr>
+          <td>Dane analityczne (Google Analytics)</td>
+          <td>Do 14 miesięcy (standardowe ustawienie GA4)</td>
+        </tr>
+        <tr>
+          <td>Cookies</td>
+          <td>Zależnie od rodzaju: od sesji do 12 miesięcy</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 11 -->
+  <section id="bezpieczenstwo">
+    <h2><span class="icon">🛡️</span> 11. Bezpieczeństwo danych</h2>
+    <p>Stosujemy odpowiednie środki techniczne i organizacyjne w celu ochrony Twoich danych osobowych przed nieautoryzowanym dostępem, utratą, zniszczeniem lub ujawnieniem. W szczególności:</p>
+    <ul>
+      <li>Szyfrowanie transmisji danych protokołem <strong>TLS/HTTPS</strong></li>
+      <li>Dane płatnicze przetwarzane wyłącznie przez certyfikowanego operatora Stripe (PCI DSS Level 1)</li>
+      <li>Ograniczony dostęp do danych osobowych – tylko osoby upoważnione</li>
+      <li>Regularne przeglądy bezpieczeństwa stosowanych systemów</li>
+      <li>Ochrona formularzy za pomocą Google reCAPTCHA v3</li>
+    </ul>
+    <p>W przypadku naruszenia ochrony danych osobowych, które może powodować wysokie ryzyko dla Twoich praw i wolności, zostaniesz niezwłocznie poinformowany/a zgodnie z art. 34 RODO.</p>
+  </section>
+
+  <!-- 12 -->
+  <section id="dzieci">
+    <h2><span class="icon">👦</span> 12. Dane dzieci</h2>
+    <p>Nasze usługi są skierowane wyłącznie do osób, które ukończyły <strong>18 lat</strong>. Świadomie nie zbieramy danych osobowych od osób poniżej 18 roku życia. Jeśli dowiesz się, że dziecko przekazało nam swoje dane bez zgody rodziców, skontaktuj się z nami pod adresem <strong><a href="mailto:kontakt@notaslop.com">kontakt@notaslop.com</a></strong> – niezwłocznie usuniemy takie dane.</p>
+  </section>
+
+  <!-- 13 -->
+  <section id="zmiany">
+    <h2><span class="icon">🔄</span> 13. Zmiany polityki prywatności</h2>
+    <p>Zastrzegamy sobie prawo do wprowadzania zmian w niniejszej Polityce Prywatności. Wszelkie zmiany będą publikowane na tej stronie z aktualizacją daty „Ostatnia aktualizacja" w nagłówku dokumentu.</p>
+    <p>W przypadku istotnych zmian, które wpływają na Twoje prawa, poinformujemy Cię drogą e-mailową (jeśli posiadamy Twój adres) lub poprzez wyraźne powiadomienie na stronie.</p>
+    <p>Zachęcamy do regularnego sprawdzania tej strony w celu zapoznania się z aktualnymi zasadami ochrony prywatności.</p>
+  </section>
+
+  <!-- 14 -->
+  <section id="kontakt">
+    <h2><span class="icon">📧</span> 14. Kontakt</h2>
+    <p>W sprawach dotyczących ochrony danych osobowych, realizacji Twoich praw lub pytań związanych z niniejszą Polityką Prywatności, skontaktuj się z nami:</p>
+    <div class="info-box">
+      <p>
+        <strong>NotASlop</strong><br>
+        📧 E-mail: <strong><a href="mailto:kontakt@notaslop.com">kontakt@notaslop.com</a></strong><br>
+        📱 Telefon: <strong>+48 607 118 228</strong><br>
+        🕐 Godziny pracy: Poniedziałek–Piątek, 8:00–17:00
+      </p>
+    </div>
+    <p>Staramy się odpowiadać na wszystkie zapytania w ciągu <strong>72 godzin</strong> roboczych.</p>
+  </section>
+
+</div>
+
+
+</body>
+</html>

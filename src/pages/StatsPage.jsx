@@ -1,0 +1,311 @@
+import { useState, useEffect, useMemo } from 'react'
+import { motion } from 'framer-motion'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
+
+const SHOT_LABELS = { '3pt': 'Trójki', '2pt': 'Dwójki', ft: 'Wolne' }
+
+const BLUE = '#5BB8F5'
+
+const IconOverall = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+  </svg>
+)
+const IconThree = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 3a9 9 0 0 1 6.36 15.36"/>
+    <path d="M3 12h18"/>
+    <path d="M12 3c2 2.5 3 5.5 3 9s-1 6.5-3 9"/>
+  </svg>
+)
+const IconMid = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+    <path d="M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M16.24 7.76l2.12-2.12M5.64 18.36l2.12-2.12"/>
+  </svg>
+)
+const IconFT = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="5" r="2"/>
+    <path d="M12 7v8"/><path d="M8 21h8"/><path d="M10 21v-4"/><path d="M14 21v-4"/>
+    <path d="M8 12l-2 3"/><path d="M16 12l2 3"/>
+  </svg>
+)
+
+const FILTERS = [
+  { key: '7d',  label: '7 dni' },
+  { key: '30d', label: '30 dni' },
+  { key: 'all', label: 'Wszystko' },
+]
+
+const glassCard = {
+  background: 'rgba(12,8,4,0.60)',
+  backdropFilter: 'blur(28px) saturate(1.5)',
+  WebkitBackdropFilter: 'blur(28px) saturate(1.5)',
+  border: '1px solid rgba(180,180,200,0.18)',
+  borderTop: '1px solid rgba(200,200,220,0.30)',
+  borderRadius: 'var(--radius)',
+  boxShadow: '0 8px 28px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 0.5px rgba(160,160,180,0.10)',
+}
+
+function StatTile({ label, value, sub, accent }) {
+  return (
+    <div style={{ ...glassCard, padding: '18px 14px', textAlign: 'center' }}>
+      <p style={{
+        fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 42,
+        color: accent || 'var(--orange)', lineHeight: 1,
+        textShadow: `0 0 20px ${accent || 'rgba(91,184,245,0.40)'}`,
+      }}>{value}</p>
+      <p style={{
+        fontFamily: 'var(--font-body)', fontSize: 9, fontWeight: 600,
+        letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', marginTop: 6,
+      }}>{label}</p>
+      {sub && <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 3 }}>{sub}</p>}
+    </div>
+  )
+}
+
+function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, filterLabel, snapAlign }) {
+  const pctColor = accent || (pct >= 50 ? 'var(--green-shot)' : pct >= 35 ? 'var(--orange)' : pct === 0 ? 'var(--text-dim)' : 'var(--red-shot)')
+  return (
+    <div style={{
+      flex: '0 0 78%',
+      scrollSnapAlign: snapAlign || 'center',
+      scrollSnapStop: 'always',
+      ...glassCard,
+      padding: '20px 18px 18px',
+      display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+      minHeight: 148,
+      border: `1px solid rgba(180,180,200,0.18)`,
+      borderTop: `1px solid rgba(200,200,220,0.30)`,
+      boxShadow: `0 8px 28px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 0.5px rgba(160,160,180,0.10), 0 0 12px ${pctColor}15`,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ marginBottom: 6, opacity: 0.85 }}>{icon}</div>
+          <p style={{
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
+            color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 1,
+          }}>{label}</p>
+          <p style={{ color: 'var(--text-dim)', fontSize: 10, marginTop: 1 }}>{filterLabel}</p>
+        </div>
+        <p style={{
+          fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 52,
+          color: pctColor, lineHeight: 1, letterSpacing: -2,
+          textShadow: `0 0 24px ${pctColor}55`,
+        }}>{pct}%</p>
+      </div>
+      <div>
+        <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 3, height: 3, overflow: 'hidden', marginBottom: 8 }}>
+          <motion.div
+            initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: 'easeOut' }}
+            style={{ height: '100%', borderRadius: 3, background: pctColor, boxShadow: `0 0 6px ${pctColor}` }}
+          />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <p style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 500 }}>
+            {made} / {attempted} rzutów
+          </p>
+          <p style={{ color: 'var(--text-dim)', fontSize: 11 }}>
+            {sessions} {sessions === 1 ? 'sesja' : sessions < 5 ? 'sesje' : 'sesji'}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function filterByDate(sessions, range) {
+  if (range === 'all') return sessions
+  const now = new Date()
+  const days = range === '7d' ? 7 : 30
+  const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() - days + 1)
+  return sessions.filter(s => new Date(s.session_date) >= cutoff)
+}
+
+export default function StatsPage() {
+  const { profile } = useAuth()
+  const [sessions, setSessions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('7d')
+
+  useEffect(() => {
+    if (!profile) return
+    supabase
+      .from('shooting_sessions')
+      .select('*, trainings(title)')
+      .eq('user_id', profile.id)
+      .order('session_date', { ascending: false })
+      .then(({ data }) => { setSessions(data || []); setLoading(false) })
+  }, [profile])
+
+  const filtered = useMemo(() => filterByDate(sessions, filter), [sessions, filter])
+
+  const byType = useMemo(() => {
+    const acc = {}
+    filtered.forEach(s => {
+      if (!acc[s.shot_type]) acc[s.shot_type] = { made: 0, attempted: 0, sessions: 0 }
+      acc[s.shot_type].made      += s.made
+      acc[s.shot_type].attempted += s.attempted
+      acc[s.shot_type].sessions  += 1
+    })
+    return acc
+  }, [filtered])
+
+  const totalMade      = filtered.reduce((a, s) => a + s.made, 0)
+  const totalAttempted = filtered.reduce((a, s) => a + s.attempted, 0)
+  const totalPct       = totalAttempted > 0 ? Math.round((totalMade / totalAttempted) * 100) : 0
+
+  const filterLabel = filter === '7d' ? 'ostatnie 7 dni' : filter === '30d' ? 'ostatnie 30 dni' : 'wszystkie'
+
+  const SCROLL_CARDS = [
+    { key: 'all', icon: <IconOverall />, label: 'Ogólnie',   type: null },
+    { key: '3pt', icon: <IconThree />,   label: 'Trójki',    type: '3pt' },
+    { key: '2pt', icon: <IconMid />,     label: 'Mid-Range', type: '2pt' },
+    { key: 'ft',  icon: <IconFT />,      label: 'Wolne',     type: 'ft'  },
+  ]
+
+  return (
+    <div className="page-content" style={{ padding: '32px 22px' }}>
+      <p className="section-label" style={{ marginBottom: 4 }}>Twoje wyniki</p>
+      <h1 className="display-title" style={{ fontSize: 38, marginBottom: 18 }}>Statystyki</h1>
+
+      {/* ── FILTRY ── */}
+      <div style={{
+        display: 'flex', gap: 6, marginBottom: 20,
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 99, padding: 4,
+      }}>
+        {FILTERS.map(({ key, label }) => {
+          const active = filter === key
+          return (
+            <motion.button
+              key={key}
+              whileTap={{ scale: 0.94 }}
+              onClick={() => setFilter(key)}
+              style={{
+                flex: 1, padding: '8px 0',
+                borderRadius: 99, border: 'none', cursor: 'pointer',
+                fontFamily: 'var(--font-display)', fontWeight: 700,
+                fontSize: 12, letterSpacing: 1, textTransform: 'uppercase',
+                background: active
+                  ? 'linear-gradient(145deg, rgba(40,130,220,0.92), rgba(16,90,180,0.96))'
+                  : 'transparent',
+                color: active ? '#fff' : 'rgba(180,120,80,0.60)',
+                boxShadow: active ? '0 2px 12px rgba(91,184,245,0.35)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {label}
+            </motion.button>
+          )
+        })}
+      </div>
+
+      {/* ── SERIA (stały kafelek) ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+        <StatTile label="Seria"  value={profile?.streak || 0} sub="dni z rzędu" />
+        <StatTile label="Sesje"  value={filtered.length}      sub={filterLabel} accent="var(--text-secondary)" />
+      </div>
+
+      {/* ── SCROLL KART RZUTOWYCH ── */}
+      <div style={{
+        display: 'flex', gap: 10, overflowX: 'auto', scrollSnapType: 'x mandatory',
+        WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none',
+        margin: '0 -22px', padding: '0 22px 4px',
+        scrollPaddingLeft: 22, scrollPaddingRight: 22,
+        marginBottom: 24,
+      }}>
+        {SCROLL_CARDS.map(({ key, icon, label, type }, index) => {
+          const isFirst = index === 0
+          const isLast  = index === SCROLL_CARDS.length - 1
+          const snapAlign = isFirst ? 'start' : isLast ? 'end' : 'center'
+          const d = type ? byType[type] : { made: totalMade, attempted: totalAttempted, sessions: filtered.length }
+          const made      = d?.made      || 0
+          const attempted = d?.attempted || 0
+          const sessions  = d?.sessions  || 0
+          const pct = attempted > 0 ? Math.round((made / attempted) * 100) : 0
+          return (
+            <ScrollStatCard
+              key={key}
+              icon={icon}
+              label={label}
+              pct={pct}
+              made={made}
+              attempted={attempted}
+              sessions={sessions}
+              filterLabel={filterLabel}
+              snapAlign={snapAlign}
+            />
+          )
+        })}
+      </div>
+
+
+      {/* ── OSTATNIE SESJE ── */}
+      <p className="section-label" style={{ marginBottom: 14 }}>Sesje ({filtered.length})</p>
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
+          <div className="spinner" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div style={{ ...glassCard, textAlign: 'center', padding: 32 }}>
+          <p style={{ fontSize: 28 }}>🏀</p>
+          <p style={{ color: 'var(--text-secondary)', marginTop: 8, fontFamily: 'var(--font-display)', fontSize: 16, textTransform: 'uppercase', letterSpacing: 1 }}>
+            Brak sesji – zacznij trening!
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 32 }}>
+          {filtered.map(s => {
+            const pct  = Math.round(s.pct)
+            const good = pct >= 50
+            return (
+              <div key={s.id} style={{
+                background: 'rgba(10,6,3,0.55)',
+                backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255,255,255,0.09)',
+                borderTop: '1px solid rgba(255,255,255,0.14)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '12px 14px',
+                display: 'flex', alignItems: 'center', gap: 12,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+              }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                  background: good ? 'rgba(0,230,118,0.10)' : 'rgba(255,61,61,0.10)',
+                  border: `1px solid ${good ? 'rgba(0,230,118,0.22)' : 'rgba(255,61,61,0.22)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 13,
+                  color: good ? 'var(--green-shot)' : 'var(--red-shot)',
+                }}>
+                  {pct}%
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    fontWeight: 600, fontSize: 14, overflow: 'hidden',
+                    textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    color: 'var(--text-primary)', textTransform: 'uppercase',
+                    letterSpacing: 0.5, fontFamily: 'var(--font-display)',
+                  }}>
+                    {s.trainings?.title || SHOT_LABELS[s.shot_type]}
+                  </p>
+                  <p style={{ color: 'var(--text-dim)', fontSize: 12 }}>
+                    {s.made}/{s.attempted} · {new Date(s.session_date).toLocaleDateString('pl-PL')}
+                  </p>
+                </div>
+                <span className={`badge ${s.shot_type === '3pt' ? 'badge-orange' : s.shot_type === '2pt' ? 'badge-green' : 'badge-gray'}`}>
+                  {SHOT_LABELS[s.shot_type]}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
