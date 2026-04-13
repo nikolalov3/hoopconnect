@@ -532,37 +532,49 @@ export default function HomePage() {
     const completed = activityLog.trainings_completed || []
     if (!completed.includes(trainingId)) return
     const newCompleted = completed.filter(id => id !== trainingId)
-    await supabase.from('activity_log')
-      .update({ trainings_completed: newCompleted, all_done: false })
-      .eq('id', activityLog.id)
-    await supabase.from('points_log')
-      .delete()
-      .eq('user_id', profile.id)
-      .eq('training_id', trainingId)
-      .eq('date', TODAY)
+
+    await Promise.all([
+      // Usuń z activity_log
+      supabase.from('activity_log')
+        .update({ trainings_completed: newCompleted, all_done: false })
+        .eq('id', activityLog.id),
+      // Usuń punkty
+      supabase.from('points_log')
+        .delete()
+        .eq('user_id', profile.id)
+        .eq('training_id', trainingId)
+        .eq('date', TODAY),
+      // Usuń sesję rzutową z dzisiejszego dnia (jeśli istnieje)
+      supabase.from('shooting_sessions')
+        .delete()
+        .eq('user_id', profile.id)
+        .eq('training_id', trainingId)
+        .eq('session_date', TODAY),
+    ])
+
     setActivityLog(prev => ({ ...prev, trainings_completed: newCompleted, all_done: false }))
 
-    // Cofnij osiągnięcia jeśli progi nie są już spełnione
-    const { count: totalTrainings } = await supabase
-      .from('activity_log')
-      .select('trainings_completed', { count: 'exact', head: false })
-      .eq('user_id', profile.id)
-    const allTrainingsCount = (await supabase
-      .from('activity_log')
-      .select('trainings_completed')
-      .eq('user_id', profile.id)
-    ).data?.reduce((sum, row) => sum + (row.trainings_completed?.length || 0), 0) || 0
+    // Cofnij osiągnięcia — przelicz aktualne liczniki z DB
+    const [logsResult, allDayResult] = await Promise.all([
+      supabase.from('activity_log').select('trainings_completed').eq('user_id', profile.id),
+      supabase.from('activity_log').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('all_done', true),
+    ])
 
-    const allDayCount = (await supabase
-      .from('activity_log')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', profile.id)
-      .eq('all_done', true)
-    ).count || 0
+    const logs = logsResult.data || []
+    const allTrainingsCount = logs.reduce((sum, row) => sum + (row.trainings_completed?.length || 0), 0)
+    const allDayCount = allDayResult.count || 0
+
+    // Licznik recovery-type treningów dla osiągnięcia 'regeneracja'
+    const { data: recoveryTrainings } = await supabase
+      .from('trainings').select('id').in('category', ['recovery', 'conditioning'])
+    const recoveryIds = new Set((recoveryTrainings || []).map(t => t.id))
+    const recoveryCount = logs.reduce((sum, row) =>
+      sum + (row.trainings_completed || []).filter(id => recoveryIds.has(id)).length, 0)
 
     await Promise.all([
       revokeAchievementsIfNeeded(profile.id, 'the_grind', allTrainingsCount),
       revokeAchievementsIfNeeded(profile.id, 'allday', allDayCount),
+      revokeAchievementsIfNeeded(profile.id, 'regeneracja', recoveryCount),
     ])
   }
 

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { revokeAchievementsIfNeeded } from '../lib/achievements'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -122,12 +121,6 @@ export default function RecoveryPage() {
         .eq('activity', activityId)
       setDoneActivities(prev => { const n = new Set(prev); n.delete(activityId); return n })
 
-      // Pobierz nową sumę wszystkich aktywności regeneracji i cofnij osiągnięcia jeśli próg niespełniony
-      const { count } = await supabase
-        .from('recovery_log')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', profile.id)
-      await revokeAchievementsIfNeeded(profile.id, 'regeneracja', count || 0)
     } else {
       await supabase.from('recovery_log').insert({
         user_id: profile.id,
