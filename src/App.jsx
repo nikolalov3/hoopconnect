@@ -9,6 +9,7 @@ import StatsPage from './pages/StatsPage'
 import AchievementsPage from './pages/AchievementsPage'
 import RecoveryPage from './pages/RecoveryPage'
 import BottomNav from './components/ui/BottomNav'
+import { UIProvider } from './context/UIContext'
 
 const pageVariants = {
   initial: { opacity: 0, y: 14, scale: 0.985 },
@@ -82,10 +83,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route path="/auth" element={<AuthRoute />} />
-          <Route path="/*"    element={<AppShell />} />
-        </Routes>
+        <UIProvider>
+          <Routes>
+            <Route path="/auth" element={<AuthRoute />} />
+            <Route path="/*"    element={<AppShell />} />
+          </Routes>
+        </UIProvider>
       </AuthProvider>
     </BrowserRouter>
   )

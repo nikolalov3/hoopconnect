@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import TrainingCard from '../components/training/TrainingCard'
 import { fetchAchievementsCatalog, getNewlyUnlocked, awardMedalPoints, revokeStaleAchievements } from '../lib/achievements'
 import SettingsPanel from '../components/ui/SettingsPanel'
+import { useUI } from '../context/UIContext'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -423,7 +424,11 @@ export default function HomePage() {
   const [reportLoading, setReportLoading] = useState(true)
   const [daysUntilReport, setDaysUntilReport] = useState(7)
   const [achievementToast, setAchievementToast] = useState(null) // { title, stage }
+  const { setSettingsOpen } = useUI()
   const [showSettings, setShowSettings] = useState(false)
+
+  function openSettings() { setShowSettings(true); setSettingsOpen(true) }
+  function closeSettings() { setShowSettings(false); setSettingsOpen(false) }
   const swipeStartX = useRef(null)
   const swipeStartY = useRef(null)
 
@@ -781,7 +786,7 @@ export default function HomePage() {
     const dy = Math.abs(t.clientY - swipeStartY.current)
     // only trigger if: started within left 40px edge, swiped right ≥60px, mostly horizontal
     if (swipeStartX.current < 40 && dx >= 60 && dy < 60) {
-      setShowSettings(true)
+      openSettings()
     }
     swipeStartX.current = null
     swipeStartY.current = null
@@ -793,7 +798,7 @@ export default function HomePage() {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      <SettingsPanel open={showSettings} onClose={() => setShowSettings(false)} />
+      <SettingsPanel open={showSettings} onClose={closeSettings} />
       <AnimatePresence>{showQuote && <QuotePanel quote={quote} onClose={() => setShowQuote(false)} />}</AnimatePresence>
       <AnimatePresence>
         {achievementToast && (
@@ -818,7 +823,7 @@ export default function HomePage() {
           )}
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <button onClick={() => setShowSettings(true)} style={{
+          <button onClick={openSettings} style={{
             background: 'rgba(10,6,3,0.65)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
             border: '1px solid rgba(255,255,255,0.12)', borderTop: '1px solid rgba(255,255,255,0.20)',
             borderRadius: 12, width: 48, height: 48, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.40)',

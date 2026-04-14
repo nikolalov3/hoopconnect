@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { useUI } from '../../context/UIContext'
 
 const HomeIcon = ({ active }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -40,6 +41,7 @@ export default function BottomNav() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { profile } = useAuth()
+  const { settingsOpen } = useUI()
   const [hasUnread, setHasUnread] = useState(false)
 
   useEffect(() => {
@@ -53,7 +55,15 @@ export default function BottomNav() {
   }, [pathname, profile])
 
   return (
-    <div style={{ position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)', zIndex: 200 }}>
+    <AnimatePresence>
+    {!settingsOpen && (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 16 }}
+      transition={{ duration: 0.18 }}
+      style={{ position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)', zIndex: 200 }}
+    >
       <div style={{
         position: 'absolute', inset: -1, borderRadius: 9999,
         boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 20px 60px rgba(0,0,0,0.70)',
@@ -118,6 +128,8 @@ export default function BottomNav() {
           )
         })}
       </div>
-    </div>
+    </motion.div>
+    )}
+    </AnimatePresence>
   )
 }
