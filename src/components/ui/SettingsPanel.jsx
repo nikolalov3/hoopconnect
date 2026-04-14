@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -12,8 +12,8 @@ const SCHEDULES = {
 const DAY_SHORT = ['Nd','Pon','Wt','Śr','Czw','Pt','Sob'] // index = getDay()
 
 const REST_WARNINGS = [
-  'Nie zajeżdżaj się — zostaw jeden dzień dla bliskich i regeneracji.',
-  'Nie zajeżdżaj się — ciało też potrzebuje dnia dla siebie.',
+  'Masz już {n} dni — zostaw trochę czasu dla bliskich i regeneracji.',
+  'Limit {n} dni osiągnięty — ciało potrzebuje przerwy.',
 ]
 
 // ── INITIALS AVATAR ──────────────────────────────────────────────────────────
@@ -47,7 +47,9 @@ function SectionLabel({ children }) {
 }
 
 // ── 7-DAY TRAINING PICKER ─────────────────────────────────────────────────────
-function WeekPicker({ trainingDays }) {
+function WeekPicker({ trainingDays, open }) {
+  const maxDays = trainingDays || 4
+
   // Build 7 real calendar days starting from today
   const days = useMemo(() => {
     const today = new Date()
@@ -59,13 +61,13 @@ function WeekPicker({ trainingDays }) {
   }, [])
 
   // Initialise selected from profile schedule mapped to actual weekdays
-  const schedule = SCHEDULES[trainingDays] || SCHEDULES[4]
+  const schedule = SCHEDULES[maxDays] || SCHEDULES[4]
   const initSelected = useMemo(() => {
     return new Set(
       days
         .map((d, i) => {
-          const dow = d.getDay()          // 0=Sun
-          const idx = dow === 0 ? 6 : dow - 1  // Mon=0…Sun=6
+          const dow = d.getDay()
+          const idx = dow === 0 ? 6 : dow - 1
           return schedule[idx] === 'T' ? i : null
         })
         .filter(i => i !== null)
@@ -76,6 +78,14 @@ function WeekPicker({ trainingDays }) {
   const [showWarn, setShowWarn] = useState(false)
   const warnVariant = useRef(Math.random() < 0.5 ? 0 : 1).current
 
+  // When panel closes with wrong count — silently reset to defaults
+  useEffect(() => {
+    if (!open && selected.size !== maxDays) {
+      setSelected(new Set(initSelected))
+      setShowWarn(false)
+    }
+  }, [open])
+
   function toggle(i) {
     setShowWarn(false)
     setSelected(prev => {
@@ -83,7 +93,7 @@ function WeekPicker({ trainingDays }) {
       if (next.has(i)) {
         next.delete(i)
       } else {
-        if (next.size >= 6) {
+        if (next.size >= maxDays) {
           setShowWarn(true)
           return prev
         }
@@ -162,7 +172,7 @@ function WeekPicker({ trainingDays }) {
               marginTop: 8, lineHeight: 1.4, textAlign: 'center',
             }}
           >
-            {REST_WARNINGS[warnVariant]}
+            {REST_WARNINGS[warnVariant].replace('{n}', maxDays)}
           </motion.p>
         )}
       </AnimatePresence>
@@ -310,7 +320,7 @@ export default function SettingsPanel({ open, onClose }) {
                   fontSize: 9, fontWeight: 700, letterSpacing: 2,
                   textTransform: 'uppercase', color: '#A0B0C8', margin: '0 0 8px',
                 }}>Plan tygodnia</p>
-                <WeekPicker trainingDays={profile?.training_days} />
+                <WeekPicker trainingDays={profile?.training_days} open={open} />
               </div>
 
               {/* Konto */}
