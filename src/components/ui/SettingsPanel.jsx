@@ -3,17 +3,23 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 
-// ── INITIALS AVATAR ──────────────────────────────────────────────────────────
-function InitialsAvatar({ name, size = 52 }) {
+const SCHEDULES = {
+  3: ['T','O','T','O','T','R','O'],
+  4: ['T','T','O','T','T','R','O'],
+  5: ['T','T','R','T','T','T','O'],
+  6: ['T','T','T','R','T','T','T'],
+}
+const DAY_LABELS = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd']
+
+function InitialsAvatar({ name, size = 44 }) {
   const initials = name
     ? name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
     : '?'
   return (
     <div style={{
       width: size, height: size, borderRadius: '50%', flexShrink: 0,
-      background: 'linear-gradient(135deg, #5BB8F5 0%, #1B3A6B 100%)',
+      background: 'linear-gradient(135deg, #5BB8F5, #1B3A6B)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      boxShadow: '0 3px 14px rgba(91,184,245,0.35)',
     }}>
       <span style={{
         fontFamily: 'var(--font-display)', fontWeight: 800,
@@ -23,124 +29,76 @@ function InitialsAvatar({ name, size = 52 }) {
   )
 }
 
-// ── STAT BUBBLE ───────────────────────────────────────────────────────────────
-function StatBubble({ icon, value, label, navy }) {
-  return (
-    <div style={{
-      flex: 1,
-      padding: '14px 10px 12px',
-      borderRadius: 18,
-      background: navy
-        ? 'linear-gradient(145deg, #1B3A6B, #0D2247)'
-        : 'linear-gradient(145deg, #5BB8F5, #3A9EE0)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-      boxShadow: navy
-        ? '0 4px 14px rgba(13,34,71,0.35)'
-        : '0 4px 14px rgba(91,184,245,0.30)',
-    }}>
-      <span style={{ fontSize: 20 }}>{icon}</span>
-      <span style={{
-        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
-        color: '#fff', lineHeight: 1, letterSpacing: -0.5,
-      }}>{value}</span>
-      <span style={{
-        fontSize: 9, fontWeight: 600, letterSpacing: 1.5,
-        textTransform: 'uppercase', color: 'rgba(255,255,255,0.65)',
-      }}>{label}</span>
-    </div>
-  )
-}
-
-// ── ACTION BUBBLE ─────────────────────────────────────────────────────────────
-function ActionBubble({ icon, label, sublabel, onClick, variant = 'blue', disabled }) {
-  const styles = {
-    blue: {
-      bg: 'linear-gradient(145deg, #5BB8F5, #3A9EE0)',
-      shadow: '0 4px 16px rgba(91,184,245,0.30)',
-      labelColor: '#fff',
-      subColor: 'rgba(255,255,255,0.72)',
-    },
-    navy: {
-      bg: 'linear-gradient(145deg, #1B3A6B, #0D2247)',
-      shadow: '0 4px 16px rgba(13,34,71,0.35)',
-      labelColor: '#fff',
-      subColor: 'rgba(255,255,255,0.60)',
-    },
-    red: {
-      bg: 'linear-gradient(145deg, #C0392B, #922B21)',
-      shadow: '0 4px 14px rgba(192,57,43,0.30)',
-      labelColor: '#fff',
-      subColor: 'rgba(255,255,255,0.70)',
-    },
-    green: {
-      bg: 'linear-gradient(145deg, #27AE60, #1E8449)',
-      shadow: '0 4px 14px rgba(39,174,96,0.28)',
-      labelColor: '#fff',
-      subColor: 'rgba(255,255,255,0.70)',
-    },
-  }
-  const s = styles[variant] || styles.blue
-
+function Tile({ icon, label, sublabel, onClick, right, danger }) {
   return (
     <button
       onClick={onClick}
-      disabled={disabled}
       style={{
-        width: '100%', display: 'flex', alignItems: 'center', gap: 14,
-        padding: '14px 16px',
-        background: s.bg,
-        borderRadius: 16,
-        border: 'none',
-        cursor: disabled ? 'default' : 'pointer',
-        opacity: disabled ? 0.55 : 1,
-        boxShadow: s.shadow,
+        width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+        padding: '13px 14px',
+        background: '#fff',
+        border: '1px solid #EDF1F7',
+        borderRadius: 14,
+        cursor: onClick ? 'pointer' : 'default',
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
       }}
     >
-      <span style={{ fontSize: 22, flexShrink: 0 }}>{icon}</span>
-      <div style={{ minWidth: 0 }}>
+      {icon && (
+        <span style={{
+          width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+          background: danger ? 'rgba(220,53,69,0.08)' : '#EEF5FD',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 16,
+        }}>{icon}</span>
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{
-          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
-          color: s.labelColor, letterSpacing: 0.3, margin: 0, lineHeight: 1.2,
+          fontSize: 14, fontWeight: 600,
+          color: danger ? '#C0392B' : '#1A2840',
+          margin: 0, lineHeight: 1.25,
         }}>{label}</p>
         {sublabel && (
           <p style={{
-            fontSize: 11, color: s.subColor, margin: '3px 0 0',
-            fontWeight: 500,
+            fontSize: 11, color: '#8A9BB0', margin: '2px 0 0', fontWeight: 400,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{sublabel}</p>
         )}
       </div>
+      {right && <div style={{ flexShrink: 0 }}>{right}</div>}
+      {onClick && !right && (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke={danger ? '#C0392B' : '#C0CEDE'} strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      )}
     </button>
   )
 }
 
-// ── SECTION LABEL ─────────────────────────────────────────────────────────────
-function Section({ children }) {
+function SectionLabel({ children }) {
   return (
     <p style={{
-      fontSize: 10, fontWeight: 700, letterSpacing: 2.5,
-      textTransform: 'uppercase', color: '#A0AFC0',
-      margin: '22px 0 10px',
+      fontSize: 10, fontWeight: 700, letterSpacing: 2,
+      textTransform: 'uppercase', color: '#A0B0C8',
+      margin: '20px 0 8px',
     }}>{children}</p>
   )
 }
 
-// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function SettingsPanel({ open, onClose }) {
   const { profile, user, signOut } = useAuth()
-  const [resendState, setResendState] = useState('idle') // idle | sending | sent | error
+  const [resendState, setResendState] = useState('idle')
 
   const emailConfirmed = !!user?.email_confirmed_at
+  const schedule = SCHEDULES[profile?.training_days] || SCHEDULES[4]
 
-  async function handleResendConfirmation() {
+  async function handleResend() {
     setResendState('sending')
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: user.email,
-      })
+      const { error } = await supabase.auth.resend({ type: 'signup', email: user.email })
       setResendState(error ? 'error' : 'sent')
     } catch {
       setResendState('error')
@@ -152,17 +110,9 @@ export default function SettingsPanel({ open, onClose }) {
     await signOut()
   }
 
-  const trainingDaysLabel = {
-    3: '3 dni / tyg.',
-    4: '4 dni / tyg.',
-    5: '5 dni / tyg.',
-    6: '6 dni / tyg.',
-  }[profile?.training_days] || '—'
-
-  const memberSince = (() => {
-    if (!profile?.created_at) return null
-    return new Date(profile.created_at).toLocaleDateString('pl-PL', { month: 'short', year: 'numeric' })
-  })()
+  const memberSince = profile?.created_at
+    ? new Date(profile.created_at).toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })
+    : null
 
   return (
     <AnimatePresence>
@@ -170,15 +120,15 @@ export default function SettingsPanel({ open, onClose }) {
         <>
           {/* Backdrop */}
           <motion.div
-            key="settings-backdrop"
+            key="sp-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.20 }}
+            transition={{ duration: 0.18 }}
             onClick={onClose}
             style={{
               position: 'fixed', inset: 0, zIndex: 400,
-              background: 'rgba(6,3,1,0.50)',
+              background: 'rgba(4,8,16,0.55)',
               backdropFilter: 'blur(6px)',
               WebkitBackdropFilter: 'blur(6px)',
             }}
@@ -186,182 +136,200 @@ export default function SettingsPanel({ open, onClose }) {
 
           {/* Drawer */}
           <motion.div
-            key="settings-drawer"
+            key="sp-drawer"
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
-            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             style={{
               position: 'fixed', top: 0, left: 0, bottom: 0,
-              width: 'min(80vw, 320px)',
+              width: 'min(82vw, 310px)',
               zIndex: 401,
-              background: '#F0F5FC',
-              borderRight: '1px solid rgba(91,184,245,0.15)',
-              boxShadow: '6px 0 40px rgba(0,0,0,0.22)',
+              background: '#F4F7FB',
+              boxShadow: '8px 0 32px rgba(0,0,0,0.18)',
               display: 'flex', flexDirection: 'column',
               overflowY: 'auto',
               WebkitOverflowScrolling: 'touch',
             }}
           >
-            {/* Safe area top */}
-            <div style={{ height: 'max(env(safe-area-inset-top), 16px)' }} />
+            <div style={{ height: 'max(env(safe-area-inset-top), 14px)' }} />
 
-            {/* ── Header ── */}
+            {/* Header */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '12px 18px 8px',
+              padding: '10px 18px 0',
             }}>
               <p style={{
-                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
-                textTransform: 'uppercase', letterSpacing: 2, color: '#1A2840',
+                fontSize: 11, fontWeight: 700, letterSpacing: 2.5,
+                textTransform: 'uppercase', color: '#A0B0C8', margin: 0,
               }}>Ustawienia</p>
               <button
                 onClick={onClose}
                 style={{
-                  width: 32, height: 32, borderRadius: '50%',
-                  background: 'rgba(27,58,107,0.10)', border: 'none',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 30, height: 30, borderRadius: '50%',
+                  background: '#E8EDF5', border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                  stroke="#1A2840" strokeWidth="2.8" strokeLinecap="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  stroke="#4A5568" strokeWidth="2.8" strokeLinecap="round">
                   <line x1="18" y1="6" x2="6" y2="18"/>
                   <line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
             </div>
 
-            {/* ── Profile card ── */}
-            <div style={{ padding: '6px 18px 0' }}>
+            {/* Profile */}
+            <div style={{ padding: '14px 18px 0' }}>
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 12,
-                padding: '14px 14px',
-                background: 'linear-gradient(135deg, #1B3A6B 0%, #0D2247 100%)',
-                borderRadius: 18,
-                boxShadow: '0 4px 18px rgba(13,34,71,0.28)',
+                padding: '14px',
+                background: '#fff',
+                borderRadius: 16,
+                border: '1px solid #EDF1F7',
+                boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
               }}>
-                <InitialsAvatar name={profile?.name} size={48} />
+                <InitialsAvatar name={profile?.name} size={44} />
                 <div style={{ minWidth: 0 }}>
                   <p style={{
-                    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 15,
-                    color: '#fff', margin: 0, letterSpacing: 0.2,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    fontSize: 15, fontWeight: 600, color: '#1A2840',
+                    margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {profile?.name || 'Gracz'}
                   </p>
                   <p style={{
-                    fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 400,
-                    margin: '3px 0 0',
+                    fontSize: 11, color: '#8A9BB0', fontWeight: 400,
+                    margin: '2px 0 0',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {user?.email}
                   </p>
                   {memberSince && (
                     <p style={{
-                      fontSize: 9, color: 'rgba(91,184,245,0.75)', margin: '4px 0 0',
-                      fontWeight: 600, letterSpacing: 1,
+                      fontSize: 10, color: '#5BB8F5', fontWeight: 600,
+                      letterSpacing: 0.5, margin: '4px 0 0',
                     }}>
-                      BETA · od {memberSince}
+                      Beta · {memberSince}
                     </p>
                   )}
                 </div>
               </div>
-            </div>
 
-            {/* ── Stats bubbles ── */}
-            <div style={{ padding: '0 18px' }}>
-              <Section>Twój progres</Section>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <StatBubble icon="🔥" value={profile?.streak || 0} label="seria" />
-                <StatBubble icon="🏀" value={trainingDaysLabel} label="plan" navy />
-                <StatBubble icon="🏆" value={profile?.longest_streak || 0} label="rekord" />
-              </div>
-            </div>
-
-            {/* ── Email confirmation ── */}
-            <div style={{ padding: '0 18px' }}>
-              <Section>Konto</Section>
+              {/* Weekly schedule bar */}
               <div style={{
-                borderRadius: 16,
-                background: emailConfirmed
-                  ? 'linear-gradient(145deg, #27AE60, #1E8449)'
-                  : 'linear-gradient(145deg, #2C3E6B, #1A2840)',
-                padding: '14px 16px',
-                boxShadow: emailConfirmed
-                  ? '0 4px 14px rgba(39,174,96,0.28)'
-                  : '0 4px 14px rgba(27,40,64,0.35)',
-                marginBottom: 10,
+                display: 'flex', gap: 4, marginTop: 10,
+                padding: '12px 14px',
+                background: '#fff',
+                borderRadius: 14,
+                border: '1px solid #EDF1F7',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 20 }}>{emailConfirmed ? '✅' : '📧'}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{
-                      fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
-                      color: '#fff', margin: 0, letterSpacing: 0.2,
-                    }}>
-                      {emailConfirmed ? 'Email potwierdzony' : 'Potwierdź email'}
-                    </p>
-                    <p style={{
-                      fontSize: 10, color: 'rgba(255,255,255,0.60)',
-                      margin: '3px 0 0', fontWeight: 400,
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>
-                      {user?.email}
-                    </p>
-                  </div>
-                </div>
-
-                {!emailConfirmed && (
-                  <button
-                    onClick={handleResendConfirmation}
-                    disabled={resendState === 'sending' || resendState === 'sent'}
-                    style={{
-                      marginTop: 12, width: '100%', padding: '10px',
-                      background: resendState === 'sent'
-                        ? 'rgba(39,174,96,0.25)'
-                        : 'rgba(91,184,245,0.20)',
-                      border: resendState === 'sent'
-                        ? '1px solid rgba(39,174,96,0.50)'
-                        : '1px solid rgba(91,184,245,0.35)',
-                      borderRadius: 10,
-                      fontFamily: 'var(--font-display)', fontWeight: 700,
-                      fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase',
-                      color: resendState === 'sent' ? '#27AE60' : '#5BB8F5',
-                      cursor: resendState === 'sending' || resendState === 'sent' ? 'default' : 'pointer',
-                      opacity: resendState === 'sending' ? 0.6 : 1,
-                      WebkitTapHighlightColor: 'transparent',
-                    }}
-                  >
-                    {resendState === 'sending' && '…'}
-                    {resendState === 'sent' && '✓ Wysłano — sprawdź skrzynkę'}
-                    {resendState === 'error' && 'Błąd — spróbuj ponownie'}
-                    {resendState === 'idle' && 'Wyślij ponownie'}
-                  </button>
-                )}
+                {schedule.map((type, i) => {
+                  const isTraining = type === 'T'
+                  const isRecovery = type === 'R'
+                  return (
+                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                      <div style={{
+                        width: '100%', height: 28,
+                        borderRadius: 7,
+                        background: isTraining
+                          ? '#1B3A6B'
+                          : isRecovery
+                          ? '#5BB8F5'
+                          : '#E8EDF5',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {isTraining && (
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none"
+                            stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        )}
+                        {isRecovery && (
+                          <span style={{ fontSize: 9 }}>🧘</span>
+                        )}
+                      </div>
+                      <span style={{
+                        fontSize: 8, fontWeight: 700, letterSpacing: 0.3,
+                        textTransform: 'uppercase',
+                        color: isTraining ? '#1B3A6B' : isRecovery ? '#5BB8F5' : '#B8C5D4',
+                      }}>
+                        {DAY_LABELS[i]}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
-            {/* ── Actions ── */}
-            <div style={{ padding: '0 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <ActionBubble
-                icon="🚪"
-                label="Wyloguj się"
-                sublabel="Wróć do ekranu logowania"
-                onClick={handleSignOut}
-                variant="red"
-              />
+            {/* Settings tiles */}
+            <div style={{ padding: '0 18px', flex: 1 }}>
+
+              <SectionLabel>Konto</SectionLabel>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+                {/* Email confirmation */}
+                <Tile
+                  icon={emailConfirmed ? '✅' : '📧'}
+                  label={emailConfirmed ? 'Email potwierdzony' : 'Email niepotwierdzony'}
+                  sublabel={user?.email}
+                  right={emailConfirmed ? null : (
+                    <button
+                      onClick={handleResend}
+                      disabled={resendState === 'sending' || resendState === 'sent'}
+                      style={{
+                        padding: '6px 10px',
+                        background: resendState === 'sent' ? 'rgba(39,174,96,0.10)' : '#EEF5FD',
+                        border: resendState === 'sent' ? '1px solid rgba(39,174,96,0.30)' : '1px solid #D0E4F7',
+                        borderRadius: 8,
+                        fontSize: 11, fontWeight: 700, letterSpacing: 0.5,
+                        color: resendState === 'sent' ? '#27AE60' : '#1B3A6B',
+                        cursor: resendState === 'sending' || resendState === 'sent' ? 'default' : 'pointer',
+                        opacity: resendState === 'sending' ? 0.6 : 1,
+                        whiteSpace: 'nowrap',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                    >
+                      {resendState === 'sent' ? '✓ Wysłano' : resendState === 'sending' ? '…' : 'Wyślij'}
+                    </button>
+                  )}
+                />
+
+                <Tile
+                  icon="📱"
+                  label="Wersja"
+                  sublabel="HoopConnect Beta"
+                  right={
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, letterSpacing: 1,
+                      color: '#5BB8F5', background: '#EEF8FF',
+                      padding: '3px 8px', borderRadius: 6,
+                      border: '1px solid #C8E8FF',
+                    }}>BETA</span>
+                  }
+                />
+
+                <Tile
+                  icon="🚪"
+                  label="Wyloguj się"
+                  sublabel="Wróć do ekranu logowania"
+                  onClick={handleSignOut}
+                  danger
+                />
+              </div>
+
             </div>
 
-            {/* Bottom spacer + branding */}
+            {/* Bottom */}
             <div style={{
-              marginTop: 'auto', padding: '24px 18px',
-              paddingBottom: 'max(env(safe-area-inset-bottom), 24px)',
+              padding: '20px 18px',
+              paddingBottom: 'max(env(safe-area-inset-bottom), 20px)',
               textAlign: 'center',
             }}>
               <p style={{
-                fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase',
-                color: '#B0C2D8', fontWeight: 600,
+                fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
+                color: '#C0CEDE', fontWeight: 600,
               }}>
                 HoopConnect · Dla koszykarzy
               </p>
