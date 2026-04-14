@@ -143,17 +143,21 @@ export default function SettingsPanel({ open, onClose }) {
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             style={{
-              position: 'fixed', top: 0, left: 0, bottom: 0,
-              width: 'min(82vw, 310px)',
+              position: 'fixed',
+              top: 'max(env(safe-area-inset-top, 0px), 20px)',
+              bottom: 'max(env(safe-area-inset-bottom, 0px), 20px)',
+              left: 0,
+              width: 'min(78vw, 300px)',
               zIndex: 401,
               background: '#F4F7FB',
-              boxShadow: '8px 0 32px rgba(0,0,0,0.18)',
+              borderRadius: '0 16px 16px 0',
+              boxShadow: '8px 0 40px rgba(0,0,0,0.22)',
               display: 'flex', flexDirection: 'column',
               overflowY: 'auto',
               WebkitOverflowScrolling: 'touch',
             }}
           >
-            <div style={{ height: 'max(env(safe-area-inset-top), 14px)' }} />
+            <div style={{ height: 16 }} />
 
             {/* Header */}
             <div style={{
@@ -270,56 +274,50 @@ export default function SettingsPanel({ open, onClose }) {
             <div style={{ padding: '0 18px', flex: 1 }}>
 
               <SectionLabel>Konto</SectionLabel>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-
-                {/* Email confirmation */}
-                <Tile
-                  icon={emailConfirmed ? '✅' : '📧'}
-                  label={emailConfirmed ? 'Email potwierdzony' : 'Email niepotwierdzony'}
-                  sublabel={user?.email}
-                  right={emailConfirmed ? null : (
-                    <button
-                      onClick={handleResend}
-                      disabled={resendState === 'sending' || resendState === 'sent'}
-                      style={{
-                        padding: '6px 10px',
-                        background: resendState === 'sent' ? 'rgba(39,174,96,0.10)' : '#EEF5FD',
-                        border: resendState === 'sent' ? '1px solid rgba(39,174,96,0.30)' : '1px solid #D0E4F7',
-                        borderRadius: 8,
-                        fontSize: 11, fontWeight: 700, letterSpacing: 0.5,
-                        color: resendState === 'sent' ? '#27AE60' : '#1B3A6B',
-                        cursor: resendState === 'sending' || resendState === 'sent' ? 'default' : 'pointer',
-                        opacity: resendState === 'sending' ? 0.6 : 1,
-                        whiteSpace: 'nowrap',
-                        WebkitTapHighlightColor: 'transparent',
-                      }}
-                    >
-                      {resendState === 'sent' ? '✓ Wysłano' : resendState === 'sending' ? '…' : 'Wyślij'}
-                    </button>
-                  )}
-                />
-
-                <Tile
-                  icon="📱"
-                  label="Wersja"
-                  sublabel="HoopConnect Beta"
-                  right={
-                    <span style={{
-                      fontSize: 9, fontWeight: 700, letterSpacing: 1,
-                      color: '#5BB8F5', background: '#EEF8FF',
-                      padding: '3px 8px', borderRadius: 6,
-                      border: '1px solid #C8E8FF',
-                    }}>BETA</span>
-                  }
-                />
-
-                <Tile
-                  icon="🚪"
-                  label="Wyloguj się"
-                  sublabel="Wróć do ekranu logowania"
-                  onClick={handleSignOut}
-                  danger
-                />
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 12px',
+                background: '#fff',
+                border: '1px solid #EDF1F7',
+                borderRadius: 10,
+                boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+              }}>
+                <span style={{ fontSize: 14, flexShrink: 0 }}>
+                  {emailConfirmed ? '✅' : '📧'}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    fontSize: 12, fontWeight: 600,
+                    color: emailConfirmed ? '#27AE60' : '#1A2840',
+                    margin: 0,
+                  }}>
+                    {emailConfirmed ? 'Email potwierdzony' : 'Email niepotwierdzony'}
+                  </p>
+                  <p style={{
+                    fontSize: 10, color: '#8A9BB0', margin: '1px 0 0',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>{user?.email}</p>
+                </div>
+                {!emailConfirmed && (
+                  <button
+                    onClick={handleResend}
+                    disabled={resendState === 'sending' || resendState === 'sent'}
+                    style={{
+                      padding: '5px 9px',
+                      background: resendState === 'sent' ? 'rgba(39,174,96,0.10)' : '#EEF5FD',
+                      border: resendState === 'sent' ? '1px solid rgba(39,174,96,0.30)' : '1px solid #D0E4F7',
+                      borderRadius: 7,
+                      fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+                      color: resendState === 'sent' ? '#27AE60' : '#1B3A6B',
+                      cursor: resendState === 'sending' || resendState === 'sent' ? 'default' : 'pointer',
+                      opacity: resendState === 'sending' ? 0.6 : 1,
+                      whiteSpace: 'nowrap', flexShrink: 0,
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    {resendState === 'sent' ? '✓ Wysłano' : resendState === 'sending' ? '…' : 'Wyślij'}
+                  </button>
+                )}
               </div>
 
               <SectionLabel>Społeczność</SectionLabel>
@@ -366,15 +364,27 @@ export default function SettingsPanel({ open, onClose }) {
 
             {/* Bottom */}
             <div style={{
-              padding: '20px 18px',
-              paddingBottom: 'max(env(safe-area-inset-bottom), 20px)',
+              padding: '16px 18px 20px',
               textAlign: 'center',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
             }}>
+              <button
+                onClick={handleSignOut}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontSize: 12, fontWeight: 600, color: '#C0392B',
+                  letterSpacing: 0.3,
+                  WebkitTapHighlightColor: 'transparent',
+                  padding: '4px 8px',
+                }}
+              >
+                Wyloguj się
+              </button>
               <p style={{
                 fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
-                color: '#C0CEDE', fontWeight: 600,
+                color: '#C0CEDE', fontWeight: 600, margin: 0,
               }}>
-                HoopConnect · Dla koszykarzy
+                HoopConnect · Beta
               </p>
             </div>
 
