@@ -140,8 +140,9 @@ export default function SettingsPanel({ open, onClose }) {
           */}
           <div style={{
             position: 'fixed',
-            top: 20, bottom: 20, left: 0,
-            width: 'min(78vw, 300px)',
+            top: 20, bottom: 20,
+            left: 'max(0px, calc((100vw - 430px) / 2))',
+            width: 'min(calc(min(100vw, 430px) * 0.78), 300px)',
             zIndex: 401,
             overflow: 'hidden',
             borderRadius: '0 16px 16px 0',
