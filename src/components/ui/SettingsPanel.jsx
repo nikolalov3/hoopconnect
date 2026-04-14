@@ -125,26 +125,26 @@ function WeekPicker({ trainingDays }) {
                 WebkitTapHighlightColor: 'transparent',
                 boxShadow: isSel
                   ? (isToday
-                    ? '0 3px 10px rgba(232,96,10,0.35)'
-                    : '0 3px 10px rgba(27,58,107,0.28)')
-                  : 'none',
+                    ? '0 3px 10px rgba(232,96,10,0.35), inset 0 1px 0 rgba(255,255,255,0.18)'
+                    : '0 3px 10px rgba(27,58,107,0.28), inset 0 1px 0 rgba(255,255,255,0.12)')
+                  : 'inset 0 1px 3px rgba(0,0,0,0.10)',
                 transition: 'background 0.15s, box-shadow 0.15s',
               }}
             >
               <span style={{
-                fontSize: 8, fontWeight: 700, letterSpacing: 0.5,
-                textTransform: 'uppercase',
-                color: isSel ? 'rgba(255,255,255,0.75)' : (isToday ? '#FF8C42' : '#B8C5D4'),
-                lineHeight: 1,
-              }}>
-                {dayLabel}
-              </span>
-              <span style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: 15, fontWeight: 800, lineHeight: 1,
+                fontSize: 15, fontWeight: 600, lineHeight: 1,
                 color: isSel ? '#fff' : (isToday ? '#E8600A' : '#4A5568'),
               }}>
                 {dateNum}
+              </span>
+              <span style={{
+                fontSize: 8, fontWeight: 600, letterSpacing: 0.5,
+                textTransform: 'uppercase',
+                color: isSel ? 'rgba(255,255,255,0.70)' : (isToday ? '#FF8C42' : '#B8C5D4'),
+                lineHeight: 1,
+              }}>
+                {dayLabel}
               </span>
             </button>
           )
