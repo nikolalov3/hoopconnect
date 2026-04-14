@@ -1,82 +1,151 @@
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
+import { supabase } from '../../lib/supabase'
 
-function InitialsAvatar({ name, size = 64 }) {
+// ── INITIALS AVATAR ──────────────────────────────────────────────────────────
+function InitialsAvatar({ name, size = 52 }) {
   const initials = name
     ? name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
     : '?'
   return (
     <div style={{
-      width: size, height: size, borderRadius: '50%',
-      background: 'linear-gradient(135deg, #5BB8F5 0%, #2272C3 100%)',
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: 'linear-gradient(135deg, #5BB8F5 0%, #1B3A6B 100%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      boxShadow: '0 4px 20px rgba(91,184,245,0.40)',
-      flexShrink: 0,
+      boxShadow: '0 3px 14px rgba(91,184,245,0.35)',
     }}>
       <span style={{
-        fontFamily: 'var(--font-display)', fontWeight: 900,
-        fontSize: size * 0.38, color: '#fff', letterSpacing: 1,
+        fontFamily: 'var(--font-display)', fontWeight: 800,
+        fontSize: size * 0.36, color: '#fff', letterSpacing: 0.5,
       }}>{initials}</span>
     </div>
   )
 }
 
-function SettingsRow({ icon, label, sublabel, onPress, danger, rightElement }) {
+// ── STAT BUBBLE ───────────────────────────────────────────────────────────────
+function StatBubble({ icon, value, label, navy }) {
+  return (
+    <div style={{
+      flex: 1,
+      padding: '14px 10px 12px',
+      borderRadius: 18,
+      background: navy
+        ? 'linear-gradient(145deg, #1B3A6B, #0D2247)'
+        : 'linear-gradient(145deg, #5BB8F5, #3A9EE0)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+      boxShadow: navy
+        ? '0 4px 14px rgba(13,34,71,0.35)'
+        : '0 4px 14px rgba(91,184,245,0.30)',
+    }}>
+      <span style={{ fontSize: 20 }}>{icon}</span>
+      <span style={{
+        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
+        color: '#fff', lineHeight: 1, letterSpacing: -0.5,
+      }}>{value}</span>
+      <span style={{
+        fontSize: 9, fontWeight: 600, letterSpacing: 1.5,
+        textTransform: 'uppercase', color: 'rgba(255,255,255,0.65)',
+      }}>{label}</span>
+    </div>
+  )
+}
+
+// ── ACTION BUBBLE ─────────────────────────────────────────────────────────────
+function ActionBubble({ icon, label, sublabel, onClick, variant = 'blue', disabled }) {
+  const styles = {
+    blue: {
+      bg: 'linear-gradient(145deg, #5BB8F5, #3A9EE0)',
+      shadow: '0 4px 16px rgba(91,184,245,0.30)',
+      labelColor: '#fff',
+      subColor: 'rgba(255,255,255,0.72)',
+    },
+    navy: {
+      bg: 'linear-gradient(145deg, #1B3A6B, #0D2247)',
+      shadow: '0 4px 16px rgba(13,34,71,0.35)',
+      labelColor: '#fff',
+      subColor: 'rgba(255,255,255,0.60)',
+    },
+    red: {
+      bg: 'linear-gradient(145deg, #C0392B, #922B21)',
+      shadow: '0 4px 14px rgba(192,57,43,0.30)',
+      labelColor: '#fff',
+      subColor: 'rgba(255,255,255,0.70)',
+    },
+    green: {
+      bg: 'linear-gradient(145deg, #27AE60, #1E8449)',
+      shadow: '0 4px 14px rgba(39,174,96,0.28)',
+      labelColor: '#fff',
+      subColor: 'rgba(255,255,255,0.70)',
+    },
+  }
+  const s = styles[variant] || styles.blue
+
   return (
     <button
-      onClick={onPress}
+      onClick={onClick}
+      disabled={disabled}
       style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: 14,
-        background: 'none', border: 'none', cursor: onPress ? 'pointer' : 'default',
-        padding: '13px 0', textAlign: 'left',
-        borderBottom: '1px solid rgba(0,0,0,0.06)',
+        padding: '14px 16px',
+        background: s.bg,
+        borderRadius: 16,
+        border: 'none',
+        cursor: disabled ? 'default' : 'pointer',
+        opacity: disabled ? 0.55 : 1,
+        boxShadow: s.shadow,
+        textAlign: 'left',
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <div style={{
-        width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-        background: danger ? 'rgba(255,61,61,0.10)' : 'rgba(91,184,245,0.12)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 18,
-      }}>
-        {icon}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <span style={{ fontSize: 22, flexShrink: 0 }}>{icon}</span>
+      <div style={{ minWidth: 0 }}>
         <p style={{
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
-          color: danger ? '#D94040' : '#1A1A2E', letterSpacing: 0.2,
-          margin: 0,
+          color: s.labelColor, letterSpacing: 0.3, margin: 0, lineHeight: 1.2,
         }}>{label}</p>
         {sublabel && (
           <p style={{
-            fontSize: 11, color: '#7A8093', margin: '2px 0 0',
-            fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            fontSize: 11, color: s.subColor, margin: '3px 0 0',
+            fontWeight: 500,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{sublabel}</p>
         )}
       </div>
-      {rightElement}
-      {onPress && !rightElement && (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke={danger ? '#D94040' : '#AABACE'} strokeWidth="2.5"
-          strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      )}
     </button>
   )
 }
 
-function SectionLabel({ children }) {
+// ── SECTION LABEL ─────────────────────────────────────────────────────────────
+function Section({ children }) {
   return (
     <p style={{
       fontSize: 10, fontWeight: 700, letterSpacing: 2.5,
-      textTransform: 'uppercase', color: '#AABACE',
-      marginTop: 24, marginBottom: 2, padding: '0 2px',
+      textTransform: 'uppercase', color: '#A0AFC0',
+      margin: '22px 0 10px',
     }}>{children}</p>
   )
 }
 
+// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function SettingsPanel({ open, onClose }) {
   const { profile, user, signOut } = useAuth()
+  const [resendState, setResendState] = useState('idle') // idle | sending | sent | error
+
+  const emailConfirmed = !!user?.email_confirmed_at
+
+  async function handleResendConfirmation() {
+    setResendState('sending')
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: user.email,
+      })
+      setResendState(error ? 'error' : 'sent')
+    } catch {
+      setResendState('error')
+    }
+  }
 
   async function handleSignOut() {
     onClose()
@@ -84,22 +153,15 @@ export default function SettingsPanel({ open, onClose }) {
   }
 
   const trainingDaysLabel = {
-    3: '3 dni / tydzień',
-    4: '4 dni / tydzień',
-    5: '5 dni / tydzień',
-    6: '6 dni / tydzień',
+    3: '3 dni / tyg.',
+    4: '4 dni / tyg.',
+    5: '5 dni / tyg.',
+    6: '6 dni / tyg.',
   }[profile?.training_days] || '—'
-
-  const dobLabel = (() => {
-    if (!profile?.birth_date) return null
-    const d = new Date(profile.birth_date)
-    return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
-  })()
 
   const memberSince = (() => {
     if (!profile?.created_at) return null
-    const d = new Date(profile.created_at)
-    return d.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })
+    return new Date(profile.created_at).toLocaleDateString('pl-PL', { month: 'short', year: 'numeric' })
   })()
 
   return (
@@ -112,13 +174,13 @@ export default function SettingsPanel({ open, onClose }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.22 }}
+            transition={{ duration: 0.20 }}
             onClick={onClose}
             style={{
               position: 'fixed', inset: 0, zIndex: 400,
-              background: 'rgba(10,6,3,0.45)',
-              backdropFilter: 'blur(4px)',
-              WebkitBackdropFilter: 'blur(4px)',
+              background: 'rgba(6,3,1,0.50)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
             }}
           />
 
@@ -128,135 +190,178 @@ export default function SettingsPanel({ open, onClose }) {
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
-            transition={{ type: 'spring', stiffness: 340, damping: 34 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
             style={{
               position: 'fixed', top: 0, left: 0, bottom: 0,
-              width: 'min(82vw, 340px)',
+              width: 'min(80vw, 320px)',
               zIndex: 401,
-              background: 'rgba(246,249,254,0.97)',
-              backdropFilter: 'blur(40px) saturate(1.8)',
-              WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
-              borderRight: '1px solid rgba(91,184,245,0.18)',
-              boxShadow: '4px 0 48px rgba(0,0,0,0.20)',
+              background: '#F0F5FC',
+              borderRight: '1px solid rgba(91,184,245,0.15)',
+              boxShadow: '6px 0 40px rgba(0,0,0,0.22)',
               display: 'flex', flexDirection: 'column',
               overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
             }}
           >
-            {/* Top safe-area spacer + handle bar */}
-            <div style={{ paddingTop: 'env(safe-area-inset-top, 20px)' }} />
+            {/* Safe area top */}
+            <div style={{ height: 'max(env(safe-area-inset-top), 16px)' }} />
 
-            {/* Header bar */}
+            {/* ── Header ── */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '20px 22px 4px',
+              padding: '12px 18px 8px',
             }}>
               <p style={{
-                fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
-                textTransform: 'uppercase', letterSpacing: 1.5, color: '#1A1A2E',
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
+                textTransform: 'uppercase', letterSpacing: 2, color: '#1A2840',
               }}>Ustawienia</p>
               <button
                 onClick={onClose}
                 style={{
-                  width: 34, height: 34, borderRadius: '50%',
-                  background: 'rgba(0,0,0,0.06)', border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 32, height: 32, borderRadius: '50%',
+                  background: 'rgba(27,58,107,0.10)', border: 'none',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                  stroke="#1A1A2E" strokeWidth="2.5" strokeLinecap="round">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="#1A2840" strokeWidth="2.8" strokeLinecap="round">
                   <line x1="18" y1="6" x2="6" y2="18"/>
                   <line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
             </div>
 
-            {/* Profile card */}
-            <div style={{ padding: '20px 22px 0' }}>
+            {/* ── Profile card ── */}
+            <div style={{ padding: '6px 18px 0' }}>
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 16,
-                padding: '18px 16px',
-                background: 'rgba(91,184,245,0.09)',
-                borderRadius: 16,
-                border: '1px solid rgba(91,184,245,0.18)',
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '14px 14px',
+                background: 'linear-gradient(135deg, #1B3A6B 0%, #0D2247 100%)',
+                borderRadius: 18,
+                boxShadow: '0 4px 18px rgba(13,34,71,0.28)',
               }}>
-                <InitialsAvatar name={profile?.name} size={56} />
+                <InitialsAvatar name={profile?.name} size={48} />
                 <div style={{ minWidth: 0 }}>
                   <p style={{
-                    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17,
-                    color: '#1A1A2E', letterSpacing: 0.3, margin: 0,
+                    fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 15,
+                    color: '#fff', margin: 0, letterSpacing: 0.2,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {profile?.name || 'Gracz'}
                   </p>
                   <p style={{
-                    fontSize: 11, color: '#7A8093', fontWeight: 500,
-                    marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 400,
+                    margin: '3px 0 0',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {user?.email}
                   </p>
                   {memberSince && (
-                    <p style={{ fontSize: 10, color: '#AABACE', marginTop: 4, fontWeight: 500 }}>
-                      Grasz od {memberSince}
+                    <p style={{
+                      fontSize: 9, color: 'rgba(91,184,245,0.75)', margin: '4px 0 0',
+                      fontWeight: 600, letterSpacing: 1,
+                    }}>
+                      BETA · od {memberSince}
                     </p>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Content */}
-            <div style={{ padding: '4px 22px 40px', flex: 1 }}>
-
-              <SectionLabel>Profil</SectionLabel>
-              <SettingsRow
-                icon="🏀"
-                label="Plan treningów"
-                sublabel={trainingDaysLabel}
-              />
-              {dobLabel && (
-                <SettingsRow
-                  icon="🎂"
-                  label="Data urodzenia"
-                  sublabel={dobLabel}
-                />
-              )}
-              <SettingsRow
-                icon="🏆"
-                label="Seria"
-                sublabel={`${profile?.streak || 0} dni z rzędu`}
-              />
-
-              <SectionLabel>Aplikacja</SectionLabel>
-              <SettingsRow
-                icon="📊"
-                label="Wersja"
-                sublabel="HoopConnect Beta"
-                rightElement={
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, letterSpacing: 1,
-                    color: '#5BB8F5', background: 'rgba(91,184,245,0.12)',
-                    padding: '3px 8px', borderRadius: 6,
-                  }}>BETA</span>
-                }
-              />
-
-              <SectionLabel>Konto</SectionLabel>
-              <SettingsRow
-                icon="🚪"
-                label="Wyloguj się"
-                danger
-                onPress={handleSignOut}
-              />
-
+            {/* ── Stats bubbles ── */}
+            <div style={{ padding: '0 18px' }}>
+              <Section>Twój progres</Section>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <StatBubble icon="🔥" value={profile?.streak || 0} label="seria" />
+                <StatBubble icon="🏀" value={trainingDaysLabel} label="plan" navy />
+                <StatBubble icon="🏆" value={profile?.longest_streak || 0} label="rekord" />
+              </div>
             </div>
 
-            {/* Bottom branding */}
+            {/* ── Email confirmation ── */}
+            <div style={{ padding: '0 18px' }}>
+              <Section>Konto</Section>
+              <div style={{
+                borderRadius: 16,
+                background: emailConfirmed
+                  ? 'linear-gradient(145deg, #27AE60, #1E8449)'
+                  : 'linear-gradient(145deg, #2C3E6B, #1A2840)',
+                padding: '14px 16px',
+                boxShadow: emailConfirmed
+                  ? '0 4px 14px rgba(39,174,96,0.28)'
+                  : '0 4px 14px rgba(27,40,64,0.35)',
+                marginBottom: 10,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 20 }}>{emailConfirmed ? '✅' : '📧'}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{
+                      fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
+                      color: '#fff', margin: 0, letterSpacing: 0.2,
+                    }}>
+                      {emailConfirmed ? 'Email potwierdzony' : 'Potwierdź email'}
+                    </p>
+                    <p style={{
+                      fontSize: 10, color: 'rgba(255,255,255,0.60)',
+                      margin: '3px 0 0', fontWeight: 400,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {user?.email}
+                    </p>
+                  </div>
+                </div>
+
+                {!emailConfirmed && (
+                  <button
+                    onClick={handleResendConfirmation}
+                    disabled={resendState === 'sending' || resendState === 'sent'}
+                    style={{
+                      marginTop: 12, width: '100%', padding: '10px',
+                      background: resendState === 'sent'
+                        ? 'rgba(39,174,96,0.25)'
+                        : 'rgba(91,184,245,0.20)',
+                      border: resendState === 'sent'
+                        ? '1px solid rgba(39,174,96,0.50)'
+                        : '1px solid rgba(91,184,245,0.35)',
+                      borderRadius: 10,
+                      fontFamily: 'var(--font-display)', fontWeight: 700,
+                      fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase',
+                      color: resendState === 'sent' ? '#27AE60' : '#5BB8F5',
+                      cursor: resendState === 'sending' || resendState === 'sent' ? 'default' : 'pointer',
+                      opacity: resendState === 'sending' ? 0.6 : 1,
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    {resendState === 'sending' && '…'}
+                    {resendState === 'sent' && '✓ Wysłano — sprawdź skrzynkę'}
+                    {resendState === 'error' && 'Błąd — spróbuj ponownie'}
+                    {resendState === 'idle' && 'Wyślij ponownie'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* ── Actions ── */}
+            <div style={{ padding: '0 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <ActionBubble
+                icon="🚪"
+                label="Wyloguj się"
+                sublabel="Wróć do ekranu logowania"
+                onClick={handleSignOut}
+                variant="red"
+              />
+            </div>
+
+            {/* Bottom spacer + branding */}
             <div style={{
-              padding: '0 22px 32px',
+              marginTop: 'auto', padding: '24px 18px',
+              paddingBottom: 'max(env(safe-area-inset-bottom), 24px)',
               textAlign: 'center',
             }}>
               <p style={{
                 fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase',
-                color: '#C8D6E5', fontWeight: 600,
+                color: '#B0C2D8', fontWeight: 600,
               }}>
                 HoopConnect · Dla koszykarzy
               </p>
