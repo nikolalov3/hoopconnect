@@ -57,12 +57,12 @@ export default function BottomNav() {
   return (
     <AnimatePresence initial={false}>
     {!settingsOpen && (
+    <div style={{ position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)', zIndex: 200 }}>
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.16, ease: 'easeInOut' }}
-      style={{ position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)', zIndex: 200 }}
     >
       <div style={{
         position: 'absolute', inset: -1, borderRadius: 9999,
@@ -129,6 +129,7 @@ export default function BottomNav() {
         })}
       </div>
     </motion.div>
+    </div>
     )}
     </AnimatePresence>
   )
