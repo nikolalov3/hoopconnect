@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -9,8 +9,14 @@ const SCHEDULES = {
   5: ['T','T','R','T','T','T','O'],
   6: ['T','T','T','R','T','T','T'],
 }
-const DAY_LABELS = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd']
+const DAY_SHORT = ['Nd','Pon','Wt','Śr','Czw','Pt','Sob'] // index = getDay()
 
+const REST_WARNINGS = [
+  'Nie zajeżdżaj się — zostaw jeden dzień dla bliskich i regeneracji.',
+  'Nie zajeżdżaj się — ciało też potrzebuje dnia dla siebie.',
+]
+
+// ── INITIALS AVATAR ──────────────────────────────────────────────────────────
 function InitialsAvatar({ name, size = 44 }) {
   const initials = name
     ? name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
@@ -29,55 +35,7 @@ function InitialsAvatar({ name, size = 44 }) {
   )
 }
 
-function Tile({ icon, label, sublabel, onClick, right, danger }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-        padding: '13px 14px',
-        background: '#fff',
-        border: '1px solid #EDF1F7',
-        borderRadius: 10,
-        cursor: onClick ? 'pointer' : 'default',
-        textAlign: 'left',
-        WebkitTapHighlightColor: 'transparent',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-      }}
-    >
-      {icon && (
-        <span style={{
-          width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-          background: danger ? 'rgba(220,53,69,0.08)' : '#EEF5FD',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 16,
-        }}>{icon}</span>
-      )}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{
-          fontSize: 14, fontWeight: 600,
-          color: danger ? '#C0392B' : '#1A2840',
-          margin: 0, lineHeight: 1.25,
-        }}>{label}</p>
-        {sublabel && (
-          <p style={{
-            fontSize: 11, color: '#8A9BB0', margin: '2px 0 0', fontWeight: 400,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{sublabel}</p>
-        )}
-      </div>
-      {right && <div style={{ flexShrink: 0 }}>{right}</div>}
-      {onClick && !right && (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke={danger ? '#C0392B' : '#C0CEDE'} strokeWidth="2.5"
-          strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-      )}
-    </button>
-  )
-}
-
+// ── SECTION LABEL ─────────────────────────────────────────────────────────────
 function SectionLabel({ children }) {
   return (
     <p style={{
@@ -88,12 +46,135 @@ function SectionLabel({ children }) {
   )
 }
 
+// ── 7-DAY TRAINING PICKER ─────────────────────────────────────────────────────
+function WeekPicker({ trainingDays }) {
+  // Build 7 real calendar days starting from today
+  const days = useMemo(() => {
+    const today = new Date()
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today)
+      d.setDate(today.getDate() + i)
+      return d
+    })
+  }, [])
+
+  // Initialise selected from profile schedule mapped to actual weekdays
+  const schedule = SCHEDULES[trainingDays] || SCHEDULES[4]
+  const initSelected = useMemo(() => {
+    return new Set(
+      days
+        .map((d, i) => {
+          const dow = d.getDay()          // 0=Sun
+          const idx = dow === 0 ? 6 : dow - 1  // Mon=0…Sun=6
+          return schedule[idx] === 'T' ? i : null
+        })
+        .filter(i => i !== null)
+    )
+  }, [])
+
+  const [selected, setSelected] = useState(initSelected)
+  const [showWarn, setShowWarn] = useState(false)
+  const warnVariant = useRef(Math.random() < 0.5 ? 0 : 1).current
+
+  function toggle(i) {
+    setShowWarn(false)
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(i)) {
+        next.delete(i)
+      } else {
+        if (next.size >= 6) {
+          setShowWarn(true)
+          return prev
+        }
+        next.add(i)
+      }
+      return next
+    })
+  }
+
+  const todayDate = days[0]
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 5 }}>
+        {days.map((d, i) => {
+          const isToday = i === 0
+          const isSel = selected.has(i)
+          const dayLabel = DAY_SHORT[d.getDay()]
+          const dateNum = d.getDate()
+
+          return (
+            <button
+              key={i}
+              onClick={() => toggle(i)}
+              style={{
+                flex: 1,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                gap: 4,
+                padding: '10px 0 8px',
+                borderRadius: 10,
+                border: isToday
+                  ? `2px solid ${isSel ? '#E8600A' : '#FF8C42'}`
+                  : '2px solid transparent',
+                background: isSel
+                  ? (isToday ? '#E8600A' : '#1B3A6B')
+                  : (isToday ? 'rgba(255,140,66,0.10)' : '#DDE4EF'),
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+                boxShadow: isSel
+                  ? (isToday
+                    ? '0 3px 10px rgba(232,96,10,0.35)'
+                    : '0 3px 10px rgba(27,58,107,0.28)')
+                  : 'none',
+                transition: 'background 0.15s, box-shadow 0.15s',
+              }}
+            >
+              <span style={{
+                fontSize: 8, fontWeight: 700, letterSpacing: 0.5,
+                textTransform: 'uppercase',
+                color: isSel ? 'rgba(255,255,255,0.75)' : (isToday ? '#FF8C42' : '#B8C5D4'),
+                lineHeight: 1,
+              }}>
+                {dayLabel}
+              </span>
+              <span style={{
+                fontSize: 15, fontWeight: 700, lineHeight: 1,
+                color: isSel ? '#fff' : (isToday ? '#E8600A' : '#4A5568'),
+              }}>
+                {dateNum}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      <AnimatePresence>
+        {showWarn && (
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            style={{
+              fontSize: 10, color: '#E8600A', fontWeight: 600,
+              marginTop: 8, lineHeight: 1.4, textAlign: 'center',
+            }}
+          >
+            {REST_WARNINGS[warnVariant]}
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function SettingsPanel({ open, onClose }) {
   const { profile, user, signOut } = useAuth()
   const [resendState, setResendState] = useState('idle')
 
   const emailConfirmed = !!user?.email_confirmed_at
-  const schedule = SCHEDULES[profile?.training_days] || SCHEDULES[4]
 
   async function handleResend() {
     setResendState('sending')
@@ -134,10 +215,7 @@ export default function SettingsPanel({ open, onClose }) {
             }}
           />
 
-          {/*
-            Clip wrapper: fixed, offset top/bottom so the app is visible behind,
-            overflow:hidden prevents horizontal scroll during the slide animation.
-          */}
+          {/* Clip wrapper */}
           <div style={{
             position: 'fixed',
             top: 20, bottom: 20,
@@ -211,17 +289,13 @@ export default function SettingsPanel({ open, onClose }) {
                       {profile?.name || 'Gracz'}
                     </p>
                     <p style={{
-                      fontSize: 11, color: '#8A9BB0', fontWeight: 400,
-                      margin: '2px 0 0',
+                      fontSize: 11, color: '#8A9BB0', fontWeight: 400, margin: '2px 0 0',
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>
                       {user?.email}
                     </p>
                     {memberSince && (
-                      <p style={{
-                        fontSize: 10, color: '#5BB8F5', fontWeight: 600,
-                        letterSpacing: 0.5, margin: '4px 0 0',
-                      }}>
+                      <p style={{ fontSize: 10, color: '#5BB8F5', fontWeight: 600, letterSpacing: 0.5, margin: '4px 0 0' }}>
                         Beta · {memberSince}
                       </p>
                     )}
@@ -229,51 +303,17 @@ export default function SettingsPanel({ open, onClose }) {
                 </div>
               </div>
 
-              {/* Weekly schedule bar */}
+              {/* 7-day week picker */}
               <div style={{ padding: '12px 18px 0' }}>
                 <p style={{
                   fontSize: 9, fontWeight: 700, letterSpacing: 2,
-                  textTransform: 'uppercase', color: '#A0B0C8',
-                  margin: '0 0 8px',
+                  textTransform: 'uppercase', color: '#A0B0C8', margin: '0 0 8px',
                 }}>Plan tygodnia</p>
-                <div style={{ display: 'flex', gap: 5 }}>
-                  {schedule.map((type, i) => {
-                    const isTraining = type === 'T'
-                    const isRecovery = type === 'R'
-                    return (
-                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                        <div style={{
-                          width: '100%', height: 30, borderRadius: 8,
-                          background: isTraining ? '#1B3A6B' : isRecovery ? '#5BB8F5' : '#DDE4EF',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          boxShadow: isTraining
-                            ? '0 2px 6px rgba(27,58,107,0.28)'
-                            : isRecovery ? '0 2px 6px rgba(91,184,245,0.25)' : 'none',
-                        }}>
-                          {isTraining && (
-                            <svg width="8" height="8" viewBox="0 0 24 24" fill="none"
-                              stroke="#fff" strokeWidth="2.8" strokeLinecap="round">
-                              <polyline points="20 6 9 17 4 12"/>
-                            </svg>
-                          )}
-                          {isRecovery && <span style={{ fontSize: 10, lineHeight: 1 }}>🧘</span>}
-                        </div>
-                        <span style={{
-                          fontSize: 8, fontWeight: 700, letterSpacing: 0.3,
-                          textTransform: 'uppercase',
-                          color: isTraining ? '#1B3A6B' : isRecovery ? '#5BB8F5' : '#B8C5D4',
-                        }}>
-                          {DAY_LABELS[i]}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
+                <WeekPicker trainingDays={profile?.training_days} />
               </div>
 
-              {/* Settings tiles */}
+              {/* Konto */}
               <div style={{ padding: '0 18px', flex: 1 }}>
-
                 <SectionLabel>Konto</SectionLabel>
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 10,
@@ -289,8 +329,7 @@ export default function SettingsPanel({ open, onClose }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{
                       fontSize: 12, fontWeight: 600,
-                      color: emailConfirmed ? '#27AE60' : '#1A2840',
-                      margin: 0,
+                      color: emailConfirmed ? '#27AE60' : '#1A2840', margin: 0,
                     }}>
                       {emailConfirmed ? 'Email potwierdzony' : 'Email niepotwierdzony'}
                     </p>
@@ -347,36 +386,31 @@ export default function SettingsPanel({ open, onClose }) {
                     </svg>
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{
-                      fontSize: 14, fontWeight: 600, color: '#1A2840',
-                      margin: 0, lineHeight: 1.25,
-                    }}>Dołącz na Discord</p>
-                    <p style={{
-                      fontSize: 11, color: '#8A9BB0', margin: '2px 0 0', fontWeight: 400,
-                    }}>Społeczność HoopConnect</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: '#1A2840', margin: 0, lineHeight: 1.25 }}>
+                      Dołącz na Discord
+                    </p>
+                    <p style={{ fontSize: 11, color: '#8A9BB0', margin: '2px 0 0', fontWeight: 400 }}>
+                      Społeczność HoopConnect
+                    </p>
                   </div>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                     stroke="#C0CEDE" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="9 18 15 12 9 6"/>
                   </svg>
                 </a>
-
               </div>
 
               {/* Bottom */}
               <div style={{
-                padding: '16px 18px 20px',
-                textAlign: 'center',
+                padding: '16px 18px 20px', textAlign: 'center',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
               }}>
                 <button
                   onClick={handleSignOut}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    fontSize: 12, fontWeight: 600, color: '#C0392B',
-                    letterSpacing: 0.3,
-                    WebkitTapHighlightColor: 'transparent',
-                    padding: '4px 8px',
+                    fontSize: 12, fontWeight: 600, color: '#C0392B', letterSpacing: 0.3,
+                    WebkitTapHighlightColor: 'transparent', padding: '4px 8px',
                   }}
                 >
                   Wyloguj się
