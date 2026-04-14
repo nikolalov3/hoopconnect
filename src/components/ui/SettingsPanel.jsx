@@ -140,7 +140,8 @@ function WeekPicker({ trainingDays }) {
                 {dayLabel}
               </span>
               <span style={{
-                fontSize: 15, fontWeight: 700, lineHeight: 1,
+                fontFamily: 'var(--font-display)',
+                fontSize: 15, fontWeight: 800, lineHeight: 1,
                 color: isSel ? '#fff' : (isToday ? '#E8600A' : '#4A5568'),
               }}>
                 {dateNum}
