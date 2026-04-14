@@ -12,19 +12,167 @@ const DAYS_OPTIONS = [
 ]
 
 const STEP_COUNT = 3
+const BLUE = '#5BB8F5'
+
+function WelcomeScreen({ userName, onComplete }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 300,
+        background: 'rgba(4,8,14,0.98)',
+        backdropFilter: 'blur(40px)',
+        WebkitBackdropFilter: 'blur(40px)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '0 26px',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }}
+    >
+      {/* Glow top */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 260,
+        background: `radial-gradient(ellipse 90% 100% at 50% 0%, ${BLUE}28 0%, transparent 70%)`,
+        pointerEvents: 'none',
+      }} />
+
+      {/* Glow bottom */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: 180,
+        background: `radial-gradient(ellipse 80% 100% at 50% 100%, ${BLUE}12 0%, transparent 70%)`,
+        pointerEvents: 'none',
+      }} />
+
+      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+        {/* Badge — jak ikona osiągnięcia */}
+        <motion.div
+          initial={{ scale: 0.4, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.15, type: 'spring', stiffness: 280, damping: 20 }}
+          style={{
+            width: 110, height: 110, borderRadius: '50%',
+            background: `radial-gradient(circle at 35% 35%, ${BLUE}30, ${BLUE}08)`,
+            border: `1.5px solid ${BLUE}55`,
+            boxShadow: `0 0 48px ${BLUE}40, 0 0 80px ${BLUE}18, inset 0 1px 0 ${BLUE}30`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: 28,
+            fontSize: 54,
+          }}
+        >
+          🏀
+        </motion.div>
+
+        {/* Label nad tytułem */}
+        <motion.p
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          style={{
+            fontSize: 10, letterSpacing: 3, textTransform: 'uppercase',
+            color: BLUE, fontWeight: 700, marginBottom: 10,
+          }}
+        >
+          Beta · Wersja limitowana
+        </motion.p>
+
+        {/* Główny nagłówek */}
+        <motion.h1
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          style={{
+            fontFamily: 'var(--font-display)', fontWeight: 900,
+            fontSize: 44, color: 'var(--text-primary)',
+            textTransform: 'uppercase', letterSpacing: 1,
+            lineHeight: 1.0, textAlign: 'center', marginBottom: 6,
+            textShadow: `0 0 40px ${BLUE}30`,
+          }}
+        >
+          {userName ? `Cześć,\n${userName}!` : 'Jesteś\nw grze!'}
+        </motion.h1>
+
+        {/* Karta z tekstem — jak karta osiągnięcia */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.42 }}
+          style={{
+            width: '100%', marginTop: 24, marginBottom: 32,
+            background: 'rgba(10,16,22,0.75)',
+            backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+            border: `1px solid ${BLUE}25`,
+            borderTop: `1px solid ${BLUE}45`,
+            borderRadius: 20,
+            padding: '20px 22px',
+            boxShadow: `0 8px 32px rgba(0,0,0,0.50), 0 0 24px ${BLUE}10`,
+          }}
+        >
+          <p style={{
+            fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase',
+            color: BLUE, fontWeight: 700, marginBottom: 10,
+          }}>
+            Dostęp do bety odblokowany ✓
+          </p>
+          <p style={{
+            color: 'var(--text-secondary)', fontSize: 14,
+            lineHeight: 1.65, fontWeight: 400,
+          }}>
+            Zanim HoopConnect trafi do tysięcy zawodników — <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Ty już tu jesteś</span>. Jesteś częścią elitarnej grupy pierwszych, którzy kształtują tę apkę. Twój feedback zmienia grę — dosłownie.
+          </p>
+        </motion.div>
+
+        {/* CTA */}
+        <motion.button
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={onComplete}
+          className="btn-primary"
+          style={{
+            width: '100%', fontSize: 16, padding: '18px',
+            letterSpacing: 2,
+            background: `linear-gradient(135deg, ${BLUE}CC, ${BLUE}99)`,
+            boxShadow: `0 4px 24px ${BLUE}40, 0 0 40px ${BLUE}20`,
+            border: `1px solid ${BLUE}60`,
+          }}
+        >
+          ZACZYNAM 🏀
+        </motion.button>
+
+      </div>
+    </motion.div>
+  )
+}
 
 export default function OnboardingPage() {
   const { user, setProfileData } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [name, setName] = useState('')
-  const [age, setAge] = useState(16)
+  const currentYear = new Date().getFullYear()
+  const [birthDay, setBirthDay] = useState('')
+  const [birthMonth, setBirthMonth] = useState('')
+  const [birthYear, setBirthYear] = useState('')
+
+  const age = (birthDay && birthMonth && birthYear)
+    ? (() => {
+        const today = new Date()
+        const birth = new Date(parseInt(birthYear), parseInt(birthMonth) - 1, parseInt(birthDay))
+        let a = today.getFullYear() - birth.getFullYear()
+        if (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate())) a--
+        return a
+      })()
+    : null
   const [trainingDays, setTrainingDays] = useState(4)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [showWelcome, setShowWelcome] = useState(false)
 
   async function handleFinish() {
     if (!name.trim()) { setError('Wpisz swoje imię'); return }
+    if (!birthDay || !birthMonth || !birthYear) { setError('Wybierz datę urodzenia'); return }
     if (!user?.id) { setError('Brak sesji — odśwież stronę'); return }
     setSaving(true)
     setError('')
@@ -56,7 +204,8 @@ export default function OnboardingPage() {
       }
 
       setProfileData({ ...profileData })
-      navigate('/', { replace: true })
+      setSaving(false)
+      setShowWelcome(true)
     } catch(e) {
       setError('Błąd zapisu: ' + e.message)
       setSaving(false)
@@ -74,6 +223,15 @@ export default function OnboardingPage() {
       position: 'relative',
       overflow: 'hidden',
     }}>
+      <AnimatePresence>
+        {showWelcome && (
+          <WelcomeScreen
+            userName={name.trim()}
+            onComplete={() => navigate('/', { replace: true })}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Background glow */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none',
@@ -143,7 +301,7 @@ export default function OnboardingPage() {
           </motion.div>
         )}
 
-        {/* STEP 1 — Wiek */}
+        {/* STEP 1 — Data urodzenia */}
         {step === 1 && (
           <motion.div key="step1"
             initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
@@ -151,74 +309,118 @@ export default function OnboardingPage() {
           >
             <p className="section-label" style={{ marginBottom: 8 }}>Krok 2 z {STEP_COUNT}</p>
             <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8 }}>
-              Ile masz<br />lat?
+              Kiedy się<br />urodziłeś?
             </h1>
             <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 32 }}>
               Wiek decyduje o intensywności i rodzaju treningów. Mamy specjalny program dla każdego etapu.
             </p>
 
-            {/* Age picker */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24,
-              padding: '32px 0',
-            }}>
-              <button onClick={() => setAge(a => Math.max(12, a - 1))} style={{
-                width: 52, height: 52, borderRadius: '50%',
-                background: 'rgba(12,8,4,0.65)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: 'var(--text-primary)', fontSize: 24, cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.40)',
-              }}>−</button>
-
-              <div style={{ textAlign: 'center' }}>
-                <motion.p key={age}
-                  initial={{ scale: 1.3, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            {/* Date pickers */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.4fr', gap: 10, marginBottom: 24 }}>
+              {/* Dzień */}
+              <div>
+                <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>Dzień</p>
+                <select
+                  value={birthDay}
+                  onChange={e => setBirthDay(e.target.value)}
                   style={{
-                    fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 80,
-                    color: 'var(--orange)', lineHeight: 1, letterSpacing: -2,
-                    textShadow: '0 0 30px rgba(91,184,245,0.50)',
+                    width: '100%', padding: '14px 10px',
+                    background: 'rgba(12,8,4,0.65)',
+                    backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                    border: `1px solid ${birthDay ? 'rgba(91,184,245,0.40)' : 'rgba(255,255,255,0.12)'}`,
+                    borderRadius: 'var(--radius-sm)',
+                    color: birthDay ? 'var(--text-primary)' : 'var(--text-dim)',
+                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18,
+                    textAlign: 'center', cursor: 'pointer', outline: 'none',
+                    appearance: 'none', WebkitAppearance: 'none',
                   }}
-                >{age}</motion.p>
-                <p style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600 }}>LAT</p>
+                >
+                  <option value="">—</option>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
               </div>
 
-              <button onClick={() => setAge(a => Math.min(22, a + 1))} style={{
-                width: 52, height: 52, borderRadius: '50%',
-                background: 'rgba(12,8,4,0.65)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: 'var(--text-primary)', fontSize: 24, cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.40)',
-              }}>+</button>
+              {/* Miesiąc */}
+              <div>
+                <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>Miesiąc</p>
+                <select
+                  value={birthMonth}
+                  onChange={e => setBirthMonth(e.target.value)}
+                  style={{
+                    width: '100%', padding: '14px 10px',
+                    background: 'rgba(12,8,4,0.65)',
+                    backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                    border: `1px solid ${birthMonth ? 'rgba(91,184,245,0.40)' : 'rgba(255,255,255,0.12)'}`,
+                    borderRadius: 'var(--radius-sm)',
+                    color: birthMonth ? 'var(--text-primary)' : 'var(--text-dim)',
+                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15,
+                    textAlign: 'center', cursor: 'pointer', outline: 'none',
+                    appearance: 'none', WebkitAppearance: 'none',
+                  }}
+                >
+                  <option value="">—</option>
+                  {['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'].map((m, i) => (
+                    <option key={i+1} value={i+1}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Rok */}
+              <div>
+                <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>Rok</p>
+                <select
+                  value={birthYear}
+                  onChange={e => setBirthYear(e.target.value)}
+                  style={{
+                    width: '100%', padding: '14px 10px',
+                    background: 'rgba(12,8,4,0.65)',
+                    backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                    border: `1px solid ${birthYear ? 'rgba(91,184,245,0.40)' : 'rgba(255,255,255,0.12)'}`,
+                    borderRadius: 'var(--radius-sm)',
+                    color: birthYear ? 'var(--text-primary)' : 'var(--text-dim)',
+                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
+                    textAlign: 'center', cursor: 'pointer', outline: 'none',
+                    appearance: 'none', WebkitAppearance: 'none',
+                  }}
+                >
+                  <option value="">—</option>
+                  {Array.from({ length: 21 }, (_, i) => currentYear - 10 - i).map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {/* Age info card */}
-            <div style={{
-              padding: '16px 20px',
-              background: 'rgba(12,8,4,0.60)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              borderTop: '1px solid rgba(255,255,255,0.17)',
-              borderRadius: 'var(--radius)',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.40)',
-            }}>
-              <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6 }}>
-                {age <= 14 ? '🌱 Faza fundamentów' : age <= 16 ? '⚡ Faza rozwoju' : age <= 18 ? '🔥 Faza intensyfikacji' : '🏆 Faza zaawansowana'}
-              </p>
-              <p style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.5 }}>
-                {age <= 14
-                  ? 'Skupiamy się na technice i zabawie. Priorytet: fundamenty i miłość do gry.'
-                  : age <= 16
-                  ? 'Czas na budowanie silnika. Technika + atletyzm + zaczątki taktyki.'
-                  : age <= 18
-                  ? 'Okno rekrutacji uczelnianych otwarte. Intensywność rośnie, regeneracja kluczowa.'
-                  : 'Poważny program. Trenujesz jak zawodowiec — z zawodową dyscypliną.'}
-              </p>
-            </div>
+            {/* Wiek obliczony + info card */}
+            {age !== null && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                style={{
+                  padding: '16px 20px',
+                  background: 'rgba(12,8,4,0.60)',
+                  backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255,255,255,0.10)',
+                  borderTop: '1px solid rgba(255,255,255,0.17)',
+                  borderRadius: 'var(--radius)',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.40)',
+                }}
+              >
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--orange)', letterSpacing: 1, marginBottom: 4 }}>
+                  {age} LAT · {age <= 14 ? '🌱 Faza fundamentów' : age <= 16 ? '⚡ Faza rozwoju' : age <= 18 ? '🔥 Faza intensyfikacji' : '🏆 Faza zaawansowana'}
+                </p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.5 }}>
+                  {age <= 14
+                    ? 'Skupiamy się na technice i zabawie. Priorytet: fundamenty i miłość do gry.'
+                    : age <= 16
+                    ? 'Czas na budowanie silnika. Technika + atletyzm + zaczątki taktyki.'
+                    : age <= 18
+                    ? 'Okno rekrutacji uczelnianych otwarte. Intensywność rośnie, regeneracja kluczowa.'
+                    : 'Poważny program. Trenujesz jak zawodowiec — z zawodową dyscypliną.'}
+                </p>
+              </motion.div>
+            )}
           </motion.div>
         )}
 
