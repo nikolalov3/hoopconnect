@@ -12,6 +12,139 @@ const DAYS_OPTIONS = [
 ]
 
 const STEP_COUNT = 3
+const BLUE = '#5BB8F5'
+
+function WelcomeScreen({ userName, onComplete }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 300,
+        background: 'rgba(4,8,14,0.98)',
+        backdropFilter: 'blur(40px)',
+        WebkitBackdropFilter: 'blur(40px)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '0 26px',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }}
+    >
+      {/* Glow top */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 260,
+        background: `radial-gradient(ellipse 90% 100% at 50% 0%, ${BLUE}28 0%, transparent 70%)`,
+        pointerEvents: 'none',
+      }} />
+
+      {/* Glow bottom */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: 180,
+        background: `radial-gradient(ellipse 80% 100% at 50% 100%, ${BLUE}12 0%, transparent 70%)`,
+        pointerEvents: 'none',
+      }} />
+
+      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+        {/* Badge — jak ikona osiągnięcia */}
+        <motion.div
+          initial={{ scale: 0.4, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.15, type: 'spring', stiffness: 280, damping: 20 }}
+          style={{
+            width: 110, height: 110, borderRadius: '50%',
+            background: `radial-gradient(circle at 35% 35%, ${BLUE}30, ${BLUE}08)`,
+            border: `1.5px solid ${BLUE}55`,
+            boxShadow: `0 0 48px ${BLUE}40, 0 0 80px ${BLUE}18, inset 0 1px 0 ${BLUE}30`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: 28,
+            fontSize: 54,
+          }}
+        >
+          🏀
+        </motion.div>
+
+        {/* Label nad tytułem */}
+        <motion.p
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          style={{
+            fontSize: 10, letterSpacing: 3, textTransform: 'uppercase',
+            color: BLUE, fontWeight: 700, marginBottom: 10,
+          }}
+        >
+          Beta · Wersja limitowana
+        </motion.p>
+
+        {/* Główny nagłówek */}
+        <motion.h1
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          style={{
+            fontFamily: 'var(--font-display)', fontWeight: 900,
+            fontSize: 44, color: 'var(--text-primary)',
+            textTransform: 'uppercase', letterSpacing: 1,
+            lineHeight: 1.0, textAlign: 'center', marginBottom: 6,
+            textShadow: `0 0 40px ${BLUE}30`,
+          }}
+        >
+          {userName ? `Cześć,\n${userName}!` : 'Jesteś\nw grze!'}
+        </motion.h1>
+
+        {/* Karta z tekstem — jak karta osiągnięcia */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.42 }}
+          style={{
+            width: '100%', marginTop: 24, marginBottom: 32,
+            background: 'rgba(10,16,22,0.75)',
+            backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+            border: `1px solid ${BLUE}25`,
+            borderTop: `1px solid ${BLUE}45`,
+            borderRadius: 20,
+            padding: '20px 22px',
+            boxShadow: `0 8px 32px rgba(0,0,0,0.50), 0 0 24px ${BLUE}10`,
+          }}
+        >
+          <p style={{
+            fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase',
+            color: BLUE, fontWeight: 700, marginBottom: 10,
+          }}>
+            Dostęp do bety odblokowany ✓
+          </p>
+          <p style={{
+            color: 'var(--text-secondary)', fontSize: 14,
+            lineHeight: 1.65, fontWeight: 400,
+          }}>
+            Zanim HoopConnect trafi do tysięcy zawodników — <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Ty już tu jesteś</span>. Jesteś częścią elitarnej grupy pierwszych, którzy kształtują tę apkę. Twój feedback zmienia grę — dosłownie.
+          </p>
+        </motion.div>
+
+        {/* CTA */}
+        <motion.button
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={onComplete}
+          className="btn-primary"
+          style={{
+            width: '100%', fontSize: 16, padding: '18px',
+            letterSpacing: 2,
+            background: `linear-gradient(135deg, ${BLUE}CC, ${BLUE}99)`,
+            boxShadow: `0 4px 24px ${BLUE}40, 0 0 40px ${BLUE}20`,
+            border: `1px solid ${BLUE}60`,
+          }}
+        >
+          ZACZYNAM 🏀
+        </motion.button>
+
+      </div>
+    </motion.div>
+  )
+}
 
 export default function OnboardingPage() {
   const { user, setProfileData } = useAuth()
@@ -35,6 +168,7 @@ export default function OnboardingPage() {
   const [trainingDays, setTrainingDays] = useState(4)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [showWelcome, setShowWelcome] = useState(false)
 
   async function handleFinish() {
     if (!name.trim()) { setError('Wpisz swoje imię'); return }
@@ -70,7 +204,8 @@ export default function OnboardingPage() {
       }
 
       setProfileData({ ...profileData })
-      navigate('/', { replace: true })
+      setSaving(false)
+      setShowWelcome(true)
     } catch(e) {
       setError('Błąd zapisu: ' + e.message)
       setSaving(false)
@@ -88,6 +223,15 @@ export default function OnboardingPage() {
       position: 'relative',
       overflow: 'hidden',
     }}>
+      <AnimatePresence>
+        {showWelcome && (
+          <WelcomeScreen
+            userName={name.trim()}
+            onComplete={() => navigate('/', { replace: true })}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Background glow */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none',
