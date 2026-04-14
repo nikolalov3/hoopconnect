@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AuthPage() {
@@ -11,6 +12,19 @@ export default function AuthPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+  const [oauthLoading, setOauthLoading] = useState(false)
+
+  async function handleAppleLogin() {
+    setOauthLoading(true)
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: { redirectTo: window.location.origin },
+      })
+    } finally {
+      setOauthLoading(false)
+    }
+  }
 
   function switchMode(m) {
     setMode(m)
@@ -318,6 +332,45 @@ export default function AuthPage() {
           </button>
         </motion.form>
       </AnimatePresence>
+
+      {/* Divider */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '22px 0 14px' }}>
+        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.10)' }} />
+        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+          lub
+        </span>
+        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.10)' }} />
+      </div>
+
+      {/* Apple Sign In */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={handleAppleLogin}
+        disabled={oauthLoading}
+        style={{
+          width: '100%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          padding: '13px 20px',
+          background: 'rgba(255,255,255,0.96)',
+          border: '1px solid rgba(255,255,255,0.22)',
+          borderRadius: 'var(--radius-sm)',
+          cursor: oauthLoading ? 'default' : 'pointer',
+          opacity: oauthLoading ? 0.65 : 1,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.80)',
+          transition: 'opacity 0.15s',
+        }}
+      >
+        {/* Apple logo SVG */}
+        <svg width="19" height="19" viewBox="0 0 814 1000" fill="#000">
+          <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-42.8-154.9-110.6c-47.4-63.9-85.3-163.9-85.3-259.4 0-206.6 136.7-315.6 271.6-315.6 68 0 124.5 44.8 167.1 44.8 40.8 0 104.9-47.4 180.5-47.4zm-187.8-119.2c31.8-40.1 54.5-95.4 54.5-150.7 0-7.7-.6-15.4-1.9-21.8-51.6 2-112.3 34.4-149.2 75.8-28.5 32.4-55.1 88.4-55.1 144.4 0 8.3 1.3 16.6 1.9 19.2 3.2.6 8.4 1.3 13.6 1.3 46.2 0 102.9-31.2 136.2-68.2z"/>
+        </svg>
+        <span style={{
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
+          letterSpacing: 0.5, color: '#000',
+        }}>
+          {oauthLoading ? '…' : 'Zaloguj przez Apple'}
+        </span>
+      </motion.button>
 
       {/* Footer */}
       <p style={{

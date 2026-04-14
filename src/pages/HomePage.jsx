@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import TrainingCard from '../components/training/TrainingCard'
 import { fetchAchievementsCatalog, getNewlyUnlocked, awardMedalPoints, revokeStaleAchievements } from '../lib/achievements'
+import SettingsPanel from '../components/ui/SettingsPanel'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -422,6 +423,9 @@ export default function HomePage() {
   const [reportLoading, setReportLoading] = useState(true)
   const [daysUntilReport, setDaysUntilReport] = useState(7)
   const [achievementToast, setAchievementToast] = useState(null) // { title, stage }
+  const [showSettings, setShowSettings] = useState(false)
+  const swipeStartX = useRef(null)
+  const swipeStartY = useRef(null)
 
   function notifyAchievement(data) {
     setAchievementToast(data)
@@ -764,8 +768,32 @@ export default function HomePage() {
   const scoreColor = reportScore >= 750 ? 'var(--green-shot)' : reportScore >= 500 ? 'var(--orange-hot)' : reportScore >= 250 ? 'var(--orange)' : 'var(--text-dim)'
   const scoreLabel = reportScore >= 750 ? 'ŚWIETNA REGULARNOŚĆ' : reportScore >= 500 ? 'DOBRY POSTĘP' : reportScore >= 250 ? 'ZACZNIJ SERIĘ' : 'TRENUJESZ?'
 
+  function handleTouchStart(e) {
+    const t = e.touches[0]
+    swipeStartX.current = t.clientX
+    swipeStartY.current = t.clientY
+  }
+
+  function handleTouchEnd(e) {
+    if (swipeStartX.current === null) return
+    const t = e.changedTouches[0]
+    const dx = t.clientX - swipeStartX.current
+    const dy = Math.abs(t.clientY - swipeStartY.current)
+    // only trigger if: started within left 40px edge, swiped right ≥60px, mostly horizontal
+    if (swipeStartX.current < 40 && dx >= 60 && dy < 60) {
+      setShowSettings(true)
+    }
+    swipeStartX.current = null
+    swipeStartY.current = null
+  }
+
   return (
-    <div className="page-content">
+    <div
+      className="page-content"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      <SettingsPanel open={showSettings} onClose={() => setShowSettings(false)} />
       <AnimatePresence>{showQuote && <QuotePanel quote={quote} onClose={() => setShowQuote(false)} />}</AnimatePresence>
       <AnimatePresence>
         {achievementToast && (
@@ -789,14 +817,27 @@ export default function HomePage() {
             </span>
           )}
         </div>
-        <button onClick={() => setShowQuote(true)} style={{
-          background: 'rgba(10,6,3,0.65)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,255,255,0.12)', borderTop: '1px solid rgba(255,255,255,0.20)',
-          borderRadius: 12, width: 48, height: 48, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.40)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <span style={{ fontFamily: 'Georgia, serif', fontSize: 28, lineHeight: 1, color: 'var(--orange)', fontWeight: 900, display: 'block', marginTop: -4 }}>"</span>
-        </button>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <button onClick={() => setShowSettings(true)} style={{
+            background: 'rgba(10,6,3,0.65)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,255,255,0.12)', borderTop: '1px solid rgba(255,255,255,0.20)',
+            borderRadius: 12, width: 48, height: 48, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.40)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+          <button onClick={() => setShowQuote(true)} style={{
+            background: 'rgba(10,6,3,0.65)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,255,255,0.12)', borderTop: '1px solid rgba(255,255,255,0.20)',
+            borderRadius: 12, width: 48, height: 48, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.40)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span style={{ fontFamily: 'Georgia, serif', fontSize: 28, lineHeight: 1, color: 'var(--orange)', fontWeight: 900, display: 'block', marginTop: -4 }}>"</span>
+          </button>
+        </div>
       </div>
 
       {/* Ocena Raportu */}
