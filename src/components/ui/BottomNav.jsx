@@ -30,11 +30,48 @@ const RecoveryIcon = ({ active }) => (
   </svg>
 )
 
+// Hexagonal diamond icon for Club tab — mirrors the app logo
+const ClubIcon = ({ active }) => (
+  <svg width="22" height="22" viewBox="0 0 90 90" style={{ overflow: 'visible' }}>
+    {active && (
+      <defs>
+        <linearGradient id="clubIconGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+          <stop offset="0%" stopColor="#C8ECFF" />
+          <stop offset="35%" stopColor="#5BB8F5" />
+          <stop offset="100%" stopColor="#0D4A8A" />
+        </linearGradient>
+      </defs>
+    )}
+    <polygon
+      points="45,9 84,33 84,61 45,87 6,61 6,33"
+      fill="rgba(0,0,0,0.22)"
+    />
+    <polygon
+      points="45,6 82,32 82,58 45,84 8,58 8,32"
+      fill={active ? 'url(#clubIconGrad)' : 'rgba(180,120,80,0.18)'}
+    />
+    {active && (
+      <>
+        <polygon points="45,6 8,32 45,42"  fill="rgba(255,255,255,0.28)" />
+        <polygon points="45,6 82,32 45,42" fill="rgba(255,255,255,0.13)" />
+      </>
+    )}
+    <polygon
+      points="45,6 82,32 82,58 45,84 8,58 8,32"
+      fill="none"
+      stroke={active ? 'rgba(255,255,255,0.70)' : 'rgba(180,120,80,0.45)'}
+      strokeWidth="5"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
 const TABS = [
-  { path: '/',             Icon: HomeIcon,    label: 'Dziś' },
-  { path: '/stats',        Icon: StatsIcon,   label: 'Stats' },
-  { path: '/recovery',     Icon: RecoveryIcon,label: 'Regen' },
-  { path: '/achievements', Icon: TrophyIcon,  label: 'Trofea' },
+  { path: '/',             Icon: HomeIcon,    label: 'Dziś',   center: false },
+  { path: '/stats',        Icon: StatsIcon,   label: 'Stats',  center: false },
+  { path: '/club',         Icon: ClubIcon,    label: 'Klub',   center: true  },
+  { path: '/recovery',     Icon: RecoveryIcon,label: 'Regen',  center: false },
+  { path: '/achievements', Icon: TrophyIcon,  label: 'Trofea', center: false },
 ]
 
 export default function BottomNav() {
@@ -81,9 +118,63 @@ export default function BottomNav() {
         padding: '6px 8px',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.30)',
       }}>
-        {TABS.map(({ path, Icon, label }) => {
+        {TABS.map(({ path, Icon, label, center }) => {
           const active = pathname === path
           const showDot = path === '/achievements' && hasUnread && !active
+
+          if (center) {
+            // ── Club centre button — raised diamond shape ──────────────────
+            return (
+              <motion.button
+                key={path}
+                onClick={() => navigate(path)}
+                whileTap={{ scale: 0.84 }}
+                style={{
+                  position: 'relative',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 58, height: 58,
+                  marginTop: -14,          // lifts it above the pill
+                  marginLeft: 4, marginRight: 4,
+                  background: active
+                    ? 'linear-gradient(145deg, rgba(40,130,220,0.95) 0%, rgba(10,60,150,0.98) 100%)'
+                    : 'rgba(14,10,6,0.72)',
+                  border: active
+                    ? '1.5px solid rgba(91,184,245,0.65)'
+                    : '1.5px solid rgba(255,255,255,0.14)',
+                  borderRadius: 16,
+                  cursor: 'pointer',
+                  color: active ? '#fff' : 'rgba(180,120,80,0.55)',
+                  boxShadow: active
+                    ? '0 6px 28px rgba(91,184,245,0.55), 0 0 0 1px rgba(91,184,245,0.20), inset 0 1px 0 rgba(180,230,255,0.20)'
+                    : '0 6px 20px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+                }}
+              >
+                <Icon active={active} />
+                <span style={{
+                  position: 'absolute', bottom: 5,
+                  fontSize: 8.5, fontWeight: 700, letterSpacing: 0.6,
+                  color: active ? 'rgba(180,230,255,0.90)' : 'rgba(180,120,80,0.50)',
+                  fontFamily: 'var(--font-display, Montserrat, sans-serif)',
+                  textTransform: 'uppercase',
+                }}>
+                  {label}
+                </span>
+                {active && (
+                  <motion.div layoutId="nav-glow" transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    style={{
+                      position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)',
+                      width: 4, height: 4, borderRadius: '50%',
+                      background: '#5BB8F5', boxShadow: '0 0 8px 2px rgba(91,184,245,0.60)',
+                    }}
+                  />
+                )}
+              </motion.button>
+            )
+          }
+
           return (
             <motion.button key={path} onClick={() => navigate(path)} whileTap={{ scale: 0.88 }}
               style={{

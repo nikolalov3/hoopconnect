@@ -13,6 +13,7 @@ const ShootingPage    = lazy(() => import('./pages/ShootingPage'))
 const StatsPage       = lazy(() => import('./pages/StatsPage'))
 const AchievementsPage = lazy(() => import('./pages/AchievementsPage'))
 const RecoveryPage    = lazy(() => import('./pages/RecoveryPage'))
+const ClubPage        = lazy(() => import('./pages/ClubPage'))
 
 const pageVariants = {
   initial: { opacity: 0, y: 14, scale: 0.985 },
@@ -80,6 +81,7 @@ function AppShell() {
             <Route path="/stats"        element={<Tab><StatsPage /></Tab>} />
             <Route path="/achievements" element={<Tab><AchievementsPage /></Tab>} />
             <Route path="/recovery"     element={<Tab fast><RecoveryPage /></Tab>} />
+            <Route path="/club"         element={<Tab><ClubPage /></Tab>} />
             <Route path="/onboarding"   element={<OnboardingPage />} />
           </Routes>
         </AnimatePresence>
