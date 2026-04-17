@@ -16,22 +16,43 @@ const REST_WARNINGS = [
   'Limit {n} dni osiągnięty — ciało potrzebuje przerwy.',
 ]
 
-// ── INITIALS AVATAR ──────────────────────────────────────────────────────────
+// ── INITIALS AVATAR — logo diamond shape ─────────────────────────────────────
 function InitialsAvatar({ name, size = 44 }) {
-  const initials = name
-    ? name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
-    : '?'
+  const initial = name ? name.trim()[0].toUpperCase() : '?'
   return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0,
-      background: 'linear-gradient(135deg, #5BB8F5, #1B3A6B)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <span style={{
-        fontFamily: 'var(--font-display)', fontWeight: 800,
-        fontSize: size * 0.36, color: '#fff', letterSpacing: 0.5,
-      }}>{initials}</span>
-    </div>
+    <svg width={size} height={size} viewBox="0 0 90 90" style={{ flexShrink: 0, overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="avGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+          <stop offset="0%"   stopColor="#7BC8F8" />
+          <stop offset="40%"  stopColor="#5BB8F5" />
+          <stop offset="100%" stopColor="#1B3A6B" />
+        </linearGradient>
+      </defs>
+      {/* Outer glow shadow */}
+      <polygon points="45,9 84,33 84,61 45,87 6,61 6,33"
+        fill="rgba(0,0,0,0.28)" />
+      {/* Main body */}
+      <polygon points="45,6 82,32 82,58 45,84 8,58 8,32"
+        fill="url(#avGrad)" />
+      {/* Top-left highlight */}
+      <polygon points="45,6 8,32 45,42"
+        fill="rgba(255,255,255,0.28)" />
+      {/* Top-right highlight */}
+      <polygon points="45,6 82,32 45,42"
+        fill="rgba(255,255,255,0.13)" />
+      {/* Outline */}
+      <polygon points="45,6 82,32 82,58 45,84 8,58 8,32"
+        fill="none" stroke="rgba(255,255,255,0.50)" strokeWidth="1.8" strokeLinejoin="round" />
+      {/* First-name initial */}
+      <text
+        x="45" y="49"
+        textAnchor="middle" dominantBaseline="middle"
+        fill="white" fontSize="30" fontWeight="800"
+        fontFamily="var(--font-display), Montserrat, 'Arial Black', sans-serif"
+      >
+        {initial}
+      </text>
+    </svg>
   )
 }
 
@@ -318,8 +339,21 @@ export default function SettingsPanel({ open, onClose }) {
               <div style={{ padding: '12px 18px 0' }}>
                 <p style={{
                   fontSize: 9, fontWeight: 700, letterSpacing: 2,
-                  textTransform: 'uppercase', color: '#A0B0C8', margin: '0 0 8px',
+                  textTransform: 'uppercase', color: '#A0B0C8', margin: '0 0 5px',
                 }}>Plan tygodnia</p>
+
+                {/* Instruction hint with bracket lines */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6, marginBottom: 9,
+                }}>
+                  <div style={{ flex: 1, height: 1, background: 'rgba(160,176,200,0.28)', borderRadius: 1 }} />
+                  <span style={{
+                    fontSize: 7.5, color: '#B0C0D4', fontWeight: 500,
+                    letterSpacing: 0.2, whiteSpace: 'nowrap', fontStyle: 'italic',
+                  }}>odkliknij dzień i zaznacz inny</span>
+                  <div style={{ flex: 1, height: 1, background: 'rgba(160,176,200,0.28)', borderRadius: 1 }} />
+                </div>
+
                 <WeekPicker trainingDays={profile?.training_days} open={open} />
               </div>
 

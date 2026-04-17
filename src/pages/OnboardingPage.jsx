@@ -240,6 +240,8 @@ export default function OnboardingPage() {
       training_days: trainingDays,
       onboarding_done: true,
       schedule_type: trainingDays <= 3 ? 'light' : trainingDays <= 4 ? 'balanced' : 'intense',
+      // Rejestracja = zawsze dzień treningowy
+      registration_date: new Date().toISOString().split('T')[0],
     }
 
     try {

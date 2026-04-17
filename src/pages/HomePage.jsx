@@ -29,6 +29,11 @@ const SCHEDULES = {
 }
 
 function getDayType(profile) {
+  // Dzień rejestracji zawsze = trening
+  if (profile?.created_at) {
+    const regDate = new Date(profile.created_at).toISOString().split('T')[0]
+    if (regDate === TODAY) return 'T'
+  }
   const days = profile?.training_days || 4
   const schedule = SCHEDULES[days] || SCHEDULES[4]
   const dow = new Date().getDay()
@@ -101,59 +106,94 @@ function pickDailyTrainings(allTrainings, profile) {
   return result
 }
 
-// ── REPORT RATING RING ───────────────────────────────────────────────────────
+// ── REPORT RATING RING — hexagonal diamond shape ────────────────────────────
+// Hex outer: points="105,14 191,75 191,135 105,196 19,135 19,75" in 210×210 space
+// Each half (right / left) path length ≈ 270.88 units
+// Left 500 pts fills from top counter-clockwise; right 500 pts fills clockwise.
+// Both halves fill simultaneously — at 1000 pts the ring is fully closed.
+const HEX_HALF_LEN = 270.88
+
 function ReportRatingRing({ score, daysLeft, loading }) {
-  const R = 84
-  const CIRC = 2 * Math.PI * R
   const isLocked = daysLeft > 0
-  const dash = isLocked ? 0 : (score / 1000) * CIRC
+  const fillRatio = isLocked ? 0 : Math.min(score, 1000) / 1000
+  const dash = fillRatio * HEX_HALF_LEN
 
   const color = score >= 750 ? '#00E676' : score >= 500 ? '#7ECBFF' : score >= 250 ? '#5BB8F5' : '#6B5040'
   const ringColor = isLocked ? 'rgba(255,255,255,0.10)' : color
 
   return (
     <div style={{ position: 'relative', width: 210, height: 210, margin: '0 auto' }}>
-      {/* Inner glass disc */}
-      <div style={{
-        position: 'absolute', inset: '12px', borderRadius: '50%',
-        background: 'rgba(8,5,2,0.70)',
-        backdropFilter: 'blur(30px) saturate(1.5)',
-        WebkitBackdropFilter: 'blur(30px) saturate(1.5)',
-        border: '1px solid rgba(255,255,255,0.12)',
-        borderTop: '1px solid rgba(255,255,255,0.20)',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.08)',
-      }} />
 
-      {/* Glow when score exists */}
-      {!isLocked && score > 20 && (
-        <div style={{
-          position: 'absolute', inset: '6px', borderRadius: '50%',
-          boxShadow: `0 0 28px ${color}40`, pointerEvents: 'none',
-        }} />
-      )}
+      {/* SVG: inner fill + track + progress */}
+      <svg width="210" height="210" viewBox="0 0 210 210"
+        style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
+        <defs>
+          <radialGradient id="ringFillGrad" cx="50%" cy="42%" r="58%">
+            <stop offset="0%"   stopColor="rgba(10,6,3,0.82)" />
+            <stop offset="100%" stopColor="rgba(3,1,0,0.97)" />
+          </radialGradient>
+        </defs>
 
-      {/* SVG ring */}
-      <svg width="210" height="210" viewBox="0 0 210 210" style={{ position: 'absolute', inset: 0 }}>
-        <circle cx="105" cy="105" r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
+        {/* Inner glass fill — 92 % scaled hex, leaves room for the ring stroke */}
+        <polygon
+          points="105,21 184,77 184,133 105,189 26,133 26,77"
+          fill="url(#ringFillGrad)"
+          stroke="rgba(255,255,255,0.10)"
+          strokeWidth="1"
+        />
+
+        {/* Background track — full hexagon outline */}
+        <polygon
+          points="105,14 191,75 191,135 105,196 19,135 19,75"
+          fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8"
+          strokeLinejoin="round"
+        />
+
+        {/* Right half — top → clockwise → bottom (500 pts) */}
         {!isLocked && (
-          <circle cx="105" cy="105" r={R} fill="none" stroke={ringColor} strokeWidth="6"
-            strokeDasharray={`${dash} ${CIRC}`} strokeLinecap="round"
-            strokeDashoffset={0} transform="rotate(-90 105 105)"
-            style={{ filter: `drop-shadow(0 0 8px ${color}) drop-shadow(0 0 16px ${color}80)`, transition: 'stroke-dasharray 1.2s ease' }}
+          <polyline
+            points="105,14 191,75 191,135 105,196"
+            fill="none" stroke={ringColor} strokeWidth="8"
+            strokeDasharray={`${dash} 9999`}
+            strokeLinejoin="round" strokeLinecap="round"
+            style={{
+              filter: `drop-shadow(0 0 8px ${color}) drop-shadow(0 0 18px ${color}70)`,
+              transition: 'stroke-dasharray 1.2s ease',
+            }}
+          />
+        )}
+
+        {/* Left half — top → counter-clockwise → bottom (500 pts) */}
+        {!isLocked && (
+          <polyline
+            points="105,14 19,75 19,135 105,196"
+            fill="none" stroke={ringColor} strokeWidth="8"
+            strokeDasharray={`${dash} 9999`}
+            strokeLinejoin="round" strokeLinecap="round"
+            style={{
+              filter: `drop-shadow(0 0 8px ${color}) drop-shadow(0 0 18px ${color}70)`,
+              transition: 'stroke-dasharray 1.2s ease',
+            }}
           />
         )}
       </svg>
 
       {/* Center content */}
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 2,
+      }}>
         {loading ? (
           <div className="spinner" style={{ width: 24, height: 24 }} />
         ) : isLocked ? (
           <>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 4, opacity: 0.5 }}>
-                <rect x="3" y="11" width="18" height="11" rx="3"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+              stroke="var(--text-dim)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
+              style={{ marginBottom: 4, opacity: 0.5 }}>
+              <rect x="3" y="11" width="18" height="11" rx="3"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, lineHeight: 1, color: 'var(--text-dim)', letterSpacing: -1 }}>
               {daysLeft}
             </span>
@@ -784,8 +824,8 @@ export default function HomePage() {
     const t = e.changedTouches[0]
     const dx = t.clientX - swipeStartX.current
     const dy = Math.abs(t.clientY - swipeStartY.current)
-    // only trigger if: started within left 40px edge, swiped right ≥60px, mostly horizontal
-    if (swipeStartX.current < 40 && dx >= 60 && dy < 60) {
+    // swipe right z lewej połowy ekranu otwiera ustawienia
+    if (swipeStartX.current < window.innerWidth * 0.55 && dx >= 70 && dy < 70) {
       openSettings()
     }
     swipeStartX.current = null
