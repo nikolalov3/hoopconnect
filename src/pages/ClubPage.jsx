@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 
@@ -24,7 +24,6 @@ const COUNTRIES = [
   { code: 'CA', name: 'Kanada',           flag: '🇨🇦' },
 ]
 
-// 5 pozycji w formacji — 2 górne + 3 dolne (jak Sorare)
 const POSITIONS = [
   { key: 'PG', label: 'Rozgrywający', row: 0 },
   { key: 'SG', label: 'Rzucający',    row: 0 },
@@ -33,6 +32,16 @@ const POSITIONS = [
   { key: 'PF', label: 'Silny skrzydł.',row: 1 },
 ]
 
+// Absolute % positions on the 420 px-tall court container
+// Basket is at the bottom — guards near halfcourt (top), bigs near the key (bottom)
+const COURT_POS = {
+  PG: { x: '26%', y: '11%' },
+  SG: { x: '74%', y: '11%' },
+  SF: { x: '16%', y: '40%' },
+  C:  { x: '50%', y: '72%' },
+  PF: { x: '84%', y: '40%' },
+}
+
 function loadClub() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) } catch { return null }
 }
@@ -40,25 +49,130 @@ function saveClub(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
 }
 
+// ── BASKETBALL COURT SVG ──────────────────────────────────────────────────────
+// Half-court, top-down view. Basket at the bottom, halfcourt line at the top.
+// viewBox matches the container: 360 × 420.
+function CourtBackground() {
+  return (
+    <svg
+      viewBox="0 0 360 420"
+      preserveAspectRatio="xMidYMid slice"
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', borderRadius: 20 }}
+    >
+      <defs>
+        <linearGradient id="crtFloor" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stopColor="#060C18" />
+          <stop offset="100%" stopColor="#0B1626" />
+        </linearGradient>
+        {/* Warm spotlight near the basket */}
+        <radialGradient id="crtSpot" cx="50%" cy="96%" r="55%">
+          <stop offset="0%"   stopColor="rgba(255,150,30,0.09)" />
+          <stop offset="100%" stopColor="transparent" />
+        </radialGradient>
+        {/* Paint-area fill */}
+        <linearGradient id="crtPaint" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stopColor="rgba(10,35,90,0.30)" />
+          <stop offset="100%" stopColor="rgba(10,35,90,0.55)" />
+        </linearGradient>
+        <clipPath id="crtClip">
+          <rect width="360" height="420" rx="20" />
+        </clipPath>
+      </defs>
+
+      <g clipPath="url(#crtClip)">
+        {/* ── Floor ── */}
+        <rect width="360" height="420" fill="url(#crtFloor)" />
+        <rect width="360" height="420" fill="url(#crtSpot)" />
+
+        {/* Subtle hardwood planks */}
+        {[...Array(29)].map((_, i) => (
+          <line key={i} x1="0" y1={i * 15} x2="360" y2={i * 15}
+            stroke="rgba(255,190,80,0.025)" strokeWidth="1" />
+        ))}
+
+        {/* ── Court boundary ── */}
+        <rect x="12" y="14" width="336" height="392" rx="3"
+          fill="none" stroke="rgba(255,255,255,0.20)" strokeWidth="1.5" />
+
+        {/* ── Halfcourt line (top) ── */}
+        <line x1="12" y1="52" x2="348" y2="52"
+          stroke="rgba(255,255,255,0.16)" strokeWidth="1.5" />
+        {/* Center jump-circle partial (visible below halfcourt line) */}
+        <path d="M 144 52 A 36 36 0 0 0 216 52"
+          fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="1.5" />
+
+        {/* ── 3-point arc ── */}
+        {/* Basket center: (180, 394). r ≈ 215 in this scale. */}
+        {/* Corner 3 lines — vertical from baseline up to y≈295 */}
+        <line x1="14" y1="296" x2="14" y2="406"
+          stroke="rgba(255,255,255,0.17)" strokeWidth="1.5" />
+        <line x1="346" y1="296" x2="346" y2="406"
+          stroke="rgba(255,255,255,0.17)" strokeWidth="1.5" />
+        {/* Arc: peak goes off-screen at top — clipped naturally */}
+        <path d="M 14 296 A 220 220 0 0 1 346 296"
+          fill="none" stroke="rgba(255,255,255,0.17)" strokeWidth="1.5" />
+
+        {/* ── Key / Paint ── */}
+        <rect x="130" y="284" width="100" height="122"
+          fill="url(#crtPaint)" />
+        {/* Lane side lines */}
+        <line x1="130" y1="284" x2="130" y2="406"
+          stroke="rgba(255,255,255,0.20)" strokeWidth="1.5" />
+        <line x1="230" y1="284" x2="230" y2="406"
+          stroke="rgba(255,255,255,0.20)" strokeWidth="1.5" />
+        {/* Free throw line */}
+        <line x1="130" y1="284" x2="230" y2="284"
+          stroke="rgba(255,255,255,0.20)" strokeWidth="1.5" />
+
+        {/* Free throw circle — lower half (inside key) */}
+        <path d="M 130 284 A 50 50 0 0 1 230 284"
+          fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
+        {/* Free throw circle — upper half (outside key, dashed) */}
+        <path d="M 130 284 A 50 50 0 0 0 230 284"
+          fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="1.5"
+          strokeDasharray="5 3" />
+
+        {/* Lane hash marks (block marks) */}
+        <line x1="118" y1="318" x2="130" y2="318"
+          stroke="rgba(255,255,255,0.14)" strokeWidth="1.3" />
+        <line x1="230" y1="318" x2="242" y2="318"
+          stroke="rgba(255,255,255,0.14)" strokeWidth="1.3" />
+        <line x1="118" y1="349" x2="130" y2="349"
+          stroke="rgba(255,255,255,0.14)" strokeWidth="1.3" />
+        <line x1="230" y1="349" x2="242" y2="349"
+          stroke="rgba(255,255,255,0.14)" strokeWidth="1.3" />
+
+        {/* ── Basket area ── */}
+        {/* Restricted area arc */}
+        <path d="M 155 406 A 25 25 0 0 0 205 406"
+          fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="1.5" />
+        {/* Backboard */}
+        <line x1="158" y1="388" x2="202" y2="388"
+          stroke="rgba(255,185,55,0.72)" strokeWidth="2.8" strokeLinecap="round" />
+        {/* Hoop */}
+        <circle cx="180" cy="396" r="13"
+          fill="none" stroke="rgba(255,155,35,0.65)" strokeWidth="2.2" />
+        {/* Net glow */}
+        <circle cx="180" cy="396" r="5"
+          fill="rgba(255,155,35,0.16)" />
+      </g>
+    </svg>
+  )
+}
+
 // ── DIAMOND BADGE ─────────────────────────────────────────────────────────────
-function DiamondBadge({ abbr = '?', size = 70, glow = false }) {
+function DiamondBadge({ abbr = '?', size = 70 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 90 90" style={{ flexShrink: 0, overflow: 'visible' }}>
       <defs>
-        <linearGradient id="badgeGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+        <linearGradient id="bdgGrad" x1="20%" y1="0%" x2="80%" y2="100%">
           <stop offset="0%"   stopColor="#7BC8F8" />
           <stop offset="40%"  stopColor="#5BB8F5" />
           <stop offset="100%" stopColor="#1B3A6B" />
         </linearGradient>
-        {glow && (
-          <filter id="badgeGlow">
-            <feGaussianBlur stdDeviation="3" result="blur"/>
-            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-          </filter>
-        )}
       </defs>
       <polygon points="45,9 84,33 84,61 45,87 6,61 6,33" fill="rgba(0,0,0,0.22)" />
-      <polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill="url(#badgeGrad)" />
+      <polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill="url(#bdgGrad)" />
       <polygon points="45,6 8,32 45,42"  fill="rgba(255,255,255,0.30)" />
       <polygon points="45,6 82,32 45,42" fill="rgba(255,255,255,0.13)" />
       <polygon points="8,32 8,58 45,48 45,42"  fill="rgba(40,130,220,0.80)" />
@@ -66,7 +180,7 @@ function DiamondBadge({ abbr = '?', size = 70, glow = false }) {
       <polygon points="45,6 82,32 82,58 45,84 8,58 8,32"
         fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="1.8" strokeLinejoin="round" />
       <text x="45" y="50" textAnchor="middle" dominantBaseline="middle"
-        fill="white" fontSize={abbr.length > 2 ? "20" : "24"} fontWeight="900"
+        fill="white" fontSize={abbr.length > 2 ? '20' : '24'} fontWeight="900"
         fontFamily="var(--font-display), Montserrat, 'Arial Black', sans-serif"
         letterSpacing="1">
         {abbr.toUpperCase()}
@@ -76,29 +190,39 @@ function DiamondBadge({ abbr = '?', size = 70, glow = false }) {
 }
 
 // ── PLAYER SLOT ───────────────────────────────────────────────────────────────
-function PlayerSlot({ position, member, isCenter, onPress }) {
-  const size = isCenter ? 82 : 70
-
+function PlayerSlot({ position, member, size = 90, onPress }) {
   if (member) {
     return (
-      <motion.button whileTap={{ scale: 0.93 }} onClick={onPress}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-        {/* Filled diamond — shows player initial */}
-        <svg width={size} height={size} viewBox="0 0 90 90" style={{ overflow: 'visible' }}>
+      <motion.button
+        whileTap={{ scale: 0.92 }}
+        onClick={onPress}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+        }}
+      >
+        <svg
+          width={size} height={size}
+          viewBox="0 0 90 90"
+          style={{
+            overflow: 'visible',
+            filter: 'drop-shadow(0 4px 12px rgba(91,184,245,0.45))',
+          }}
+        >
           <defs>
-            <linearGradient id={`pg${position.key}`} x1="20%" y1="0%" x2="80%" y2="100%">
+            <linearGradient id={`slotGrad_${position.key}`} x1="20%" y1="0%" x2="80%" y2="100%">
               <stop offset="0%"   stopColor="#2272C3" />
               <stop offset="100%" stopColor="#0D2A5A" />
             </linearGradient>
           </defs>
-          <polygon points="45,9 84,33 84,61 45,87 6,61 6,33" fill="rgba(0,0,0,0.30)" />
-          <polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill={`url(#pg${position.key})`} />
-          <polygon points="45,6 8,32 45,42"  fill="rgba(255,255,255,0.20)" />
+          <polygon points="45,9 84,33 84,61 45,87 6,61 6,33" fill="rgba(0,0,0,0.35)" />
+          <polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill={`url(#slotGrad_${position.key})`} />
+          <polygon points="45,6 8,32 45,42"  fill="rgba(255,255,255,0.22)" />
           <polygon points="45,6 82,32 82,58 45,84 8,58 8,32"
-            fill="none" stroke="rgba(91,184,245,0.60)" strokeWidth="2" strokeLinejoin="round" />
-          {/* Pulse ring */}
-          <polygon points="45,4 84,31 84,59 45,86 6,59 6,31"
-            fill="none" stroke="rgba(91,184,245,0.25)" strokeWidth="1" strokeLinejoin="round" />
+            fill="none" stroke="rgba(91,184,245,0.65)" strokeWidth="2.2" strokeLinejoin="round" />
+          {/* Outer pulse ring */}
+          <polygon points="45,3 86,30 86,60 45,87 4,60 4,30"
+            fill="none" stroke="rgba(91,184,245,0.20)" strokeWidth="1.2" strokeLinejoin="round" />
           <text x="45" y="50" textAnchor="middle" dominantBaseline="middle"
             fill="white" fontSize="30" fontWeight="800"
             fontFamily="var(--font-display), Montserrat, sans-serif">
@@ -106,10 +230,17 @@ function PlayerSlot({ position, member, isCenter, onPress }) {
           </text>
         </svg>
         <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: '#5BB8F5', margin: 0 }}>
+          <p style={{
+            fontSize: 9, fontWeight: 700, letterSpacing: 1.8,
+            textTransform: 'uppercase', color: '#5BB8F5', margin: 0,
+          }}>
             {position.key}
           </p>
-          <p style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.80)', margin: '2px 0 0', maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <p style={{
+            fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.85)',
+            margin: '1px 0 0', maxWidth: 74,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
             {member.name}
           </p>
         </div>
@@ -119,23 +250,36 @@ function PlayerSlot({ position, member, isCenter, onPress }) {
 
   // Empty slot
   return (
-    <motion.button whileTap={{ scale: 0.92 }} onClick={onPress}
-      style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+    <motion.button
+      whileTap={{ scale: 0.91 }}
+      onClick={onPress}
+      style={{
+        background: 'none', border: 'none', cursor: 'pointer',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+      }}
+    >
       <svg width={size} height={size} viewBox="0 0 90 90" style={{ overflow: 'visible' }}>
         {/* Dashed diamond outline */}
-        <polygon points="45,6 82,32 82,58 45,84 8,58 8,32"
-          fill="rgba(91,184,245,0.05)"
-          stroke="rgba(91,184,245,0.35)" strokeWidth="2" strokeLinejoin="round"
-          strokeDasharray="6 4" />
-        {/* Plus icon */}
-        <line x1="45" y1="36" x2="45" y2="54" stroke="rgba(91,184,245,0.70)" strokeWidth="2.5" strokeLinecap="round"/>
-        <line x1="36" y1="45" x2="54" y2="45" stroke="rgba(91,184,245,0.70)" strokeWidth="2.5" strokeLinecap="round"/>
+        <polygon
+          points="45,6 82,32 82,58 45,84 8,58 8,32"
+          fill="rgba(91,184,245,0.07)"
+          stroke="rgba(91,184,245,0.42)" strokeWidth="2" strokeLinejoin="round"
+          strokeDasharray="6 4"
+        />
+        {/* Plus */}
+        <line x1="45" y1="34" x2="45" y2="56"
+          stroke="rgba(91,184,245,0.72)" strokeWidth="2.8" strokeLinecap="round" />
+        <line x1="34" y1="45" x2="56" y2="45"
+          stroke="rgba(91,184,245,0.72)" strokeWidth="2.8" strokeLinecap="round" />
       </svg>
       <div style={{ textAlign: 'center' }}>
-        <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: 'rgba(91,184,245,0.60)', margin: 0 }}>
+        <p style={{
+          fontSize: 9, fontWeight: 700, letterSpacing: 1.8,
+          textTransform: 'uppercase', color: 'rgba(91,184,245,0.65)', margin: 0,
+        }}>
           {position.key}
         </p>
-        <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.30)', margin: '2px 0 0' }}>
+        <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)', margin: '1px 0 0' }}>
           Zaproś
         </p>
       </div>
@@ -172,8 +316,7 @@ function InviteModal({ club, position, member, onClose, onRemove }) {
         transition={{ type: 'spring', stiffness: 320, damping: 28 }}
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 420,
-          margin: '0 16px',
+          width: '100%', maxWidth: 420, margin: '0 16px',
           background: 'rgba(10,14,22,0.97)',
           backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)',
           border: '1px solid rgba(91,184,245,0.20)',
@@ -213,7 +356,6 @@ function InviteModal({ club, position, member, onClose, onRemove }) {
             </p>
             <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 20 }}>{position.label}</p>
 
-            {/* Link box */}
             <div style={{
               padding: '12px 14px', background: 'rgba(255,255,255,0.05)',
               border: '1px solid rgba(255,255,255,0.10)', borderRadius: 10,
@@ -241,7 +383,7 @@ function InviteModal({ club, position, member, onClose, onRemove }) {
   )
 }
 
-// ── COUNTRY PICKER MODAL ──────────────────────────────────────────────────────
+// ── COUNTRY PICKER ────────────────────────────────────────────────────────────
 function CountryPicker({ value, onChange, onClose }) {
   return (
     <motion.div
@@ -274,7 +416,7 @@ function CountryPicker({ value, onChange, onClose }) {
           Wybierz kraj
         </p>
         {COUNTRIES.map(c => (
-          <button key={c.code} onClick={() => { onChange(c); onClose(); }}
+          <button key={c.code} onClick={() => { onChange(c); onClose() }}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: 14,
               padding: '13px 20px',
@@ -303,7 +445,6 @@ function CreateClub({ onCreated, ownerName, ownerInitial }) {
   const [abbr, setAbbr]       = useState('')
   const [country, setCountry] = useState(COUNTRIES[0])
   const [showPicker, setShowPicker] = useState(false)
-  const [step, setStep]       = useState(0) // 0=form, 1=confirm
 
   function handleCreate() {
     if (!name.trim() || abbr.length < 2) return
@@ -330,7 +471,6 @@ function CreateClub({ onCreated, ownerName, ownerInitial }) {
       minHeight: '100%', display: 'flex', flexDirection: 'column',
       padding: '48px 24px 40px', position: 'relative', overflow: 'hidden',
     }}>
-      {/* Background glow */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none',
         background: 'radial-gradient(ellipse 80% 40% at 50% -5%, rgba(91,184,245,0.20) 0%, transparent 60%)',
@@ -352,7 +492,6 @@ function CreateClub({ onCreated, ownerName, ownerInitial }) {
         </p>
       </motion.div>
 
-      {/* Title */}
       <h1 style={{
         fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 36,
         textTransform: 'uppercase', letterSpacing: 0.5, lineHeight: 1.1,
@@ -364,9 +503,7 @@ function CreateClub({ onCreated, ownerName, ownerInitial }) {
         Stwórz drużynę, zaproś znajomych i rywalizujcie razem.
       </p>
 
-      {/* Form */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {/* Club name */}
         <div>
           <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#A0B0C8', marginBottom: 6 }}>
             Nazwa klubu
@@ -381,7 +518,6 @@ function CreateClub({ onCreated, ownerName, ownerInitial }) {
           />
         </div>
 
-        {/* Abbreviation */}
         <div>
           <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#A0B0C8', marginBottom: 6 }}>
             Skrót (2–3 litery)
@@ -396,7 +532,6 @@ function CreateClub({ onCreated, ownerName, ownerInitial }) {
           />
         </div>
 
-        {/* Country */}
         <div>
           <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#A0B0C8', marginBottom: 6 }}>
             Kraj
@@ -420,7 +555,6 @@ function CreateClub({ onCreated, ownerName, ownerInitial }) {
         </div>
       </div>
 
-      {/* Create button */}
       <motion.button
         whileTap={{ scale: 0.97 }}
         onClick={handleCreate}
@@ -447,11 +581,8 @@ function CreateClub({ onCreated, ownerName, ownerInitial }) {
 
 // ── CLUB PANEL ─────────────────────────────────────────────────────────────────
 function ClubPanel({ club, onUpdate }) {
-  const [invite, setInvite] = useState(null) // { position, member }
+  const [invite, setInvite] = useState(null)
   const [copiedClub, setCopiedClub] = useState(false)
-
-  const topRow    = POSITIONS.filter(p => p.row === 0)
-  const bottomRow = POSITIONS.filter(p => p.row === 1)
 
   function handleSlotPress(position) {
     setInvite({ position, member: club.members[position.key] })
@@ -473,11 +604,11 @@ function ClubPanel({ club, onUpdate }) {
   const memberCount = Object.values(club.members).filter(Boolean).length
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', overflow: 'auto' }}>
-      {/* Background */}
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', overflowY: 'auto' }}>
+      {/* Background glow */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-        background: 'radial-gradient(ellipse 100% 50% at 50% 0%, rgba(27,58,107,0.35) 0%, transparent 60%)',
+        background: 'radial-gradient(ellipse 100% 50% at 50% 0%, rgba(27,58,107,0.28) 0%, transparent 55%)',
       }} />
 
       <AnimatePresence>
@@ -492,106 +623,89 @@ function ClubPanel({ club, onUpdate }) {
         )}
       </AnimatePresence>
 
-      {/* Header */}
-      <div style={{ padding: '28px 22px 0', position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-          <DiamondBadge abbr={club.abbr} size={60} />
+      {/* ── Header ── */}
+      <div style={{ padding: '24px 20px 0', position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+          <DiamondBadge abbr={club.abbr} size={58} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', color: '#5BB8F5', fontWeight: 700, marginBottom: 4 }}>
+            <p style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', color: '#5BB8F5', fontWeight: 700, marginBottom: 3 }}>
               {club.country.flag} {club.country.name}
             </p>
             <h1 style={{
-              fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 22,
+              fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 21,
               textTransform: 'uppercase', color: 'var(--text-primary)',
               letterSpacing: 0.5, lineHeight: 1.1, margin: 0,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{club.name}</h1>
-            <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 3 }}>
+            <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
               {memberCount} / 5 zawodników
             </p>
           </div>
         </div>
 
         {/* Stats bar */}
-        <div style={{
-          display: 'flex', gap: 8, marginBottom: 24,
-        }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           {[
-            { label: 'Skrót', val: club.abbr },
-            { label: 'Zawodnicy', val: `${memberCount}/5` },
-            { label: 'Status', val: memberCount === 5 ? 'Pełny' : 'Rekrutacja' },
+            { label: 'Skrót',     val: club.abbr },
+            { label: 'Skład',     val: `${memberCount}/5` },
+            { label: 'Status',    val: memberCount === 5 ? 'Pełny' : 'Rekrutacja' },
           ].map(s => (
             <div key={s.label} style={{
-              flex: 1, padding: '10px 12px',
+              flex: 1, padding: '9px 10px',
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 10, textAlign: 'center',
             }}>
-              <p style={{ fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 4 }}>{s.label}</p>
-              <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{s.val}</p>
+              <p style={{ fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: 3 }}>{s.label}</p>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{s.val}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Basketball court - formation */}
+      {/* ── Basketball court with players ── */}
       <div style={{
-        flex: 1, position: 'relative', zIndex: 1,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        padding: '10px 16px 24px',
-        gap: 8,
+        position: 'relative',
+        zIndex: 1,
+        // 420px court + 16px top margin
+        height: 420,
+        margin: '0 12px',
+        borderRadius: 20,
+        overflow: 'visible', // allow player labels to overflow
+        flexShrink: 0,
       }}>
-        {/* Court background */}
-        <div style={{
-          position: 'absolute', inset: '0 0 80px 0',
-          borderRadius: 20,
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.05)',
-          overflow: 'hidden',
-        }}>
-          {/* Halfcourt circle */}
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            width: 120, height: 120,
-            borderRadius: '50%',
-            border: '1px solid rgba(255,255,255,0.05)',
-            transform: 'translate(-50%, -50%)',
-          }} />
-        </div>
+        <CourtBackground />
 
-        <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.20)', marginBottom: 4, zIndex: 1 }}>
-          Skład
-        </p>
-
-        {/* Top row — PG, SG */}
-        <div style={{ display: 'flex', gap: 32, justifyContent: 'center', zIndex: 1 }}>
-          {topRow.map(pos => (
-            <PlayerSlot key={pos.key} position={pos} member={club.members[pos.key]}
-              isCenter={false} onPress={() => handleSlotPress(pos)} />
-          ))}
-        </div>
-
-        {/* Bottom row — SF, C, PF */}
-        <div style={{ display: 'flex', gap: 20, justifyContent: 'center', alignItems: 'flex-end', zIndex: 1, marginTop: 12 }}>
-          {bottomRow.map(pos => (
-            <PlayerSlot key={pos.key} position={pos} member={club.members[pos.key]}
-              isCenter={pos.isCenter} onPress={() => handleSlotPress(pos)} />
-          ))}
-        </div>
+        {/* Players absolutely on court */}
+        {POSITIONS.map(pos => (
+          <div
+            key={pos.key}
+            style={{
+              position: 'absolute',
+              left: COURT_POS[pos.key].x,
+              top: COURT_POS[pos.key].y,
+              transform: 'translate(-50%, -50%)',
+              zIndex: 3,
+            }}
+          >
+            <PlayerSlot
+              position={pos}
+              member={club.members[pos.key]}
+              size={pos.isCenter ? 104 : 88}
+              onPress={() => handleSlotPress(pos)}
+            />
+          </div>
+        ))}
       </div>
 
-      {/* Bottom share bar */}
+      {/* ── Share bar ── */}
       <div style={{
-        padding: '16px 22px 100px',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
-        display: 'flex', gap: 10,
+        padding: '18px 20px 110px',
         position: 'relative', zIndex: 1,
-        background: 'rgba(4,8,14,0.70)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        display: 'flex', gap: 10,
       }}>
         <motion.button whileTap={{ scale: 0.96 }} onClick={copyClubLink} style={{
-          flex: 1, padding: '12px',
+          flex: 1, padding: '13px',
           background: copiedClub ? 'rgba(0,230,118,0.10)' : 'rgba(91,184,245,0.10)',
           border: copiedClub ? '1px solid rgba(0,230,118,0.30)' : '1px solid rgba(91,184,245,0.25)',
           borderRadius: 12,
@@ -615,14 +729,6 @@ export default function ClubPage() {
   const ownerName    = profile?.name || 'Ty'
   const ownerInitial = ownerName.trim()[0]?.toUpperCase() || 'T'
 
-  function handleCreated(newClub) {
-    setClub(newClub)
-  }
-
-  function handleUpdate(updatedClub) {
-    setClub(updatedClub)
-  }
-
   return (
     <div className="page-content" style={{ padding: 0 }}>
       <AnimatePresence mode="wait">
@@ -632,7 +738,11 @@ export default function ClubPage() {
             exit={{ opacity: 0, x: -30 }}
             style={{ minHeight: '100%' }}
           >
-            <CreateClub onCreated={handleCreated} ownerName={ownerName} ownerInitial={ownerInitial} />
+            <CreateClub
+              onCreated={setClub}
+              ownerName={ownerName}
+              ownerInitial={ownerInitial}
+            />
           </motion.div>
         ) : (
           <motion.div key="panel"
@@ -640,7 +750,7 @@ export default function ClubPage() {
             exit={{ opacity: 0, x: -30 }}
             style={{ minHeight: '100%', display: 'flex', flexDirection: 'column' }}
           >
-            <ClubPanel club={club} onUpdate={handleUpdate} />
+            <ClubPanel club={club} onUpdate={setClub} />
           </motion.div>
         )}
       </AnimatePresence>

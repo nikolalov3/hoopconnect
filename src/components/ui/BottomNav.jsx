@@ -48,7 +48,7 @@ const ClubIcon = ({ active }) => (
     />
     <polygon
       points="45,6 82,32 82,58 45,84 8,58 8,32"
-      fill={active ? 'url(#clubIconGrad)' : 'rgba(180,120,80,0.18)'}
+      fill={active ? 'url(#clubIconGrad)' : 'rgba(160,170,185,0.18)'}
     />
     {active && (
       <>
@@ -59,7 +59,7 @@ const ClubIcon = ({ active }) => (
     <polygon
       points="45,6 82,32 82,58 45,84 8,58 8,32"
       fill="none"
-      stroke={active ? 'rgba(255,255,255,0.70)' : 'rgba(180,120,80,0.45)'}
+      stroke={active ? 'rgba(255,255,255,0.70)' : 'rgba(160,175,195,0.55)'}
       strokeWidth="5"
       strokeLinejoin="round"
     />
