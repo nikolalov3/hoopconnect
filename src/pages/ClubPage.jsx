@@ -163,13 +163,14 @@ async function apiRemove(clubId, pos) {
 }
 
 async function apiSwap(clubId, pA, pB, idA, idB) {
-  const del = (pos) => supabase.from('club_members').delete()
-    .eq('club_id', clubId).eq('position', pos)
+  // Delete by user_id — reliable with unique(club_id, user_id) constraint
+  const del = (uid) => supabase.from('club_members').delete()
+    .eq('club_id', clubId).eq('user_id', uid)
   const ins = (uid, pos) => supabase.from('club_members').insert(
     { club_id: clubId, user_id: uid, position: pos })
 
-  const { error: e1 } = await del(pA); if (e1) throw new Error(e1.message)
-  if (idB) { const { error: e2 } = await del(pB); if (e2) throw new Error(e2.message) }
+  const { error: e1 } = await del(idA); if (e1) throw new Error(e1.message)
+  if (idB) { const { error: e2 } = await del(idB); if (e2) throw new Error(e2.message) }
   const { error: e3 } = await ins(idA, pB); if (e3) throw new Error(e3.message)
   if (idB) { const { error: e4 } = await ins(idB, pA); if (e4) throw new Error(e4.message) }
 }
