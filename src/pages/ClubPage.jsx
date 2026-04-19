@@ -102,12 +102,13 @@ async function apiCreate({ name, abbr, country, profile }) {
       country_code: country.code, country_name: country.name, country_flag: country.flag,
       owner_id: profile.id }).select().single()
   if (error) throw error
-  await supabase.from('club_members')
+  const { error: memErr } = await supabase.from('club_members')
     .insert({ club_id: club.id, user_id: profile.id, position: 'PG' })
-  return dbToUi({
-    ...club,
-    club_members: [{ position: 'PG', user_id: profile.id, joined_at: new Date().toISOString(), profiles: { name: profile.name } }],
-  })
+  if (memErr) throw memErr   // was silently ignored before!
+  // Re-fetch from DB so UI always reflects real state
+  const ui = await apiFetch(profile.id)
+  if (!ui) throw new Error('club created but member row missing')
+  return ui
 }
 
 async function apiRemove(clubId, pos) {
@@ -117,7 +118,22 @@ async function apiRemove(clubId, pos) {
 }
 
 async function apiSwap(clubId, pA, pB) {
-  // Uses a security-definer RPC so RLS can't block owner moving other players
+  // Diagnostic: read what's actually stored before calling RPC
+  const { data: rows, error: selErr } = await supabase
+    .from('club_members')
+    .select('position, user_id, club_id')
+    .eq('club_id', clubId)
+
+  if (selErr) throw new Error(`SELECT failed: ${selErr.message}`)
+  if (!rows || rows.length === 0) {
+    throw new Error(`club_members pusty dla club_id=${clubId}`)
+  }
+  const found = rows.find(r => r.position === pA)
+  if (!found) {
+    const positions = rows.map(r => r.position).join(', ')
+    throw new Error(`Brak pozycji "${pA}" w DB — dostępne: [${positions}]`)
+  }
+
   const { error } = await supabase.rpc('move_member', {
     p_club_id:  clubId,
     p_from_pos: pA,
