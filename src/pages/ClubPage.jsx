@@ -116,29 +116,14 @@ async function apiRemove(clubId, pos) {
   if (error) throw error
 }
 
-async function apiSwap(clubId, pA, pB, idA, idB) {
-  // Sequential deletes — avoids race conditions with unique(user_id) constraint
-  if (idA) {
-    const { error } = await supabase.from('club_members')
-      .delete().eq('club_id', clubId).eq('position', pA)
-    if (error) throw error
-  }
-  if (idB) {
-    const { error } = await supabase.from('club_members')
-      .delete().eq('club_id', clubId).eq('position', pB)
-    if (error) throw error
-  }
-  // Insert new positions after both rows are gone
-  if (idA) {
-    const { error } = await supabase.from('club_members')
-      .insert({ club_id: clubId, user_id: idA, position: pB })
-    if (error) throw error
-  }
-  if (idB) {
-    const { error } = await supabase.from('club_members')
-      .insert({ club_id: clubId, user_id: idB, position: pA })
-    if (error) throw error
-  }
+async function apiSwap(clubId, pA, pB) {
+  // Uses a security-definer RPC so RLS can't block owner moving other players
+  const { error } = await supabase.rpc('move_member', {
+    p_club_id:  clubId,
+    p_from_pos: pA,
+    p_to_pos:   pB,
+  })
+  if (error) throw error
 }
 
 async function apiLeave(clubId, userId) {
@@ -1082,12 +1067,10 @@ function ClubView({ club, onUpdate, uid }) {
   async function doSwap(pA, pB) {
     setSwapping(true)
     try {
-      const mA = club.members[pA], mB = club.members[pB]
-      await apiSwap(club.id, pA, pB, mA?.id ?? null, mB?.id ?? null)
+      await apiSwap(club.id, pA, pB)
     } catch (e) {
-      console.error('swap error:', e)
+      console.error('swap error:', e?.message ?? e)
     } finally {
-      // Always re-fetch so UI reflects actual DB state (success or rollback)
       const up = await apiFetch(uid)
       if (up) onUpdate(up)
       setSwapping(false)
