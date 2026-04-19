@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import L from 'leaflet'
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  DESIGN TOKENS — dark neon sports theme
@@ -45,6 +46,45 @@ const SPOT = {
 
 // Concave-corner path for 343×410, r=24
 const COURT_PATH = 'M24,0 L319,0 Q319,24 343,24 L343,386 Q319,386 319,410 L24,410 Q24,386 0,386 L0,24 Q24,24 24,0 Z'
+
+// ── MATCH CONSTANTS ───────────────────────────────────────────────────────────
+const MODE_SLOTS = { '2v2': 2, '3v3': 3, '5v5': 5 }
+const MODE_LABEL = { '2v2': '2 na 2', '3v3': '3 na 3', '5v5': '5 na 5' }
+const MODE_COLOR = { '2v2': '#9050FF', '3v3': '#00CCFF', '5v5': '#FFA820' }
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371, r = Math.PI / 180
+  const dLat = (lat2 - lat1) * r
+  const dLng = (lng2 - lng1) * r
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+async function reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=pl`,
+      { headers: { 'User-Agent': 'HoopConnect/1.0' } }
+    )
+    const d = await res.json()
+    const { road, suburb, quarter, city, town, village } = d.address || {}
+    return [road, suburb || quarter || city || town || village].filter(Boolean).join(', ') || 'Lokalizacja'
+  } catch { return 'Lokalizacja' }
+}
+
+function fmtMatchDate(iso) {
+  const d = new Date(iso)
+  const days = ['Ndz', 'Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob']
+  const months = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru']
+  return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`
+}
+function fmtMatchTime(iso) {
+  const d = new Date(iso)
+  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+}
+function fmtDist(km) {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`
+}
 
 const COUNTRIES = [
   { code: 'PL', name: 'Polska',          flag: '🇵🇱' },
@@ -191,6 +231,76 @@ async function apiUpdateClub(clubId, { name, abbr, country }) {
     name, abbr: abbr.toUpperCase(),
     country_code: country.code, country_name: country.name, country_flag: country.flag,
   }).eq('id', clubId)
+  if (error) throw error
+}
+
+// ── MATCH API ─────────────────────────────────────────────────────────────────
+async function apiCreateMatch({ clubId, createdBy, mode, lat, lng, address, scheduledAt, note }) {
+  const { data, error } = await supabase
+    .from('club_matches')
+    .insert({ club_id: clubId, created_by: createdBy, mode, lat, lng, address, scheduled_at: scheduledAt, note: note || null })
+    .select().single()
+  if (error) throw error
+  return { ...data, players: [] }
+}
+
+async function apiFetchMatches(userLat, userLng, radiusKm = 25) {
+  const { data: matches, error } = await supabase
+    .from('club_matches')
+    .select('*')
+    .neq('status', 'cancelled')
+    .order('scheduled_at', { ascending: true })
+  if (error) throw error
+
+  const nearby = (matches || []).filter(m => haversineKm(userLat, userLng, m.lat, m.lng) <= radiusKm)
+  if (!nearby.length) return []
+
+  const ids = nearby.map(m => m.id)
+  const { data: players } = await supabase.from('match_players').select('*').in('match_id', ids)
+
+  const uids = [...new Set((players || []).map(p => p.user_id))]
+  let profileRows = []
+  if (uids.length) {
+    const { data: pd } = await supabase.from('profiles').select('id,name').in('id', uids)
+    profileRows = pd || []
+  }
+  const pm = Object.fromEntries(profileRows.map(p => [p.id, p]))
+
+  return nearby.map(m => ({
+    ...m,
+    _dist: haversineKm(userLat, userLng, m.lat, m.lng),
+    players: (players || []).filter(p => p.match_id === m.id).map(p => ({ ...p, profile: pm[p.user_id] || null })),
+  }))
+}
+
+async function apiJoinMatch(matchId, userId, team, mode) {
+  const n = MODE_SLOTS[mode]
+  const { data: existing } = await supabase.from('match_players').select('slot').eq('match_id', matchId).eq('team', team)
+  const taken = new Set((existing || []).map(p => p.slot))
+  const slot = Array.from({ length: n }, (_, i) => i + 1).find(s => !taken.has(s))
+  if (!slot) throw new Error('Drużyna jest już pełna')
+  const { error } = await supabase.from('match_players').insert({ match_id: matchId, user_id: userId, team, slot })
+  if (error) {
+    if (error.code === '23505') throw new Error('Już jesteś w tym meczu')
+    throw error
+  }
+  const { count } = await supabase.from('match_players').select('*', { count: 'exact', head: true }).eq('match_id', matchId)
+  if ((count || 0) >= n * 2) {
+    await supabase.from('club_matches').update({ status: 'full' }).eq('id', matchId)
+  }
+}
+
+async function apiLeaveMatch(matchId, userId) {
+  const { error } = await supabase.from('match_players').delete().eq('match_id', matchId).eq('user_id', userId)
+  if (error) throw error
+  await supabase.from('club_matches').update({ status: 'open' }).eq('id', matchId)
+}
+
+async function apiEnterScore(matchId, scoreHome, scoreAway) {
+  const { error } = await supabase
+    .from('club_matches')
+    .update({ score_home: scoreHome, score_away: scoreAway, status: 'completed' })
+    .eq('id', matchId)
   if (error) throw error
 }
 
@@ -820,11 +930,890 @@ function ClubHeader({ club, isOwner, onEditPress }) {
   )
 }
 
+// ── MATCH CARD ────────────────────────────────────────────────────────────────
+function MatchCard({ match, dist, onPress }) {
+  const slots = MODE_SLOTS[match.mode]
+  const homePlayers = match.players.filter(p => p.team === 'home')
+  const awayPlayers = match.players.filter(p => p.team === 'away')
+  const color = MODE_COLOR[match.mode]
+  const isPast = new Date(match.scheduled_at) < new Date()
+
+  return (
+    <motion.div whileTap={{ scale: 0.975 }} onClick={onPress}
+      style={{
+        borderRadius: 16, marginBottom: 10, cursor: 'pointer',
+        background: C.surface, border: `1px solid rgba(255,255,255,0.05)`,
+        borderLeft: `3px solid ${color}`,
+        opacity: isPast && match.status !== 'completed' ? 0.65 : 1,
+        overflow: 'hidden',
+      }}>
+      <div style={{ padding: '12px 14px' }}>
+        {/* Top row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <div style={{
+              padding: '3px 9px', borderRadius: 6,
+              background: `${color}18`, border: `1px solid ${color}40`,
+              fontSize: 9.5, fontWeight: 800, letterSpacing: 1.5,
+              color, textTransform: 'uppercase', fontFamily: 'var(--font-display)',
+            }}>{match.mode}</div>
+            {match.status === 'completed' && (
+              <div style={{ padding: '2px 7px', borderRadius: 6, background: `${C.win}12`,
+                border: `1px solid ${C.win}30`, fontSize: 9, fontWeight: 700, color: C.win, letterSpacing: 1 }}>
+                ZAKOŃCZONY
+              </div>
+            )}
+            {match.status === 'full' && (
+              <div style={{ padding: '2px 7px', borderRadius: 6, background: `${C.loss}12`,
+                border: `1px solid ${C.loss}30`, fontSize: 9, fontWeight: 700, color: C.loss, letterSpacing: 1 }}>
+                PEŁNY
+              </div>
+            )}
+          </div>
+          <span style={{ fontSize: 10, fontWeight: 700, color: C.accent }}>{fmtDist(dist)}</span>
+        </div>
+
+        {/* Location row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+          <svg width="9" height="12" viewBox="0 0 24 30" fill={C.sub}>
+            <path d="M12 0C7.6 0 4 3.6 4 8c0 6 8 22 8 22s8-16 8-22c0-4.4-3.6-8-8-8zm0 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
+          </svg>
+          <span style={{ fontSize: 10.5, color: C.text, flex: 1, overflow: 'hidden',
+            textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1 }}>
+            {match.address || 'Lokalizacja na mapie'}
+          </span>
+        </div>
+
+        {/* Date row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.sub} strokeWidth="2" strokeLinecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span style={{ fontSize: 10.5, color: C.sub }}>
+            {fmtMatchDate(match.scheduled_at)} · {fmtMatchTime(match.scheduled_at)}
+          </span>
+        </div>
+
+        {/* Slots row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {Array.from({ length: slots }).map((_, i) => {
+              const filled = homePlayers.some(p => p.slot === i + 1)
+              return (
+                <div key={i} style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: filled ? C.accent : C.dim,
+                  boxShadow: filled ? `0 0 5px ${C.accent}70` : 'none',
+                  transition: 'all 0.2s',
+                }}/>
+              )
+            })}
+          </div>
+          <span style={{ fontSize: 9, fontWeight: 800, color: C.dim, letterSpacing: 1 }}>VS</span>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {Array.from({ length: slots }).map((_, i) => {
+              const filled = awayPlayers.some(p => p.slot === i + 1)
+              return (
+                <div key={i} style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: filled ? C.hoop : C.dim,
+                  boxShadow: filled ? `0 0 5px ${C.hoop}70` : 'none',
+                  transition: 'all 0.2s',
+                }}/>
+              )
+            })}
+          </div>
+          <span style={{ fontSize: 9.5, fontWeight: 700, color: C.sub, marginLeft: 'auto' }}>
+            {homePlayers.length + awayPlayers.length}/{slots * 2} graczy
+          </span>
+        </div>
+
+        {/* Score */}
+        {match.status === 'completed' && match.score_home != null && (
+          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14 }}>
+            <span style={{ fontSize: 26, fontWeight: 900, lineHeight: 1, fontFamily: 'var(--font-display)',
+              color: match.score_home > match.score_away ? C.win : C.text,
+              textShadow: match.score_home > match.score_away ? `0 0 16px ${C.win}50` : 'none' }}>
+              {match.score_home}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: C.dim }}>:</span>
+            <span style={{ fontSize: 26, fontWeight: 900, lineHeight: 1, fontFamily: 'var(--font-display)',
+              color: match.score_away > match.score_home ? C.win : C.text,
+              textShadow: match.score_away > match.score_home ? `0 0 16px ${C.win}50` : 'none' }}>
+              {match.score_away}
+            </span>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+// ── MAP PICKER ────────────────────────────────────────────────────────────────
+function MapPicker({ center, onPin, existingPin }) {
+  const elRef = useRef(null)
+  const mapRef = useRef(null)
+  const markerRef = useRef(null)
+
+  useEffect(() => {
+    if (!document.querySelector('#leaflet-css')) {
+      const link = document.createElement('link')
+      link.id = 'leaflet-css'
+      link.rel = 'stylesheet'
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+      document.head.appendChild(link)
+    }
+    if (!elRef.current || mapRef.current) return
+
+    const map = L.map(elRef.current, { zoomControl: false, attributionControl: false })
+      .setView(center ? [center.lat, center.lng] : [52.0, 20.0], center ? 13 : 6)
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
+    L.control.zoom({ position: 'bottomright' }).addTo(map)
+
+    const pinIcon = L.divIcon({
+      html: `<div style="width:22px;height:22px;background:linear-gradient(135deg,#00CCFF,#0055AA);border-radius:50%;border:2.5px solid rgba(255,255,255,0.9);box-shadow:0 2px 14px rgba(0,180,255,0.75)"></div>`,
+      className: '', iconSize: [22, 22], iconAnchor: [11, 11],
+    })
+
+    if (existingPin) {
+      markerRef.current = L.marker([existingPin.lat, existingPin.lng], { icon: pinIcon }).addTo(map)
+    }
+
+    map.on('click', e => {
+      const { lat, lng } = e.latlng
+      if (markerRef.current) markerRef.current.setLatLng([lat, lng])
+      else markerRef.current = L.marker([lat, lng], { icon: pinIcon }).addTo(map)
+      onPin(lat, lng)
+    })
+
+    mapRef.current = map
+    return () => { map.remove(); mapRef.current = null; markerRef.current = null }
+  }, [])
+
+  return <div ref={elRef} style={{ width: '100%', height: '100%' }}/>
+}
+
+// ── CREATE MATCH SHEET ────────────────────────────────────────────────────────
+function CreateMatchSheet({ club, uid, onClose, onCreated }) {
+  const [mode,       setMode]       = useState(null)
+  const [pin,        setPin]        = useState(null)
+  const [addr,       setAddr]       = useState('')
+  const [date,       setDate]       = useState('')
+  const [time,       setTime]       = useState('')
+  const [note,       setNote]       = useState('')
+  const [saving,     setSaving]     = useState(false)
+  const [err,        setErr]        = useState(null)
+  const [locLoading, setLocLoading] = useState(false)
+  const [userLoc,    setUserLoc]    = useState(null)
+
+  useEffect(() => {
+    navigator.geolocation?.getCurrentPosition(
+      p => setUserLoc({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => {}
+    )
+  }, [])
+
+  async function handlePin(lat, lng) {
+    setPin({ lat, lng })
+    setAddr('')
+    const a = await reverseGeocode(lat, lng)
+    setAddr(a)
+  }
+
+  async function useMyLocation() {
+    setLocLoading(true)
+    navigator.geolocation?.getCurrentPosition(
+      async p => {
+        const loc = { lat: p.coords.latitude, lng: p.coords.longitude }
+        setPin(loc)
+        const a = await reverseGeocode(loc.lat, loc.lng)
+        setAddr(a)
+        setLocLoading(false)
+      },
+      () => setLocLoading(false)
+    )
+  }
+
+  const canCreate = !!(mode && pin && date && time)
+
+  async function handleCreate() {
+    if (!canCreate || saving) return
+    setSaving(true); setErr(null)
+    try {
+      const match = await apiCreateMatch({
+        clubId: club.id, createdBy: uid, mode,
+        lat: pin.lat, lng: pin.lng, address: addr || null,
+        scheduledAt: new Date(`${date}T${time}`).toISOString(),
+        note: note.trim() || null,
+      })
+      onCreated(match)
+      onClose()
+    } catch (e) { setErr(e.message) }
+    finally { setSaving(false) }
+  }
+
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 200,
+        background: 'rgba(4,8,15,0.88)', backdropFilter: 'blur(10px)',
+        display: 'flex', flexDirection: 'column' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+
+      <motion.div
+        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 300, damping: 32 }}
+        style={{ marginTop: 'auto', background: C.bg, borderRadius: '24px 24px 0 0',
+          height: '96%', display: 'flex', flexDirection: 'column',
+          border: `1px solid ${C.line}`, borderBottom: 'none',
+          boxShadow: `0 -16px 60px rgba(0,200,255,0.10)` }}>
+
+        {/* Header */}
+        <div style={{ position: 'relative', padding: '16px 20px 14px',
+          borderBottom: `1px solid ${C.dim}30`, display: 'flex', alignItems: 'center' }}>
+          <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
+            width: 36, height: 4, borderRadius: 2, background: C.dim }}/>
+          <p style={{ flex: 1, margin: '6px 0 0', fontSize: 13, fontWeight: 900, letterSpacing: 2.5,
+            textTransform: 'uppercase', color: C.text, fontFamily: 'var(--font-display)' }}>
+            Nowy mecz
+          </p>
+          <motion.button whileTap={{ scale: 0.88 }} onClick={onClose}
+            style={{ width: 32, height: 32, borderRadius: '50%', border: 'none',
+              background: `${C.dim}70`, color: C.sub, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </motion.button>
+        </div>
+
+        {/* Scrollable body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '22px 20px 48px' }}>
+
+          {/* Mode selector */}
+          <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
+            color: C.dim, margin: '0 0 10px' }}>Tryb gry</p>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 26 }}>
+            {['2v2', '3v3', '5v5'].map(m => {
+              const col = MODE_COLOR[m], active = mode === m
+              return (
+                <motion.button key={m} whileTap={{ scale: 0.93 }} onClick={() => setMode(m)}
+                  style={{ flex: 1, padding: '14px 0', border: 'none', borderRadius: 14, cursor: 'pointer',
+                    background: active ? `${col}18` : C.surface,
+                    outline: `1.5px solid ${active ? col : `${C.dim}80`}`,
+                    boxShadow: active ? `0 4px 18px ${col}28` : 'none', transition: 'all 0.18s' }}>
+                  <p style={{ fontSize: 18, fontWeight: 900, letterSpacing: -0.5,
+                    color: active ? col : C.sub, margin: 0, fontFamily: 'var(--font-display)' }}>{m}</p>
+                  <p style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 1,
+                    color: active ? `${col}90` : C.dim, margin: '3px 0 0', textTransform: 'uppercase' }}>
+                    {MODE_LABEL[m]}
+                  </p>
+                </motion.button>
+              )
+            })}
+          </div>
+
+          {/* Map */}
+          <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
+            color: C.dim, margin: '0 0 10px' }}>Lokalizacja</p>
+          <div style={{ height: 224, borderRadius: 16, overflow: 'hidden', marginBottom: 10,
+            border: `1.5px solid ${pin ? `${C.accentLo}60` : `${C.dim}40`}`, position: 'relative' }}>
+            <MapPicker center={userLoc} onPin={handlePin} existingPin={pin}/>
+            {!pin && (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+                justifyContent: 'center', pointerEvents: 'none', background: 'rgba(4,8,15,0.35)', zIndex: 1000 }}>
+                <div style={{ padding: '8px 16px', borderRadius: 10, background: 'rgba(8,17,30,0.85)',
+                  border: `1px solid ${C.dim}60` }}>
+                  <p style={{ fontSize: 11, color: C.sub, fontWeight: 600, margin: 0 }}>Stuknij na mapie aby wybrać miejsce</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Address + my location */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 26 }}>
+            <p style={{ flex: 1, fontSize: 10.5, margin: 0,
+              color: addr ? C.text : C.dim }}>
+              {addr ? `📍 ${addr}` : 'Wybierz punkt na mapie'}
+            </p>
+            <motion.button whileTap={{ scale: 0.93 }} onClick={useMyLocation} disabled={locLoading}
+              style={{ padding: '7px 13px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                background: `${C.accent}15`, outline: `1px solid ${C.accent}40`,
+                color: C.accent, fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', opacity: locLoading ? 0.5 : 1 }}>
+              {locLoading ? '…' : '📍 Moja lokalizacja'}
+            </motion.button>
+          </div>
+
+          {/* Date + Time */}
+          <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
+            color: C.dim, margin: '0 0 10px' }}>Data i godzina</p>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 26 }}>
+            {[
+              { type: 'date', val: date, set: setDate },
+              { type: 'time', val: time, set: setTime },
+            ].map(({ type, val, set }) => (
+              <input key={type} type={type} value={val}
+                onChange={e => set(e.target.value)}
+                min={type === 'date' ? new Date().toISOString().split('T')[0] : undefined}
+                style={{ flex: 1, padding: '12px 10px', borderRadius: 12,
+                  background: C.surface, color: C.text, border: 'none',
+                  outline: `1px solid ${val ? `${C.accentLo}60` : `${C.dim}60`}`,
+                  fontSize: 13, fontWeight: 700, colorScheme: 'dark', boxSizing: 'border-box' }}
+              />
+            ))}
+          </div>
+
+          {/* Note */}
+          <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
+            color: C.dim, margin: '0 0 10px' }}>
+            Notatka <span style={{ fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>(opcjonalnie)</span>
+          </p>
+          <input type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={120}
+            placeholder="np. potrzeba 10 graczy, hala na zewnątrz…"
+            style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', boxSizing: 'border-box',
+              background: C.surface, color: C.text, outline: `1px solid ${C.dim}60`,
+              fontSize: 12, marginBottom: 28 }}
+          />
+
+          {err && <p style={{ fontSize: 11, color: C.loss, textAlign: 'center', marginBottom: 12 }}>{err}</p>}
+
+          {/* Create button */}
+          <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreate}
+            disabled={!canCreate || saving}
+            style={{ width: '100%', padding: '15px', border: 'none', borderRadius: 16,
+              background: canCreate ? `linear-gradient(135deg, ${C.accent}, ${C.accentLo})` : C.dim,
+              color: canCreate ? '#000' : C.sub,
+              fontFamily: 'var(--font-display)', fontWeight: 900,
+              fontSize: 12, letterSpacing: 2.5, textTransform: 'uppercase',
+              cursor: canCreate && !saving ? 'pointer' : 'default',
+              boxShadow: canCreate ? `0 6px 28px ${C.accentLo}55` : 'none',
+              transition: 'all 0.2s', opacity: saving ? 0.7 : 1 }}>
+            {saving ? 'Tworzenie…' : 'Stwórz mecz'}
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>,
+    document.body
+  )
+}
+
+// ── MATCH DETAIL SHEET ────────────────────────────────────────────────────────
+function MatchDetailSheet({ match, uid, onClose, onJoined, onLeft }) {
+  const [local,   setLocal]   = useState(match)
+  const [joining, setJoining] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const [err,     setErr]     = useState(null)
+
+  const myPlayer = local.players.find(p => p.user_id === uid)
+  const n = MODE_SLOTS[local.mode]
+  const color = MODE_COLOR[local.mode]
+  const isFull = local.status === 'full' || local.status === 'completed'
+  const isPast = new Date(local.scheduled_at) < new Date()
+
+  function getTeamSlots(team) {
+    return Array.from({ length: n }, (_, i) => {
+      const p = local.players.find(pl => pl.team === team && pl.slot === i + 1)
+      return { slot: i + 1, player: p || null }
+    })
+  }
+
+  function SlotDiamond({ team, player }) {
+    const tColor = team === 'home' ? C.accent : C.hoop
+    const filled = !!player
+    const isMe = player?.user_id === uid
+    const initial = player?.profile?.name?.[0]?.toUpperCase() || '?'
+    return (
+      <div style={{
+        width: 46, height: 46,
+        clipPath: 'polygon(50% 0%,100% 50%,50% 100%,0% 50%)',
+        background: filled
+          ? isMe ? `linear-gradient(135deg,${tColor},${tColor}99)` : `${tColor}28`
+          : `${C.dim}50`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {filled
+          ? <span style={{ fontSize: 15, fontWeight: 900, fontFamily: 'var(--font-display)',
+              color: isMe ? '#000' : tColor, lineHeight: 1 }}>{initial}</span>
+          : <span style={{ fontSize: 18, color: `${tColor}40`, lineHeight: 1 }}>+</span>
+        }
+      </div>
+    )
+  }
+
+  async function handleJoin(team) {
+    if (myPlayer || joining || isFull) return
+    setJoining(true); setErr(null)
+    try {
+      await apiJoinMatch(local.id, uid, team, local.mode)
+      const { data } = await supabase.from('match_players').select('*').eq('match_id', local.id)
+      const updated = { ...local, players: data || [] }
+      if ((data || []).length >= n * 2) updated.status = 'full'
+      setLocal(updated); onJoined?.(updated)
+    } catch (e) { setErr(e.message) }
+    finally { setJoining(false) }
+  }
+
+  async function handleLeave() {
+    if (!myPlayer || leaving) return
+    setLeaving(true); setErr(null)
+    try {
+      await apiLeaveMatch(local.id, uid)
+      const updated = { ...local, status: 'open', players: local.players.filter(p => p.user_id !== uid) }
+      setLocal(updated); onLeft?.(updated)
+    } catch (e) { setErr(e.message) }
+    finally { setLeaving(false) }
+  }
+
+  return createPortal(
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 200,
+        background: 'rgba(4,8,15,0.82)', backdropFilter: 'blur(8px)',
+        display: 'flex', flexDirection: 'column' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+
+      <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 300, damping: 32 }}
+        style={{ marginTop: 'auto', background: C.bg, borderRadius: '24px 24px 0 0',
+          border: `1px solid ${C.line}`, borderBottom: 'none',
+          maxHeight: '82vh', overflowY: 'auto',
+          boxShadow: `0 -14px 52px rgba(0,200,255,0.09)` }}>
+
+        {/* Handle */}
+        <div style={{ paddingTop: 12, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: C.dim }}/>
+        </div>
+
+        <div style={{ padding: '14px 20px 36px' }}>
+          {/* Mode + date */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ padding: '5px 13px', borderRadius: 8, background: `${color}18`,
+                border: `1px solid ${color}40`, fontSize: 11, fontWeight: 800,
+                color, letterSpacing: 1.5, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>
+                {local.mode}
+              </div>
+              {local.status === 'full' && (
+                <span style={{ fontSize: 9, fontWeight: 700, color: C.loss, letterSpacing: 1 }}>PEŁNY</span>
+              )}
+              {isPast && local.status !== 'completed' && (
+                <span style={{ fontSize: 9, fontWeight: 700, color: C.dim, letterSpacing: 1 }}>ZAKOŃCZONY</span>
+              )}
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: C.text, margin: 0 }}>
+                {fmtMatchDate(local.scheduled_at)}
+              </p>
+              <p style={{ fontSize: 10, color: C.sub, margin: '2px 0 0' }}>
+                {fmtMatchTime(local.scheduled_at)}
+              </p>
+            </div>
+          </div>
+
+          {/* Location */}
+          {local.address && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14,
+              padding: '10px 14px', borderRadius: 12, background: C.surface }}>
+              <svg width="10" height="13" viewBox="0 0 24 30" fill={C.accent}>
+                <path d="M12 0C7.6 0 4 3.6 4 8c0 6 8 22 8 22s8-16 8-22c0-4.4-3.6-8-8-8zm0 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
+              </svg>
+              <span style={{ fontSize: 11, color: C.text }}>{local.address}</span>
+            </div>
+          )}
+
+          {/* Note */}
+          {local.note && (
+            <div style={{ padding: '9px 13px', borderRadius: 11, background: C.surface, marginBottom: 14 }}>
+              <p style={{ fontSize: 10.5, color: C.sub, margin: 0 }}>💬 {local.note}</p>
+            </div>
+          )}
+
+          {/* Result */}
+          {local.status === 'completed' && local.score_home != null && (
+            <div style={{ marginBottom: 18, padding: '14px', borderRadius: 14, background: C.surface,
+              display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 18 }}>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase',
+                  color: `${C.accent}80`, margin: '0 0 4px' }}>Drużyna A</p>
+                <span style={{ fontSize: 38, fontWeight: 900, fontFamily: 'var(--font-display)', lineHeight: 1,
+                  color: local.score_home > local.score_away ? C.win : C.text,
+                  textShadow: local.score_home > local.score_away ? `0 0 20px ${C.win}50` : 'none' }}>
+                  {local.score_home}
+                </span>
+              </div>
+              <span style={{ fontSize: 22, fontWeight: 900, color: C.dim }}>:</span>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase',
+                  color: `${C.hoop}80`, margin: '0 0 4px' }}>Drużyna B</p>
+                <span style={{ fontSize: 38, fontWeight: 900, fontFamily: 'var(--font-display)', lineHeight: 1,
+                  color: local.score_away > local.score_home ? C.win : C.text,
+                  textShadow: local.score_away > local.score_home ? `0 0 20px ${C.win}50` : 'none' }}>
+                  {local.score_away}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Teams grid */}
+          <div style={{ display: 'flex', gap: 14, marginBottom: 20 }}>
+            {['home', 'away'].map(team => {
+              const tColor = team === 'home' ? C.accent : C.hoop
+              return (
+                <div key={team} style={{ flex: 1 }}>
+                  <p style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase',
+                    color: tColor, margin: '0 0 12px', textAlign: 'center' }}>
+                    Drużyna {team === 'home' ? 'A' : 'B'}
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                    {getTeamSlots(team).map(({ slot, player }) => (
+                      <SlotDiamond key={slot} team={team} player={player}/>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {err && <p style={{ fontSize: 11, color: C.loss, textAlign: 'center', marginBottom: 12 }}>{err}</p>}
+
+          {/* Join buttons */}
+          {!myPlayer && !isFull && !isPast && (
+            <div style={{ display: 'flex', gap: 10 }}>
+              {['home', 'away'].map(team => {
+                const tColor = team === 'home' ? C.accent : C.hoop
+                const teamFull = local.players.filter(p => p.team === team).length >= n
+                return (
+                  <motion.button key={team} whileTap={{ scale: 0.96 }}
+                    onClick={() => !teamFull && handleJoin(team)}
+                    disabled={joining || teamFull}
+                    style={{ flex: 1, padding: '13px', border: 'none', borderRadius: 14,
+                      cursor: teamFull ? 'default' : 'pointer',
+                      background: teamFull ? `${C.dim}30` : `${tColor}18`,
+                      outline: `1.5px solid ${teamFull ? C.dim : tColor}`,
+                      color: teamFull ? C.sub : tColor,
+                      fontSize: 11, fontWeight: 800, letterSpacing: 1,
+                      fontFamily: 'var(--font-display)', transition: 'all 0.18s',
+                      opacity: joining ? 0.7 : 1 }}>
+                    {teamFull ? 'Pełna' : joining ? '…' : `Dołącz do ${team === 'home' ? 'A' : 'B'}`}
+                  </motion.button>
+                )
+              })}
+            </div>
+          )}
+
+          {myPlayer && (
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ flex: 1, padding: '13px', borderRadius: 14, textAlign: 'center',
+                background: `${myPlayer.team === 'home' ? C.accent : C.hoop}12`,
+                border: `1px solid ${myPlayer.team === 'home' ? C.accent : C.hoop}35` }}>
+                <p style={{ margin: 0, fontSize: 11, fontWeight: 800,
+                  color: myPlayer.team === 'home' ? C.accent : C.hoop }}>
+                  Drużyna {myPlayer.team === 'home' ? 'A' : 'B'} ✓
+                </p>
+              </div>
+              {!isPast && (
+                <motion.button whileTap={{ scale: 0.95 }} onClick={handleLeave} disabled={leaving}
+                  style={{ padding: '13px 18px', borderRadius: 14, border: 'none', cursor: 'pointer',
+                    background: `${C.loss}12`, outline: `1px solid ${C.loss}35`,
+                    color: C.loss, fontSize: 11, fontWeight: 700, opacity: leaving ? 0.7 : 1 }}>
+                  Opuść
+                </motion.button>
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>,
+    document.body
+  )
+}
+
+// ── RESULT SHEET ──────────────────────────────────────────────────────────────
+function ResultSheet({ match, onClose, onSaved }) {
+  const [scoreHome, setScoreHome] = useState('')
+  const [scoreAway, setScoreAway] = useState('')
+  const [saving, setSaving]       = useState(false)
+  const [err, setErr]             = useState(null)
+
+  const h = parseInt(scoreHome)
+  const a = parseInt(scoreAway)
+  const canSave = !isNaN(h) && !isNaN(a) && h >= 0 && a >= 0
+  const homeWins = canSave && h > a
+  const awayWins = canSave && a > h
+
+  async function handleSave() {
+    if (!canSave || saving) return
+    setSaving(true); setErr(null)
+    try {
+      await apiEnterScore(match.id, h, a)
+      onSaved?.(h, a)
+      onClose()
+    } catch (e) { setErr(e.message) }
+    finally { setSaving(false) }
+  }
+
+  return createPortal(
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 300,
+        background: 'rgba(4,8,15,0.95)', backdropFilter: 'blur(20px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+
+      <motion.div initial={{ scale: 0.88, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.88, opacity: 0 }}
+        style={{ width: '100%', maxWidth: 360, background: C.surface, borderRadius: 24,
+          padding: '32px 24px', border: `1px solid ${C.line}`,
+          boxShadow: `0 20px 70px rgba(0,200,255,0.12)` }}>
+
+        <p style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 3.5, textTransform: 'uppercase',
+          color: C.dim, textAlign: 'center', margin: '0 0 4px' }}>Wynik meczu</p>
+        <p style={{ fontSize: 12, fontWeight: 600, color: C.sub, textAlign: 'center', margin: '0 0 28px' }}>
+          {fmtMatchDate(match.scheduled_at)} · {fmtMatchTime(match.scheduled_at)}
+        </p>
+
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 12, marginBottom: 28 }}>
+          {[
+            { val: scoreHome, set: setScoreHome, label: 'Drużyna A', col: C.accent, wins: homeWins },
+            { val: scoreAway, set: setScoreAway, label: 'Drużyna B', col: C.hoop,   wins: awayWins },
+          ].map(({ val, set, label, col, wins }, idx) => (
+            <div key={idx} style={{ flex: 1, textAlign: 'center' }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase',
+                color: `${col}80`, margin: '0 0 8px' }}>{label}</p>
+              <input type="number" min="0" max="999" value={val}
+                onChange={e => set(e.target.value)} placeholder="0"
+                style={{ width: '100%', padding: '10px 0', textAlign: 'center',
+                  fontSize: 48, fontWeight: 900, letterSpacing: -2, lineHeight: 1,
+                  background: wins ? `${col}14` : C.bg,
+                  border: 'none', outline: `2px solid ${wins ? col : C.dim}`,
+                  borderRadius: 16, color: wins ? col : C.text,
+                  fontFamily: 'var(--font-display)', boxSizing: 'border-box',
+                  textShadow: wins ? `0 0 24px ${col}60` : 'none', transition: 'all 0.2s',
+                  colorScheme: 'dark' }}
+              />
+            </div>
+          ))}
+          <span style={{ fontSize: 30, fontWeight: 900, color: C.dim, paddingBottom: 10 }}>:</span>
+        </div>
+
+        {err && <p style={{ fontSize: 11, color: C.loss, textAlign: 'center', marginBottom: 12 }}>{err}</p>}
+
+        <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={!canSave || saving}
+          style={{ width: '100%', padding: '15px', border: 'none', borderRadius: 14,
+            background: canSave ? `linear-gradient(135deg, ${C.win}, #009955)` : C.dim,
+            color: canSave ? '#000' : C.sub,
+            fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 12,
+            letterSpacing: 2.5, textTransform: 'uppercase',
+            cursor: canSave && !saving ? 'pointer' : 'default',
+            boxShadow: canSave ? '0 6px 24px rgba(0,200,130,0.32)' : 'none',
+            transition: 'all 0.2s', opacity: saving ? 0.7 : 1, marginBottom: 10 }}>
+          {saving ? 'Zapisywanie…' : 'Zatwierdź wynik'}
+        </motion.button>
+
+        <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
+          style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 14,
+            background: 'transparent', color: C.sub, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+          Wpisz później
+        </motion.button>
+      </motion.div>
+    </motion.div>,
+    document.body
+  )
+}
+
+// ── MATCHES PANEL ─────────────────────────────────────────────────────────────
+function MatchesPanel({ club, uid, isActive }) {
+  const [locState, setLocState] = useState('idle')
+  const [userLoc,  setUserLoc]  = useState(null)
+  const [matches,  setMatches]  = useState([])
+  const [loading,  setLoading]  = useState(false)
+  const [sheet,    setSheet]    = useState(null)
+  const [active,   setActive]   = useState(null)
+  const [pending,  setPending]  = useState(null)
+  const RADIUS = 25
+
+  const isMember = Object.values(club.members).some(m => m?.id === uid)
+
+  useEffect(() => {
+    if (!navigator.geolocation) { setLocState('denied'); return }
+    setLocState('requesting')
+    navigator.geolocation.getCurrentPosition(
+      pos => { setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocState('granted') },
+      () => setLocState('denied')
+    )
+  }, [])
+
+  useEffect(() => {
+    if (locState === 'granted' && userLoc) loadMatches()
+  }, [locState, userLoc])
+
+  async function loadMatches() {
+    setLoading(true)
+    try {
+      const data = await apiFetchMatches(userLoc.lat, userLoc.lng, RADIUS)
+      setMatches(data)
+      checkPendingResult(data)
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
+  }
+
+  function checkPendingResult(list) {
+    const now = new Date()
+    for (const m of list) {
+      if (m.status === 'completed' || m.status === 'cancelled') continue
+      if (new Date(m.scheduled_at) > now) continue
+      const mySlot = m.players.find(p => p.user_id === uid)
+      if (!mySlot) continue
+      const home = m.players.filter(p => p.team === 'home').sort((a, b) => a.slot - b.slot)
+      const away = m.players.filter(p => p.team === 'away').sort((a, b) => a.slot - b.slot)
+      const ownerInHome = home.some(p => p.user_id === club.ownerId)
+      const homeLeadId = (ownerInHome ? home.find(p => p.user_id === club.ownerId) : home[0])?.user_id
+      const awayLeadId = away[0]?.user_id
+      if (uid === homeLeadId || uid === awayLeadId) { setPending(m); setSheet('result'); break }
+    }
+  }
+
+  function updateMatch(updated) {
+    setMatches(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m))
+  }
+
+  const upcoming = matches.filter(m => m.status !== 'completed' && new Date(m.scheduled_at) > new Date())
+  const past     = matches.filter(m => m.status === 'completed' || new Date(m.scheduled_at) <= new Date())
+
+  return (
+    <div style={{ padding: '0 16px 110px' }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0 16px' }}>
+        <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.8, textTransform: 'uppercase',
+          color: C.dim, margin: 0 }}>Mecze w pobliżu</p>
+        <div style={{ padding: '3px 10px', borderRadius: 8,
+          background: `${C.accent}10`, border: `1px solid ${C.accent}22` }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: C.accent }}>{RADIUS} km</span>
+        </div>
+      </div>
+
+      {/* Requesting */}
+      {locState === 'requesting' && (
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 60 }}>
+          <div className="spinner"/>
+        </div>
+      )}
+
+      {/* Denied */}
+      {locState === 'denied' && (
+        <div style={{ padding: '36px 20px', borderRadius: 20, textAlign: 'center',
+          background: C.surface, border: `1px solid ${C.dim}40` }}>
+          <div style={{ fontSize: 38, marginBottom: 14 }}>🗺️</div>
+          <p style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: '0 0 8px' }}>Lokalizacja wyłączona</p>
+          <p style={{ fontSize: 10.5, color: C.sub, margin: '0 0 22px', lineHeight: 1.6 }}>
+            Zezwól na dostęp do lokalizacji,{'\n'}aby zobaczyć mecze w pobliżu
+          </p>
+          <motion.button whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              setLocState('requesting')
+              navigator.geolocation?.getCurrentPosition(
+                p => { setUserLoc({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocState('granted') },
+                () => setLocState('denied')
+              )
+            }}
+            style={{ padding: '11px 26px', borderRadius: 12, border: 'none', cursor: 'pointer',
+              background: `${C.accent}18`, outline: `1px solid ${C.accent}40`,
+              color: C.accent, fontSize: 11, fontWeight: 700 }}>
+            Włącz lokalizację
+          </motion.button>
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading && locState === 'granted' && (
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}>
+          <div className="spinner"/>
+        </div>
+      )}
+
+      {/* Match list */}
+      {!loading && locState === 'granted' && (
+        <>
+          {upcoming.length > 0 && (
+            <>
+              <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
+                color: C.dim, margin: '0 0 10px 2px' }}>Nadchodzące</p>
+              {upcoming.map(m => (
+                <MatchCard key={m.id} match={m} dist={m._dist}
+                  onPress={() => { setActive(m); setSheet('detail') }}/>
+              ))}
+            </>
+          )}
+          {past.length > 0 && (
+            <>
+              <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
+                color: C.dim, margin: '16px 0 10px 2px' }}>Ostatnie</p>
+              {past.map(m => (
+                <MatchCard key={m.id} match={m} dist={m._dist}
+                  onPress={() => { setActive(m); setSheet('detail') }}/>
+              ))}
+            </>
+          )}
+          {upcoming.length === 0 && past.length === 0 && (
+            <div style={{ padding: '44px 20px', borderRadius: 20, textAlign: 'center',
+              background: C.surface, border: `1px solid ${C.dim}40` }}>
+              <div style={{ fontSize: 40, marginBottom: 14 }}>🏀</div>
+              <p style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: '0 0 6px' }}>
+                Brak meczów w pobliżu
+              </p>
+              <p style={{ fontSize: 10.5, color: C.sub, lineHeight: 1.6, margin: 0 }}>
+                Brak zaplanowanych meczów{'\n'}w zasięgu {RADIUS} km
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* FAB — only when panel is visible and user is a member */}
+      {isMember && locState === 'granted' && isActive && (
+        <motion.button whileTap={{ scale: 0.93 }} onClick={() => setSheet('create')}
+          style={{ position: 'fixed', bottom: 88, right: 20, zIndex: 100,
+            padding: '12px 20px', borderRadius: 16, border: 'none', cursor: 'pointer',
+            background: `linear-gradient(135deg, ${C.accent}, ${C.accentLo})`,
+            color: '#000', fontFamily: 'var(--font-display)', fontWeight: 900,
+            fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase',
+            boxShadow: `0 6px 28px ${C.accentLo}65`,
+            display: 'flex', alignItems: 'center', gap: 7 }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="3" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Umów mecz
+        </motion.button>
+      )}
+
+      <AnimatePresence>
+        {sheet === 'create' && (
+          <CreateMatchSheet key="create" club={club} uid={uid}
+            onClose={() => setSheet(null)}
+            onCreated={m => setMatches(prev => [{ ...m, _dist: haversineKm(userLoc.lat, userLoc.lng, m.lat, m.lng) }, ...prev])}/>
+        )}
+        {sheet === 'detail' && active && (
+          <MatchDetailSheet key="detail" match={active} uid={uid}
+            onClose={() => { setSheet(null); setActive(null) }}
+            onJoined={updateMatch} onLeft={updateMatch}/>
+        )}
+        {sheet === 'result' && pending && (
+          <ResultSheet key="result" match={pending}
+            onClose={() => { setSheet(null); setPending(null) }}
+            onSaved={(h, a) => updateMatch({ ...pending, status: 'completed', score_home: h, score_away: a })}/>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 // ── PANEL DOTS ────────────────────────────────────────────────────────────────
 function PanelDots({ active, onChange }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', gap: 5, paddingBottom: 10 }}>
-      {[0, 1].map(i => (
+      {[0, 1, 2].map(i => (
         <motion.div key={i} onClick={() => onChange(i)}
           animate={{ width: active === i ? 18 : 6 }}
           style={{
@@ -1087,7 +2076,7 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
 
 // ── CLUB VIEW (panel switcher) ────────────────────────────────────────────────
 function ClubView({ club, onUpdate, uid }) {
-  const [panel,    setPanel]    = useState(0)
+  const [panel,    setPanel]    = useState(1) // 0=Mecze 1=Boisko(default) 2=Statystyki
   const [sheet,    setSheet]    = useState(null) // 'empty'|'player'|'edit'|null
   const [sheetPos, setSheetPos] = useState(null)
   const [swapMode,  setSwapMode]  = useState(false)
@@ -1169,8 +2158,8 @@ function ClubView({ club, onUpdate, uid }) {
   function onTouchEnd(e) {
     if (touchStart.current === null) return
     const dx = e.changedTouches[0].clientX - touchStart.current
-    if (dx < -50 && panel === 0) setPanel(1)
-    if (dx >  50 && panel === 1) setPanel(0)
+    if (dx < -50 && panel < 2) setPanel(p => p + 1)
+    if (dx >  50 && panel > 0) setPanel(p => p - 1)
     touchStart.current = null
   }
 
@@ -1186,12 +2175,17 @@ function ClubView({ club, onUpdate, uid }) {
       {/* ── Sliding content area only ── */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         <motion.div
-          animate={{ x: panel === 0 ? 0 : '-50%' }}
+          animate={{ x: panel === 0 ? '0%' : panel === 1 ? '-33.333%' : '-66.666%' }}
           transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-          style={{ display: 'flex', width: '200%', height: '100%' }}>
+          style={{ display: 'flex', width: '300%', height: '100%' }}>
 
-          {/* Panel 0 — Court */}
-          <div style={{ width: '50%', height: '100%', overflowY: 'auto' }}>
+          {/* Panel 0 — Mecze */}
+          <div style={{ width: '33.333%', height: '100%', overflowY: 'auto' }}>
+            <MatchesPanel club={club} uid={uid} isActive={panel === 0}/>
+          </div>
+
+          {/* Panel 1 — Boisko */}
+          <div style={{ width: '33.333%', height: '100%', overflowY: 'auto' }}>
             <CourtPanel
               club={club} uid={uid} onUpdate={onUpdate}
               onTokenTap={handleTokenTap}
@@ -1199,8 +2193,8 @@ function ClubView({ club, onUpdate, uid }) {
               swapSrc={swapSrc} swapping={swapping} swapError={swapError}/>
           </div>
 
-          {/* Panel 1 — Stats */}
-          <div style={{ width: '50%', height: '100%', overflowY: 'auto' }}>
+          {/* Panel 2 — Statystyki */}
+          <div style={{ width: '33.333%', height: '100%', overflowY: 'auto' }}>
             <StatsPanel club={club}/>
           </div>
         </motion.div>

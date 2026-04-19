@@ -15,12 +15,16 @@ export default function AuthPage() {
   const [oauthLoading, setOauthLoading] = useState(false)
 
   async function handleGoogleLogin() {
+    setError('')
     setOauthLoading(true)
     try {
-      await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: window.location.origin },
       })
+      if (error) setError(error.message)
+    } catch (e) {
+      setError(e.message || 'Błąd logowania przez Google.')
     } finally {
       setOauthLoading(false)
     }
