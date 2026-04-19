@@ -163,28 +163,12 @@ async function apiRemove(clubId, pos) {
 }
 
 async function apiSwap(clubId, pA, pB) {
-  // Diagnostic: read what's actually stored before calling RPC
-  const { data: rows, error: selErr } = await supabase
-    .from('club_members')
-    .select('position, user_id, club_id')
-    .eq('club_id', clubId)
-
-  if (selErr) throw new Error(`SELECT failed: ${selErr.message}`)
-  if (!rows || rows.length === 0) {
-    throw new Error(`club_members pusty dla club_id=${clubId}`)
-  }
-  const found = rows.find(r => r.position === pA)
-  if (!found) {
-    const positions = rows.map(r => r.position).join(', ')
-    throw new Error(`Brak pozycji "${pA}" w DB — dostępne: [${positions}]`)
-  }
-
   const { error } = await supabase.rpc('move_member', {
     p_club_id:  clubId,
     p_from_pos: pA,
     p_to_pos:   pB,
   })
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 async function apiLeave(clubId, userId) {
