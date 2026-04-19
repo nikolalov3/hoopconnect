@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -372,12 +373,15 @@ function Token({ posKey, member, onPress, swapMode, isSrc, isTgt }) {
 }
 
 // ── BOTTOM SHEET BASE ─────────────────────────────────────────────────────────
+// Rendered via portal → document.body so it escapes any Framer Motion
+// stacking context (opacity animation creates isolated stacking context)
+// and always sits above the bottom nav regardless of z-index.
 function Sheet({ onClose, children }) {
-  return (
+  return createPortal(
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, zIndex: 500,
+        position: 'fixed', inset: 0, zIndex: 9000,
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         background: 'rgba(2,6,16,0.70)',
         backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)',
@@ -401,7 +405,8 @@ function Sheet({ onClose, children }) {
           borderRadius: 2, margin: '0 auto 20px' }}/>
         {children}
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   )
 }
 
@@ -667,11 +672,11 @@ function EditClubSheet({ club, onClose, onSaved }) {
 
 // ── COUNTRY PICKER ────────────────────────────────────────────────────────────
 function CountryPicker({ value, onChange, onClose }) {
-  return (
+  return createPortal(
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, zIndex: 700,
+        position: 'fixed', inset: 0, zIndex: 9100,
         background: 'rgba(2,6,16,0.75)',
         backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
@@ -710,7 +715,8 @@ function CountryPicker({ value, onChange, onClose }) {
           </button>
         ))}
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   )
 }
 
