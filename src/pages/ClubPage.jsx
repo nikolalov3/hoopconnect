@@ -1301,7 +1301,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 }
 
 // ── MATCH DETAIL SHEET ────────────────────────────────────────────────────────
-function MatchDetailSheet({ match, uid, onClose, onJoined, onLeft }) {
+function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft }) {
   const [local,   setLocal]   = useState(match)
   const [joining, setJoining] = useState(false)
   const [leaving, setLeaving] = useState(false)
@@ -1312,6 +1312,8 @@ function MatchDetailSheet({ match, uid, onClose, onJoined, onLeft }) {
   const color = MODE_COLOR[local.mode]
   const isFull = local.status === 'full' || local.status === 'completed'
   const isPast = new Date(local.scheduled_at) < new Date()
+  // Drużyna A (home) tylko dla członków klubu tworzącego mecz
+  const isHomeClubMember = userClubId === local.club_id
 
   function getTeamSlots(team) {
     return Array.from({ length: n }, (_, i) => {
@@ -1484,19 +1486,22 @@ function MatchDetailSheet({ match, uid, onClose, onJoined, onLeft }) {
               {['home', 'away'].map(team => {
                 const tColor = team === 'home' ? C.accent : C.hoop
                 const teamFull = local.players.filter(p => p.team === team).length >= n
+                // Drużyna A (home) — tylko dla członków klubu tworzącego mecz
+                const locked = team === 'home' && !isHomeClubMember
+                const disabled = joining || teamFull || locked
                 return (
-                  <motion.button key={team} whileTap={{ scale: 0.96 }}
-                    onClick={() => !teamFull && handleJoin(team)}
-                    disabled={joining || teamFull}
+                  <motion.button key={team} whileTap={!disabled ? { scale: 0.96 } : {}}
+                    onClick={() => !disabled && handleJoin(team)}
+                    disabled={disabled}
                     style={{ flex: 1, padding: '13px', border: 'none', borderRadius: 14,
-                      cursor: teamFull ? 'default' : 'pointer',
-                      background: teamFull ? `${C.dim}30` : `${tColor}18`,
-                      outline: `1.5px solid ${teamFull ? C.dim : tColor}`,
-                      color: teamFull ? C.sub : tColor,
+                      cursor: disabled ? 'default' : 'pointer',
+                      background: locked ? `${C.dim}20` : teamFull ? `${C.dim}30` : `${tColor}18`,
+                      outline: `1.5px solid ${locked || teamFull ? C.dim : tColor}`,
+                      color: locked ? C.dim : teamFull ? C.sub : tColor,
                       fontSize: 11, fontWeight: 800, letterSpacing: 1,
                       fontFamily: 'var(--font-display)', transition: 'all 0.18s',
                       opacity: joining ? 0.7 : 1 }}>
-                    {teamFull ? 'Pełna' : joining ? '…' : `Dołącz do ${team === 'home' ? 'A' : 'B'}`}
+                    {locked ? '🔒 Tylko klub' : teamFull ? 'Pełna' : joining ? '…' : `Dołącz do ${team === 'home' ? 'A' : 'B'}`}
                   </motion.button>
                 )
               })}
@@ -1770,17 +1775,16 @@ function MatchesPanel({ club, uid, isActive }) {
         </>
       )}
 
-      {/* FAB — only when panel is visible and user is a member */}
-      {isMember && locState === 'granted' && isActive && (
-        <motion.button whileTap={{ scale: 0.93 }} onClick={() => setSheet('create')}
-          style={{ position: 'fixed', bottom: 88, right: 20, zIndex: 100,
-            padding: '12px 20px', borderRadius: 16, border: 'none', cursor: 'pointer',
-            background: `linear-gradient(135deg, ${C.accent}, ${C.accentLo})`,
+      {/* Create match button — inline at bottom, safe for all screen sizes */}
+      {isMember && locState === 'granted' && (
+        <motion.button whileTap={{ scale: 0.97 }} onClick={() => setSheet('create')}
+          style={{ width: '100%', marginTop: 16, padding: '14px', border: 'none', borderRadius: 16,
+            cursor: 'pointer', background: `linear-gradient(135deg, ${C.accent}, ${C.accentLo})`,
             color: '#000', fontFamily: 'var(--font-display)', fontWeight: 900,
-            fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase',
-            boxShadow: `0 6px 28px ${C.accentLo}65`,
-            display: 'flex', alignItems: 'center', gap: 7 }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            fontSize: 12, letterSpacing: 2, textTransform: 'uppercase',
+            boxShadow: `0 6px 28px ${C.accentLo}55`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             strokeWidth="3" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
@@ -1796,6 +1800,7 @@ function MatchesPanel({ club, uid, isActive }) {
         )}
         {sheet === 'detail' && active && (
           <MatchDetailSheet key="detail" match={active} uid={uid}
+            userClubId={club.id}
             onClose={() => { setSheet(null); setActive(null) }}
             onJoined={updateMatch} onLeft={updateMatch}/>
         )}
