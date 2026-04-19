@@ -1105,34 +1105,36 @@ function ClubView({ club, onUpdate, uid }) {
   }
 
   return (
-    <div style={{ height: '100%', overflow: 'hidden', position: 'relative',
-      background: C.bg }}
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column',
+      overflow: 'hidden', background: C.bg }}
       onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
 
-      {/* Two-panel slide container */}
-      <motion.div
-        animate={{ x: panel === 0 ? 0 : '-50%' }}
-        transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-        style={{ display: 'flex', width: '200%', height: '100%' }}>
+      {/* ── Fixed header — stays put while panels slide ── */}
+      <ClubHeader club={club} isOwner={isOwner} onEditPress={() => setSheet('edit')}/>
+      <PanelDots active={panel} onChange={setPanel}/>
 
-        {/* Panel 0 — Court */}
-        <div style={{ width: '50%', height: '100%', overflowY: 'auto' }}>
-          <ClubHeader club={club} isOwner={isOwner} onEditPress={() => setSheet('edit')}/>
-          <PanelDots active={panel} onChange={setPanel}/>
-          <CourtPanel
-            club={club} uid={uid} onUpdate={onUpdate}
-            onTokenTap={handleTokenTap}
-            swapMode={swapMode} setSwapMode={v => { setSwapMode(v); setSwapSrc(null) }}
-            swapSrc={swapSrc} swapping={swapping}/>
-        </div>
+      {/* ── Sliding content area only ── */}
+      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+        <motion.div
+          animate={{ x: panel === 0 ? 0 : '-50%' }}
+          transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+          style={{ display: 'flex', width: '200%', height: '100%' }}>
 
-        {/* Panel 1 — Stats */}
-        <div style={{ width: '50%', height: '100%', overflowY: 'auto' }}>
-          <ClubHeader club={club} isOwner={isOwner} onEditPress={() => setSheet('edit')}/>
-          <PanelDots active={panel} onChange={setPanel}/>
-          <StatsPanel club={club}/>
-        </div>
-      </motion.div>
+          {/* Panel 0 — Court */}
+          <div style={{ width: '50%', height: '100%', overflowY: 'auto' }}>
+            <CourtPanel
+              club={club} uid={uid} onUpdate={onUpdate}
+              onTokenTap={handleTokenTap}
+              swapMode={swapMode} setSwapMode={v => { setSwapMode(v); setSwapSrc(null) }}
+              swapSrc={swapSrc} swapping={swapping}/>
+          </div>
+
+          {/* Panel 1 — Stats */}
+          <div style={{ width: '50%', height: '100%', overflowY: 'auto' }}>
+            <StatsPanel club={club}/>
+          </div>
+        </motion.div>
+      </div>
 
       {/* Sheets */}
       <AnimatePresence>
