@@ -117,15 +117,26 @@ async function apiRemove(clubId, pos) {
 }
 
 async function apiSwap(clubId, pA, pB, idA, idB) {
-  const dels = []
-  if (idA) dels.push(supabase.from('club_members').delete().eq('club_id', clubId).eq('position', pA))
-  if (idB) dels.push(supabase.from('club_members').delete().eq('club_id', clubId).eq('position', pB))
-  await Promise.all(dels)
-  const ins = []
-  if (idA) ins.push({ club_id: clubId, user_id: idA, position: pB })
-  if (idB) ins.push({ club_id: clubId, user_id: idB, position: pA })
-  if (ins.length) {
-    const { error } = await supabase.from('club_members').insert(ins)
+  // Sequential deletes — avoids race conditions with unique(user_id) constraint
+  if (idA) {
+    const { error } = await supabase.from('club_members')
+      .delete().eq('club_id', clubId).eq('position', pA)
+    if (error) throw error
+  }
+  if (idB) {
+    const { error } = await supabase.from('club_members')
+      .delete().eq('club_id', clubId).eq('position', pB)
+    if (error) throw error
+  }
+  // Insert new positions after both rows are gone
+  if (idA) {
+    const { error } = await supabase.from('club_members')
+      .insert({ club_id: clubId, user_id: idA, position: pB })
+    if (error) throw error
+  }
+  if (idB) {
+    const { error } = await supabase.from('club_members')
+      .insert({ club_id: clubId, user_id: idB, position: pA })
     if (error) throw error
   }
 }
@@ -1049,13 +1060,21 @@ function ClubView({ club, onUpdate, uid }) {
 
   function handleTokenTap(posKey) {
     if (swapMode && isOwner) {
-      if (!swapSrc) { setSwapSrc(posKey); return }
+      if (!swapSrc) {
+        // Can only select a filled position as move source
+        if (!club.members[posKey]) return
+        setSwapSrc(posKey)
+        return
+      }
+      // Tap same source → deselect
       if (swapSrc === posKey) { setSwapSrc(null); return }
-      doSwap(swapSrc, posKey); return
+      // Tap any other position → execute move
+      doSwap(swapSrc, posKey)
+      return
     }
     const member = club.members[posKey]
     setSheetPos(posKey)
-    if (!member)             setSheet('empty')
+    if (!member)                setSheet('empty')
     else if (member.id === uid) setSheet('player-self')
     else                        setSheet('player-other')
   }
@@ -1065,9 +1084,16 @@ function ClubView({ club, onUpdate, uid }) {
     try {
       const mA = club.members[pA], mB = club.members[pB]
       await apiSwap(club.id, pA, pB, mA?.id ?? null, mB?.id ?? null)
-      const up = await apiFetch(uid); if (up) onUpdate(up)
-    } catch (e) { console.error(e) }
-    finally { setSwapping(false); setSwapSrc(null); setSwapMode(false) }
+    } catch (e) {
+      console.error('swap error:', e)
+    } finally {
+      // Always re-fetch so UI reflects actual DB state (success or rollback)
+      const up = await apiFetch(uid)
+      if (up) onUpdate(up)
+      setSwapping(false)
+      setSwapSrc(null)
+      setSwapMode(false)
+    }
   }
 
   async function handleRemove(posKey) {
