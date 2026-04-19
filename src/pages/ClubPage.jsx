@@ -126,17 +126,28 @@ async function apiFetch(uid) {
 }
 
 async function apiCreate({ name, abbr, country, profile }) {
+  // If user already has a stale club_members row (e.g. from a failed previous
+  // attempt), the unique(user_id) constraint blocks the insert — clean it first
+  const { data: existing } = await supabase.from('club_members')
+    .select('club_id').eq('user_id', profile.id).maybeSingle()
+  if (existing) {
+    // Also remove the orphaned club if this user is its owner
+    const { data: orphan } = await supabase.from('clubs')
+      .select('id').eq('id', existing.club_id).eq('owner_id', profile.id).maybeSingle()
+    if (orphan) await supabase.from('clubs').delete().eq('id', orphan.id)
+    else await supabase.from('club_members').delete().eq('user_id', profile.id)
+  }
+
   const { data: club, error } = await supabase.from('clubs')
     .insert({ name, abbr: abbr.toUpperCase(),
       country_code: country.code, country_name: country.name, country_flag: country.flag,
       owner_id: profile.id }).select().single()
-  if (error) throw error
+  if (error) throw new Error(`clubs insert: ${error.message}`)
 
   const { error: memErr } = await supabase.from('club_members')
     .insert({ club_id: club.id, user_id: profile.id, position: 'PG' })
-  if (memErr) throw memErr
+  if (memErr) throw new Error(`members insert: ${memErr.message}`)
 
-  // Re-fetch real state; if that somehow fails, fall back to local construction
   const ui = await apiFetch(profile.id)
   return ui ?? dbToUi({
     ...club,
@@ -1256,7 +1267,7 @@ function CreateClub({ onCreated, profile }) {
     if (!valid || saving) return
     setSaving(true); setErr(null)
     try { onCreated(await apiCreate({ name: name.trim(), abbr, country: ctry, profile })) }
-    catch { setErr('Nie udało się. Spróbuj ponownie.'); setSaving(false) }
+    catch (e) { setErr(e?.message ?? JSON.stringify(e)); setSaving(false) }
   }
 
   return (
