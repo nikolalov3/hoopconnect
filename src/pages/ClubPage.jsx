@@ -871,26 +871,32 @@ function StatsPanel({ club }) {
 }
 
 // ── COURT PANEL ───────────────────────────────────────────────────────────────
-function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, swapSrc, swapping }) {
+function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, swapSrc, swapping, swapError }) {
   const [copied, setCopied] = useState(false)
   const isOwner = club.ownerId === uid
 
   return (
     <div style={{ padding: '0 0 110px' }}>
-      {/* Swap hint */}
+      {/* Swap hint / error */}
       <AnimatePresence>
         {swapMode && (
           <motion.div
             initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             style={{ overflow: 'hidden', padding: '0 16px 10px' }}>
-            <div style={{ padding: '9px 16px', borderRadius: 12, textAlign: 'center',
-              background: swapping ? `${C.dim}30` : `${C.swap}0C`,
-              border: `1px solid ${swapping ? C.dim : `${C.swap}30`}` }}>
-              <p style={{ fontSize: 11.5, fontWeight: 600, margin: 0,
-                color: swapping ? C.sub : C.swap }}>
-                {swapping ? '⏳ Zapisywanie…'
-                  : swapSrc ? `Wybierz pozycję docelową dla ${swapSrc}`
+            <div style={{
+              padding: '9px 16px', borderRadius: 12, textAlign: 'center',
+              background: swapError ? 'rgba(255,60,80,0.08)'
+                : swapping ? `${C.dim}30` : `${C.swap}0C`,
+              border: `1px solid ${swapError ? 'rgba(255,60,80,0.35)'
+                : swapping ? C.dim : `${C.swap}30`}`,
+            }}>
+              <p style={{ fontSize: 11, fontWeight: 600, margin: 0,
+                color: swapError ? C.loss : swapping ? C.sub : C.swap,
+                wordBreak: 'break-all' }}>
+                {swapError      ? `❌ ${swapError}`
+                  : swapping    ? '⏳ Zapisywanie…'
+                  : swapSrc     ? `Wybierz pozycję docelową dla ${swapSrc}`
                   : 'Kliknij gracza, którego chcesz przenieść'}
               </p>
             </div>
@@ -1035,9 +1041,10 @@ function ClubView({ club, onUpdate, uid }) {
   const [panel,    setPanel]    = useState(0)
   const [sheet,    setSheet]    = useState(null) // 'empty'|'player'|'edit'|null
   const [sheetPos, setSheetPos] = useState(null)
-  const [swapMode, setSwapMode] = useState(false)
-  const [swapSrc,  setSwapSrc]  = useState(null)
-  const [swapping, setSwapping] = useState(false)
+  const [swapMode,  setSwapMode]  = useState(false)
+  const [swapSrc,   setSwapSrc]   = useState(null)
+  const [swapping,  setSwapping]  = useState(false)
+  const [swapError, setSwapError] = useState(null)
   const [removing, setRemoving] = useState(false)
   const touchStart = useRef(null)
 
@@ -1066,17 +1073,23 @@ function ClubView({ club, onUpdate, uid }) {
 
   async function doSwap(pA, pB) {
     setSwapping(true)
+    setSwapError(null)
     try {
       await apiSwap(club.id, pA, pB)
     } catch (e) {
-      console.error('swap error:', e?.message ?? e)
-    } finally {
-      const up = await apiFetch(uid)
-      if (up) onUpdate(up)
+      const msg = e?.message ?? JSON.stringify(e)
+      setSwapError(msg)
+      console.error('swap error:', e)
+      // Keep swap mode open so user can see the error
       setSwapping(false)
       setSwapSrc(null)
-      setSwapMode(false)
+      return
     }
+    const up = await apiFetch(uid)
+    if (up) onUpdate(up)
+    setSwapping(false)
+    setSwapSrc(null)
+    setSwapMode(false)
   }
 
   async function handleRemove(posKey) {
@@ -1134,8 +1147,8 @@ function ClubView({ club, onUpdate, uid }) {
             <CourtPanel
               club={club} uid={uid} onUpdate={onUpdate}
               onTokenTap={handleTokenTap}
-              swapMode={swapMode} setSwapMode={v => { setSwapMode(v); setSwapSrc(null) }}
-              swapSrc={swapSrc} swapping={swapping}/>
+              swapMode={swapMode} setSwapMode={v => { setSwapMode(v); setSwapSrc(null); setSwapError(null) }}
+              swapSrc={swapSrc} swapping={swapping} swapError={swapError}/>
           </div>
 
           {/* Panel 1 — Stats */}
