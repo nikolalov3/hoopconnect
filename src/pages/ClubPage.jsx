@@ -87,13 +87,42 @@ function dbToUi(club) {
 }
 
 async function apiFetch(uid) {
+  // 1. Find which club the user belongs to
   const { data: ms } = await supabase.from('club_members')
     .select('club_id').eq('user_id', uid).maybeSingle()
   if (!ms) return null
-  const { data: club } = await supabase.from('clubs')
-    .select('id,name,abbr,country_code,country_name,country_flag,owner_id,club_members(position,user_id,joined_at,profiles(name))')
-    .eq('id', ms.club_id).single()
-  return club ? dbToUi(club) : null
+
+  const clubId = ms.club_id
+
+  // 2. Fetch club row + all members (no nested profiles — avoids FK requirement)
+  const [{ data: club }, { data: members }] = await Promise.all([
+    supabase.from('clubs')
+      .select('id,name,abbr,country_code,country_name,country_flag,owner_id')
+      .eq('id', clubId).single(),
+    supabase.from('club_members')
+      .select('position,user_id,joined_at')
+      .eq('club_id', clubId),
+  ])
+  if (!club) return null
+
+  // 3. Fetch profiles for all member user_ids in one query
+  const userIds = (members ?? []).map(m => m.user_id).filter(Boolean)
+  const { data: profiles } = userIds.length
+    ? await supabase.from('profiles').select('id,name').in('id', userIds)
+    : { data: [] }
+
+  const profileMap = {}
+  for (const p of profiles ?? []) profileMap[p.id] = p
+
+  // 4. Stitch together in the shape dbToUi expects
+  const full = {
+    ...club,
+    club_members: (members ?? []).map(m => ({
+      ...m,
+      profiles: profileMap[m.user_id] ?? { name: '?' },
+    })),
+  }
+  return dbToUi(full)
 }
 
 async function apiCreate({ name, abbr, country, profile }) {
@@ -102,13 +131,18 @@ async function apiCreate({ name, abbr, country, profile }) {
       country_code: country.code, country_name: country.name, country_flag: country.flag,
       owner_id: profile.id }).select().single()
   if (error) throw error
+
   const { error: memErr } = await supabase.from('club_members')
     .insert({ club_id: club.id, user_id: profile.id, position: 'PG' })
-  if (memErr) throw memErr   // was silently ignored before!
-  // Re-fetch from DB so UI always reflects real state
+  if (memErr) throw memErr
+
+  // Re-fetch real state; if that somehow fails, fall back to local construction
   const ui = await apiFetch(profile.id)
-  if (!ui) throw new Error('club created but member row missing')
-  return ui
+  return ui ?? dbToUi({
+    ...club,
+    club_members: [{ position: 'PG', user_id: profile.id,
+      joined_at: new Date().toISOString(), profiles: { name: profile.name } }],
+  })
 }
 
 async function apiRemove(clubId, pos) {
