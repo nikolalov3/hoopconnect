@@ -2164,7 +2164,6 @@ function ClubView({ club, onUpdate, uid }) {
   const [swapping,  setSwapping]  = useState(false)
   const [swapError, setSwapError] = useState(null)
   const [removing, setRemoving] = useState(false)
-  const touchStart = useRef(null)
 
   const isOwner = club.ownerId === uid
 
@@ -2233,20 +2232,9 @@ function ClubView({ club, onUpdate, uid }) {
     if (!removing) setSheet(null)
   }
 
-  // Touch-based swipe detection
-  function onTouchStart(e) { touchStart.current = e.touches[0].clientX }
-  function onTouchEnd(e) {
-    if (touchStart.current === null) return
-    const dx = e.changedTouches[0].clientX - touchStart.current
-    if (dx < -50 && panel < 2) setPanel(p => p + 1)
-    if (dx >  50 && panel > 0) setPanel(p => p - 1)
-    touchStart.current = null
-  }
-
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column',
-      overflow: 'hidden', background: C.bg }}
-      onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      overflow: 'hidden', background: C.bg }}>
 
       {/* ── Fixed header — stays put while panels slide ── */}
       <ClubHeader club={club} isOwner={isOwner} onEditPress={() => setSheet('edit')}/>
@@ -2255,6 +2243,13 @@ function ClubView({ club, onUpdate, uid }) {
       {/* ── Sliding content area only ── */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         <motion.div
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.15}
+          onDragEnd={(_, info) => {
+            if (info.offset.x < -50 && panel < 2) setPanel(p => p + 1)
+            if (info.offset.x > 50  && panel > 0) setPanel(p => p - 1)
+          }}
           animate={{ x: panel === 0 ? '0%' : panel === 1 ? '-33.333%' : '-66.666%' }}
           transition={{ type: 'spring', stiffness: 320, damping: 32 }}
           style={{ display: 'flex', width: '300%', height: '100%' }}>
