@@ -898,92 +898,108 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
 
       {/* Court card */}
       <div style={{ padding: '0 16px', position: 'relative' }}>
-        {/* Neon glow border SVG */}
-        <svg style={{
-          position: 'absolute', top: 0, left: 16,
-          width: 343, height: 410, pointerEvents: 'none', zIndex: 10,
-          overflow: 'visible',
-        }} viewBox="0 0 343 410">
+
+        {/* Responsive clip-path defs — objectBoundingBox scales with the element */}
+        <svg width="0" height="0" aria-hidden="true"
+          style={{ position: 'absolute', pointerEvents: 'none', overflow: 'hidden' }}>
           <defs>
-            <filter id="neonG" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3"  result="b1"/>
-              <feGaussianBlur stdDeviation="10" result="b2"/>
-              <feMerge><feMergeNode in="b2"/><feMergeNode in="b1"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-            <filter id="softG" x="-10%" y="-10%" width="120%" height="120%">
-              <feGaussianBlur stdDeviation="1.8" result="b"/>
-              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-            <linearGradient id="topStripe" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="transparent"/>
-              <stop offset="30%"  stopColor="#0099EE"/>
-              <stop offset="50%"  stopColor="#55EEFF"/>
-              <stop offset="70%"  stopColor="#0099EE"/>
-              <stop offset="100%" stopColor="transparent"/>
-            </linearGradient>
+            <clipPath id="courtClip" clipPathUnits="objectBoundingBox">
+              {/* M24,0…Z normalised to 0-1 space: x/343, y/410 */}
+              <path d="M0.070,0 L0.930,0 Q0.930,0.059 1,0.059 L1,0.941 Q0.930,0.941 0.930,1 L0.070,1 Q0.070,0.941 0,0.941 L0,0.059 Q0.070,0.059 0.070,0 Z"/>
+            </clipPath>
           </defs>
-          {/* Halo glow */}
-          <path d={COURT_PATH} fill="none" stroke="rgba(0,200,255,0.13)" strokeWidth="7" filter="url(#neonG)"/>
-          {/* Sharp border */}
-          <path d={COURT_PATH} fill="none" stroke="rgba(0,220,255,0.50)" strokeWidth="1.4" filter="url(#softG)"/>
-          {/* Top accent stripe */}
-          <line x1="24" y1="0.8" x2="319" y2="0.8" stroke="url(#topStripe)" strokeWidth="2"/>
-          {/* Corner tick marks */}
-          <line x1="5"   y1="5"   x2="17"  y2="17"  stroke="rgba(0,240,255,0.25)" strokeWidth="1.2" strokeLinecap="round"/>
-          <line x1="338" y1="5"   x2="326" y2="17"  stroke="rgba(0,240,255,0.25)" strokeWidth="1.2" strokeLinecap="round"/>
-          <line x1="5"   y1="405" x2="17"  y2="393" stroke="rgba(0,240,255,0.25)" strokeWidth="1.2" strokeLinecap="round"/>
-          <line x1="338" y1="405" x2="326" y2="393" stroke="rgba(0,240,255,0.25)" strokeWidth="1.2" strokeLinecap="round"/>
         </svg>
 
-        {/* Clipped court card */}
-        <div style={{
-          position: 'relative', width: 343, height: 410,
-          clipPath: `path('${COURT_PATH}')`,
-          overflow: 'hidden',
-        }}>
-          <Court/>
-          {/* Tokens */}
-          {POSITIONS.map(posKey => (
-            <div key={posKey} style={{
-              position: 'absolute',
-              left: SPOT[posKey].x, top: SPOT[posKey].y,
-              transform: 'translate(-50%, -50%)', zIndex: 3,
-            }}>
-              <Token
-                posKey={posKey}
-                member={club.members[posKey]}
-                onPress={() => onTokenTap(posKey)}
-                swapMode={swapMode}
-                isSrc={swapSrc === posKey}
-                isTgt={swapMode && !!swapSrc && swapSrc !== posKey}/>
-            </div>
-          ))}
-        </div>
+        {/* Responsive court wrapper — always fills available width, keeps 343:410 ratio */}
+        <div style={{ position: 'relative', width: '100%', aspectRatio: '343 / 410' }}>
 
-        {/* Swap FAB — icon only circle */}
-        {isOwner && (
-          <motion.button
-            whileTap={{ scale: 0.84 }}
-            onClick={() => { setSwapMode(v => !v) }}
-            style={{
-              position: 'absolute', bottom: 14, right: 22, zIndex: 20,
-              width: 36, height: 36, borderRadius: '50%',
-              background: swapMode ? `${C.swap}18` : 'rgba(0,220,255,0.10)',
-              border: `1.5px solid ${swapMode ? C.swap : 'rgba(0,220,255,0.36)'}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: swapMode ? C.swap : C.accent,
-              backdropFilter: 'blur(10px)',
-              boxShadow: swapMode
-                ? `0 4px 16px ${C.swap}40`
-                : '0 4px 14px rgba(0,180,255,0.15)',
-              transition: 'all 0.2s',
-            }}>
-            {swapMode
-              ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
-            }
-          </motion.button>
-        )}
+          {/* Clipped court card — fills wrapper */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            clipPath: 'url(#courtClip)',
+            overflow: 'hidden',
+          }}>
+            <Court/>
+            {/* Tokens */}
+            {POSITIONS.map(posKey => (
+              <div key={posKey} style={{
+                position: 'absolute',
+                left: SPOT[posKey].x, top: SPOT[posKey].y,
+                transform: 'translate(-50%, -50%)', zIndex: 3,
+              }}>
+                <Token
+                  posKey={posKey}
+                  member={club.members[posKey]}
+                  onPress={() => onTokenTap(posKey)}
+                  swapMode={swapMode}
+                  isSrc={swapSrc === posKey}
+                  isTgt={swapMode && !!swapSrc && swapSrc !== posKey}/>
+              </div>
+            ))}
+          </div>
+
+          {/* Neon glow border SVG — outside clip so glow can bleed */}
+          <svg style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            pointerEvents: 'none', zIndex: 10, overflow: 'visible',
+          }} viewBox="0 0 343 410" preserveAspectRatio="none">
+            <defs>
+              <filter id="neonG" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3"  result="b1"/>
+                <feGaussianBlur stdDeviation="10" result="b2"/>
+                <feMerge><feMergeNode in="b2"/><feMergeNode in="b1"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="softG" x="-10%" y="-10%" width="120%" height="120%">
+                <feGaussianBlur stdDeviation="1.8" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="topStripe" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   stopColor="transparent"/>
+                <stop offset="30%"  stopColor="#0099EE"/>
+                <stop offset="50%"  stopColor="#55EEFF"/>
+                <stop offset="70%"  stopColor="#0099EE"/>
+                <stop offset="100%" stopColor="transparent"/>
+              </linearGradient>
+            </defs>
+            {/* Halo glow */}
+            <path d={COURT_PATH} fill="none" stroke="rgba(0,200,255,0.13)" strokeWidth="7" filter="url(#neonG)"/>
+            {/* Sharp border */}
+            <path d={COURT_PATH} fill="none" stroke="rgba(0,220,255,0.50)" strokeWidth="1.4" filter="url(#softG)"/>
+            {/* Top accent stripe */}
+            <line x1="24" y1="0.8" x2="319" y2="0.8" stroke="url(#topStripe)" strokeWidth="2"/>
+            {/* Corner tick marks */}
+            <line x1="5"   y1="5"   x2="17"  y2="17"  stroke="rgba(0,240,255,0.25)" strokeWidth="1.2" strokeLinecap="round"/>
+            <line x1="338" y1="5"   x2="326" y2="17"  stroke="rgba(0,240,255,0.25)" strokeWidth="1.2" strokeLinecap="round"/>
+            <line x1="5"   y1="405" x2="17"  y2="393" stroke="rgba(0,240,255,0.25)" strokeWidth="1.2" strokeLinecap="round"/>
+            <line x1="338" y1="405" x2="326" y2="393" stroke="rgba(0,240,255,0.25)" strokeWidth="1.2" strokeLinecap="round"/>
+          </svg>
+
+          {/* Swap FAB — percentage-positioned so it scales with the court */}
+          {isOwner && (
+            <motion.button
+              whileTap={{ scale: 0.84 }}
+              onClick={() => { setSwapMode(v => !v) }}
+              style={{
+                position: 'absolute', bottom: '3.5%', right: '6%', zIndex: 20,
+                width: 36, height: 36, borderRadius: '50%',
+                background: swapMode ? `${C.swap}18` : 'rgba(0,220,255,0.10)',
+                border: `1.5px solid ${swapMode ? C.swap : 'rgba(0,220,255,0.36)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: swapMode ? C.swap : C.accent,
+                backdropFilter: 'blur(10px)',
+                boxShadow: swapMode
+                  ? `0 4px 16px ${C.swap}40`
+                  : '0 4px 14px rgba(0,180,255,0.15)',
+                transition: 'all 0.2s',
+              }}>
+              {swapMode
+                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+              }
+            </motion.button>
+          )}
+        </div>
       </div>
 
       {/* Share */}
