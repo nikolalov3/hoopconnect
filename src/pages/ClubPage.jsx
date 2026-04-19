@@ -162,13 +162,16 @@ async function apiRemove(clubId, pos) {
   if (error) throw error
 }
 
-async function apiSwap(clubId, pA, pB) {
-  const { error } = await supabase.rpc('move_member', {
-    p_club_id:  clubId,
-    p_from_pos: pA,
-    p_to_pos:   pB,
-  })
-  if (error) throw new Error(error.message)
+async function apiSwap(clubId, pA, pB, idA, idB) {
+  const del = (pos) => supabase.from('club_members').delete()
+    .eq('club_id', clubId).eq('position', pos)
+  const ins = (uid, pos) => supabase.from('club_members').insert(
+    { club_id: clubId, user_id: uid, position: pos })
+
+  const { error: e1 } = await del(pA); if (e1) throw new Error(e1.message)
+  if (idB) { const { error: e2 } = await del(pB); if (e2) throw new Error(e2.message) }
+  const { error: e3 } = await ins(idA, pB); if (e3) throw new Error(e3.message)
+  if (idB) { const { error: e4 } = await ins(idB, pA); if (e4) throw new Error(e4.message) }
 }
 
 async function apiLeave(clubId, userId) {
@@ -1119,13 +1122,12 @@ function ClubView({ club, onUpdate, uid }) {
   async function doSwap(pA, pB) {
     setSwapping(true)
     setSwapError(null)
+    const mA = club.members[pA]
+    const mB = club.members[pB]
     try {
-      await apiSwap(club.id, pA, pB)
+      await apiSwap(club.id, pA, pB, mA.id, mB?.id ?? null)
     } catch (e) {
-      const msg = e?.message ?? JSON.stringify(e)
-      setSwapError(msg)
-      console.error('swap error:', e)
-      // Keep swap mode open so user can see the error
+      setSwapError(e.message)
       setSwapping(false)
       setSwapSrc(null)
       return
