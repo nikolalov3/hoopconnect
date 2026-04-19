@@ -235,13 +235,23 @@ async function apiUpdateClub(clubId, { name, abbr, country }) {
 }
 
 // ── MATCH API ─────────────────────────────────────────────────────────────────
-async function apiCreateMatch({ clubId, createdBy, mode, lat, lng, address, scheduledAt, note }) {
+async function apiCreateMatch({ clubId, createdBy, mode, lat, lng, address, scheduledAt, note, creatorProfile }) {
   const { data, error } = await supabase
     .from('club_matches')
     .insert({ club_id: clubId, created_by: createdBy, mode, lat, lng, address, scheduled_at: scheduledAt, note: note || null })
     .select().single()
   if (error) throw error
-  return { ...data, players: [] }
+  // Auto-join creator to home team slot 1
+  await supabase.from('match_players').insert({ match_id: data.id, user_id: createdBy, team: 'home', slot: 1 })
+  return {
+    ...data,
+    players: [{ match_id: data.id, user_id: createdBy, team: 'home', slot: 1, joined_at: new Date().toISOString(), profile: creatorProfile || null }],
+  }
+}
+
+async function apiDeleteMatch(matchId) {
+  const { error } = await supabase.from('club_matches').delete().eq('id', matchId)
+  if (error) throw error
 }
 
 async function apiFetchMatches(userLat, userLng, radiusKm = 25) {
@@ -266,9 +276,15 @@ async function apiFetchMatches(userLat, userLng, radiusKm = 25) {
   }
   const pm = Object.fromEntries(profileRows.map(p => [p.id, p]))
 
+  // Fetch club names for home team label
+  const clubIds = [...new Set(nearby.map(m => m.club_id))]
+  const { data: clubRows } = await supabase.from('clubs').select('id,name,abbr,country_flag').in('id', clubIds)
+  const cm = Object.fromEntries((clubRows || []).map(c => [c.id, c]))
+
   return nearby.map(m => ({
     ...m,
     _dist: haversineKm(userLat, userLng, m.lat, m.lng),
+    _club: cm[m.club_id] || null,
     players: (players || []).filter(p => p.match_id === m.id).map(p => ({ ...p, profile: pm[p.user_id] || null })),
   }))
 }
@@ -937,6 +953,7 @@ function MatchCard({ match, dist, onPress }) {
   const awayPlayers = match.players.filter(p => p.team === 'away')
   const color = MODE_COLOR[match.mode]
   const isPast = new Date(match.scheduled_at) < new Date()
+  const homeTeamName = match._club?.abbr || match._club?.name || 'Klub'
 
   return (
     <motion.div whileTap={{ scale: 0.975 }} onClick={onPress}
@@ -997,36 +1014,46 @@ function MatchCard({ match, dist, onPress }) {
         </div>
 
         {/* Slots row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {Array.from({ length: slots }).map((_, i) => {
-              const filled = homePlayers.some(p => p.slot === i + 1)
-              return (
-                <div key={i} style={{
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: filled ? C.accent : C.dim,
-                  boxShadow: filled ? `0 0 5px ${C.accent}70` : 'none',
-                  transition: 'all 0.2s',
-                }}/>
-              )
-            })}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Home team */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase',
+              color: `${C.accent}90` }}>{homeTeamName}</span>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {Array.from({ length: slots }).map((_, i) => {
+                const filled = homePlayers.some(p => p.slot === i + 1)
+                return (
+                  <div key={i} style={{
+                    width: 8, height: 8, borderRadius: '50%',
+                    background: filled ? C.accent : C.dim,
+                    boxShadow: filled ? `0 0 5px ${C.accent}70` : 'none',
+                    transition: 'all 0.2s',
+                  }}/>
+                )
+              })}
+            </div>
           </div>
-          <span style={{ fontSize: 9, fontWeight: 800, color: C.dim, letterSpacing: 1 }}>VS</span>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {Array.from({ length: slots }).map((_, i) => {
-              const filled = awayPlayers.some(p => p.slot === i + 1)
-              return (
-                <div key={i} style={{
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: filled ? C.hoop : C.dim,
-                  boxShadow: filled ? `0 0 5px ${C.hoop}70` : 'none',
-                  transition: 'all 0.2s',
-                }}/>
-              )
-            })}
+          <span style={{ fontSize: 9, fontWeight: 800, color: C.dim, letterSpacing: 1, marginTop: 12 }}>VS</span>
+          {/* Away team */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase',
+              color: `${C.hoop}90` }}>Rywale</span>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {Array.from({ length: slots }).map((_, i) => {
+                const filled = awayPlayers.some(p => p.slot === i + 1)
+                return (
+                  <div key={i} style={{
+                    width: 8, height: 8, borderRadius: '50%',
+                    background: filled ? C.hoop : C.dim,
+                    boxShadow: filled ? `0 0 5px ${C.hoop}70` : 'none',
+                    transition: 'all 0.2s',
+                  }}/>
+                )
+              })}
+            </div>
           </div>
-          <span style={{ fontSize: 9.5, fontWeight: 700, color: C.sub, marginLeft: 'auto' }}>
-            {homePlayers.length + awayPlayers.length}/{slots * 2} graczy
+          <span style={{ fontSize: 9.5, fontWeight: 700, color: C.sub, marginLeft: 'auto', marginTop: 12 }}>
+            {homePlayers.length + awayPlayers.length}/{slots * 2}
           </span>
         </div>
 
@@ -1160,13 +1187,14 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       style={{ position: 'fixed', inset: 0, zIndex: 200,
         background: 'rgba(4,8,15,0.88)', backdropFilter: 'blur(10px)',
-        display: 'flex', flexDirection: 'column' }}
+        display: 'flex', flexDirection: 'column', alignItems: 'center' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
 
       <motion.div
         initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 32 }}
-        style={{ marginTop: 'auto', background: C.bg, borderRadius: '24px 24px 0 0',
+        style={{ marginTop: 'auto', width: '100%', maxWidth: 430,
+          background: C.bg, borderRadius: '24px 24px 0 0',
           height: '96%', display: 'flex', flexDirection: 'column',
           border: `1px solid ${C.line}`, borderBottom: 'none',
           boxShadow: `0 -16px 60px rgba(0,200,255,0.10)` }}>
@@ -1301,11 +1329,12 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 }
 
 // ── MATCH DETAIL SHEET ────────────────────────────────────────────────────────
-function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft }) {
-  const [local,   setLocal]   = useState(match)
-  const [joining, setJoining] = useState(false)
-  const [leaving, setLeaving] = useState(false)
-  const [err,     setErr]     = useState(null)
+function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft, onDeleted }) {
+  const [local,        setLocal]        = useState(match)
+  const [joining,      setJoining]      = useState(false)
+  const [leaving,      setLeaving]      = useState(false)
+  const [confirmLeave, setConfirmLeave] = useState(false)
+  const [err,          setErr]          = useState(null)
 
   const myPlayer = local.players.find(p => p.user_id === uid)
   const n = MODE_SLOTS[local.mode]
@@ -1314,6 +1343,8 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft })
   const isPast = new Date(local.scheduled_at) < new Date()
   // Drużyna A (home) tylko dla członków klubu tworzącego mecz
   const isHomeClubMember = userClubId === local.club_id
+  const homeTeamName = local._club?.name || 'Drużyna A'
+  const isCreator = local.created_by === uid
 
   function getTeamSlots(team) {
     return Array.from({ length: n }, (_, i) => {
@@ -1358,10 +1389,23 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft })
     finally { setJoining(false) }
   }
 
-  async function handleLeave() {
+  function requestLeave() {
     if (!myPlayer || leaving) return
-    setLeaving(true); setErr(null)
+    // Jeśli to ostatni gracz i twórca → ostrzeż o usunięciu
+    const isLast = local.players.length === 1
+    if (isLast && isCreator) { setConfirmLeave(true); return }
+    doLeave()
+  }
+
+  async function doLeave(deleteMatch = false) {
+    setLeaving(true); setErr(null); setConfirmLeave(false)
     try {
+      if (deleteMatch && isCreator) {
+        await apiDeleteMatch(local.id)
+        onDeleted?.(local.id)
+        onClose()
+        return
+      }
       await apiLeaveMatch(local.id, uid)
       const updated = { ...local, status: 'open', players: local.players.filter(p => p.user_id !== uid) }
       setLocal(updated); onLeft?.(updated)
@@ -1373,12 +1417,13 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft })
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       style={{ position: 'fixed', inset: 0, zIndex: 200,
         background: 'rgba(4,8,15,0.82)', backdropFilter: 'blur(8px)',
-        display: 'flex', flexDirection: 'column' }}
+        display: 'flex', flexDirection: 'column', alignItems: 'center' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
 
       <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 32 }}
-        style={{ marginTop: 'auto', background: C.bg, borderRadius: '24px 24px 0 0',
+        style={{ marginTop: 'auto', width: '100%', maxWidth: 430,
+          background: C.bg, borderRadius: '24px 24px 0 0',
           border: `1px solid ${C.line}`, borderBottom: 'none',
           maxHeight: '82vh', overflowY: 'auto',
           boxShadow: `0 -14px 52px rgba(0,200,255,0.09)` }}>
@@ -1466,7 +1511,7 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft })
                 <div key={team} style={{ flex: 1 }}>
                   <p style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase',
                     color: tColor, margin: '0 0 12px', textAlign: 'center' }}>
-                    Drużyna {team === 'home' ? 'A' : 'B'}
+                    {team === 'home' ? homeTeamName : 'Rywale'}
                   </p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
                     {getTeamSlots(team).map(({ slot, player }) => (
@@ -1501,12 +1546,41 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft })
                       fontSize: 11, fontWeight: 800, letterSpacing: 1,
                       fontFamily: 'var(--font-display)', transition: 'all 0.18s',
                       opacity: joining ? 0.7 : 1 }}>
-                    {locked ? '🔒 Tylko klub' : teamFull ? 'Pełna' : joining ? '…' : `Dołącz do ${team === 'home' ? 'A' : 'B'}`}
+                    {locked ? '🔒 Tylko klub' : teamFull ? 'Pełna' : joining ? '…' : `Dołącz — ${team === 'home' ? homeTeamName : 'Rywale'}`}
                   </motion.button>
                 )
               })}
             </div>
           )}
+
+          {/* Confirm leave + delete */}
+          <AnimatePresence>
+            {confirmLeave && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
+                style={{ marginBottom: 12, padding: '16px', borderRadius: 16,
+                  background: `${C.loss}0E`, border: `1px solid ${C.loss}40` }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: '0 0 6px', textAlign: 'center' }}>
+                  Jesteś ostatnią osobą
+                </p>
+                <p style={{ fontSize: 10.5, color: C.sub, margin: '0 0 14px', textAlign: 'center', lineHeight: 1.5 }}>
+                  Jeśli opuścisz, mecz zostanie usunięty. Na pewno?
+                </p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => setConfirmLeave(false)}
+                    style={{ flex: 1, padding: '11px', borderRadius: 12, border: 'none', cursor: 'pointer',
+                      background: C.surface, color: C.sub, fontSize: 11, fontWeight: 700 }}>
+                    Anuluj
+                  </motion.button>
+                  <motion.button whileTap={{ scale: 0.96 }} onClick={() => doLeave(true)}
+                    style={{ flex: 1, padding: '11px', borderRadius: 12, border: 'none', cursor: 'pointer',
+                      background: `${C.loss}18`, outline: `1px solid ${C.loss}50`,
+                      color: C.loss, fontSize: 11, fontWeight: 800 }}>
+                    Usuń mecz
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {myPlayer && (
             <div style={{ display: 'flex', gap: 10 }}>
@@ -1515,15 +1589,15 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft })
                 border: `1px solid ${myPlayer.team === 'home' ? C.accent : C.hoop}35` }}>
                 <p style={{ margin: 0, fontSize: 11, fontWeight: 800,
                   color: myPlayer.team === 'home' ? C.accent : C.hoop }}>
-                  Drużyna {myPlayer.team === 'home' ? 'A' : 'B'} ✓
+                  {myPlayer.team === 'home' ? homeTeamName : 'Rywale'} ✓
                 </p>
               </div>
               {!isPast && (
-                <motion.button whileTap={{ scale: 0.95 }} onClick={handleLeave} disabled={leaving}
+                <motion.button whileTap={{ scale: 0.95 }} onClick={requestLeave} disabled={leaving}
                   style={{ padding: '13px 18px', borderRadius: 14, border: 'none', cursor: 'pointer',
                     background: `${C.loss}12`, outline: `1px solid ${C.loss}35`,
                     color: C.loss, fontSize: 11, fontWeight: 700, opacity: leaving ? 0.7 : 1 }}>
-                  Opuść
+                  {leaving ? '…' : 'Opuść'}
                 </motion.button>
               )}
             </div>
@@ -1802,7 +1876,8 @@ function MatchesPanel({ club, uid, isActive }) {
           <MatchDetailSheet key="detail" match={active} uid={uid}
             userClubId={club.id}
             onClose={() => { setSheet(null); setActive(null) }}
-            onJoined={updateMatch} onLeft={updateMatch}/>
+            onJoined={updateMatch} onLeft={updateMatch}
+            onDeleted={id => { setMatches(prev => prev.filter(m => m.id !== id)); setSheet(null); setActive(null) }}/>
         )}
         {sheet === 'result' && pending && (
           <ResultSheet key="result" match={pending}
