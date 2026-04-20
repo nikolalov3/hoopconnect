@@ -205,6 +205,31 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
 /* CONFIRM */
 .confirm-text{font-size:14px;color:var(--t2);line-height:1.6;margin-bottom:20px}
 
+/* INFO BTN */
+.info-btn{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border2);background:transparent;color:var(--t3);font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;font-family:var(--font-b)}
+.info-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+
+/* INFO MODAL */
+.info-section{margin-bottom:20px}
+.info-section:last-child{margin-bottom:0}
+.info-h{font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--t1);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.info-h span{font-size:18px}
+.info-p{font-size:13px;color:var(--t2);line-height:1.65;margin-bottom:6px}
+.info-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.info-col{background:var(--surface3);border-radius:var(--r-sm);padding:10px 12px}
+.info-col-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.info-col-desc{font-size:12px;color:var(--t2);line-height:1.5}
+.info-tip{background:var(--accent-bg);border-left:3px solid var(--accent);border-radius:0 var(--r-sm) var(--r-sm) 0;padding:10px 12px;font-size:13px;color:var(--t2);line-height:1.6;margin-top:8px}
+.info-tip strong{color:var(--accent)}
+.info-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.info-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
+
+/* DRAG & DROP */
+.task-card[draggable]{cursor:grab}
+.task-card[draggable]:active{cursor:grabbing}
+.task-card.dragging{opacity:.35;transform:scale(.97);box-shadow:none}
+.col-body.drag-over{background:var(--accent-bg);outline:2px dashed var(--accent);outline-offset:-4px;border-radius:var(--r-sm)}
+
 /* BOTTOM NAV */
 .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:6px 0 max(10px,env(safe-area-inset-bottom));z-index:150;box-shadow:0 -4px 16px rgba(20,15,10,0.06)}
 .bn-items{display:flex;justify-content:space-around}
@@ -312,7 +337,10 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
 <div class="main">
   <header class="topbar">
     <button class="menu-btn" onclick="toggleSidebar()">☰</button>
-    <div class="page-title" id="pageTitle">Tablica Kanban</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="page-title" id="pageTitle">Tablica Kanban</div>
+      <button class="info-btn" id="infoBtnTopbar" onclick="openOv('infoOverlay')" title="Jak korzystać z tablicy?">i</button>
+    </div>
     <div class="topbar-right">
       <div class="search-wrap">
         <input type="text" placeholder="Szukaj zadania..." id="searchInput" oninput="renderAll()">
@@ -419,6 +447,68 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
   </div>
 </div>
 
+<!-- INFO MODAL -->
+<div class="overlay" id="infoOverlay">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-handle"></div>
+    <div class="modal-hd">
+      <div class="modal-title">Jak działać na tablicy Kanban</div>
+      <button class="modal-close" onclick="closeOv('infoOverlay')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="info-section">
+        <div class="info-h"><span>⊞</span> Cztery kolumny — co oznaczają</div>
+        <div class="info-cols">
+          <div class="info-col"><div class="info-col-name" style="color:var(--red)">● Do zrobienia</div><div class="info-col-desc">Zaplanowane, jeszcze nie zaczęte. Tu trafiają wszystkie nowe zadania.</div></div>
+          <div class="info-col"><div class="info-col-name" style="color:var(--blue)">● Aktywny rozwój</div><div class="info-col-desc">Nad tym pracujesz TERAZ. Maksymalnie 3 zadania jednocześnie — bez wyjątków.</div></div>
+          <div class="info-col"><div class="info-col-name" style="color:var(--purple)">● Kolejny sprint</div><div class="info-col-desc">Zaplanowane na następny tydzień. Konkretne, gotowe do wejścia w rozwój.</div></div>
+          <div class="info-col"><div class="info-col-name" style="color:var(--teal)">● Pomysły / Growth</div><div class="info-col-desc">Backlog i eksperymenty. Wchodzą tu gdy nie są jeszcze priorytetem.</div></div>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <div class="info-h"><span>🎯</span> Limit WIP — najważniejsza zasada</div>
+        <div class="info-p">WIP (Work In Progress) to liczba zadań jednocześnie w toku. Im więcej naraz, tym wolniej wszystko idzie. Dowiedzione naukowo i w praktyce każdego startupu.</div>
+        <div class="info-tip"><strong>Zasada:</strong> Nigdy więcej niż 3 zadania w "Aktywny rozwój". Zanim zaczniesz coś nowego — skończ coś starego. Focus beats multitasking zawsze.</div>
+      </div>
+
+      <div class="info-section">
+        <div class="info-h"><span>🌅</span> Codzienny rytm (5 minut)</div>
+        <div class="info-p"><strong>Rano:</strong> Otwórz tablicę. Wybierz 1–3 rzeczy które DZISIAJ wejdą do "Ukończone". Zapisz je mentalnie lub na kartce.</div>
+        <div class="info-p"><strong>Wieczorem:</strong> Zaktualizuj statusy. Przenieś co ukończyłeś. Sprawdź czy jutro jest jasne.</div>
+      </div>
+
+      <div class="info-section">
+        <div class="info-h"><span>🔴</span> Priorytety — jak je czytać</div>
+        <div class="info-pills">
+          <div class="info-pill" style="background:var(--red-bg);color:var(--red)">🔴 Wysoki — blokuje postęp lub deadline za rogiem. Rób to najpierw.</div>
+          <div class="info-pill" style="background:var(--amber-bg);color:var(--amber)">🟡 Średni — ważne, ale nie pali. Wchodzi po wysokich.</div>
+          <div class="info-pill" style="background:var(--green-bg);color:var(--green)">🟢 Niski — nice-to-have. Rób gdy masz luźny czas.</div>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <div class="info-h"><span>📅</span> Tygodniowy review (15 minut, piątek)</div>
+        <div class="info-p">Raz w tygodniu zatrzymaj się i przejdź przez tablicę:</div>
+        <div class="info-p">① Co ukończyłem w tym tygodniu? → przenieś na "Ukończone"<br>② Co mnie blokowało? → usuń przeszkodę lub zmień podejście<br>③ Co wchodzi w kolejny tydzień? → przesuń z "Kolejny sprint" do "Aktywny rozwój"<br>④ Czy pomysły nadal mają sens? → wywal przestarzałe bezlitośnie</div>
+        <div class="info-tip"><strong>Pro tip:</strong> Zadanie w "Aktywny rozwój" dłużej niż 2 tygodnie = problem. Albo je podziel na mniejsze, albo odrzuć.</div>
+      </div>
+
+      <div class="info-section">
+        <div class="info-h"><span>✅</span> Kiedy zadanie jest naprawdę ukończone?</div>
+        <div class="info-p">Nie gdy "działa lokalnie". Nie gdy "prawie gotowe". Zadanie jest ukończone gdy jest <strong>wdrożone na produkcję</strong> i użytkownik może z tego korzystać. Inaczej to iluzja postępu.</div>
+      </div>
+
+      <div class="info-section">
+        <div class="info-h"><span>🖱️</span> Przeciąganie kart</div>
+        <div class="info-p">Chwyć kartę i przeciągnij ją do innej kolumny żeby zmienić status — zapis do bazy odbywa się automatycznie.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 
 <script>
@@ -466,6 +556,7 @@ const SEED = [
 ];
 
 let tasks = [], editId = null, delId = null, filter = null;
+let dragId = null, isDragging = false;
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
 
@@ -539,8 +630,15 @@ function rBoard() {
     const ct = f.filter(t => t.status === c.id);
     return `<div class="board-col">
       <div class="col-head"><div class="col-dot" style="background:${c.dot}"></div><div class="col-title">${c.label}</div><div class="col-cnt">${ct.length}</div></div>
-      <div class="col-body">
-        ${ct.map(t => `<div class="task-card p-${t.priority}" onclick="openDetail('${t.id}')">
+      <div class="col-body"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="onDrop(event,'${c.id}')">
+        ${ct.map(t => `<div class="task-card p-${t.priority}"
+            draggable="true"
+            ondragstart="onDragStart(event,'${t.id}')"
+            ondragend="onDragEnd(event)"
+            onclick="onCardClick(event,'${t.id}')">
           <div class="task-title">${esc(t.title)}</div>
           <div class="task-foot"><span class="tag ${TAGS[t.tag]||'tag-plan'}">${TL[t.tag]||t.tag}</span>${t.date?`<span class="task-date">${fd(t.date)}</span>`:''}</div>
         </div>`).join('')}
@@ -665,6 +763,23 @@ async function move(id, s) {
   } else toast('Błąd ✗');
 }
 
+function onDragStart(e, id) {
+  dragId = id; isDragging = true;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  setTimeout(() => { isDragging = false; }, 50);
+}
+async function onDrop(e, colId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (dragId) { await move(dragId, colId); dragId = null; }
+}
+function onCardClick(e, id) { if (!isDragging) openDetail(id); }
+
 function askDel(id) { delId = id; closeOv('detailOverlay'); openOv('confirmOverlay'); }
 
 async function confirmDelete() {
@@ -687,6 +802,7 @@ function showPage(p) {
     document.getElementById('bn-' + n)?.classList.toggle('active', n === p);
   });
   document.getElementById('pageTitle').textContent = {board:'Tablica Kanban',list:'Lista zadań',roadmap:'Mapa drogowa'}[p] || p;
+  document.getElementById('infoBtnTopbar').style.display = p === 'board' ? 'inline-flex' : 'none';
   closeSidebar(); renderAll();
 }
 
