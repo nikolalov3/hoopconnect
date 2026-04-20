@@ -964,12 +964,24 @@ async function uploadFiles(fileList) {
   prog.style.display = 'block';
   let done = 0;
   for (const file of Array.from(fileList)) {
-    const safeName = file.name.replace(/[^a-zA-Z0-9._\-\u00C0-\u024F ]/g, '_');
-    const path = `${Date.now()}_${safeName}`;
-    const { error } = await sb.storage.from(BUCKET).upload(path, file, { upsert: false, contentType: file.type });
+    const ext = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : '';
+    const base = file.name.slice(0, ext ? -(ext.length + 1) : undefined)
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\u0141/g, 'L').replace(/\u0142/g, 'l')
+      .replace(/\u00d3/g, 'O').replace(/\u00f3/g, 'o')
+      .replace(/\u017b|\u017c/g, 'Z').replace(/\u017a|\u017c/g, 'z')
+      .replace(/\u015a|\u015b/g, 'S').replace(/\u0104|\u0105/g, 'A')
+      .replace(/\u0118|\u0119/g, 'E').replace(/\u0106|\u0107/g, 'C')
+      .replace(/\u0143|\u0144/g, 'N')
+      .replace(/[^a-zA-Z0-9\-_ ]/g, '_')
+      .replace(/\s+/g, '_')
+      .replace(/_+/g, '_')
+      .slice(0, 80);
+    const path = `${Date.now()}_${base}${ext ? '.' + ext : ''}`;
+    const { error } = await sb.storage.from(BUCKET).upload(path, file, { upsert: false });
     if (error) {
-      const isMissing = error.statusCode === 400 || error.message?.toLowerCase().includes('not found') || error.message?.toLowerCase().includes('bucket');
-      toast(isMissing ? '⚠️ Bucket pm-files nie istnieje — sprawdź SQL Editor ✗' : `Błąd uploadu ✗`);
+      toast(`Błąd uploadu: ${error.message || error.statusCode} ✗`);
     }
     else { done++; toast(`Wgrano: ${file.name} ✓`); }
     bar.style.width = `${Math.round(((done + (error ? 1 : 0)) / fileList.length) * 100)}%`;
