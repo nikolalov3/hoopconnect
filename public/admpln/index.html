@@ -224,6 +224,37 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
 .info-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .info-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
 
+/* FOLDER GRID */
+.folder-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:4px 8px 12px}
+.folder-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 4px;border-radius:var(--r-sm);cursor:pointer;transition:all .15s;border:1px solid transparent}
+.folder-item:hover:not(.empty){background:var(--surface3);border-color:var(--border)}
+.folder-item:active:not(.empty){transform:scale(.93)}
+.folder-item.empty{cursor:default;border:1px dashed var(--border);opacity:.35}
+.folder-ico{font-size:20px;line-height:1}
+.folder-lbl{font-size:9.5px;font-weight:600;color:var(--t3);letter-spacing:.1px;text-align:center;line-height:1.2}
+.folder-item:hover:not(.empty) .folder-lbl{color:var(--accent)}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--r-lg);padding:28px 20px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:16px}
+.upload-zone:hover,.upload-zone.drag-on{border-color:var(--accent);background:var(--accent-bg)}
+.upload-ico{font-size:28px;margin-bottom:8px}
+.upload-txt{font-size:14px;font-weight:600;color:var(--t1);margin-bottom:3px}
+.upload-sub{font-size:12px;color:var(--t3)}
+.upload-prog{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:14px;display:none}
+.upload-bar{height:100%;background:var(--accent);width:0%;transition:width .2s;border-radius:2px}
+
+/* FILE ITEMS */
+.file-item{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;transition:background .1s}
+.file-item:hover{background:var(--surface2)}
+.file-emoji{font-size:20px;flex-shrink:0}
+.file-name{flex:1;font-size:13px;font-weight:500;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.file-sz{font-size:11px;color:var(--t3);flex-shrink:0}
+.file-acts{display:flex;gap:4px;flex-shrink:0}
+.file-act{width:28px;height:28px;border-radius:50%;border:none;background:var(--surface);cursor:pointer;font-size:14px;color:var(--t2);display:flex;align-items:center;justify-content:center;transition:all .12s}
+.file-act:hover{background:var(--accent-bg);color:var(--accent)}
+.file-act.fdel:hover{background:var(--red-bg);color:var(--red)}
+.files-empty{text-align:center;padding:32px 16px;color:var(--t3);font-size:13px;line-height:1.6}
+
 /* DRAG & DROP */
 .task-card[draggable]{cursor:grab}
 .task-card[draggable]:active{cursor:grabbing}
@@ -324,6 +355,21 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
     <div class="nav-item" onclick="setFilter('feature')"><span class="nav-icon" style="color:var(--blue)">●</span>Funkcje</div>
     <div class="nav-item" onclick="setFilter('growth')"><span class="nav-icon" style="color:var(--teal)">●</span>Growth</div>
     <div class="nav-item" onclick="setFilter(null)"><span class="nav-icon" style="color:var(--t4)">○</span>Wszystkie</div>
+    <div class="nav-sec">Zasoby</div>
+    <div class="folder-grid">
+      <div class="folder-item" onclick="openFiles()">
+        <div class="folder-ico">📁</div>
+        <div class="folder-lbl">Pliki</div>
+      </div>
+      <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
+      <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
+      <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
+      <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
+      <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
+      <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
+      <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
+      <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
+    </div>
   </nav>
   <div class="sidebar-footer">
     <div class="user-row">
@@ -362,6 +408,31 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
     </div>
   </div>
 </div>
+</div>
+
+<!-- FILES OVERLAY -->
+<div class="overlay" id="filesOverlay">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-handle"></div>
+    <div class="modal-hd">
+      <div class="modal-title">📁 Pliki projektu</div>
+      <button class="modal-close" onclick="closeOv('filesOverlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-zone" id="uploadZone"
+           onclick="document.getElementById('fileInput').click()"
+           ondragover="event.preventDefault();document.getElementById('uploadZone').classList.add('drag-on')"
+           ondragleave="document.getElementById('uploadZone').classList.remove('drag-on')"
+           ondrop="handleFileDrop(event)">
+        <div class="upload-ico">⬆</div>
+        <div class="upload-txt">Kliknij lub przeciągnij pliki tutaj</div>
+        <div class="upload-sub">PDF, obrazy, dokumenty — maks. 50 MB</div>
+        <input type="file" id="fileInput" multiple style="display:none" onchange="uploadFiles(this.files)">
+      </div>
+      <div class="upload-prog" id="uploadProg"><div class="upload-bar" id="uploadBar"></div></div>
+      <div id="filesListWrap"></div>
+    </div>
+  </div>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -816,6 +887,98 @@ function toast(msg) {
   t.classList.add('show');
   clearTimeout(t._t);
   t._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── FILES ─────────────────────────────────────────────────────────────────────
+const BUCKET = 'pm-files';
+const FILE_ICONS = {pdf:'📄',png:'🖼',jpg:'🖼',jpeg:'🖼',gif:'🖼',svg:'🖼',webp:'🖼',mp4:'🎥',mov:'🎥',mp3:'🎵',zip:'📦',rar:'📦',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📊',pptx:'📊',txt:'📝',csv:'📊'};
+
+async function openFiles() {
+  closeSidebar();
+  openOv('filesOverlay');
+  await loadFiles();
+}
+
+async function loadFiles() {
+  const wrap = document.getElementById('filesListWrap');
+  wrap.innerHTML = '<div class="files-empty">Ładowanie plików...</div>';
+  const { data, error } = await sb.storage.from(BUCKET).list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+  if (error) {
+    const isMissing = error.message?.includes('not found') || error.statusCode === 404 || error.error === 'Bucket not found';
+    wrap.innerHTML = `<div class="files-empty" style="color:var(--red)">
+      ${isMissing
+        ? '⚠️ Bucket <strong>pm-files</strong> nie istnieje.<br><small>Utwórz go w Supabase Dashboard → Storage → New bucket → <strong>pm-files</strong> (private).<br>Następnie dodaj politykę: ALL dla anon.</small>'
+        : `Błąd: ${esc(error.message)}`}
+    </div>`;
+    return;
+  }
+  const files = (data || []).filter(f => f.name !== '.emptyFolderPlaceholder');
+  if (files.length === 0) {
+    wrap.innerHTML = '<div class="files-empty">Brak plików<br><small>Wgraj pierwszy plik powyżej</small></div>';
+    return;
+  }
+  wrap.innerHTML = files.map(f => {
+    const ext = f.name.split('.').pop().toLowerCase();
+    const ico = FILE_ICONS[ext] || '📎';
+    const sz  = f.metadata?.size != null ? fmtSz(f.metadata.size) : '';
+    const safeName = esc(f.name);
+    return `<div class="file-item">
+      <div class="file-emoji">${ico}</div>
+      <div class="file-name" title="${safeName}">${safeName}</div>
+      ${sz ? `<div class="file-sz">${sz}</div>` : ''}
+      <div class="file-acts">
+        <button class="file-act" onclick="downloadFile('${safeName}')" title="Pobierz">⬇</button>
+        <button class="file-act fdel" onclick="deleteFile('${safeName}')" title="Usuń">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fmtSz(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+
+function handleFileDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag-on');
+  uploadFiles(e.dataTransfer.files);
+}
+
+async function uploadFiles(fileList) {
+  if (!fileList || fileList.length === 0) return;
+  const prog = document.getElementById('uploadProg');
+  const bar  = document.getElementById('uploadBar');
+  prog.style.display = 'block';
+  let done = 0;
+  for (const file of Array.from(fileList)) {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._\-\u00C0-\u024F ]/g, '_');
+    const path = `${Date.now()}_${safeName}`;
+    const { error } = await sb.storage.from(BUCKET).upload(path, file, { upsert: false, contentType: file.type });
+    if (error) toast(`Błąd: ${file.name} ✗`);
+    else { done++; toast(`Wgrano: ${file.name} ✓`); }
+    bar.style.width = `${Math.round(((done + (error ? 1 : 0)) / fileList.length) * 100)}%`;
+  }
+  setTimeout(() => { prog.style.display = 'none'; bar.style.width = '0%'; }, 900);
+  document.getElementById('fileInput').value = '';
+  await loadFiles();
+}
+
+async function downloadFile(name) {
+  const { data, error } = await sb.storage.from(BUCKET).download(name);
+  if (error) { toast('Błąd pobierania ✗'); return; }
+  const url = URL.createObjectURL(data);
+  const a = document.createElement('a'); a.href = url; a.download = name.replace(/^\d+_/, ''); a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function deleteFile(name) {
+  if (!confirm(`Usunąć plik "${name.replace(/^\d+_/, '')}"?`)) return;
+  const { error } = await sb.storage.from(BUCKET).remove([name]);
+  if (error) { toast('Błąd usuwania ✗'); return; }
+  toast('Usunięto ✓');
+  await loadFiles();
 }
 </script>
 </body>
