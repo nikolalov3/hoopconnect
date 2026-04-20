@@ -904,11 +904,22 @@ async function loadFiles() {
   wrap.innerHTML = '<div class="files-empty">Ładowanie plików...</div>';
   const { data, error } = await sb.storage.from(BUCKET).list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
   if (error) {
-    const isMissing = error.message?.includes('not found') || error.statusCode === 404 || error.error === 'Bucket not found';
-    wrap.innerHTML = `<div class="files-empty" style="color:var(--red)">
+    const isMissing = error.statusCode === 400 || error.statusCode === 404
+      || error.message?.toLowerCase().includes('not found')
+      || error.message?.toLowerCase().includes('bucket')
+      || error.error === 'Bucket not found';
+    const isPolicy = error.statusCode === 403 || error.message?.toLowerCase().includes('policy') || error.message?.toLowerCase().includes('permission');
+    wrap.innerHTML = `<div class="files-empty" style="color:var(--red);font-size:12px;line-height:1.7">
       ${isMissing
-        ? '⚠️ Bucket <strong>pm-files</strong> nie istnieje.<br><small>Utwórz go w Supabase Dashboard → Storage → New bucket → <strong>pm-files</strong> (private).<br>Następnie dodaj politykę: ALL dla anon.</small>'
-        : `Błąd: ${esc(error.message)}`}
+        ? `⚠️ Bucket <strong>pm-files</strong> nie istnieje lub brak uprawnień.<br>
+           Wykonaj w Supabase SQL Editor:<br>
+           <code style="background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">
+           insert into storage.buckets(id,name) values('pm-files','pm-files');<br>
+           create policy "pm_files_open" on storage.objects for all using (bucket_id='pm-files') with check (bucket_id='pm-files');
+           </code>`
+        : isPolicy
+          ? `⛔ Brak uprawnień do bucketu.<br><small>Dodaj politykę RLS w Supabase → Storage → pm-files → Policies.</small>`
+          : `Błąd: ${esc(error.message)}`}
     </div>`;
     return;
   }
@@ -956,7 +967,10 @@ async function uploadFiles(fileList) {
     const safeName = file.name.replace(/[^a-zA-Z0-9._\-\u00C0-\u024F ]/g, '_');
     const path = `${Date.now()}_${safeName}`;
     const { error } = await sb.storage.from(BUCKET).upload(path, file, { upsert: false, contentType: file.type });
-    if (error) toast(`Błąd: ${file.name} ✗`);
+    if (error) {
+      const isMissing = error.statusCode === 400 || error.message?.toLowerCase().includes('not found') || error.message?.toLowerCase().includes('bucket');
+      toast(isMissing ? '⚠️ Bucket pm-files nie istnieje — sprawdź SQL Editor ✗' : `Błąd uploadu ✗`);
+    }
     else { done++; toast(`Wgrano: ${file.name} ✓`); }
     bar.style.width = `${Math.round(((done + (error ? 1 : 0)) / fileList.length) * 100)}%`;
   }
