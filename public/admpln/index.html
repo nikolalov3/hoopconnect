@@ -244,8 +244,8 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
 .upload-bar{height:100%;background:var(--accent);width:0%;transition:width .2s;border-radius:2px}
 
 /* FILE ITEMS */
-.file-item{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;transition:background .1s}
-.file-item:hover{background:var(--surface2)}
+.file-item{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;transition:all .12s;cursor:pointer}
+.file-item:hover{background:var(--surface2);border-color:var(--accent);transform:translateX(2px)}
 .file-emoji{font-size:20px;flex-shrink:0}
 .file-name{flex:1;font-size:13px;font-weight:500;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .file-sz{font-size:11px;color:var(--t3);flex-shrink:0}
@@ -254,6 +254,18 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
 .file-act:hover{background:var(--accent-bg);color:var(--accent)}
 .file-act.fdel:hover{background:var(--red-bg);color:var(--red)}
 .files-empty{text-align:center;padding:32px 16px;color:var(--t3);font-size:13px;line-height:1.6}
+
+/* FILE PREVIEW */
+.prev-ov{position:fixed;inset:0;background:rgba(10,8,6,.92);z-index:700;display:none;flex-direction:column}
+.prev-ov.open{display:flex}
+.prev-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;min-width:0}
+.prev-name{flex:1;font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.prev-body{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:16px;min-height:0}
+.prev-img{max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--r-sm);box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.prev-frame{width:100%;height:100%;border:none;border-radius:var(--r-sm);background:#fff}
+.prev-noview{text-align:center;color:var(--t3);font-size:14px;line-height:2;padding:40px}
+.prev-spin{font-size:28px;animation:spin .8s linear infinite;display:block;margin-bottom:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* DRAG & DROP */
 .task-card[draggable]{cursor:grab}
@@ -433,6 +445,16 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
       <div id="filesListWrap"></div>
     </div>
   </div>
+</div>
+
+<!-- FILE PREVIEW OVERLAY -->
+<div class="prev-ov" id="prevOv">
+  <div class="prev-bar">
+    <button class="modal-close" onclick="closePreview()" style="flex-shrink:0">✕</button>
+    <div class="prev-name" id="prevName"></div>
+    <button class="btn btn-ghost btn-sm" onclick="downloadFile(window._prevFile)" style="flex-shrink:0">⬇ Pobierz</button>
+  </div>
+  <div class="prev-body" id="prevBody"></div>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -930,16 +952,17 @@ async function loadFiles() {
   }
   wrap.innerHTML = files.map(f => {
     const ext = f.name.split('.').pop().toLowerCase();
-    const ico = FILE_ICONS[ext] || '📎';
-    const sz  = f.metadata?.size != null ? fmtSz(f.metadata.size) : '';
-    const safeName = esc(f.name);
-    return `<div class="file-item">
+    const ico      = FILE_ICONS[ext] || '📎';
+    const sz       = f.metadata?.size != null ? fmtSz(f.metadata.size) : '';
+    const rawName  = esc(f.name);
+    const dispName = esc(f.name.replace(/^\d+_/, ''));
+    return `<div class="file-item" onclick="previewFile('${rawName}')" title="Kliknij aby otworzyć">
       <div class="file-emoji">${ico}</div>
-      <div class="file-name" title="${safeName}">${safeName}</div>
+      <div class="file-name" title="${dispName}">${dispName}</div>
       ${sz ? `<div class="file-sz">${sz}</div>` : ''}
-      <div class="file-acts">
-        <button class="file-act" onclick="downloadFile('${safeName}')" title="Pobierz">⬇</button>
-        <button class="file-act fdel" onclick="deleteFile('${safeName}')" title="Usuń">✕</button>
+      <div class="file-acts" onclick="event.stopPropagation()">
+        <button class="file-act" onclick="downloadFile('${rawName}')" title="Pobierz">⬇</button>
+        <button class="file-act fdel" onclick="deleteFile('${rawName}')" title="Usuń">✕</button>
       </div>
     </div>`;
   }).join('');
@@ -990,6 +1013,46 @@ async function uploadFiles(fileList) {
   document.getElementById('fileInput').value = '';
   await loadFiles();
 }
+
+const PREVIEW_TYPES = {
+  img: ['png','jpg','jpeg','gif','webp','svg','bmp'],
+  pdf: ['pdf'],
+  vid: ['mp4','mov','webm'],
+};
+
+async function previewFile(name) {
+  window._prevFile = name;
+  const dispName = name.replace(/^\d+_/, '');
+  document.getElementById('prevName').textContent = dispName;
+  document.getElementById('prevBody').innerHTML = '<div class="prev-noview"><span class="prev-spin">⏳</span>Ładowanie...</div>';
+  document.getElementById('prevOv').classList.add('open');
+
+  const ext = name.split('.').pop().toLowerCase();
+  const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(name, 3600);
+  if (error) {
+    document.getElementById('prevBody').innerHTML = `<div class="prev-noview">Błąd ładowania<br><small>${esc(error.message)}</small></div>`;
+    return;
+  }
+  const url = data.signedUrl;
+
+  if (PREVIEW_TYPES.img.includes(ext)) {
+    document.getElementById('prevBody').innerHTML = `<img class="prev-img" src="${url}" alt="${esc(dispName)}">`;
+  } else if (PREVIEW_TYPES.pdf.includes(ext)) {
+    document.getElementById('prevBody').innerHTML = `<iframe class="prev-frame" src="${url}"></iframe>`;
+  } else if (PREVIEW_TYPES.vid.includes(ext)) {
+    document.getElementById('prevBody').innerHTML = `<video controls style="max-width:100%;max-height:100%;border-radius:var(--r-sm)" src="${url}"></video>`;
+  } else {
+    document.getElementById('prevBody').innerHTML = `<div class="prev-noview">Podgląd niedostępny dla formatu <strong>.${ext}</strong><br><button class="btn btn-primary" onclick="downloadFile('${esc(name)}')" style="margin-top:16px">⬇ Pobierz plik</button></div>`;
+  }
+}
+
+function closePreview() {
+  document.getElementById('prevOv').classList.remove('open');
+  document.getElementById('prevBody').innerHTML = '';
+  window._prevFile = null;
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('prevOv').classList.contains('open')) closePreview(); });
 
 async function downloadFile(name) {
   const { data, error } = await sb.storage.from(BUCKET).download(name);
