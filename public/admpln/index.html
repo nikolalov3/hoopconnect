@@ -584,7 +584,6 @@ html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
         </div>
         <div class="fg"><label class="fl">Deadline</label><input class="fi" id="fDate" type="date"></div>
       </div>
-    </div>
       <div class="fg">
         <label class="fl">Kolor oznaczenia</label>
         <div class="color-row" id="colorRow">
@@ -1002,7 +1001,14 @@ function openDetail(id) {
     <div class="sw-pills">
       ${COLS.map(c => `<button class="sp${t.status===c.id?' active':''}" onclick="move('${t.id}','${c.id}')">${c.label}</button>`).join('')}
       <button class="sp${t.status==='done'?' active':''}" onclick="move('${t.id}','done')">✓ Ukończone</button>
-    </div></div>`;
+    </div></div>
+    <div style="margin-top:16px">
+      <div class="sw-lbl">Kolor oznaczenia</div>
+      <div class="color-row" style="margin-top:8px">
+        <div class="color-opt c-none${!t.card_color?' selected':''}" title="Brak" onclick="setCardColor('${t.id}','')"></div>
+        ${Object.entries(CARD_COLORS).map(([k,v]) => `<div class="color-opt${t.card_color===k?' selected':''}" style="background:${v}" title="${k}" onclick="setCardColor('${t.id}','${k}')"></div>`).join('')}
+      </div>
+    </div>`;
   document.getElementById('detailActs').innerHTML = `
     <button class="btn btn-danger btn-sm" onclick="askDel('${t.id}')">Usuń</button>
     <button class="btn btn-ghost btn-sm" onclick="closeOv('detailOverlay')">Zamknij</button>
@@ -1015,6 +1021,17 @@ async function move(id, s) {
   if (!error) {
     const t = tasks.find(x => x.id === id); if (t) t.status = s;
     renderAll(); closeOv('detailOverlay'); toast('Status zmieniony ✓');
+  } else toast('Błąd ✗');
+}
+
+async function setCardColor(id, color) {
+  const { error } = await sb.from('pm_tasks').update({ card_color: color || null, updated_at: new Date().toISOString() }).eq('id', id);
+  if (!error) {
+    const t = tasks.find(x => x.id === id);
+    if (t) t.card_color = color || null;
+    renderAll();
+    openDetail(id);
+    toast('Kolor zmieniony ✓');
   } else toast('Błąd ✗');
 }
 
