@@ -281,6 +281,15 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
 .prev-spin{font-size:28px;animation:spin .8s linear infinite;display:block;margin-bottom:10px}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* COLOR PICKER */
+.color-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.color-opt{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;flex-shrink:0;position:relative}
+.color-opt:hover{transform:scale(1.18)}
+.color-opt.selected::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--t1)}
+.color-opt.c-none{background:var(--surface3);border:2px dashed var(--border2)}
+.color-opt.c-none.selected::after{border-color:var(--t3)}
+.card-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-left:2px}
+
 /* DRAG & DROP */
 .task-card[draggable]{cursor:grab}
 .task-card[draggable]:active{cursor:grabbing}
@@ -399,8 +408,8 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
   </nav>
   <div class="sidebar-footer">
     <div class="user-row">
-      <div class="avatar">HC</div>
-      <div><div class="user-name">Founder</div><div class="user-role">Admin</div></div>
+      <div class="avatar" id="profileAvatar">HC</div>
+      <div><div class="user-name" id="profileName">Founder</div><div class="user-role" id="profileRole">Admin</div></div>
     </div>
   </div>
 </aside>
@@ -521,6 +530,22 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
         <div class="fg"><label class="fl">Deadline</label><input class="fi" id="fDate" type="date"></div>
       </div>
     </div>
+      <div class="fg">
+        <label class="fl">Kolor oznaczenia</label>
+        <div class="color-row" id="colorRow">
+          <div class="color-opt c-none selected" title="Brak koloru" onclick="pickColor(this,'')"></div>
+          <div class="color-opt" style="background:#f97316" title="Pomarańczowy" onclick="pickColor(this,'orange')"></div>
+          <div class="color-opt" style="background:#6366f1" title="Indigo" onclick="pickColor(this,'indigo')"></div>
+          <div class="color-opt" style="background:#a855f7" title="Fioletowy" onclick="pickColor(this,'violet')"></div>
+          <div class="color-opt" style="background:#2dd4bf" title="Teal" onclick="pickColor(this,'teal')"></div>
+          <div class="color-opt" style="background:#60a5fa" title="Niebieski" onclick="pickColor(this,'blue')"></div>
+          <div class="color-opt" style="background:#f472b6" title="Różowy" onclick="pickColor(this,'pink')"></div>
+          <div class="color-opt" style="background:#f87171" title="Czerwony" onclick="pickColor(this,'red')"></div>
+          <div class="color-opt" style="background:#4ade80" title="Zielony" onclick="pickColor(this,'green')"></div>
+        </div>
+        <input type="hidden" id="fColor" value="">
+      </div>
+    </div>
     <div class="modal-acts">
       <button class="btn btn-ghost" onclick="closeOv('addOverlay')">Anuluj</button>
       <button class="btn btn-primary" onclick="saveTask()">Zapisz</button>
@@ -623,9 +648,23 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
 const SUPABASE_URL      = 'https://dnngwqlubleexulkgqbf.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRubmd3cWx1YmxlZXh1bGtncWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2ODYyMDIsImV4cCI6MjA5MTI2MjIwMn0.gPn-AI5O8tBsz4R4s7XosLZHHRppRgP3f5iQ1pH10fo';
 const PANEL_PASSWORD    = '632700';
+const COLLAB_PASSWORD   = 'collab2025';   // ← zmień na własne hasło współpracownika
 // ─────────────────────────────────────────────────────────────────────────────
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const PROFILES = {
+  [PANEL_PASSWORD]:  { name: 'Nikola',  role: 'Founder', avatar: 'NK', grad: 'linear-gradient(135deg,#6366f1,#a855f7)' },
+  [COLLAB_PASSWORD]: { name: 'Piotrek', role: 'Member',  avatar: 'PT', grad: 'linear-gradient(135deg,#f97316,#fbbf24)' },
+};
+
+const CARD_COLORS = {
+  orange: '#f97316', indigo: '#6366f1', violet: '#a855f7',
+  teal:   '#2dd4bf', blue:   '#60a5fa', pink:   '#f472b6',
+  red:    '#f87171', green:  '#4ade80',
+};
+
+let currentProfile = PROFILES[PANEL_PASSWORD];
 
 const COLS = [
   {id:'todo',        label:'Do zrobienia',    dot:'#dc2626'},
@@ -680,14 +719,24 @@ function tryLogin() {
   const val = document.getElementById('pinInput').value;
   const inp = document.getElementById('pinInput');
   const err = document.getElementById('loginErr');
-  if (val === PANEL_PASSWORD) {
+  if (PROFILES[val]) {
+    currentProfile = PROFILES[val];
     document.getElementById('loginScreen').style.display = 'none';
+    applyProfile();
     init();
   } else {
     inp.classList.add('err');
     err.textContent = 'Nieprawidłowe hasło';
     setTimeout(() => { inp.classList.remove('err'); err.textContent = ''; }, 1800);
   }
+}
+
+function applyProfile() {
+  const p = currentProfile;
+  document.getElementById('profileAvatar').textContent  = p.avatar;
+  document.getElementById('profileAvatar').style.background = p.grad;
+  document.getElementById('profileName').textContent    = p.name;
+  document.getElementById('profileRole').textContent    = p.role;
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -710,6 +759,22 @@ async function load() {
   } else {
     tasks = data;
   }
+}
+
+// ── COLOR PICKER ──────────────────────────────────────────────────────────────
+
+function pickColor(el, val) {
+  document.getElementById('fColor').value = val;
+  document.querySelectorAll('#colorRow .color-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function setColorPicker(val) {
+  document.getElementById('fColor').value = val;
+  document.querySelectorAll('#colorRow .color-opt').forEach(e => e.classList.remove('selected'));
+  const opts = document.querySelectorAll('#colorRow .color-opt');
+  if (!val) { opts[0]?.classList.add('selected'); return; }
+  opts.forEach(e => { if (e.getAttribute('onclick')?.includes(`'${val}'`)) e.classList.add('selected'); });
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -756,7 +821,7 @@ function rBoard() {
             ondragend="onDragEnd(event)"
             onclick="onCardClick(event,'${t.id}')">
           <div class="task-title">${esc(t.title)}</div>
-          <div class="task-foot"><span class="tag ${TAGS[t.tag]||'tag-plan'}">${TL[t.tag]||t.tag}</span>${t.date?`<span class="task-date">${fd(t.date)}</span>`:''}</div>
+          <div class="task-foot"><span class="tag ${TAGS[t.tag]||'tag-plan'}">${TL[t.tag]||t.tag}</span>${t.date?`<span class="task-date">${fd(t.date)}</span>`:''} ${t.card_color&&CARD_COLORS[t.card_color]?`<span class="card-dot" style="background:${CARD_COLORS[t.card_color]};margin-left:auto" title="${t.card_color}"></span>`:''}</div>
         </div>`).join('')}
         <button class="add-col-btn" onclick="openAdd('${c.id}')">+ Dodaj zadanie</button>
       </div>
@@ -817,6 +882,7 @@ function openAdd(s = 'todo') {
   document.getElementById('fPriority').value = 'medium';
   document.getElementById('fTag').value      = 'feature';
   document.getElementById('fDate').value     = '';
+  setColorPicker('');
   openOv('addOverlay'); closeSidebar();
 }
 
@@ -830,6 +896,7 @@ function openEdit(id) {
   document.getElementById('fPriority').value      = t.priority;
   document.getElementById('fTag').value           = t.tag;
   document.getElementById('fDate').value          = t.date || '';
+  setColorPicker(t.card_color || '');
   closeOv('detailOverlay'); openOv('addOverlay');
 }
 
@@ -844,6 +911,7 @@ async function saveTask() {
     priority:   document.getElementById('fPriority').value,
     tag:        document.getElementById('fTag').value,
     date:       document.getElementById('fDate').value,
+    card_color: document.getElementById('fColor').value || null,
     updated_at: new Date().toISOString(),
   };
   if (editId) {
