@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="pl" data-theme="dark">
 <head>
+<script>document.documentElement.setAttribute('data-theme',localStorage.getItem('pm_theme')||'dark')</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -238,6 +239,41 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
 .info-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .info-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
 
+/* LIGHT THEME */
+html[data-theme="light"]{
+  --bg:#f2f2f5;--bg2:#e8e8ec;--surface:#ffffff;--surface2:#f8f8fb;--surface3:#eeeef3;
+  --border:rgba(0,0,0,.07);--border2:rgba(0,0,0,.12);--border3:rgba(0,0,0,.20);
+  --t1:#0f0f14;--t2:#52526a;--t3:#8888a0;--t4:#b4b4cc;
+  --sh-sm:0 1px 4px rgba(0,0,0,.08);--sh:0 4px 16px rgba(0,0,0,.10);--sh-lg:0 12px 40px rgba(0,0,0,.14);
+}
+html[data-theme="light"] .overlay{background:rgba(0,0,0,.35)}
+html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
+
+/* THEME TOGGLE */
+.theme-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border2);background:var(--surface3);cursor:pointer;font-size:14px;color:var(--t3);display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+
+/* NOTES GRID */
+.notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.note-tile{background:var(--surface3);border:1px solid var(--border);border-radius:var(--r);padding:14px 13px;cursor:pointer;transition:all .18s;min-height:88px;display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden}
+.note-tile::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);opacity:0;transition:opacity .15s}
+.note-tile:hover{border-color:var(--border2);background:var(--surface2);transform:translateY(-2px);box-shadow:var(--sh)}
+.note-tile:hover::before{opacity:1}
+.note-tile:active{transform:scale(.97)}
+.note-tile-title{font-size:13px;font-weight:600;color:var(--t1);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.note-tile-preview{font-size:11px;color:var(--t3);line-height:1.5;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.note-tile-date{font-size:10px;color:var(--t4);margin-top:auto;padding-top:4px}
+.notes-empty{text-align:center;padding:40px 16px;color:var(--t3);font-size:13px;line-height:1.8}
+
+/* NOTE EDITOR */
+.note-editor{display:flex;flex-direction:column;min-height:320px}
+.note-title-in{background:none;border:none;outline:none;font-family:var(--font-d);font-size:22px;font-weight:700;color:var(--t1);width:100%;padding:0;margin-bottom:4px;caret-color:var(--accent)}
+.note-title-in::placeholder{color:var(--t4)}
+.note-save-st{font-size:11px;height:18px;margin-bottom:10px;transition:color .2s}
+.note-divider{height:1px;background:var(--border);margin-bottom:14px}
+.note-body-in{background:none;border:none;outline:none;font-family:var(--font-b);font-size:14px;color:var(--t2);width:100%;resize:none;line-height:1.75;min-height:260px;caret-color:var(--accent)}
+.note-body-in::placeholder{color:var(--t4)}
+
 /* FOLDER GRID */
 .folder-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:4px 8px 12px}
 .folder-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 4px;border-radius:var(--r-sm);cursor:pointer;transition:all .15s;border:1px solid transparent}
@@ -403,13 +439,17 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
       <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
       <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
       <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
-      <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
+      <div class="folder-item" onclick="openNotes()">
+        <div class="folder-ico">📝</div>
+        <div class="folder-lbl">Notatki</div>
+      </div>
     </div>
   </nav>
   <div class="sidebar-footer">
     <div class="user-row">
       <div class="avatar" id="profileAvatar">HC</div>
-      <div><div class="user-name" id="profileName">Founder</div><div class="user-role" id="profileRole">Admin</div></div>
+      <div style="flex:1"><div class="user-name" id="profileName">Founder</div><div class="user-role" id="profileRole">Admin</div></div>
+      <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" title="Zmień motyw">☀</button>
     </div>
   </div>
 </aside>
@@ -467,6 +507,21 @@ body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:15
       <div class="upload-prog" id="uploadProg"><div class="upload-bar" id="uploadBar"></div></div>
       <div id="filesListWrap"></div>
     </div>
+  </div>
+</div>
+
+<!-- NOTES OVERLAY -->
+<div class="overlay" id="notesOverlay">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-handle"></div>
+    <div class="modal-hd">
+      <div class="modal-title" id="notesHdLeft">📝 Notatki</div>
+      <div style="display:flex;gap:8px;align-items:center" id="notesHdBtns">
+        <button class="btn btn-primary btn-sm" onclick="newNote()">+ Nowa</button>
+        <button class="modal-close" onclick="closeOv('notesOverlay')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="notesContent" style="min-height:200px"></div>
   </div>
 </div>
 
@@ -731,7 +786,7 @@ function tryLogin() {
   }
 }
 
-function applyProfile() {
+function applyProfile() { syncThemeIcon();
   const p = currentProfile;
   document.getElementById('profileAvatar').textContent  = p.avatar;
   document.getElementById('profileAvatar').style.background = p.grad;
@@ -1016,6 +1071,159 @@ function toast(msg) {
   t.classList.add('show');
   clearTimeout(t._t);
   t._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── THEME ─────────────────────────────────────────────────────────────────────
+
+function toggleTheme() {
+  const cur  = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('pm_theme', next);
+  document.getElementById('themeToggle').textContent = next === 'dark' ? '☀' : '🌙';
+}
+function syncThemeIcon() {
+  const t = document.documentElement.getAttribute('data-theme') || 'dark';
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = t === 'dark' ? '☀' : '🌙';
+}
+
+// ── NOTES ─────────────────────────────────────────────────────────────────────
+
+let notes = [], currentNote = null, notesSaveTimer = null;
+
+async function openNotes() {
+  closeSidebar();
+  openOv('notesOverlay');
+  await loadNotes();
+}
+
+async function loadNotes() {
+  document.getElementById('notesContent').innerHTML = '<div class="notes-empty">Ładowanie...</div>';
+  const { data, error } = await sb.from('pm_notes').select('*').order('updated_at', { ascending: false });
+  if (error) {
+    document.getElementById('notesContent').innerHTML = `<div class="notes-empty" style="color:var(--red)">
+      Błąd: ${esc(error.message)}<br>
+      <small style="color:var(--t3)">Uruchom SQL:<br><code style="font-size:10px">create table pm_notes(id uuid default gen_random_uuid() primary key, title text, content text, created_at timestamptz default now(), updated_at timestamptz default now()); alter table pm_notes enable row level security; create policy "open" on pm_notes for all using(true) with check(true);</code></small>
+    </div>`;
+    return;
+  }
+  notes = data || [];
+  showNotesGrid();
+}
+
+function showNotesGrid() {
+  currentNote = null;
+  clearTimeout(notesSaveTimer);
+  document.getElementById('notesHdLeft').innerHTML = '📝 Notatki';
+  document.getElementById('notesHdBtns').innerHTML = `
+    <button class="btn btn-primary btn-sm" onclick="newNote()">+ Nowa</button>
+    <button class="modal-close" onclick="closeOv('notesOverlay')">✕</button>`;
+  if (notes.length === 0) {
+    document.getElementById('notesContent').innerHTML = '<div class="notes-empty">Brak notatek<br><small>Utwórz pierwszą notatkę →</small></div>';
+    return;
+  }
+  document.getElementById('notesContent').innerHTML = `
+    <div class="notes-grid">${notes.map(n => `
+      <div class="note-tile" onclick="showNoteEditor('${n.id}')">
+        <div class="note-tile-title">${esc(n.title || 'Bez tytułu')}</div>
+        ${n.content ? `<div class="note-tile-preview">${esc(n.content.slice(0,120))}</div>` : ''}
+        <div class="note-tile-date">${fmtNoteDate(n.updated_at)}</div>
+      </div>`).join('')}
+    </div>`;
+}
+
+function fmtNoteDate(d) {
+  if (!d) return '';
+  const diff = Date.now() - new Date(d).getTime();
+  if (diff < 60000)     return 'Przed chwilą';
+  if (diff < 3600000)   return Math.floor(diff/60000) + ' min temu';
+  if (diff < 86400000)  return Math.floor(diff/3600000) + ' godz. temu';
+  if (diff < 604800000) return Math.floor(diff/86400000) + ' dni temu';
+  return new Date(d).toLocaleDateString('pl-PL', { day:'numeric', month:'short' });
+}
+
+function newNote() {
+  currentNote = { id: null, title: '', content: '' };
+  renderNoteEditorHeader();
+  renderNoteEditorBody();
+}
+
+function showNoteEditor(id) {
+  currentNote = notes.find(n => n.id === id) || null;
+  if (!currentNote) return;
+  renderNoteEditorHeader();
+  renderNoteEditorBody();
+}
+
+function renderNoteEditorHeader() {
+  document.getElementById('notesHdLeft').textContent = currentNote?.id ? 'Edycja' : 'Nowa notatka';
+  document.getElementById('notesHdBtns').innerHTML = `
+    <button class="btn btn-ghost btn-sm" onclick="showNotesGrid()">← Wróć</button>
+    ${currentNote?.id ? `<button class="btn btn-sm" style="color:var(--red);background:var(--red-bg);border:none;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-b)" onclick="deleteCurrentNote()">Usuń</button>` : ''}
+    <button class="modal-close" onclick="closeOv('notesOverlay')">✕</button>`;
+}
+
+function renderNoteEditorBody() {
+  document.getElementById('notesContent').innerHTML = `
+    <div class="note-editor">
+      <input class="note-title-in" id="noteTitleIn" placeholder="Tytuł notatki..." value="${esc(currentNote?.title||'')}">
+      <div class="note-save-st" id="noteSaveSt"></div>
+      <div class="note-divider"></div>
+      <textarea class="note-body-in" id="noteBodyIn" placeholder="Zacznij pisać...">${esc(currentNote?.content||'')}</textarea>
+    </div>`;
+  document.getElementById('noteTitleIn').addEventListener('input', scheduleNoteSave);
+  document.getElementById('noteBodyIn').addEventListener('input', scheduleNoteSave);
+  document.getElementById('noteBodyIn').focus();
+}
+
+function scheduleNoteSave() {
+  const st = document.getElementById('noteSaveSt');
+  if (st) { st.textContent = '● Niezapisano'; st.style.color = 'var(--amber)'; }
+  clearTimeout(notesSaveTimer);
+  notesSaveTimer = setTimeout(saveNote, 1500);
+}
+
+async function saveNote() {
+  const titleEl = document.getElementById('noteTitleIn');
+  const bodyEl  = document.getElementById('noteBodyIn');
+  if (!titleEl || !bodyEl) return;
+  const title   = titleEl.value.trim();
+  const content = bodyEl.value;
+  if (!title && !content) return;
+  const payload = { title: title || 'Bez tytułu', content, updated_at: new Date().toISOString() };
+  if (currentNote?.id) {
+    const { error } = await sb.from('pm_notes').update(payload).eq('id', currentNote.id);
+    if (!error) {
+      Object.assign(currentNote, payload);
+      const i = notes.findIndex(n => n.id === currentNote.id);
+      if (i >= 0) notes[i] = { ...notes[i], ...payload };
+      setSaveStatus('✓ Zapisano', 'var(--green)');
+    } else setSaveStatus('✗ Błąd zapisu', 'var(--red)');
+  } else {
+    const { data, error } = await sb.from('pm_notes').insert({ ...payload, created_at: new Date().toISOString() }).select().single();
+    if (!error && data) {
+      currentNote = data;
+      notes.unshift(data);
+      renderNoteEditorHeader();
+      setSaveStatus('✓ Zapisano', 'var(--green)');
+    } else setSaveStatus('✗ Błąd zapisu', 'var(--red)');
+  }
+}
+
+function setSaveStatus(msg, color) {
+  const el = document.getElementById('noteSaveSt');
+  if (!el) return;
+  el.textContent = msg; el.style.color = color;
+  setTimeout(() => { if (el.isConnected) el.textContent = ''; }, 2500);
+}
+
+async function deleteCurrentNote() {
+  if (!currentNote?.id) return;
+  if (!confirm(`Usunąć notatkę "${currentNote.title || 'Bez tytułu'}"?`)) return;
+  const { error } = await sb.from('pm_notes').delete().eq('id', currentNote.id);
+  if (!error) { notes = notes.filter(n => n.id !== currentNote.id); toast('Notatka usunięta ✓'); showNotesGrid(); }
+  else toast('Błąd usuwania ✗');
 }
 
 // ── FILES ─────────────────────────────────────────────────────────────────────
