@@ -372,120 +372,125 @@ export default function ShootingPage() {
         )}
       </AnimatePresence>
 
-      {/* Manual Input Modal — rendered via portal so it escapes overflow:hidden + iOS keyboard shifts */}
-      <AnimatePresence>
-        {showManualInput && (() => {
-          const m = parseInt(manualMade) || 0
-          const miss = parseInt(manualMissed) || 0
-          const total = m + miss
-          const overLimit = total > target
-          const canSubmit = total > 0 && !overLimit
-          return createPortal(
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setShowManualInput(false)}
-              style={{
-                position: 'fixed', inset: 0, zIndex: 9000,
-                background: 'rgba(4,2,0,0.72)',
-                backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-              }}
-            >
+      {/* Manual Input Modal — portal wraps AnimatePresence (not the other way round)
+          so AnimatePresence can properly track motion children for enter/exit */}
+      {createPortal(
+        <AnimatePresence>
+          {showManualInput && (() => {
+            const m = parseInt(manualMade) || 0
+            const miss = parseInt(manualMissed) || 0
+            const total = m + miss
+            const overLimit = total > target
+            const canSubmit = total > 0 && !overLimit
+            return (
               <motion.div
-                initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
-                transition={{ type: 'spring', damping: 30, stiffness: 340 }}
-                onClick={e => e.stopPropagation()}
+                key="manual-overlay"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={() => setShowManualInput(false)}
                 style={{
-                  position: 'fixed', bottom: 0, left: 0, right: 0,
-                  background: 'rgba(8,14,26,0.98)',
-                  backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-                  border: '1px solid rgba(120,190,255,0.12)',
-                  borderBottom: 'none',
-                  borderRadius: '24px 24px 0 0',
-                  padding: '20px 20px',
-                  paddingBottom: 'max(28px, env(safe-area-inset-bottom, 28px))',
-                  boxShadow: '0 -8px 48px rgba(0,0,0,0.60)',
+                  position: 'fixed', inset: 0, zIndex: 9000,
+                  background: 'rgba(4,2,0,0.72)',
+                  backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                  display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
                 }}
               >
-                {/* Drag pill */}
-                <div style={{ width: 36, height: 4, background: 'rgba(120,190,255,0.18)', borderRadius: 2, margin: '0 auto 18px' }} />
-
-                <p style={{
-                  fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
-                  textTransform: 'uppercase', letterSpacing: 1,
-                  color: 'var(--text-primary)', marginBottom: 2,
-                }}>
-                  Wpisz ręcznie
-                </p>
-                <p style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 500, marginBottom: 18, letterSpacing: 0.5 }}>
-                  Limit: {target} rzutów łącznie
-                </p>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-                  {[
-                    { label: 'Trafione', color: 'var(--green-shot)', val: manualMade, set: setManualMade },
-                    { label: 'Pudła',    color: 'var(--red-shot)',   val: manualMissed, set: setManualMissed },
-                  ].map(({ label, color, val, set }) => (
-                    <div key={label}>
-                      <p style={{
-                        fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase',
-                        color, fontWeight: 700, marginBottom: 7,
-                      }}>{label}</p>
-                      <input
-                        type="number" inputMode="numeric" min="0" max={target}
-                        value={val}
-                        onChange={e => set(e.target.value.replace(/[^0-9]/g, ''))}
-                        placeholder="0"
-                        style={{
-                          width: '100%', boxSizing: 'border-box',
-                          background: 'rgba(6,18,38,0.80)',
-                          border: `1.5px solid ${color}50`,
-                          borderRadius: 14, padding: '14px 8px',
-                          fontFamily: 'var(--font-display)', fontWeight: 900,
-                          fontSize: 36, color, textAlign: 'center',
-                          outline: 'none',
-                          WebkitAppearance: 'none', MozAppearance: 'textfield',
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                {/* Suma */}
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '11px 14px',
-                  background: overLimit ? 'rgba(255,61,61,0.08)' : 'rgba(120,190,255,0.04)',
-                  border: `1px solid ${overLimit ? 'rgba(255,61,61,0.30)' : 'rgba(120,190,255,0.10)'}`,
-                  borderRadius: 12, marginBottom: 14,
-                }}>
-                  <span style={{
-                    fontFamily: 'var(--font-body)', color: 'var(--text-dim)',
-                    fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase',
-                  }}>Suma</span>
-                  <span style={{
-                    fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
-                    color: overLimit ? 'var(--red-shot)' : total > 0 ? 'var(--text-primary)' : 'var(--text-dim)',
-                  }}>
-                    {total} / {target}
-                    {overLimit && <span style={{ fontSize: 12, marginLeft: 8, fontWeight: 600 }}>— za dużo!</span>}
-                  </span>
-                </div>
-
-                <button
-                  onClick={handleManualSubmit}
-                  disabled={!canSubmit}
-                  className="btn-primary"
-                  style={{ opacity: canSubmit ? 1 : 0.32 }}
+                <motion.div
+                  key="manual-sheet"
+                  initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+                  transition={{ type: 'spring', damping: 30, stiffness: 340 }}
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    position: 'fixed', bottom: 0, left: 0, right: 0,
+                    background: 'rgba(8,14,26,0.98)',
+                    backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
+                    border: '1px solid rgba(120,190,255,0.12)',
+                    borderBottom: 'none',
+                    borderRadius: '24px 24px 0 0',
+                    padding: '20px 20px',
+                    paddingBottom: 'max(28px, env(safe-area-inset-bottom, 28px))',
+                    boxShadow: '0 -8px 48px rgba(0,0,0,0.60)',
+                  }}
                 >
-                  Zatwierdź trening
-                </button>
+                  {/* Drag pill */}
+                  <div style={{ width: 36, height: 4, background: 'rgba(120,190,255,0.18)', borderRadius: 2, margin: '0 auto 18px' }} />
+
+                  <p style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
+                    textTransform: 'uppercase', letterSpacing: 1,
+                    color: 'var(--text-primary)', marginBottom: 2,
+                  }}>
+                    Wpisz ręcznie
+                  </p>
+                  <p style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 500, marginBottom: 18, letterSpacing: 0.5 }}>
+                    Limit: {target} rzutów łącznie
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+                    {[
+                      { label: 'Trafione', color: 'var(--green-shot)', val: manualMade, set: setManualMade },
+                      { label: 'Pudła',    color: 'var(--red-shot)',   val: manualMissed, set: setManualMissed },
+                    ].map(({ label, color, val, set }) => (
+                      <div key={label}>
+                        <p style={{
+                          fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase',
+                          color, fontWeight: 700, marginBottom: 7,
+                        }}>{label}</p>
+                        <input
+                          type="number" inputMode="numeric" min="0" max={target}
+                          value={val}
+                          onChange={e => set(e.target.value.replace(/[^0-9]/g, ''))}
+                          placeholder="0"
+                          style={{
+                            width: '100%', boxSizing: 'border-box',
+                            background: 'rgba(6,18,38,0.80)',
+                            border: `1.5px solid ${color}50`,
+                            borderRadius: 14, padding: '14px 8px',
+                            fontFamily: 'var(--font-display)', fontWeight: 900,
+                            fontSize: 36, color, textAlign: 'center',
+                            outline: 'none',
+                            WebkitAppearance: 'none', MozAppearance: 'textfield',
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Suma */}
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '11px 14px',
+                    background: overLimit ? 'rgba(255,61,61,0.08)' : 'rgba(120,190,255,0.04)',
+                    border: `1px solid ${overLimit ? 'rgba(255,61,61,0.30)' : 'rgba(120,190,255,0.10)'}`,
+                    borderRadius: 12, marginBottom: 14,
+                  }}>
+                    <span style={{
+                      fontFamily: 'var(--font-body)', color: 'var(--text-dim)',
+                      fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase',
+                    }}>Suma</span>
+                    <span style={{
+                      fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
+                      color: overLimit ? 'var(--red-shot)' : total > 0 ? 'var(--text-primary)' : 'var(--text-dim)',
+                    }}>
+                      {total} / {target}
+                      {overLimit && <span style={{ fontSize: 12, marginLeft: 8, fontWeight: 600 }}>— za dużo!</span>}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={handleManualSubmit}
+                    disabled={!canSubmit}
+                    className="btn-primary"
+                    style={{ opacity: canSubmit ? 1 : 0.32 }}
+                  >
+                    Zatwierdź trening
+                  </button>
+                </motion.div>
               </motion.div>
-            </motion.div>,
-            document.body
-          )
-        })()}
-      </AnimatePresence>
+            )
+          })()}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Header */}
       <div style={{ padding: '16px 20px 10px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
