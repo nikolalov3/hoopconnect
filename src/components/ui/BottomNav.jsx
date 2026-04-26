@@ -123,52 +123,44 @@ export default function BottomNav() {
           const showDot = path === '/achievements' && hasUnread && !active
 
           if (center) {
-            // ── Club centre button — hexagonal, raised above pill ──────────
-            // clipPath clips the bg to hex shape; drop-shadow on wrapper for glow
+            // ── Club centre button — same size as others, hex bg, glows when active ──
             return (
-              <div key={path} style={{
-                position: 'relative',
-                marginTop: -16, marginLeft: 4, marginRight: 4,
-                filter: active
-                  ? 'drop-shadow(0 6px 14px rgba(91,184,245,0.65)) drop-shadow(0 2px 6px rgba(0,0,0,0.50))'
-                  : 'drop-shadow(0 5px 12px rgba(0,0,0,0.60))',
-                transition: 'filter 0.25s ease',
-              }}>
-                <motion.button
-                  onClick={() => navigate(path)}
-                  whileTap={{ scale: 0.84 }}
+              <motion.button key={path} onClick={() => navigate(path)} whileTap={{ scale: 0.88 }}
+                style={{
+                  position: 'relative',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 52, height: 48,
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  // drop-shadow for glow (works outside the button element)
+                  filter: active
+                    ? 'drop-shadow(0 0 8px rgba(91,184,245,0.80))'
+                    : 'none',
+                  transition: 'filter 0.25s ease',
+                }}
+              >
+                {/* Hex bg pill — same width/height as other active pills but hex-clipped */}
+                <motion.div
+                  animate={{ opacity: active ? 1 : 0, scale: active ? 1 : 0.7 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 28 }}
                   style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 58, height: 62,
-                    background: active
-                      ? 'linear-gradient(160deg, rgba(60,150,240,0.98) 0%, rgba(10,55,148,0.99) 100%)'
-                      : 'rgba(16,12,8,0.82)',
-                    border: 'none',
-                    // Hexagon matching ClubIcon viewBox 90×90 → normalised to %
-                    // points: 45,6 → 82,32 → 82,58 → 45,84 → 8,58 → 8,32
+                    position: 'absolute', inset: 0,
+                    background: 'linear-gradient(145deg, rgba(40,130,220,0.92) 0%, rgba(16,90,180,0.96) 100%)',
                     clipPath: 'polygon(50% 6.7%, 91.1% 35.6%, 91.1% 64.4%, 50% 93.3%, 8.9% 64.4%, 8.9% 35.6%)',
-                    cursor: 'pointer',
-                    color: active ? '#fff' : 'rgba(160,110,70,0.55)',
-                    transition: 'background 0.25s ease, color 0.25s ease',
                   }}
-                >
-                  <Icon active={active} />
-                </motion.button>
-
-                {/* Active dot below */}
+                />
+                <Icon active={active} />
                 {active && (
-                  <motion.div layoutId="nav-glow"
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  <motion.div layoutId="nav-glow" transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     style={{
-                      position: 'absolute', bottom: -14, left: '50%',
-                      transform: 'translateX(-50%)',
+                      position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)',
                       width: 4, height: 4, borderRadius: '50%',
-                      background: '#5BB8F5',
-                      boxShadow: '0 0 8px 2px rgba(91,184,245,0.60)',
+                      background: '#5BB8F5', boxShadow: '0 0 8px 2px rgba(91,184,245,0.60)',
                     }}
                   />
                 )}
-              </div>
+              </motion.button>
             )
           }
 
