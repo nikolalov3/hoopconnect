@@ -895,49 +895,71 @@ function CountryPicker({ value, onChange, onClose }) {
 function ClubHeader({ club, isOwner, onEditPress }) {
   const filled = Object.values(club.members).filter(Boolean).length
   return (
-    <div style={{ padding: '28px 20px 14px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-      <Badge abbr={club.abbr} size={62}/>
-      <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-        <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5,
-          textTransform: 'uppercase', color: C.accent, marginBottom: 4 }}>
+    <div style={{ padding: '32px 22px 12px', display: 'flex', alignItems: 'center', gap: 16 }}>
+
+      <Badge abbr={club.abbr} size={58}/>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Country — section-label style from app */}
+        <p style={{
+          fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 600,
+          letterSpacing: 2.5, textTransform: 'uppercase',
+          color: 'var(--text-dim)', marginBottom: 3,
+        }}>
           {club.country.flag}&nbsp;{club.country.name}
         </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 900,
-            fontSize: 21, color: C.text, letterSpacing: -0.4, lineHeight: 1,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0,
-            flex: 1, minWidth: 0 }}>
-            {club.name}
+
+        {/* Club name — display-title style, always uppercase */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h1 style={{
+            fontFamily: 'var(--font-display)', fontWeight: 900,
+            fontSize: 26, lineHeight: 1, letterSpacing: 0.5,
+            textTransform: 'uppercase',
+            color: 'var(--text-primary)', margin: 0,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            flex: 1, minWidth: 0,
+          }}>
+            {club.name.toUpperCase()}
           </h1>
           {isOwner && (
             <motion.button whileTap={{ scale: 0.88 }} onClick={onEditPress}
               style={{
-                flexShrink: 0, width: 28, height: 28, borderRadius: 9,
-                background: 'rgba(0,200,255,0.08)',
-                border: '1px solid rgba(0,200,255,0.22)',
+                flexShrink: 0, width: 32, height: 32, borderRadius: 10,
+                background: 'rgba(6,18,38,0.65)',
+                backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                border: '1px solid rgba(120,190,255,0.14)',
+                borderTop: '1px solid rgba(160,210,255,0.18)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.30)',
               }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.accent}
-                strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                stroke="rgba(160,210,255,0.70)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>
             </motion.button>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+        {/* Member dots + count */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 7 }}>
           <div style={{ display: 'flex', gap: 4 }}>
             {[...Array(5)].map((_, i) => (
               <div key={i} style={{
                 width: 6, height: 6, borderRadius: '50%',
-                background: i < filled ? C.accent : C.dim,
-                boxShadow: i < filled ? `0 0 5px ${C.accentHi}80` : 'none',
+                background: i < filled ? 'var(--orange)' : 'var(--text-dim)',
+                opacity: i < filled ? 1 : 0.35,
+                boxShadow: i < filled ? '0 0 5px rgba(91,184,245,0.70)' : 'none',
                 transition: 'all 0.3s',
               }}/>
             ))}
           </div>
-          <p style={{ fontSize: 10, color: C.sub, fontWeight: 600, margin: 0 }}>
+          <p style={{
+            fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 600,
+            letterSpacing: 1.5, textTransform: 'uppercase',
+            color: 'var(--text-dim)', margin: 0,
+          }}>
             {filled}/5 graczy
           </p>
         </div>
@@ -1760,7 +1782,7 @@ function MatchesPanel({ club, uid, isActive }) {
   const past     = matches.filter(m => m.status === 'completed' || new Date(m.scheduled_at) <= new Date())
 
   return (
-    <div style={{ padding: '0 16px 110px' }}>
+    <div style={{ padding: '0 16px var(--nav-h)' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0 16px' }}>
@@ -1890,17 +1912,36 @@ function MatchesPanel({ club, uid, isActive }) {
 }
 
 // ── PANEL DOTS ────────────────────────────────────────────────────────────────
+const PANEL_LABELS = ['Mecze', 'Boisko', 'Statystyki']
+
 function PanelDots({ active, onChange }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', gap: 5, paddingBottom: 10 }}>
+    <div style={{
+      display: 'flex', justifyContent: 'center', alignItems: 'center',
+      gap: 4, padding: '0 22px 12px',
+    }}>
       {[0, 1, 2].map(i => (
-        <motion.div key={i} onClick={() => onChange(i)}
-          animate={{ width: active === i ? 18 : 6 }}
+        <motion.button key={i} onClick={() => onChange(i)}
+          animate={{ opacity: active === i ? 1 : 0.38 }}
           style={{
-            height: 6, borderRadius: 3, cursor: 'pointer',
-            background: active === i ? C.accent : C.dim,
-            boxShadow: active === i ? `0 0 6px ${C.accent}80` : 'none',
-          }}/>
+            flex: 1, height: 28, borderRadius: 8, cursor: 'pointer',
+            background: active === i
+              ? 'rgba(91,184,245,0.10)'
+              : 'rgba(6,18,38,0.40)',
+            border: active === i
+              ? '1px solid rgba(91,184,245,0.25)'
+              : '1px solid rgba(120,190,255,0.08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--font-body)', fontSize: 9.5,
+            fontWeight: active === i ? 700 : 500,
+            letterSpacing: 1.2, textTransform: 'uppercase',
+            color: active === i ? 'var(--orange-hot)' : 'var(--text-dim)',
+            backdropFilter: 'blur(12px)',
+            boxShadow: active === i ? '0 2px 10px rgba(91,184,245,0.12)' : 'none',
+            transition: 'border 0.2s, background 0.2s',
+          }}>
+          {PANEL_LABELS[i]}
+        </motion.button>
       ))}
     </div>
   )
@@ -1914,7 +1955,7 @@ function StatsPanel({ club }) {
   const rate = total > 0 ? Math.round(wins / total * 100) : 0
 
   return (
-    <div style={{ padding: '0 16px 110px' }}>
+    <div style={{ padding: '0 16px var(--nav-h)' }}>
       {/* W / L / Rate cards */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         {[
@@ -1994,7 +2035,7 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
   const isOwner = club.ownerId === uid
 
   return (
-    <div style={{ padding: '0 0 110px' }}>
+    <div style={{ padding: '0 0 var(--nav-h)' }}>
       {/* Swap hint / error */}
       <AnimatePresence>
         {swapMode && (
@@ -2023,7 +2064,7 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
       </AnimatePresence>
 
       {/* Court card */}
-      <div style={{ padding: '0 16px', position: 'relative' }}>
+      <div style={{ padding: '0 22px', position: 'relative' }}>
 
         {/* Responsive clip-path defs — objectBoundingBox scales with the element */}
         <svg width="0" height="0" aria-hidden="true"
@@ -2129,22 +2170,22 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
       </div>
 
       {/* Share */}
-      <div style={{ padding: '14px 16px 0' }}>
+      <div style={{ padding: '14px 22px 0' }}>
         <motion.button whileTap={{ scale: 0.97 }}
           onClick={() => {
             navigator.clipboard.writeText(`https://hoopconnect.pl/klub/${club.id}`)
             setCopied(true); setTimeout(() => setCopied(false), 2500)
           }}
           style={{
-            width: '100%', padding: '14px', border: 'none', borderRadius: 16,
+            width: '100%', padding: '14px', borderRadius: 14,
             background: copied
-              ? 'rgba(0,200,130,0.10)'
-              : `linear-gradient(135deg, ${C.accent}, ${C.accentLo})`,
+              ? 'rgba(0,200,130,0.08)'
+              : 'linear-gradient(135deg, var(--orange) 0%, var(--orange-dim) 100%)',
             border: copied ? '1.5px solid rgba(0,200,130,0.28)' : 'none',
-            fontFamily: 'var(--font-display)', fontWeight: 900,
-            fontSize: 11.5, letterSpacing: 2.5, textTransform: 'uppercase',
-            color: copied ? C.win : '#fff', cursor: 'pointer',
-            boxShadow: copied ? 'none' : `0 5px 24px ${C.accentLo}60`,
+            fontFamily: 'var(--font-display)', fontWeight: 800,
+            fontSize: 11.5, letterSpacing: 2, textTransform: 'uppercase',
+            color: copied ? 'var(--green-shot)' : '#fff', cursor: 'pointer',
+            boxShadow: copied ? 'none' : '0 4px 24px rgba(91,184,245,0.35), inset 0 1px 0 rgba(180,230,255,0.20)',
             transition: 'all 0.22s',
           }}>
           {copied ? '✓ Link skopiowany!' : '🔗 Udostępnij klub'}
@@ -2234,7 +2275,7 @@ function ClubView({ club, onUpdate, uid }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column',
-      overflow: 'hidden', background: C.bg }}>
+      overflow: 'hidden', background: 'transparent' }}>
 
       {/* ── Fixed header — stays put while panels slide ── */}
       <ClubHeader club={club} isOwner={isOwner} onEditPress={() => setSheet('edit')}/>
