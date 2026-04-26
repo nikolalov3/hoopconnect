@@ -123,55 +123,52 @@ export default function BottomNav() {
           const showDot = path === '/achievements' && hasUnread && !active
 
           if (center) {
-            // ── Club centre button — raised diamond shape ──────────────────
+            // ── Club centre button — hexagonal, raised above pill ──────────
+            // clipPath clips the bg to hex shape; drop-shadow on wrapper for glow
             return (
-              <motion.button
-                key={path}
-                onClick={() => navigate(path)}
-                whileTap={{ scale: 0.84 }}
-                style={{
-                  position: 'relative',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 58, height: 58,
-                  marginTop: -14,          // lifts it above the pill
-                  marginLeft: 4, marginRight: 4,
-                  background: active
-                    ? 'linear-gradient(145deg, rgba(40,130,220,0.95) 0%, rgba(10,60,150,0.98) 100%)'
-                    : 'rgba(14,10,6,0.72)',
-                  border: active
-                    ? '1.5px solid rgba(91,184,245,0.65)'
-                    : '1.5px solid rgba(255,255,255,0.14)',
-                  borderRadius: 16,
-                  cursor: 'pointer',
-                  color: active ? '#fff' : 'rgba(180,120,80,0.55)',
-                  boxShadow: active
-                    ? '0 6px 28px rgba(91,184,245,0.55), 0 0 0 1px rgba(91,184,245,0.20), inset 0 1px 0 rgba(180,230,255,0.20)'
-                    : '0 6px 20px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                  transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
-                }}
-              >
-                <Icon active={active} />
-                <span style={{
-                  position: 'absolute', bottom: 5,
-                  fontSize: 8.5, fontWeight: 700, letterSpacing: 0.6,
-                  color: active ? 'rgba(180,230,255,0.90)' : 'rgba(180,120,80,0.50)',
-                  fontFamily: 'var(--font-display, Montserrat, sans-serif)',
-                  textTransform: 'uppercase',
-                }}>
-                  {label}
-                </span>
+              <div key={path} style={{
+                position: 'relative',
+                marginTop: -16, marginLeft: 4, marginRight: 4,
+                filter: active
+                  ? 'drop-shadow(0 6px 14px rgba(91,184,245,0.65)) drop-shadow(0 2px 6px rgba(0,0,0,0.50))'
+                  : 'drop-shadow(0 5px 12px rgba(0,0,0,0.60))',
+                transition: 'filter 0.25s ease',
+              }}>
+                <motion.button
+                  onClick={() => navigate(path)}
+                  whileTap={{ scale: 0.84 }}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 58, height: 62,
+                    background: active
+                      ? 'linear-gradient(160deg, rgba(60,150,240,0.98) 0%, rgba(10,55,148,0.99) 100%)'
+                      : 'rgba(16,12,8,0.82)',
+                    border: 'none',
+                    // Hexagon matching ClubIcon viewBox 90×90 → normalised to %
+                    // points: 45,6 → 82,32 → 82,58 → 45,84 → 8,58 → 8,32
+                    clipPath: 'polygon(50% 6.7%, 91.1% 35.6%, 91.1% 64.4%, 50% 93.3%, 8.9% 64.4%, 8.9% 35.6%)',
+                    cursor: 'pointer',
+                    color: active ? '#fff' : 'rgba(160,110,70,0.55)',
+                    transition: 'background 0.25s ease, color 0.25s ease',
+                  }}
+                >
+                  <Icon active={active} />
+                </motion.button>
+
+                {/* Active dot below */}
                 {active && (
-                  <motion.div layoutId="nav-glow" transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  <motion.div layoutId="nav-glow"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     style={{
-                      position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)',
+                      position: 'absolute', bottom: -14, left: '50%',
+                      transform: 'translateX(-50%)',
                       width: 4, height: 4, borderRadius: '50%',
-                      background: '#5BB8F5', boxShadow: '0 0 8px 2px rgba(91,184,245,0.60)',
+                      background: '#5BB8F5',
+                      boxShadow: '0 0 8px 2px rgba(91,184,245,0.60)',
                     }}
                   />
                 )}
-              </motion.button>
+              </div>
             )
           }
 
