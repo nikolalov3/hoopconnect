@@ -184,7 +184,7 @@ export async function revokeShotAchievementsIfNeeded(userId, shotType) {
 // ── PUNKTY ZA MEDALE ─────────────────────────────────────────────────────────
 export const MEDAL_POINTS = { bronze: 20, silver: 25, gold: 50, diamond: 75, platinum: 100 }
 
-export async function awardMedalPoints(userId, medal, weekNumber) {
+export async function awardMedalPoints(userId, medal, weekNumber, achievementId = null) {
   const pts = MEDAL_POINTS[medal]
   if (!pts || !weekNumber) return
   const today = new Date().toISOString().split('T')[0]
@@ -194,6 +194,7 @@ export async function awardMedalPoints(userId, medal, weekNumber) {
     points: pts,
     week_number: weekNumber,
     date: today,
+    achievement_id: achievementId,
   })
 }
 
@@ -259,7 +260,7 @@ export async function checkPerfectSession(userId, shotType, made, attempted, wee
         })
         unlockedIds.add(key)
         newlyUnlocked.push({ title: ach.title, stage, total: perfectCount })
-        await awardMedalPoints(userId, stage.medal, weekNumber)
+        await awardMedalPoints(userId, stage.medal, weekNumber, key)
       }
     }
   }
@@ -303,7 +304,7 @@ export async function checkShotAchievements(userId, shotType, weekNumber) {
         })
         unlockedIds.add(key) // zapobiega duplikatom w tej samej iteracji
         newlyUnlocked.push({ title: ach.title, stage, total: totalMade })
-        await awardMedalPoints(userId, stage.medal, weekNumber)
+        await awardMedalPoints(userId, stage.medal, weekNumber, key)
       }
     }
   }

@@ -407,7 +407,7 @@ export default function SettingsPanel({ open, onClose }) {
 
                 <SectionLabel>Społeczność</SectionLabel>
                 <a
-                  href="https://discord.gg/wZrDcRea"
+                  href="https://discord.gg/wgTenBjnS6"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{

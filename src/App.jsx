@@ -66,7 +66,7 @@ function AppShell() {
 
   if (!user) return <Navigate to="/auth" replace />
 
-  if (profile && !profile.onboarding_done && location.pathname !== '/onboarding') {
+  if ((!profile || !profile.onboarding_done) && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />
   }
 

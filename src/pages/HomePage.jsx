@@ -605,6 +605,21 @@ export default function HomePage() {
 
     // Cofnij wszystkie staged achievements które nie są już zasłużone
     await revokeStaleAchievements(profile.id)
+
+    // Cofnij early_bird (i jego punkty) jeśli nie ma już żadnych ukończonych treningów dziś
+    if (newCompleted.length === 0) {
+      const earlyBirdKey = `early_bird_${TODAY}`
+      await Promise.all([
+        supabase.from('user_achievements')
+          .delete()
+          .eq('user_id', profile.id)
+          .eq('achievement_id', earlyBirdKey),
+        supabase.from('points_log')
+          .delete()
+          .eq('user_id', profile.id)
+          .eq('achievement_id', earlyBirdKey),
+      ])
+    }
   }
 
   // ── Sprawdź czy odblokowano nowe osiągnięcie ─────────────────────────────
@@ -649,14 +664,15 @@ export default function HomePage() {
       const ach = catalog.find(a => a.id === baseId)
       if (!ach) return
       const n = countUnlocks(baseId) + 1
+      const achKey = `${baseId}_${n}`
       await supabase.from('user_achievements').insert({
         user_id: profile.id,
-        achievement_id: `${baseId}_${n}`,
+        achievement_id: achKey,
         base_id: baseId,
       })
       const stage = (ach.stages || [])[0]
       notifyAchievement({ title: ach.title, stage })
-      if (stage?.medal) await awardMedalPoints(profile.id, stage.medal, weekNumber)
+      if (stage?.medal) await awardMedalPoints(profile.id, stage.medal, weekNumber, achKey)
     }
 
     // ── Stage achievements (regeneracja, allday) ──
@@ -684,7 +700,7 @@ export default function HomePage() {
             base_id: achievement.id,
           })
           notifyAchievement({ title: achievement.title, stage })
-          await awardMedalPoints(profile.id, stage.medal, weekNumber)
+          await awardMedalPoints(profile.id, stage.medal, weekNumber, stageKey)
           break
         }
       }
@@ -724,7 +740,7 @@ export default function HomePage() {
             })
             const comebackStage = (ach.stages || [])[0]
             notifyAchievement({ title: ach.title, stage: comebackStage })
-            if (comebackStage?.medal) await awardMedalPoints(profile.id, comebackStage.medal, weekNumber)
+            if (comebackStage?.medal) await awardMedalPoints(profile.id, comebackStage.medal, weekNumber, 'comeback_1')
           }
         }
       }
@@ -743,7 +759,7 @@ export default function HomePage() {
           })
           const earlyStage = (ach.stages || [])[0]
           notifyAchievement({ title: ach.title, stage: earlyStage })
-          if (earlyStage?.medal) await awardMedalPoints(profile.id, earlyStage.medal, weekNumber)
+          if (earlyStage?.medal) await awardMedalPoints(profile.id, earlyStage.medal, weekNumber, dateKey)
         }
       }
     }
@@ -767,7 +783,7 @@ export default function HomePage() {
               })
               const stalStage = (ach.stages || [])[0]
               notifyAchievement({ title: ach.title, stage: stalStage })
-              if (stalStage?.medal) await awardMedalPoints(profile.id, stalStage.medal, weekNumber)
+              if (stalStage?.medal) await awardMedalPoints(profile.id, stalStage.medal, weekNumber, dateKey)
             }
           }
         }

@@ -156,7 +156,7 @@ function WelcomeScreen({ userName, onComplete }) {
             Mamy serwer na Discordzie — rozmawiaj z innymi zawodnikami, pojawiaj się z nami na eventach i pomagaj nam budować HoopConnect.
           </p>
           <a
-            href="https://discord.gg/wZrDcRea"
+            href="https://discord.gg/wgTenBjnS6"
             target="_blank"
             rel="noopener noreferrer"
             style={{
