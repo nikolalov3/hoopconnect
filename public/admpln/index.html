@@ -898,11 +898,12 @@ function fd(d)  { if(!d) return ''; const [y,m,day] = d.split('-'); return `${da
 
 function rStats() {
   const a = tasks;
-  const bugs = a.filter(t => t.tag === 'bug').length;
+  const active = a.filter(t => t.status !== 'done');
+  const bugs = active.filter(t => t.tag === 'bug').length;
   const done = a.filter(t => t.status === 'done').length;
   const inp  = a.filter(t => t.status === 'in_progress').length;
   document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-card s-orange"><div class="stat-lbl">Zadania</div><div class="stat-val">${a.length}</div><div class="stat-sub">łącznie</div></div>
+    <div class="stat-card s-orange"><div class="stat-lbl">Zadania</div><div class="stat-val">${active.length}</div><div class="stat-sub">na tablicy</div></div>
     <div class="stat-card s-blue"><div class="stat-lbl">W toku</div><div class="stat-val">${inp}</div><div class="stat-sub">aktywne</div></div>
     <div class="stat-card s-red"><div class="stat-lbl">Błędy</div><div class="stat-val">${bugs}</div><div class="stat-sub">do naprawy</div></div>
     <div class="stat-card s-green" style="cursor:pointer;transition:opacity .15s" onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'" onclick="openDone()"><div class="stat-lbl">Gotowe</div><div class="stat-val">${done}</div><div class="stat-sub">ukończone ↗</div></div>`;
