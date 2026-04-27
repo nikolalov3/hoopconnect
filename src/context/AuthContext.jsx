@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { bustAll } from '../lib/queryCache'
 
 const AuthContext = createContext({})
 
@@ -42,6 +43,7 @@ export function AuthProvider({ children }) {
   }
 
   async function signOut() {
+    bustAll()
     return supabase.auth.signOut()
   }
 

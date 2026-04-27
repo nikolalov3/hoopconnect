@@ -7,6 +7,7 @@ import { fetchAchievementsCatalog, getNewlyUnlocked, awardMedalPoints, revokeSta
 import SettingsPanel from '../components/ui/SettingsPanel'
 import { useUI } from '../context/UIContext'
 import StreakToast from '../components/ui/StreakToast'
+import { getCache, setCache, bustCache } from '../lib/queryCache'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -483,34 +484,53 @@ export default function HomePage() {
 
   async function loadData() {
     if (!profile) return
-    setLoading(false)
 
     const dt = getDayType(profile)
     setDayType(dt)
 
-    // Wszystkie 3 zapytania startują jednocześnie (nie czekają na siebie)
-    const trainingsPromise   = supabase.from('trainings').select('*').eq('is_active', true)
-    const logPromise         = supabase.from('activity_log').select('*').eq('user_id', profile.id).eq('date', TODAY).maybeSingle()
-    const quotesPromise      = supabase.from('quotes').select('*').eq('is_active', true)
+    // ── 1. Natychmiastowe dane z cache (zero opóźnienia przy ponownym wejściu) ──
+    const cachedTrainings = getCache(`trainings:${TODAY}`)
+    const cachedLog       = getCache(`log:${profile.id}:${TODAY}`)
+    const cachedQuotes    = getCache('quotes')
+    const cachedReport    = getCache(`report:${profile.id}`)
 
-    // Karty treningów pojawiają się jak najszybciej — nie czekają na log/quotes
+    if (cachedTrainings) {
+      setTrainings(cachedTrainings)
+      setLoading(false)
+    }
+    if (cachedLog !== null)    setActivityLog(cachedLog)
+    if (cachedQuotes)          setQuote(cachedQuotes[Math.floor(Math.random() * cachedQuotes.length)])
+    if (cachedReport != null)  { setReportScore(cachedReport.score); setDaysUntilReport(cachedReport.daysLeft); setReportLoading(false) }
+
+    // ── 2. Odświeżenie w tle — wszystkie 3 startują równolegle ──
+    const trainingsPromise = supabase.from('trainings').select('*').eq('is_active', true)
+    const logPromise       = supabase.from('activity_log').select('*').eq('user_id', profile.id).eq('date', TODAY).maybeSingle()
+    const quotesPromise    = supabase.from('quotes').select('*').eq('is_active', true)
+
     const { data: allTrainings } = await trainingsPromise
-    setTrainings(pickDailyTrainings(allTrainings || [], profile))
+    if (allTrainings) {
+      const picked = pickDailyTrainings(allTrainings, profile)
+      setCache(`trainings:${TODAY}`, picked, 30 * 60 * 1000)  // 30 min
+      setTrainings(picked)
+    }
+    setLoading(false)
 
-    // Reszta w tle
     const [{ data: log }, { data: quotes }] = await Promise.all([logPromise, quotesPromise])
     setActivityLog(log)
-    if (quotes?.length) setQuote(quotes[Math.floor(Math.random() * quotes.length)])
+    setCache(`log:${profile.id}:${TODAY}`, log, 15 * 1000)  // 15 s — zmienia się po zaznaczeniu
 
-    // Oblicz ile dni od rejestracji
+    if (quotes?.length) {
+      setCache('quotes', quotes, 60 * 60 * 1000)  // 1 h
+      setQuote(quotes[Math.floor(Math.random() * quotes.length)])
+    }
+
+    // ── 3. Weekly report ──
     const createdAt = profile.created_at ? new Date(profile.created_at) : new Date()
-    const now = new Date()
-    const daysSinceJoin = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24))
+    const daysSinceJoin = Math.floor((new Date() - createdAt) / (1000 * 60 * 60 * 24))
     const remaining = Math.max(0, 7 - daysSinceJoin)
     setDaysUntilReport(remaining)
 
-    const currentWeek = Math.floor(daysSinceJoin / 7) + 1
-    const visibleWeek = currentWeek - 1
+    const visibleWeek = Math.floor(daysSinceJoin / 7)
 
     if (visibleWeek >= 1) {
       const { data: existingReport } = await supabase
@@ -528,16 +548,16 @@ export default function HomePage() {
           .eq('week_number', visibleWeek)
 
         const total = (pointsData || []).reduce((sum, r) => sum + r.points, 0)
-
         await supabase.from('weekly_reports').upsert({
           user_id: profile.id,
           week_number: visibleWeek,
           total_points: total,
           revealed_at: new Date().toISOString(),
         })
-
+        setCache(`report:${profile.id}`, { score: total, daysLeft: remaining }, 10 * 60 * 1000)
         setReportScore(total)
       } else {
+        setCache(`report:${profile.id}`, { score: existingReport.total_points, daysLeft: remaining }, 10 * 60 * 1000)
         setReportScore(existingReport.total_points)
       }
     }
@@ -547,6 +567,7 @@ export default function HomePage() {
 
   async function markTrainingDone(trainingId) {
     if (!profile) return
+    bustCache(`log:${profile.id}:${TODAY}`)  // unieważnij cache — dane się zmieniają
 
     // Zawsze czytaj świeże dane z DB żeby uniknąć stale state
     const { data: freshLog } = await supabase
@@ -622,6 +643,7 @@ export default function HomePage() {
 
   async function unmarkTrainingDone(trainingId) {
     if (!profile || !activityLog) return
+    bustCache(`log:${profile.id}:${TODAY}`)  // unieważnij cache
     const completed = activityLog.trainings_completed || []
     if (!completed.includes(trainingId)) return
     const newCompleted = completed.filter(id => id !== trainingId)

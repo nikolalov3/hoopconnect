@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { getCache, setCache } from '../lib/queryCache'
 
 const SHOT_LABELS = { '3pt': 'Trójki', '2pt': 'Dwójki', ft: 'Wolne' }
 
@@ -134,12 +135,20 @@ export default function StatsPage() {
 
   useEffect(() => {
     if (!profile) return
+    const cacheKey = `sessions:${profile.id}`
+    // Pokaż cache natychmiast — zero opóźnienia przy powrocie na kartę
+    const cached = getCache(cacheKey)
+    if (cached) { setSessions(cached); setLoading(false) }
+    // Odśwież w tle
     supabase
       .from('shooting_sessions')
       .select('*, trainings(title)')
       .eq('user_id', profile.id)
       .order('session_date', { ascending: false })
-      .then(({ data }) => { setSessions(data || []); setLoading(false) })
+      .then(({ data }) => {
+        if (data) { setCache(cacheKey, data, 2 * 60 * 1000); setSessions(data) }
+        setLoading(false)
+      })
   }, [profile])
 
   const filtered = useMemo(() => filterByDate(sessions, filter), [sessions, filter])
