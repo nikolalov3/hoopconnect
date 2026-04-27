@@ -488,19 +488,17 @@ export default function HomePage() {
     const dt = getDayType(profile)
     setDayType(dt)
 
-    // Równoległe zapytania — wszystkie 3 lecą jednocześnie
-    const [
-      { data: allTrainings },
-      { data: log },
-      { data: quotes },
-    ] = await Promise.all([
-      supabase.from('trainings').select('*').eq('is_active', true),
-      supabase.from('activity_log').select('*').eq('user_id', profile.id).eq('date', TODAY).maybeSingle(),
-      supabase.from('quotes').select('*').eq('is_active', true),
-    ])
+    // Wszystkie 3 zapytania startują jednocześnie (nie czekają na siebie)
+    const trainingsPromise   = supabase.from('trainings').select('*').eq('is_active', true)
+    const logPromise         = supabase.from('activity_log').select('*').eq('user_id', profile.id).eq('date', TODAY).maybeSingle()
+    const quotesPromise      = supabase.from('quotes').select('*').eq('is_active', true)
 
-    const todayTrainings = pickDailyTrainings(allTrainings || [], profile)
-    setTrainings(todayTrainings)
+    // Karty treningów pojawiają się jak najszybciej — nie czekają na log/quotes
+    const { data: allTrainings } = await trainingsPromise
+    setTrainings(pickDailyTrainings(allTrainings || [], profile))
+
+    // Reszta w tle
+    const [{ data: log }, { data: quotes }] = await Promise.all([logPromise, quotesPromise])
     setActivityLog(log)
     if (quotes?.length) setQuote(quotes[Math.floor(Math.random() * quotes.length)])
 

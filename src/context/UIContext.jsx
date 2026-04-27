@@ -1,12 +1,11 @@
-import { createContext, useContext, useState, useMemo } from 'react'
+import { createContext, useContext, useState } from 'react'
 
 const UIContext = createContext({})
 
 export function UIProvider({ children }) {
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const value = useMemo(() => ({ settingsOpen, setSettingsOpen }), [settingsOpen])
   return (
-    <UIContext.Provider value={value}>
+    <UIContext.Provider value={{ settingsOpen, setSettingsOpen }}>
       {children}
     </UIContext.Provider>
   )

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext({})
@@ -24,38 +24,37 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const fetchProfile = useCallback(async (userId) => {
+  async function fetchProfile(userId) {
     const { data } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single()
     setProfile(data)
-  }, [])
+  }
 
-  const signIn = useCallback((email, password) =>
-    supabase.auth.signInWithPassword({ email, password }), [])
+  async function signIn(email, password) {
+    return supabase.auth.signInWithPassword({ email, password })
+  }
 
-  const signUp = useCallback((email, password) =>
-    supabase.auth.signUp({ email, password }), [])
+  async function signUp(email, password) {
+    return supabase.auth.signUp({ email, password })
+  }
 
-  const signOut = useCallback(() =>
-    supabase.auth.signOut(), [])
+  async function signOut() {
+    return supabase.auth.signOut()
+  }
 
-  const refreshProfile = useCallback(async () => {
+  async function refreshProfile() {
     if (user) await fetchProfile(user.id)
-  }, [user, fetchProfile])
+  }
 
-  const setProfileData = useCallback((data) => {
+  function setProfileData(data) {
     setProfile(prev => ({ ...prev, ...data }))
-  }, [])
-
-  const value = useMemo(() => ({
-    user, profile, loading, signIn, signUp, signOut, refreshProfile, setProfileData,
-  }), [user, profile, loading, signIn, signUp, signOut, refreshProfile, setProfileData])
+  }
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut, refreshProfile, setProfileData }}>
       {children}
     </AuthContext.Provider>
   )
