@@ -14,13 +14,14 @@ const StatsPage       = lazy(() => import('./pages/StatsPage'))
 const AchievementsPage = lazy(() => import('./pages/AchievementsPage'))
 const RecoveryPage    = lazy(() => import('./pages/RecoveryPage'))
 const ClubPage        = lazy(() => import('./pages/ClubPage'))
+const JoinClubPage    = lazy(() => import('./pages/JoinClubPage'))
 
 const pageVariants = {
-  initial: { opacity: 0, y: 14, scale: 0.985 },
-  animate: { opacity: 1, y: 0,  scale: 1 },
-  exit:    { opacity: 0, y: -8, scale: 0.99 },
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit:    { opacity: 0 },
 }
-const pageTransition = { duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }
+const pageTransition = { duration: 0.18, ease: 'easeInOut' }
 
 // Minimal spinner shown while a lazy chunk is downloading
 function PageLoader() {
@@ -94,7 +95,14 @@ function AppShell() {
 function AuthRoute() {
   const { user, loading } = useAuth()
   if (loading) return null
-  if (user) return <Navigate to="/" replace />
+  if (user) {
+    const returnTo = localStorage.getItem('hc_returnTo')
+    if (returnTo) {
+      localStorage.removeItem('hc_returnTo')
+      return <Navigate to={returnTo} replace />
+    }
+    return <Navigate to="/" replace />
+  }
   return (
     <Suspense fallback={<PageLoader />}>
       <AuthPage />
@@ -108,8 +116,13 @@ export default function App() {
       <AuthProvider>
         <UIProvider>
           <Routes>
-            <Route path="/auth" element={<AuthRoute />} />
-            <Route path="/*"    element={<AppShell />} />
+            <Route path="/auth"            element={<AuthRoute />} />
+            <Route path="/dolacz/:clubId"  element={
+              <Suspense fallback={<PageLoader />}>
+                <JoinClubPage />
+              </Suspense>
+            } />
+            <Route path="/*"               element={<AppShell />} />
           </Routes>
         </UIProvider>
       </AuthProvider>

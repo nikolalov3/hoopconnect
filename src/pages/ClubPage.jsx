@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { creditRestDayStreak } from '../lib/streak'
 import L from 'leaflet'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1361,6 +1362,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 
 // ── MATCH DETAIL SHEET ────────────────────────────────────────────────────────
 function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft, onDeleted }) {
+  const { profile, refreshProfile } = useAuth()
   const [local,        setLocal]        = useState(match)
   const [joining,      setJoining]      = useState(false)
   const [leaving,      setLeaving]      = useState(false)
@@ -1416,6 +1418,9 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft, o
       const updated = { ...local, players: data || [] }
       if ((data || []).length >= n * 2) updated.status = 'full'
       setLocal(updated); onJoined?.(updated)
+
+      // Dzień odpoczynku ('O') — dołączenie do meczu zalicza serię
+      await creditRestDayStreak(profile, refreshProfile)
     } catch (e) { setErr(e.message) }
     finally { setJoining(false) }
   }
@@ -1943,7 +1948,7 @@ function PanelDots({ active, onChange }) {
             whileTap={{ scale: 0.94 }}
             style={{
               position: 'relative', flex: 1,
-              padding: '8px 0', borderRadius: 99,
+              padding: '11px 0', borderRadius: 99,
               border: 'none', cursor: 'pointer',
               background: 'transparent',
               fontFamily: 'var(--font-body)', fontSize: 9.5,
@@ -2089,7 +2094,7 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
       </AnimatePresence>
 
       {/* Court card */}
-      <div style={{ padding: '0 22px', position: 'relative' }}>
+      <div style={{ padding: '16px 22px 0', position: 'relative' }}>
 
         {/* Responsive clip-path defs — objectBoundingBox scales with the element */}
         <svg width="0" height="0" aria-hidden="true"

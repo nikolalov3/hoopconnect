@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { creditRestDayStreak } from '../lib/streak'
+import StreakToast from '../components/ui/StreakToast'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -87,10 +89,11 @@ function RecoveryTile({ activity, done, onToggle }) {
 }
 
 export default function RecoveryPage() {
-  const { profile } = useAuth()
+  const { profile, refreshProfile } = useAuth()
   const [doneActivities, setDoneActivities] = useState(new Set())
-  const [tipIndex, setTipIndex] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [tipIndex,       setTipIndex]       = useState(0)
+  const [loading,        setLoading]        = useState(true)
+  const [streakToast,    setStreakToast]     = useState(0)
 
   useEffect(() => {
     if (!profile) return
@@ -129,6 +132,10 @@ export default function RecoveryPage() {
         duration_minutes: activity.minutes,
       })
       setDoneActivities(prev => new Set([...prev, activityId]))
+
+      // Pierwsza aktywność regeneracyjna dnia zalicza serię (każdy typ dnia)
+      const credited = await creditRestDayStreak(profile, refreshProfile)
+      if (credited) setStreakToast(credited)
     }
   }
 
@@ -269,6 +276,8 @@ export default function RecoveryPage() {
           </p>
         </motion.div>
       )}
+
+      <StreakToast streak={streakToast} visible={streakToast > 0} onHide={() => setStreakToast(0)} />
     </div>
   )
 }

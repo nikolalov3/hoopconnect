@@ -42,13 +42,13 @@ const FILTERS = [
 ]
 
 const glassCard = {
-  background: 'rgba(12,8,4,0.60)',
-  backdropFilter: 'blur(28px) saturate(1.5)',
-  WebkitBackdropFilter: 'blur(28px) saturate(1.5)',
-  border: '1px solid rgba(180,180,200,0.18)',
-  borderTop: '1px solid rgba(200,200,220,0.30)',
+  background: 'rgba(6,14,30,0.52)',
+  backdropFilter: 'blur(24px) saturate(1.7)',
+  WebkitBackdropFilter: 'blur(24px) saturate(1.7)',
+  border: '1px solid rgba(120,190,255,0.09)',
+  borderTop: '1px solid rgba(160,210,255,0.16)',
   borderRadius: 'var(--radius)',
-  boxShadow: '0 8px 28px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 0.5px rgba(160,160,180,0.10)',
+  boxShadow: '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
 }
 
 function StatTile({ label, value, sub, accent }) {
@@ -175,10 +175,15 @@ export default function StatsPage() {
 
       {/* ── FILTRY ── */}
       <div style={{
-        display: 'flex', gap: 6, marginBottom: 20,
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 99, padding: 4,
+        display: 'flex', marginBottom: 20,
+        background: 'rgba(6,14,30,0.52)',
+        backdropFilter: 'blur(24px) saturate(1.7)',
+        WebkitBackdropFilter: 'blur(24px) saturate(1.7)',
+        border: '1px solid rgba(120,190,255,0.09)',
+        borderTop: '1px solid rgba(160,210,255,0.15)',
+        borderRadius: 99,
+        padding: 3,
+        boxShadow: '0 4px 18px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.05)',
       }}>
         {FILTERS.map(({ key, label }) => {
           const active = filter === key
@@ -188,18 +193,28 @@ export default function StatsPage() {
               whileTap={{ scale: 0.94 }}
               onClick={() => setFilter(key)}
               style={{
-                flex: 1, padding: '8px 0',
+                position: 'relative', flex: 1,
+                padding: '11px 0',
                 borderRadius: 99, border: 'none', cursor: 'pointer',
-                fontFamily: 'var(--font-display)', fontWeight: 700,
-                fontSize: 12, letterSpacing: 1, textTransform: 'uppercase',
-                background: active
-                  ? 'linear-gradient(145deg, rgba(40,130,220,0.92), rgba(16,90,180,0.96))'
-                  : 'transparent',
-                color: active ? '#fff' : 'rgba(180,120,80,0.60)',
-                boxShadow: active ? '0 2px 12px rgba(91,184,245,0.35)' : 'none',
-                transition: 'all 0.2s ease',
+                background: 'transparent',
+                fontFamily: 'var(--font-body)', fontWeight: active ? 700 : 500,
+                fontSize: 9.5, letterSpacing: 1.2, textTransform: 'uppercase',
+                color: active ? 'var(--text-primary)' : 'var(--text-dim)',
+                transition: 'color 0.18s',
+                zIndex: 1,
               }}
             >
+              {active && (
+                <motion.div
+                  layoutId="stats-filter-pill"
+                  transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                  style={{
+                    position: 'absolute', inset: 0, borderRadius: 99, zIndex: -1,
+                    background: 'linear-gradient(145deg, rgba(40,130,220,0.90), rgba(16,90,180,0.95))',
+                    boxShadow: '0 2px 14px rgba(91,184,245,0.28), inset 0 1px 0 rgba(180,230,255,0.18)',
+                  }}
+                />
+              )}
               {label}
             </motion.button>
           )

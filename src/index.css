@@ -57,31 +57,13 @@ body {
   margin: 0 auto;
   position: relative;
   background:
-    radial-gradient(ellipse 90% 55% at 60% -10%,  rgba(80,160,255,0.22) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 45% at -10% 75%,  rgba(40,120,220,0.16) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 50% at 110% 60%,  rgba(100,180,255,0.12) 0%, transparent 55%),
-    radial-gradient(ellipse 100% 60% at 50% 115%, rgba(20,80,160,0.20) 0%, transparent 50%),
-    linear-gradient(170deg, #071525 0%, #050E1A 40%, #040810 100%);
+    radial-gradient(ellipse 90% 55% at 62% -8%,   rgba(91,184,245,0.22) 0%, transparent 58%),
+    radial-gradient(ellipse 70% 45% at -8%  78%,  rgba(50,120,230,0.16) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 108% 58%,  rgba(110,185,255,0.13) 0%, transparent 54%),
+    radial-gradient(ellipse 100% 60% at 50% 112%, rgba(30,90,180,0.20) 0%, transparent 50%),
+    linear-gradient(170deg, #0C1F38 0%, #091828 42%, #060F1E 100%);
 }
 
-#root::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  max-width: 430px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 39px,
-      rgba(100,180,255,0.025) 39px,
-      rgba(100,180,255,0.025) 40px
-    );
-  pointer-events: none;
-  z-index: 0;
-}
 
 .page-content {
   flex: 1;
@@ -101,13 +83,12 @@ body {
 
 /* LIQUID GLASS */
 .glass, .card {
-  background: var(--glass-dark);
-  backdrop-filter: blur(32px) saturate(1.8) brightness(1.08);
-  -webkit-backdrop-filter: blur(32px) saturate(1.8) brightness(1.08);
-  border: 1px solid var(--glass-border);
-  border-top-color: var(--glass-border-hi);
-  border-left-color: rgba(140,200,255,0.10);
-  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-inner-top);
+  background: rgba(6,14,30,0.52);
+  backdrop-filter: blur(24px) saturate(1.7);
+  -webkit-backdrop-filter: blur(24px) saturate(1.7);
+  border: 1px solid rgba(120,190,255,0.09);
+  border-top-color: rgba(160,210,255,0.16);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06);
 }
 .card { border-radius: var(--radius); padding: 16px; }
 
@@ -192,3 +173,4 @@ body {
 .spinner { width: 28px; height: 28px; border: 2px solid rgba(100,180,255,0.12); border-top-color: var(--orange); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 button, a { -webkit-tap-highlight-color: transparent; }
+

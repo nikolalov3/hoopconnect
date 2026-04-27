@@ -49,30 +49,30 @@ export default function TrainingCard({ training, done, onDone, onUndo }) {
       layout
       style={{
         background: done
-          ? 'rgba(0,230,118,0.05)'
-          : 'rgba(12,8,4,0.58)',
-        backdropFilter: 'blur(28px) saturate(1.6)',
-        WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+          ? 'rgba(0,230,118,0.06)'
+          : 'rgba(6,14,30,0.52)',
+        backdropFilter: 'blur(24px) saturate(1.7)',
+        WebkitBackdropFilter: 'blur(24px) saturate(1.7)',
         border: done
           ? '1px solid rgba(0,230,118,0.18)'
-          : '1px solid rgba(255,255,255,0.10)',
+          : '1px solid rgba(120,190,255,0.09)',
         borderTop: done
-          ? '1px solid rgba(0,230,118,0.25)'
-          : '1px solid rgba(255,255,255,0.17)',
+          ? '1px solid rgba(0,230,118,0.28)'
+          : '1px solid rgba(160,210,255,0.16)',
         borderRadius: 'var(--radius)',
         overflow: 'hidden',
         cursor: 'pointer',
-        boxShadow: '0 8px 28px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.07)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
         transition: 'border-color 0.3s',
       }}
     >
       {/* Header row */}
       <div onClick={() => setExpanded(e => !e)} style={{ padding: '16px 18px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
 
           {/* Done circle */}
           <div style={{
-            width: 28, height: 28, borderRadius: '50%', flexShrink: 0, marginTop: 2,
+            width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
             border: done ? 'none' : '1.5px solid rgba(255,255,255,0.12)',
             background: done
               ? 'linear-gradient(135deg, #00E676, #00A854)'

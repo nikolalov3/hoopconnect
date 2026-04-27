@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useShootingSession } from '../hooks/useShootingSession'
 import { checkShotAchievements, checkPerfectSession } from '../lib/achievements'
+import { creditRestDayStreak } from '../lib/streak'
+import StreakToast from '../components/ui/StreakToast'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -201,7 +203,8 @@ export default function ShootingPage() {
   const { id } = useParams()
   const { state } = useLocation()
   const navigate = useNavigate()
-  const { profile } = useAuth()
+  const { profile, refreshProfile } = useAuth()
+  const [streakToast, setStreakToast] = useState(0)
 
   const training = state?.training
   const config = TYPE_CONFIG[training?.type] || TYPE_CONFIG.shooting_3pt
@@ -229,6 +232,50 @@ export default function ShootingPage() {
     setTimeout(() => setFlash(null), 260)
   }
 
+  // Współdzielona logika: odznacz trening w activity_log + zalicz serię
+  async function markDoneAndCreditStreak(trainingId) {
+    // 1. Pobierz aktualny activity_log dla dzisiaj
+    const { data: existingLog } = await supabase
+      .from('activity_log')
+      .select('*')
+      .eq('user_id', profile.id)
+      .eq('date', TODAY)
+      .maybeSingle()
+
+    // 2. Dodaj trening do ukończonych (jeśli nie ma)
+    const prevCompleted = existingLog?.trainings_completed || []
+    if (!prevCompleted.includes(trainingId)) {
+      const newCompleted = [...prevCompleted, trainingId]
+
+      await supabase.from('activity_log').upsert(
+        { user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: true },
+        { onConflict: 'user_id,date' }
+      )
+    }
+
+    // 3. Pobierz świeży profil z DB (bez stale closure!)
+    const { data: freshProfile } = await supabase
+      .from('profiles')
+      .select('streak, longest_streak, last_active')
+      .eq('id', profile.id)
+      .single()
+
+    const lastActiveDate = (freshProfile?.last_active || '').slice(0, 10)
+    if (lastActiveDate !== TODAY) {
+      const newStreak = (freshProfile?.streak || 0) + 1
+      const { error: strErr } = await supabase.from('profiles').update({
+        streak:         newStreak,
+        longest_streak: Math.max(newStreak, freshProfile?.longest_streak || 0),
+        last_active:    TODAY,
+      }).eq('id', profile.id)
+
+      if (!strErr) {
+        await refreshProfile()
+        setStreakToast(newStreak)
+      }
+    }
+  }
+
   async function handleShot(isMade) {
     if (finished || saving || !loaded) return
     addShot(isMade)
@@ -246,26 +293,8 @@ export default function ShootingPage() {
         attempted: newAttempted,
       })
 
-      // Auto-odznacz trening w activity_log
-      const { data: existingLog } = await supabase
-        .from('activity_log')
-        .select('*')
-        .eq('user_id', profile.id)
-        .eq('date', TODAY)
-        .single()
-
-      const prevCompleted = existingLog?.trainings_completed || []
-      if (!prevCompleted.includes(id)) {
-        const newCompleted = [...prevCompleted, id]
-        if (existingLog) {
-          await supabase.from('activity_log')
-            .update({ trainings_completed: newCompleted })
-            .eq('id', existingLog.id)
-        } else {
-          await supabase.from('activity_log')
-            .insert({ user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: false })
-        }
-      }
+      // Odznacz trening w activity_log i zalicz serię
+      await markDoneAndCreditStreak(id)
 
       setFinalStats({ made: finalMade, attempted: newAttempted })
       clearSession()
@@ -301,25 +330,8 @@ export default function ShootingPage() {
       attempted: total,
     })
 
-    const { data: existingLog } = await supabase
-      .from('activity_log')
-      .select('*')
-      .eq('user_id', profile.id)
-      .eq('date', TODAY)
-      .single()
-
-    const prevCompleted = existingLog?.trainings_completed || []
-    if (!prevCompleted.includes(id)) {
-      const newCompleted = [...prevCompleted, id]
-      if (existingLog) {
-        await supabase.from('activity_log')
-          .update({ trainings_completed: newCompleted })
-          .eq('id', existingLog.id)
-      } else {
-        await supabase.from('activity_log')
-          .insert({ user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: false })
-      }
-    }
+    // Odznacz trening w activity_log i zalicz serię
+    await markDoneAndCreditStreak(id)
 
     setFinalStats({ made: m, attempted: total })
     clearSession()
@@ -606,6 +618,8 @@ export default function ShootingPage() {
           )}
         </button>
       </div>
+
+      <StreakToast streak={streakToast} visible={streakToast > 0} onHide={() => setStreakToast(0)} />
     </div>
   )
 }

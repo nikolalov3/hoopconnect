@@ -6,6 +6,7 @@ import TrainingCard from '../components/training/TrainingCard'
 import { fetchAchievementsCatalog, getNewlyUnlocked, awardMedalPoints, revokeStaleAchievements } from '../lib/achievements'
 import SettingsPanel from '../components/ui/SettingsPanel'
 import { useUI } from '../context/UIContext'
+import StreakToast from '../components/ui/StreakToast'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -476,6 +477,7 @@ export default function HomePage() {
     setAchievementToast(data)
   }
   const [showDayDoneModal, setShowDayDoneModal] = useState(false)
+  const [streakToast,     setStreakToast]     = useState(0)   // >0 = visible, value = new streak
 
   useEffect(() => { loadData() }, [profile])
 
@@ -541,16 +543,61 @@ export default function HomePage() {
 
   async function markTrainingDone(trainingId) {
     if (!profile) return
-    const completed = activityLog?.trainings_completed || []
-    if (completed.includes(trainingId)) return
-    const newCompleted = [...completed, trainingId]
+
+    // Zawsze czytaj świeże dane z DB żeby uniknąć stale state
+    const { data: freshLog } = await supabase
+      .from('activity_log')
+      .select('*')
+      .eq('user_id', profile.id)
+      .eq('date', TODAY)
+      .maybeSingle()
+
+    const prevCompleted = freshLog?.trainings_completed || []
+    if (prevCompleted.includes(trainingId)) return   // już zaliczone
+
+    const newCompleted = [...prevCompleted, trainingId]
     const allDone = newCompleted.length >= trainings.length
-    if (activityLog) {
-      await supabase.from('activity_log').update({ trainings_completed: newCompleted, all_done: allDone }).eq('id', activityLog.id)
-    } else {
-      await supabase.from('activity_log').insert({ user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: allDone })
+
+    // Upsert — działa niezależnie czy wiersz istnieje czy nie
+    const { data: savedLog, error: logErr } = await supabase
+      .from('activity_log')
+      .upsert(
+        { user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: allDone },
+        { onConflict: 'user_id,date' }
+      )
+      .select()
+      .single()
+
+    if (logErr) console.error('[activity_log upsert error]', logErr)
+
+    setActivityLog(savedLog ?? { ...(freshLog || {}), user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: allDone })
+
+    // ── Streak: zawsze pobierz świeży profil z DB, bez stale closure ──
+    const { data: freshProfile, error: fpErr } = await supabase
+      .from('profiles')
+      .select('streak, longest_streak, last_active')
+      .eq('id', profile.id)
+      .single()
+
+    const lastActiveDate = (freshProfile?.last_active || '').slice(0, 10)
+    const alreadyCredited = lastActiveDate === TODAY
+
+    if (!alreadyCredited) {
+      const newStreak = (freshProfile?.streak || 0) + 1
+      const { error: strErr } = await supabase
+        .from('profiles')
+        .update({
+          streak:         newStreak,
+          longest_streak: Math.max(newStreak, freshProfile?.longest_streak || 0),
+          last_active:    TODAY,
+        })
+        .eq('id', profile.id)
+
+      if (!strErr) {
+        await refreshProfile()
+        setStreakToast(newStreak)
+      }
     }
-    setActivityLog(prev => ({ ...prev, trainings_completed: newCompleted, all_done: allDone }))
 
     const training = trainings.find(t => t.id === trainingId)
     const points = (training?._pts || 1) * (training?._multiplier || 1)
@@ -564,15 +611,7 @@ export default function HomePage() {
       date: TODAY,
     })
 
-    if (allDone) {
-      setShowDayDoneModal(true)
-      const newStreak = (profile.streak || 0) + 1
-      await supabase.from('profiles').update({
-        streak: newStreak, longest_streak: Math.max(newStreak, profile.longest_streak || 0), last_active: TODAY,
-      }).eq('id', profile.id)
-      await refreshProfile()
-    }
-    // Sprawdź osiągnięcia po zaznaczeniu
+    if (allDone) setShowDayDoneModal(true)
     checkAchievements(trainingId, allDone)
   }
 
@@ -602,6 +641,34 @@ export default function HomePage() {
     ])
 
     setActivityLog(prev => ({ ...prev, trainings_completed: newCompleted, all_done: false }))
+
+    // ── Cofnij serię jeśli to był jedyny trening dziś i brak recovery ──
+    const { data: freshProfile } = await supabase
+      .from('profiles')
+      .select('streak, last_active')
+      .eq('id', profile.id)
+      .single()
+
+    const lastActiveDate = (freshProfile?.last_active || '').slice(0, 10)
+    if (newCompleted.length === 0 && lastActiveDate === TODAY) {
+      // Sprawdź czy są jakieś aktywności recovery dziś
+      const { data: recoveryToday } = await supabase
+        .from('recovery_log')
+        .select('id')
+        .eq('user_id', profile.id)
+        .eq('date', TODAY)
+        .limit(1)
+
+      if (!recoveryToday?.length) {
+        // Żadnych aktywności dziś — cofnij serię
+        const newStreak = Math.max(0, (freshProfile.streak || 0) - 1)
+        await supabase.from('profiles').update({
+          streak:      newStreak,
+          last_active: null,
+        }).eq('id', profile.id)
+        await refreshProfile()
+      }
+    }
 
     // Cofnij wszystkie staged achievements które nie są już zasłużone
     await revokeStaleAchievements(profile.id)
@@ -850,6 +917,7 @@ export default function HomePage() {
           <DayDoneModal completedCount={completed.length} onClose={() => setShowDayDoneModal(false)} />
         )}
       </AnimatePresence>
+      <StreakToast streak={streakToast} visible={streakToast > 0} onHide={() => setStreakToast(0)} />
 
       {/* Header */}
       <div style={{ padding: '32px 22px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -862,25 +930,31 @@ export default function HomePage() {
             </span>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <button onClick={openSettings} style={{
-            background: 'rgba(10,6,3,0.65)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.12)', borderTop: '1px solid rgba(255,255,255,0.20)',
-            borderRadius: 12, width: 48, height: 48, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.40)',
+            background: 'none', border: 'none',
+            width: 40, height: 40, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            opacity: 0.55, transition: 'opacity 0.18s',
+          }}
+            onTouchStart={e => e.currentTarget.style.opacity = '1'}
+            onTouchEnd={e => e.currentTarget.style.opacity = '0.55'}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.90)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3"/>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
           </button>
           <button onClick={() => setShowQuote(true)} style={{
-            background: 'rgba(10,6,3,0.65)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.12)', borderTop: '1px solid rgba(255,255,255,0.20)',
-            borderRadius: 12, width: 48, height: 48, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.40)',
+            background: 'none', border: 'none',
+            width: 40, height: 40, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <span style={{ fontFamily: 'Georgia, serif', fontSize: 28, lineHeight: 1, color: 'var(--orange)', fontWeight: 900, display: 'block', marginTop: -4 }}>"</span>
+            opacity: 0.55, transition: 'opacity 0.18s',
+          }}
+            onTouchStart={e => e.currentTarget.style.opacity = '1'}
+            onTouchEnd={e => e.currentTarget.style.opacity = '0.55'}
+          >
+            <span style={{ fontSize: 18, lineHeight: 1, color: 'rgba(255,255,255,0.90)' }}>✦</span>
           </button>
         </div>
       </div>

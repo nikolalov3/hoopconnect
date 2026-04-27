@@ -33,34 +33,11 @@ const RecoveryIcon = ({ active }) => (
 // Hexagonal diamond icon for Club tab — mirrors the app logo
 const ClubIcon = ({ active }) => (
   <svg width="22" height="22" viewBox="0 0 90 90" style={{ overflow: 'visible' }}>
-    {active && (
-      <defs>
-        <linearGradient id="clubIconGrad" x1="20%" y1="0%" x2="80%" y2="100%">
-          <stop offset="0%" stopColor="#C8ECFF" />
-          <stop offset="35%" stopColor="#5BB8F5" />
-          <stop offset="100%" stopColor="#0D4A8A" />
-        </linearGradient>
-      </defs>
-    )}
-    <polygon
-      points="45,9 84,33 84,61 45,87 6,61 6,33"
-      fill="rgba(0,0,0,0.22)"
-    />
-    <polygon
-      points="45,6 82,32 82,58 45,84 8,58 8,32"
-      fill={active ? 'url(#clubIconGrad)' : 'rgba(160,170,185,0.18)'}
-    />
-    {active && (
-      <>
-        <polygon points="45,6 8,32 45,42"  fill="rgba(255,255,255,0.28)" />
-        <polygon points="45,6 82,32 45,42" fill="rgba(255,255,255,0.13)" />
-      </>
-    )}
     <polygon
       points="45,6 82,32 82,58 45,84 8,58 8,32"
       fill="none"
-      stroke={active ? 'rgba(255,255,255,0.70)' : 'rgba(160,175,195,0.55)'}
-      strokeWidth="5"
+      stroke={active ? '#ffffff' : 'rgba(180,120,80,0.60)'}
+      strokeWidth={active ? 7 : 5}
       strokeLinejoin="round"
     />
   </svg>
@@ -123,33 +100,22 @@ export default function BottomNav() {
           const showDot = path === '/achievements' && hasUnread && !active
 
           if (center) {
-            // ── Club centre button — same size as others, hex bg, glows when active ──
             return (
               <motion.button key={path} onClick={() => navigate(path)} whileTap={{ scale: 0.88 }}
                 style={{
                   position: 'relative',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   width: 52, height: 48,
-                  background: 'transparent',
-                  border: 'none',
+                  background: active
+                    ? 'linear-gradient(145deg, rgba(40,130,220,0.92) 0%, rgba(16,90,180,0.96) 100%)'
+                    : 'transparent',
+                  border: active ? '1px solid rgba(91,184,245,0.50)' : '1px solid transparent',
+                  borderRadius: 9999,
                   cursor: 'pointer',
-                  // drop-shadow for glow (works outside the button element)
-                  filter: active
-                    ? 'drop-shadow(0 0 8px rgba(91,184,245,0.80))'
-                    : 'none',
-                  transition: 'filter 0.25s ease',
+                  transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+                  boxShadow: active ? '0 4px 20px rgba(91,184,245,0.50), inset 0 1px 0 rgba(180,230,255,0.25)' : 'none',
                 }}
               >
-                {/* Hex bg pill — same width/height as other active pills but hex-clipped */}
-                <motion.div
-                  animate={{ opacity: active ? 1 : 0, scale: active ? 1 : 0.7 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-                  style={{
-                    position: 'absolute', inset: 0,
-                    background: 'linear-gradient(145deg, rgba(40,130,220,0.92) 0%, rgba(16,90,180,0.96) 100%)',
-                    clipPath: 'polygon(50% 6.7%, 91.1% 35.6%, 91.1% 64.4%, 50% 93.3%, 8.9% 64.4%, 8.9% 35.6%)',
-                  }}
-                />
                 <Icon active={active} />
                 {active && (
                   <motion.div layoutId="nav-glow" transition={{ type: 'spring', stiffness: 400, damping: 30 }}
