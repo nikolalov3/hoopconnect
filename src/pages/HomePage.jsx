@@ -488,14 +488,20 @@ export default function HomePage() {
     const dt = getDayType(profile)
     setDayType(dt)
 
-    const { data: allTrainings } = await supabase.from('trainings').select('*').eq('is_active', true)
+    // Równoległe zapytania — wszystkie 3 lecą jednocześnie
+    const [
+      { data: allTrainings },
+      { data: log },
+      { data: quotes },
+    ] = await Promise.all([
+      supabase.from('trainings').select('id, title, description, type, category, difficulty, instructions, images, is_active').eq('is_active', true),
+      supabase.from('activity_log').select('id, user_id, date, trainings_completed, all_done').eq('user_id', profile.id).eq('date', TODAY).maybeSingle(),
+      supabase.from('quotes').select('id, text, author').eq('is_active', true),
+    ])
+
     const todayTrainings = pickDailyTrainings(allTrainings || [], profile)
     setTrainings(todayTrainings)
-
-    const { data: log } = await supabase.from('activity_log').select('*').eq('user_id', profile.id).eq('date', TODAY).single()
     setActivityLog(log)
-
-    const { data: quotes } = await supabase.from('quotes').select('*').eq('is_active', true)
     if (quotes?.length) setQuote(quotes[Math.floor(Math.random() * quotes.length)])
 
     // Oblicz ile dni od rejestracji
@@ -612,7 +618,8 @@ export default function HomePage() {
     })
 
     if (allDone) setShowDayDoneModal(true)
-    checkAchievements(trainingId, allDone)
+    // Defer achievement check — nie blokuje UI po ukończeniu ćwiczenia
+    setTimeout(() => checkAchievements(trainingId, allDone), 0)
   }
 
   async function unmarkTrainingDone(trainingId) {

@@ -70,6 +70,7 @@ function AchievementModal({ achievement, onClose }) {
         <img
           src={currentStage.image}
           alt={title}
+          loading="lazy" decoding="async"
           style={{
             maxWidth: '100%', height: 'auto',
             filter: `drop-shadow(0 0 20px ${medal.glow})`,
@@ -142,6 +143,7 @@ function AchievementCell({ achievement, onPress, isNew }) {
         <img
           src={currentStage.image}
           alt={title}
+          loading="lazy" decoding="async"
           style={{
             width: '100%', height: '100%', objectFit: 'contain',
             filter: `drop-shadow(0 0 12px ${medal.glow})`,

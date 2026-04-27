@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 
@@ -32,7 +32,7 @@ const ChevronIcon = ({ up }) => (
   </svg>
 )
 
-export default function TrainingCard({ training, done, onDone, onUndo }) {
+function TrainingCard({ training, done, onDone, onUndo }) {
   const [expanded, setExpanded] = useState(false)
   const navigate = useNavigate()
   const isShooting = SHOOTING_TYPES.includes(training.type)
@@ -154,7 +154,7 @@ export default function TrainingCard({ training, done, onDone, onUndo }) {
               {training.images?.length > 0 && (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 12, overflowX: 'auto', paddingBottom: 4 }}>
                   {training.images.map((url, i) => (
-                    <img key={i} src={url} alt=""
+                    <img key={i} src={url} alt="" loading="lazy" decoding="async"
                       style={{ width: 100, height: 80, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }}
                     />
                   ))}
@@ -223,3 +223,5 @@ export default function TrainingCard({ training, done, onDone, onUndo }) {
     </motion.div>
   )
 }
+
+export default memo(TrainingCard)

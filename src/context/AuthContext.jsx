@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext({})
@@ -24,37 +24,38 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function fetchProfile(userId) {
+  const fetchProfile = useCallback(async (userId) => {
     const { data } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, name, email, age, training_days, onboarding_done, created_at, streak, longest_streak, last_active, club_id, position, avatar_url')
       .eq('id', userId)
       .single()
     setProfile(data)
-  }
+  }, [])
 
-  async function signIn(email, password) {
-    return supabase.auth.signInWithPassword({ email, password })
-  }
+  const signIn = useCallback((email, password) =>
+    supabase.auth.signInWithPassword({ email, password }), [])
 
-  async function signUp(email, password) {
-    return supabase.auth.signUp({ email, password })
-  }
+  const signUp = useCallback((email, password) =>
+    supabase.auth.signUp({ email, password }), [])
 
-  async function signOut() {
-    return supabase.auth.signOut()
-  }
+  const signOut = useCallback(() =>
+    supabase.auth.signOut(), [])
 
-  async function refreshProfile() {
+  const refreshProfile = useCallback(async () => {
     if (user) await fetchProfile(user.id)
-  }
+  }, [user, fetchProfile])
 
-  function setProfileData(data) {
+  const setProfileData = useCallback((data) => {
     setProfile(prev => ({ ...prev, ...data }))
-  }
+  }, [])
+
+  const value = useMemo(() => ({
+    user, profile, loading, signIn, signUp, signOut, refreshProfile, setProfileData,
+  }), [user, profile, loading, signIn, signUp, signOut, refreshProfile, setProfileData])
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut, refreshProfile, setProfileData }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
