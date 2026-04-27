@@ -2375,90 +2375,109 @@ function CreateClub({ onCreated, profile }) {
     catch (e) { setErr(e?.message ?? JSON.stringify(e)); setSaving(false) }
   }
 
+  const fieldStyle = (filled) => ({
+    width: '100%', padding: '15px 16px', fontSize: 15,
+    background: 'rgba(6,14,30,0.52)',
+    backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+    border: `1px solid ${filled ? 'rgba(91,184,245,0.40)' : 'rgba(120,190,255,0.09)'}`,
+    borderTop: `1px solid ${filled ? 'rgba(91,184,245,0.55)' : 'rgba(160,210,255,0.16)'}`,
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--text-primary)', outline: 'none',
+    fontFamily: 'var(--font-body)', fontWeight: 500,
+    boxSizing: 'border-box',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+    transition: 'border-color 0.2s',
+  })
+
   return (
-    <div style={{
-      minHeight: '100%', background: C.bg,
-      display: 'flex', flexDirection: 'column', padding: '44px 20px 40px',
-    }}>
+    <div className="page-content" style={{ padding: '36px 22px 40px' }}>
       <AnimatePresence>
         {picker && <CountryPicker value={ctry} onChange={c => { setCtry(c); setPicker(false) }} onClose={() => setPicker(false)}/>}
       </AnimatePresence>
 
-      <motion.div
-        initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 280, damping: 18 }}
-        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 30 }}>
-        <Badge abbr={preview} size={96}/>
-        <p style={{ fontSize: 9, letterSpacing: 3, color: C.accent,
-          textTransform: 'uppercase', fontWeight: 700, marginTop: 12 }}>
-          Podgląd odznaki
-        </p>
-      </motion.div>
+      {/* Header row — badge + title side by side */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 28 }}>
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 280, damping: 18 }}
+          style={{ flexShrink: 0 }}>
+          <Badge abbr={preview} size={80}/>
+        </motion.div>
+        <div>
+          <p className="section-label" style={{ marginBottom: 4 }}>Nowy klub</p>
+          <h1 style={{
+            fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 42,
+            color: 'var(--text-primary)', textTransform: 'uppercase',
+            letterSpacing: -0.5, lineHeight: 0.95,
+          }}>
+            Załóż<br/>Klub
+          </h1>
+        </div>
+      </div>
 
-      <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 36,
-        color: C.text, textTransform: 'uppercase', letterSpacing: -0.3,
-        lineHeight: 1.05, marginBottom: 6 }}>
-        Załóż<br/>Klub
-      </h1>
-      <p style={{ color: C.sub, fontSize: 13, marginBottom: 26, lineHeight: 1.6 }}>
-        Stwórz drużynę, zaproś znajomych i rywalizujcie.
+      <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 28, lineHeight: 1.65 }}>
+        Stwórz drużynę, zaproś znajomych i rywalizujcie razem.
       </p>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {[
-          { lbl: 'Nazwa klubu', ph: 'np. Warsaw Ballers', val: name,
-            set: e => setName(e.target.value), max: 21, sx: {} },
-          { lbl: 'Skrót (2–3 litery)', ph: 'WBL', val: abbr,
-            set: e => setAbbr(e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)),
-            max: 3, sx: { fontSize: 20, fontWeight: 900, letterSpacing: 6,
-              fontFamily: 'var(--font-display)', textAlign: 'center' } },
-        ].map(f => (
-          <div key={f.lbl}>
-            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2,
-              textTransform: 'uppercase', color: C.sub, marginBottom: 6 }}>{f.lbl}</p>
-            <input placeholder={f.ph} value={f.val} onChange={f.set} maxLength={f.max}
-              style={{
-                width: '100%', padding: '14px 16px', fontSize: 15,
-                background: C.surface, border: '1.5px solid rgba(0,200,255,0.14)',
-                borderRadius: 14, color: C.text, outline: 'none',
-                fontFamily: 'inherit', boxSizing: 'border-box', ...f.sx,
-              }}/>
-          </div>
-        ))}
+      {/* Fields */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
+        {/* Nazwa */}
         <div>
-          <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2,
-            textTransform: 'uppercase', color: C.sub, marginBottom: 6 }}>Kraj</p>
+          <p className="section-label" style={{ marginBottom: 8 }}>Nazwa klubu</p>
+          <input
+            placeholder="np. Warsaw Ballers"
+            value={name} onChange={e => setName(e.target.value)} maxLength={21}
+            style={fieldStyle(name.length > 0)}
+          />
+        </div>
+
+        {/* Skrót */}
+        <div>
+          <p className="section-label" style={{ marginBottom: 8 }}>Skrót (2–3 litery)</p>
+          <input
+            placeholder="WBL"
+            value={abbr}
+            onChange={e => setAbbr(e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3))}
+            maxLength={3}
+            style={{
+              ...fieldStyle(abbr.length > 0),
+              fontSize: 22, fontWeight: 900, letterSpacing: 8,
+              fontFamily: 'var(--font-display)', textAlign: 'center',
+            }}
+          />
+        </div>
+
+        {/* Kraj */}
+        <div>
+          <p className="section-label" style={{ marginBottom: 8 }}>Kraj</p>
           <button onClick={() => setPicker(true)} style={{
-            width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-            padding: '14px 16px', background: C.surface,
-            border: '1.5px solid rgba(0,200,255,0.14)', borderRadius: 14,
+            ...fieldStyle(true),
+            display: 'flex', alignItems: 'center', gap: 12,
             cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+            textAlign: 'left',
           }}>
-            <span style={{ fontSize: 22 }}>{ctry.flag}</span>
-            <span style={{ fontSize: 15, fontWeight: 600, color: C.text }}>{ctry.name}</span>
-            <svg style={{ marginLeft: 'auto' }} width="15" height="15" viewBox="0 0 24 24"
-              fill="none" stroke={C.sub} strokeWidth="2" strokeLinecap="round">
+            <span style={{ fontSize: 22, lineHeight: 1 }}>{ctry.flag}</span>
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', flex: 1 }}>{ctry.name}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="var(--text-dim)" strokeWidth="2" strokeLinecap="round">
               <polyline points="6 9 12 15 18 9"/>
             </svg>
           </button>
         </div>
       </div>
 
-      {err && <p style={{ color: C.loss, fontSize: 12, marginTop: 10, textAlign: 'center' }}>{err}</p>}
+      {err && (
+        <p style={{ color: 'var(--red-shot)', fontSize: 12, marginTop: 12, textAlign: 'center' }}>{err}</p>
+      )}
 
-      <motion.button whileTap={{ scale: 0.97 }} onClick={submit} disabled={!valid || saving}
+      <motion.button
+        whileTap={{ scale: 0.97 }} onClick={submit} disabled={!valid || saving}
+        className="btn-primary"
         style={{
-          marginTop: 24, width: '100%', padding: '16px', border: 'none', borderRadius: 16,
-          background: valid && !saving
-            ? `linear-gradient(135deg, ${C.accentHi}, ${C.accent}, ${C.accentLo})`
-            : `${C.dim}60`,
-          fontFamily: 'var(--font-display)', fontWeight: 900,
-          fontSize: 14, letterSpacing: 2.5, textTransform: 'uppercase',
-          color: valid && !saving ? '#fff' : C.sub,
+          marginTop: 28,
+          opacity: valid && !saving ? 1 : 0.35,
           cursor: valid && !saving ? 'pointer' : 'default',
-          boxShadow: valid && !saving ? `0 8px 28px ${C.accentLo}50` : 'none',
-          transition: 'all 0.2s',
         }}>
         {saving ? 'Tworzenie…' : 'Utwórz Klub'}
       </motion.button>

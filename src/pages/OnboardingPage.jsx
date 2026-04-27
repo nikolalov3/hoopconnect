@@ -374,95 +374,49 @@ export default function OnboardingPage() {
             </p>
 
             {/* Date pickers */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.4fr', gap: 10, marginBottom: 24 }}>
-              {/* Dzień */}
-              <div>
-                <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>Dzień</p>
-                <select
-                  value={birthDay}
-                  onChange={e => setBirthDay(e.target.value)}
-                  style={{
-                    width: '100%', padding: '14px 10px',
-                    background: 'rgba(12,8,4,0.65)',
-                    backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                    border: `1px solid ${birthDay ? 'rgba(91,184,245,0.40)' : 'rgba(255,255,255,0.12)'}`,
-                    borderRadius: 'var(--radius-sm)',
-                    color: birthDay ? 'var(--text-primary)' : 'var(--text-dim)',
-                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18,
-                    textAlign: 'center', cursor: 'pointer', outline: 'none',
-                    appearance: 'none', WebkitAppearance: 'none',
-                  }}
-                >
-                  <option value="">—</option>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Miesiąc */}
-              <div>
-                <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>Miesiąc</p>
-                <select
-                  value={birthMonth}
-                  onChange={e => setBirthMonth(e.target.value)}
-                  style={{
-                    width: '100%', padding: '14px 10px',
-                    background: 'rgba(12,8,4,0.65)',
-                    backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                    border: `1px solid ${birthMonth ? 'rgba(91,184,245,0.40)' : 'rgba(255,255,255,0.12)'}`,
-                    borderRadius: 'var(--radius-sm)',
-                    color: birthMonth ? 'var(--text-primary)' : 'var(--text-dim)',
-                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15,
-                    textAlign: 'center', cursor: 'pointer', outline: 'none',
-                    appearance: 'none', WebkitAppearance: 'none',
-                  }}
-                >
-                  <option value="">—</option>
-                  {['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'].map((m, i) => (
-                    <option key={i+1} value={i+1}>{m}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Rok */}
-              <div>
-                <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>Rok</p>
-                <select
-                  value={birthYear}
-                  onChange={e => setBirthYear(e.target.value)}
-                  style={{
-                    width: '100%', padding: '14px 10px',
-                    background: 'rgba(12,8,4,0.65)',
-                    backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                    border: `1px solid ${birthYear ? 'rgba(91,184,245,0.40)' : 'rgba(255,255,255,0.12)'}`,
-                    borderRadius: 'var(--radius-sm)',
-                    color: birthYear ? 'var(--text-primary)' : 'var(--text-dim)',
-                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
-                    textAlign: 'center', cursor: 'pointer', outline: 'none',
-                    appearance: 'none', WebkitAppearance: 'none',
-                  }}
-                >
-                  <option value="">—</option>
-                  {Array.from({ length: 21 }, (_, i) => currentYear - 10 - i).map(y => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.4fr', gap: 10, marginBottom: 24, alignItems: 'end' }}>
+              {[
+                { label: 'Dzień',   value: birthDay,   set: setBirthDay,   options: Array.from({ length: 31 }, (_, i) => ({ val: i+1, label: String(i+1) })) },
+                { label: 'Miesiąc', value: birthMonth, set: setBirthMonth, options: ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'].map((m,i) => ({ val: i+1, label: m })) },
+                { label: 'Rok',     value: birthYear,  set: setBirthYear,  options: Array.from({ length: 21 }, (_, i) => ({ val: currentYear-10-i, label: String(currentYear-10-i) })) },
+              ].map(({ label, value, set, options }) => (
+                <div key={label}>
+                  <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>{label}</p>
+                  <select
+                    value={value}
+                    onChange={e => set(e.target.value)}
+                    style={{
+                      width: '100%', padding: '15px 10px',
+                      background: 'rgba(6,14,30,0.52)',
+                      backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+                      border: `1px solid ${value ? 'rgba(91,184,245,0.40)' : 'rgba(120,190,255,0.09)'}`,
+                      borderTop: `1px solid ${value ? 'rgba(91,184,245,0.55)' : 'rgba(160,210,255,0.16)'}`,
+                      borderRadius: 'var(--radius-sm)',
+                      color: value ? 'var(--text-primary)' : 'var(--text-dim)',
+                      fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 17,
+                      textAlign: 'center', cursor: 'pointer', outline: 'none',
+                      appearance: 'none', WebkitAppearance: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <option value="">—</option>
+                    {options.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
+                  </select>
+                </div>
+              ))}
             </div>
-
             {/* Wiek obliczony + info card */}
             {age !== null && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 style={{
                   padding: '16px 20px',
-                  background: 'rgba(12,8,4,0.60)',
-                  backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255,255,255,0.10)',
-                  borderTop: '1px solid rgba(255,255,255,0.17)',
+                  background: 'rgba(6,14,30,0.52)',
+                  backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+                  border: '1px solid rgba(120,190,255,0.09)',
+                  borderTop: '1px solid rgba(160,210,255,0.16)',
                   borderRadius: 'var(--radius)',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.40)',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
                 }}
               >
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--orange)', letterSpacing: 1, marginBottom: 4 }}>
