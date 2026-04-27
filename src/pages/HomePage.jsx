@@ -494,9 +494,9 @@ export default function HomePage() {
       { data: log },
       { data: quotes },
     ] = await Promise.all([
-      supabase.from('trainings').select('id, title, description, type, category, difficulty, instructions, images, is_active').eq('is_active', true),
-      supabase.from('activity_log').select('id, user_id, date, trainings_completed, all_done').eq('user_id', profile.id).eq('date', TODAY).maybeSingle(),
-      supabase.from('quotes').select('id, text, author').eq('is_active', true),
+      supabase.from('trainings').select('*').eq('is_active', true),
+      supabase.from('activity_log').select('*').eq('user_id', profile.id).eq('date', TODAY).maybeSingle(),
+      supabase.from('quotes').select('*').eq('is_active', true),
     ])
 
     const todayTrainings = pickDailyTrainings(allTrainings || [], profile)
