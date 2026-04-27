@@ -567,107 +567,89 @@ export default function HomePage() {
 
   async function markTrainingDone(trainingId) {
     if (!profile) return
-    bustCache(`log:${profile.id}:${TODAY}`)  // unieważnij cache — dane się zmieniają
 
-    // Zawsze czytaj świeże dane z DB żeby uniknąć stale state
-    const { data: freshLog } = await supabase
-      .from('activity_log')
-      .select('*')
-      .eq('user_id', profile.id)
-      .eq('date', TODAY)
-      .maybeSingle()
+    // Sprawdź lokalny stan — bez czytania z DB
+    const currentCompleted = activityLog?.trainings_completed || []
+    if (currentCompleted.includes(trainingId)) return
 
-    const prevCompleted = freshLog?.trainings_completed || []
-    if (prevCompleted.includes(trainingId)) return   // już zaliczone
-
-    const newCompleted = [...prevCompleted, trainingId]
+    const newCompleted = [...currentCompleted, trainingId]
     const allDone = newCompleted.length >= trainings.length
 
-    // Upsert — działa niezależnie czy wiersz istnieje czy nie
-    const { data: savedLog, error: logErr } = await supabase
-      .from('activity_log')
-      .upsert(
-        { user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: allDone },
-        { onConflict: 'user_id,date' }
-      )
-      .select()
-      .single()
+    // ── OPTIMISTIC: karta zaznacza się NATYCHMIAST, przed jakimkolwiek request ──
+    setActivityLog(prev => ({
+      ...(prev || { user_id: profile.id, date: TODAY }),
+      trainings_completed: newCompleted,
+      all_done: allDone,
+    }))
+    bustCache(`log:${profile.id}:${TODAY}`)
 
-    if (logErr) console.error('[activity_log upsert error]', logErr)
-
-    setActivityLog(savedLog ?? { ...(freshLog || {}), user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: allDone })
-
-    // ── Streak: zawsze pobierz świeży profil z DB, bez stale closure ──
-    const { data: freshProfile, error: fpErr } = await supabase
-      .from('profiles')
-      .select('streak, longest_streak, last_active')
-      .eq('id', profile.id)
-      .single()
-
-    const lastActiveDate = (freshProfile?.last_active || '').slice(0, 10)
-    const alreadyCredited = lastActiveDate === TODAY
-
-    if (!alreadyCredited) {
-      const newStreak = (freshProfile?.streak || 0) + 1
-      const { error: strErr } = await supabase
-        .from('profiles')
-        .update({
-          streak:         newStreak,
-          longest_streak: Math.max(newStreak, freshProfile?.longest_streak || 0),
-          last_active:    TODAY,
-        })
+    // ── DB: upsert logu + fresh profil lecą RÓWNOLEGLE ──
+    const [{ data: savedLog }, { data: freshProfile }] = await Promise.all([
+      supabase.from('activity_log')
+        .upsert(
+          { user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: allDone },
+          { onConflict: 'user_id,date' }
+        )
+        .select().single(),
+      supabase.from('profiles')
+        .select('streak, longest_streak, last_active')
         .eq('id', profile.id)
+        .single(),
+    ])
 
-      if (!strErr) {
-        await refreshProfile()
-        setStreakToast(newStreak)
-      }
+    // Synchronizuj z faktycznym stanem z DB (na wypadek rozbieżności)
+    if (savedLog) setActivityLog(savedLog)
+
+    // ── Streak ──
+    if ((freshProfile?.last_active || '').slice(0, 10) !== TODAY) {
+      const newStreak = (freshProfile?.streak || 0) + 1
+      const { error: strErr } = await supabase.from('profiles').update({
+        streak:         newStreak,
+        longest_streak: Math.max(newStreak, freshProfile?.longest_streak || 0),
+        last_active:    TODAY,
+      }).eq('id', profile.id)
+      if (!strErr) { await refreshProfile(); setStreakToast(newStreak) }
     }
 
+    // ── Punkty ──
     const training = trainings.find(t => t.id === trainingId)
     const points = (training?._pts || 1) * (training?._multiplier || 1)
-    const daysSinceJoin = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
-    const weekNumber = Math.floor(daysSinceJoin / 7) + 1
-    await supabase.from('points_log').insert({
-      user_id: profile.id,
-      training_id: trainingId,
-      points,
-      week_number: weekNumber,
-      date: TODAY,
+    const weekNumber = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24 * 7)) + 1
+    supabase.from('points_log').insert({                  // fire-and-forget
+      user_id: profile.id, training_id: trainingId,
+      points, week_number: weekNumber, date: TODAY,
     })
 
     if (allDone) setShowDayDoneModal(true)
-    // Defer achievement check — nie blokuje UI po ukończeniu ćwiczenia
     setTimeout(() => checkAchievements(trainingId, allDone), 0)
   }
 
   async function unmarkTrainingDone(trainingId) {
     if (!profile || !activityLog) return
-    bustCache(`log:${profile.id}:${TODAY}`)  // unieważnij cache
     const completed = activityLog.trainings_completed || []
     if (!completed.includes(trainingId)) return
     const newCompleted = completed.filter(id => id !== trainingId)
 
+    // ── OPTIMISTIC: cofnij zaznaczenie natychmiast ──
+    setActivityLog(prev => ({ ...prev, trainings_completed: newCompleted, all_done: false }))
+    bustCache(`log:${profile.id}:${TODAY}`)
+
+    // DB w tle równolegle
     await Promise.all([
-      // Usuń z activity_log
       supabase.from('activity_log')
         .update({ trainings_completed: newCompleted, all_done: false })
         .eq('id', activityLog.id),
-      // Usuń punkty
       supabase.from('points_log')
         .delete()
         .eq('user_id', profile.id)
         .eq('training_id', trainingId)
         .eq('date', TODAY),
-      // Usuń sesję rzutową z dzisiejszego dnia (jeśli istnieje)
       supabase.from('shooting_sessions')
         .delete()
         .eq('user_id', profile.id)
         .eq('training_id', trainingId)
         .eq('session_date', TODAY),
     ])
-
-    setActivityLog(prev => ({ ...prev, trainings_completed: newCompleted, all_done: false }))
 
     // ── Cofnij serię jeśli to był jedyny trening dziś i brak recovery ──
     const { data: freshProfile } = await supabase
