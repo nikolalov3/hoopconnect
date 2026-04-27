@@ -2509,22 +2509,10 @@ export default function ClubPage() {
 
   return (
     <div className="page-content" style={{ padding: 0 }}>
-      <AnimatePresence mode="wait">
-        {!club ? (
-          <motion.div key="create"
-            initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -30 }} style={{ minHeight: '100%' }}>
-            <CreateClub profile={profile} onCreated={setClub}/>
-          </motion.div>
-        ) : (
-          <motion.div key="panel"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{ height: '100%' }}>
-            <ClubView club={club} onUpdate={c => { setClub(c) }} uid={user?.id}/>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {!club
+        ? <CreateClub profile={profile} onCreated={setClub}/>
+        : <ClubView club={club} onUpdate={c => { setClub(c) }} uid={user?.id}/>
+      }
     </div>
   )
 }
