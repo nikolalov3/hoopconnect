@@ -89,14 +89,15 @@ function AppShell() {
                 key={tabPath}
                 style={{
                   position: 'absolute', inset: 0,
-                  // translateX pushes inactive tabs off-screen to the right.
-                  // Parent overflow:hidden clips them → nothing leaks into other tabs.
-                  // (visibility:hidden caused backdrop-filter stacking context bleed)
-                  transform: (isTabRoute && path === tabPath) ? 'translateX(0)' : 'translateX(100%)',
+                  // opacity:0 hides everything (incl. backdrop-filter compositing) without
+                  // changing DOM layout position — so Framer Motion sees no position delta
+                  // and doesn't fire layout/spring animations on tab switch.
+                  // translateX changed positions → triggered layout animations (pill slide,
+                  // panel slider, training cards wipe-in). opacity doesn't.
+                  opacity: (isTabRoute && path === tabPath) ? 1 : 0,
                   pointerEvents: (isTabRoute && path === tabPath) ? 'auto' : 'none',
                   display: 'flex', flexDirection: 'column', overflow: 'hidden',
-                  // No transition — instant, no slide animation
-                  transition: 'none',
+                  transition: 'none',  // instant — no fade animation
                 }}
               >
                 <Component />
