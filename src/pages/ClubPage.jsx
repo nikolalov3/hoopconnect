@@ -784,7 +784,7 @@ function EditClubSheet({ club, onClose, onSaved }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[
-            { lbl: 'Nazwa klubu', val: name, set: e => setName(e.target.value), max: 30, sx: {} },
+            { lbl: 'Nazwa klubu', val: name, set: e => setName(e.target.value), max: 21, sx: {} },
             { lbl: 'Skrót', val: abbr,
               set: e => setAbbr(e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)),
               max: 3, sx: { fontSize: 20, fontWeight: 900, letterSpacing: 5, textAlign: 'center',
@@ -892,6 +892,14 @@ function CountryPicker({ value, onChange, onClose }) {
 }
 
 // ── SHARED HEADER ─────────────────────────────────────────────────────────────
+// 0–12 chars → 26px, 13–17 → 22px, 18–21 → 18px
+function clubNameSize(name) {
+  const n = name.length
+  if (n <= 12) return 26
+  if (n <= 17) return 22
+  return 18
+}
+
 function ClubHeader({ club, isOwner, onEditPress }) {
   const filled = Object.values(club.members).filter(Boolean).length
   return (
@@ -913,11 +921,12 @@ function ClubHeader({ club, isOwner, onEditPress }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <h1 style={{
             fontFamily: 'var(--font-display)', fontWeight: 900,
-            fontSize: 26, lineHeight: 1, letterSpacing: 0.5,
+            fontSize: clubNameSize(club.name), lineHeight: 1, letterSpacing: 0.5,
             textTransform: 'uppercase',
             color: 'var(--text-primary)', margin: 0,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             flex: 1, minWidth: 0,
+            transition: 'font-size 0.2s ease',
           }}>
             {club.name.toUpperCase()}
           </h1>
@@ -2416,7 +2425,7 @@ function CreateClub({ onCreated, profile }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {[
           { lbl: 'Nazwa klubu', ph: 'np. Warsaw Ballers', val: name,
-            set: e => setName(e.target.value), max: 30, sx: {} },
+            set: e => setName(e.target.value), max: 21, sx: {} },
           { lbl: 'Skrót (2–3 litery)', ph: 'WBL', val: abbr,
             set: e => setAbbr(e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)),
             max: 3, sx: { fontSize: 20, fontWeight: 900, letterSpacing: 6,
