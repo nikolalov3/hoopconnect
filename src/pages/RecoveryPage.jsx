@@ -198,6 +198,7 @@ export default function RecoveryPage() {
         {/* Progress bar */}
         <div style={{ background: 'rgba(150,200,235,0.30)', borderRadius: 4, height: 5, overflow: 'hidden' }}>
           <motion.div
+            initial={{ width: `${Math.min(recoveryScore, 100)}%` }}
             animate={{ width: `${Math.min(recoveryScore, 100)}%` }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
             style={{
