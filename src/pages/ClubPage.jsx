@@ -2299,6 +2299,7 @@ function ClubView({ club, onUpdate, uid }) {
             if (info.offset.x < -50 && panel < 2) setPanel(p => p + 1)
             if (info.offset.x > 50  && panel > 0) setPanel(p => p - 1)
           }}
+          initial={false}
           animate={{ x: panel === 0 ? '0%' : panel === 1 ? '-33.333%' : '-66.666%' }}
           transition={{ type: 'spring', stiffness: 320, damping: 32 }}
           style={{ display: 'flex', width: '300%', height: '100%' }}>
