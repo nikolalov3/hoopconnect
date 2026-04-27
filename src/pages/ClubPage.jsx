@@ -1916,33 +1916,50 @@ const PANEL_LABELS = ['Mecze', 'Boisko', 'Statystyki']
 
 function PanelDots({ active, onChange }) {
   return (
-    <div style={{
-      display: 'flex', justifyContent: 'center', alignItems: 'center',
-      gap: 4, padding: '0 22px 12px',
-    }}>
-      {[0, 1, 2].map(i => (
-        <motion.button key={i} onClick={() => onChange(i)}
-          animate={{ opacity: active === i ? 1 : 0.38 }}
-          style={{
-            flex: 1, height: 28, borderRadius: 8, cursor: 'pointer',
-            background: active === i
-              ? 'rgba(91,184,245,0.10)'
-              : 'rgba(6,18,38,0.40)',
-            border: active === i
-              ? '1px solid rgba(91,184,245,0.25)'
-              : '1px solid rgba(120,190,255,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--font-body)', fontSize: 9.5,
-            fontWeight: active === i ? 700 : 500,
-            letterSpacing: 1.2, textTransform: 'uppercase',
-            color: active === i ? 'var(--orange-hot)' : 'var(--text-dim)',
-            backdropFilter: 'blur(12px)',
-            boxShadow: active === i ? '0 2px 10px rgba(91,184,245,0.12)' : 'none',
-            transition: 'border 0.2s, background 0.2s',
-          }}>
-          {PANEL_LABELS[i]}
-        </motion.button>
-      ))}
+    <div style={{ padding: '0 22px 12px' }}>
+      {/* Liquid-glass segmented control — same pattern as StatsPage filter */}
+      <div style={{
+        display: 'flex',
+        background: 'rgba(6,14,30,0.52)',
+        backdropFilter: 'blur(24px) saturate(1.7)',
+        WebkitBackdropFilter: 'blur(24px) saturate(1.7)',
+        border: '1px solid rgba(120,190,255,0.09)',
+        borderTop: '1px solid rgba(160,210,255,0.15)',
+        borderRadius: 99,
+        padding: 3,
+        boxShadow: '0 4px 18px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.05)',
+      }}>
+        {PANEL_LABELS.map((label, i) => (
+          <motion.button key={i} onClick={() => onChange(i)}
+            whileTap={{ scale: 0.94 }}
+            style={{
+              position: 'relative', flex: 1,
+              padding: '8px 0', borderRadius: 99,
+              border: 'none', cursor: 'pointer',
+              background: 'transparent',
+              fontFamily: 'var(--font-body)', fontSize: 9.5,
+              fontWeight: active === i ? 700 : 500,
+              letterSpacing: 1.2, textTransform: 'uppercase',
+              color: active === i ? 'var(--text-primary)' : 'var(--text-dim)',
+              transition: 'color 0.18s',
+              zIndex: 1,
+            }}>
+            {/* Sliding active pill */}
+            {active === i && (
+              <motion.div
+                layoutId="club-panel-pill"
+                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                style={{
+                  position: 'absolute', inset: 0, borderRadius: 99, zIndex: -1,
+                  background: 'linear-gradient(145deg, rgba(40,130,220,0.90), rgba(16,90,180,0.95))',
+                  boxShadow: '0 2px 14px rgba(91,184,245,0.28), inset 0 1px 0 rgba(180,230,255,0.18)',
+                }}
+              />
+            )}
+            {label}
+          </motion.button>
+        ))}
+      </div>
     </div>
   )
 }
