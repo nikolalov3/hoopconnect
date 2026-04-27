@@ -89,11 +89,14 @@ function AppShell() {
                 key={tabPath}
                 style={{
                   position: 'absolute', inset: 0,
-                  // visibility:hidden keeps component mounted + scroll position intact
-                  // Only the active tab is interactive and visible
-                  visibility: (isTabRoute && path === tabPath) ? 'visible' : 'hidden',
+                  // translateX pushes inactive tabs off-screen to the right.
+                  // Parent overflow:hidden clips them → nothing leaks into other tabs.
+                  // (visibility:hidden caused backdrop-filter stacking context bleed)
+                  transform: (isTabRoute && path === tabPath) ? 'translateX(0)' : 'translateX(100%)',
                   pointerEvents: (isTabRoute && path === tabPath) ? 'auto' : 'none',
                   display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                  // No transition — instant, no slide animation
+                  transition: 'none',
                 }}
               >
                 <Component />
