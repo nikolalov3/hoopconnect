@@ -395,8 +395,9 @@ export default function ShootingPage() {
                   position: 'fixed', inset: 0, zIndex: 9000,
                   background: 'rgba(4,2,0,0.75)',
                   backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)',
-                  // flex column: tap-area on top, sheet pinned at bottom as a flex child
+                  // center horizontally to match app's max-width:430px container
                   display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+                  alignItems: 'center',
                 }}
               >
                 <motion.div
@@ -405,8 +406,8 @@ export default function ShootingPage() {
                   transition={{ type: 'spring', damping: 32, stiffness: 360 }}
                   onClick={e => e.stopPropagation()}
                   style={{
-                    // NOT position:fixed — flex child stays above keyboard on iOS
-                    width: '100%',
+                    // constrained to app width — same as #root max-width
+                    width: '100%', maxWidth: 430,
                     background: 'rgba(7,12,24,0.98)',
                     backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
                     border: '1px solid rgba(120,190,255,0.14)',
