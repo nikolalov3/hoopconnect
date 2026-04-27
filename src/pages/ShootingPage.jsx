@@ -372,8 +372,12 @@ export default function ShootingPage() {
         )}
       </AnimatePresence>
 
-      {/* Manual Input Modal — portal wraps AnimatePresence (not the other way round)
-          so AnimatePresence can properly track motion children for enter/exit */}
+      {/* Manual Input Modal
+          - createPortal on outside, AnimatePresence inside (required for exit animations)
+          - overlay uses flex column so sheet is a normal flow child, NOT position:fixed again
+            → on iOS when keyboard opens the sheet scrolls up naturally instead of being
+              buried under the keyboard (position:fixed inside position:fixed is the bug)
+          - single-column layout avoids grid overflow on narrow screens             */}
       {createPortal(
         <AnimatePresence>
           {showManualInput && (() => {
@@ -389,66 +393,100 @@ export default function ShootingPage() {
                 onClick={() => setShowManualInput(false)}
                 style={{
                   position: 'fixed', inset: 0, zIndex: 9000,
-                  background: 'rgba(4,2,0,0.72)',
-                  backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                  display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+                  background: 'rgba(4,2,0,0.75)',
+                  backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)',
+                  // flex column: tap-area on top, sheet pinned at bottom as a flex child
+                  display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
                 }}
               >
                 <motion.div
                   key="manual-sheet"
-                  initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
-                  transition={{ type: 'spring', damping: 30, stiffness: 340 }}
+                  initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+                  transition={{ type: 'spring', damping: 32, stiffness: 360 }}
                   onClick={e => e.stopPropagation()}
                   style={{
-                    position: 'fixed', bottom: 0, left: 0, right: 0,
-                    background: 'rgba(8,14,26,0.98)',
+                    // NOT position:fixed — flex child stays above keyboard on iOS
+                    width: '100%',
+                    background: 'rgba(7,12,24,0.98)',
                     backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-                    border: '1px solid rgba(120,190,255,0.12)',
+                    border: '1px solid rgba(120,190,255,0.14)',
                     borderBottom: 'none',
-                    borderRadius: '24px 24px 0 0',
-                    padding: '20px 20px',
-                    paddingBottom: 'max(28px, env(safe-area-inset-bottom, 28px))',
+                    borderRadius: '22px 22px 0 0',
+                    padding: '18px 20px 0',
+                    paddingBottom: 'env(safe-area-inset-bottom, 24px)',
                     boxShadow: '0 -8px 48px rgba(0,0,0,0.60)',
                   }}
                 >
                   {/* Drag pill */}
-                  <div style={{ width: 36, height: 4, background: 'rgba(120,190,255,0.18)', borderRadius: 2, margin: '0 auto 18px' }} />
+                  <div style={{ width: 36, height: 4, background: 'rgba(120,190,255,0.20)',
+                    borderRadius: 2, margin: '0 auto 16px' }} />
 
-                  <p style={{
-                    fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
-                    textTransform: 'uppercase', letterSpacing: 1,
-                    color: 'var(--text-primary)', marginBottom: 2,
-                  }}>
-                    Wpisz ręcznie
-                  </p>
-                  <p style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 500, marginBottom: 18, letterSpacing: 0.5 }}>
-                    Limit: {target} rzutów łącznie
-                  </p>
+                  {/* Header row */}
+                  <div style={{ display: 'flex', alignItems: 'baseline',
+                    justifyContent: 'space-between', marginBottom: 16 }}>
+                    <p style={{
+                      fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
+                      textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-primary)',
+                    }}>Wpisz ręcznie</p>
+                    <p style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 500 }}>
+                      maks. {target}
+                    </p>
+                  </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+                  {/* Two rows: Trafione + Pudła — single column, no overflow */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
                     {[
                       { label: 'Trafione', color: 'var(--green-shot)', val: manualMade, set: setManualMade },
                       { label: 'Pudła',    color: 'var(--red-shot)',   val: manualMissed, set: setManualMissed },
                     ].map(({ label, color, val, set }) => (
-                      <div key={label}>
-                        <p style={{
-                          fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase',
-                          color, fontWeight: 700, marginBottom: 7,
-                        }}>{label}</p>
+                      <div key={label} style={{
+                        display: 'flex', alignItems: 'center',
+                        background: 'rgba(6,18,38,0.70)',
+                        border: `1.5px solid ${color}35`,
+                        borderRadius: 14, overflow: 'hidden',
+                      }}>
+                        {/* Label */}
+                        <div style={{
+                          padding: '0 14px', flexShrink: 0,
+                          display: 'flex', flexDirection: 'column', gap: 2,
+                        }}>
+                          <span style={{
+                            fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
+                            color, fontWeight: 700,
+                          }}>{label}</span>
+                          <span style={{
+                            fontFamily: 'var(--font-display)', fontWeight: 900,
+                            fontSize: 32, color, lineHeight: 1,
+                          }}>{val || '0'}</span>
+                        </div>
+                        {/* Stepper buttons */}
+                        <div style={{ marginLeft: 'auto', display: 'flex',
+                          borderLeft: `1px solid ${color}20` }}>
+                          {[
+                            { lbl: '−', delta: -1 },
+                            { lbl: '+', delta:  1 },
+                          ].map(({ lbl, delta }) => (
+                            <button key={lbl}
+                              onPointerDown={e => { e.preventDefault()
+                                set(prev => String(Math.max(0, (parseInt(prev)||0) + delta))) }}
+                              style={{
+                                width: 54, height: 56,
+                                background: 'transparent',
+                                border: 'none',
+                                borderLeft: lbl === '+' ? `1px solid ${color}20` : 'none',
+                                color, fontSize: 26, fontWeight: 300,
+                                cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                              }}>{lbl}</button>
+                          ))}
+                        </div>
+                        {/* Hidden real input for direct keyboard entry */}
                         <input
                           type="number" inputMode="numeric" min="0" max={target}
                           value={val}
                           onChange={e => set(e.target.value.replace(/[^0-9]/g, ''))}
-                          placeholder="0"
                           style={{
-                            width: '100%', boxSizing: 'border-box',
-                            background: 'rgba(6,18,38,0.80)',
-                            border: `1.5px solid ${color}50`,
-                            borderRadius: 14, padding: '14px 8px',
-                            fontFamily: 'var(--font-display)', fontWeight: 900,
-                            fontSize: 36, color, textAlign: 'center',
-                            outline: 'none',
-                            WebkitAppearance: 'none', MozAppearance: 'textfield',
+                            position: 'absolute', opacity: 0, pointerEvents: 'none',
+                            width: 1, height: 1,
                           }}
                         />
                       </div>
@@ -458,13 +496,11 @@ export default function ShootingPage() {
                   {/* Suma */}
                   <div style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '11px 14px',
+                    padding: '10px 14px', borderRadius: 12, marginBottom: 14,
                     background: overLimit ? 'rgba(255,61,61,0.08)' : 'rgba(120,190,255,0.04)',
-                    border: `1px solid ${overLimit ? 'rgba(255,61,61,0.30)' : 'rgba(120,190,255,0.10)'}`,
-                    borderRadius: 12, marginBottom: 14,
+                    border: `1px solid ${overLimit ? 'rgba(255,61,61,0.28)' : 'rgba(120,190,255,0.10)'}`,
                   }}>
-                    <span style={{
-                      fontFamily: 'var(--font-body)', color: 'var(--text-dim)',
+                    <span style={{ fontFamily: 'var(--font-body)', color: 'var(--text-dim)',
                       fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase',
                     }}>Suma</span>
                     <span style={{
@@ -472,16 +508,12 @@ export default function ShootingPage() {
                       color: overLimit ? 'var(--red-shot)' : total > 0 ? 'var(--text-primary)' : 'var(--text-dim)',
                     }}>
                       {total} / {target}
-                      {overLimit && <span style={{ fontSize: 12, marginLeft: 8, fontWeight: 600 }}>— za dużo!</span>}
+                      {overLimit && <span style={{ fontSize: 12, marginLeft: 8 }}>— za dużo!</span>}
                     </span>
                   </div>
 
-                  <button
-                    onClick={handleManualSubmit}
-                    disabled={!canSubmit}
-                    className="btn-primary"
-                    style={{ opacity: canSubmit ? 1 : 0.32 }}
-                  >
+                  <button onClick={handleManualSubmit} disabled={!canSubmit}
+                    className="btn-primary" style={{ opacity: canSubmit ? 1 : 0.32, marginBottom: 24 }}>
                     Zatwierdź trening
                   </button>
                 </motion.div>
