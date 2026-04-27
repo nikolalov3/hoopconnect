@@ -2057,7 +2057,6 @@ function StatsPanel({ club }) {
 
 // ── COURT PANEL ───────────────────────────────────────────────────────────────
 function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, swapSrc, swapping, swapError }) {
-  const [copied, setCopied] = useState(false)
   const isOwner = club.ownerId === uid
 
   return (
@@ -2195,28 +2194,6 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
         </div>
       </div>
 
-      {/* Share */}
-      <div style={{ padding: '14px 22px 0' }}>
-        <motion.button whileTap={{ scale: 0.97 }}
-          onClick={() => {
-            navigator.clipboard.writeText(`https://hoopconnect.pl/klub/${club.id}`)
-            setCopied(true); setTimeout(() => setCopied(false), 2500)
-          }}
-          style={{
-            width: '100%', padding: '14px', borderRadius: 14,
-            background: copied
-              ? 'rgba(0,200,130,0.08)'
-              : 'linear-gradient(135deg, var(--orange) 0%, var(--orange-dim) 100%)',
-            border: copied ? '1.5px solid rgba(0,200,130,0.28)' : 'none',
-            fontFamily: 'var(--font-display)', fontWeight: 800,
-            fontSize: 11.5, letterSpacing: 2, textTransform: 'uppercase',
-            color: copied ? 'var(--green-shot)' : '#fff', cursor: 'pointer',
-            boxShadow: copied ? 'none' : '0 4px 24px rgba(91,184,245,0.35), inset 0 1px 0 rgba(180,230,255,0.20)',
-            transition: 'all 0.22s',
-          }}>
-          {copied ? '✓ Link skopiowany!' : '🔗 Udostępnij klub'}
-        </motion.button>
-      </div>
     </div>
   )
 }
