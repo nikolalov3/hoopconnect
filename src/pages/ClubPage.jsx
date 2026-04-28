@@ -1130,7 +1130,9 @@ function MapPicker({ center, onPin, existingPin, flyTo }) {
     const map = L.map(elRef.current, { zoomControl: false, attributionControl: false })
       .setView(center ? [center.lat, center.lng] : [52.0, 20.0], center ? 13 : 6)
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+    }).addTo(map)
     L.control.zoom({ position: 'bottomright' }).addTo(map)
 
     const pinIcon = L.divIcon({
