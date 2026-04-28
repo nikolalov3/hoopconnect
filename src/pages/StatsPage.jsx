@@ -129,8 +129,6 @@ function filterByDate(sessions, range) {
   return sessions.filter(s => new Date(s.session_date) >= cutoff)
 }
 
-const HEX_CLIP = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
-
 export default function StatsPage() {
   const { profile } = useAuth()
   const navigate = useNavigate()
@@ -198,32 +196,70 @@ export default function StatsPage() {
       <p className="section-label" style={{ marginBottom: 4 }}>Twoje wyniki</p>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <h1 className="display-title" style={{ fontSize: 38 }}>Statystyki</h1>
-        <button
-          onClick={handleShare}
-          disabled={sharing || filtered.length === 0}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '8px 14px',
-            background: 'rgba(6,14,30,0.52)',
-            backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(120,190,255,0.14)',
-            borderTop: '1px solid rgba(160,210,255,0.22)',
-            borderRadius: 99,
-            color: sharing ? 'var(--text-dim)' : 'var(--text-secondary)',
-            fontFamily: 'var(--font-display)',
-            fontSize: 13, fontWeight: 700, letterSpacing: 1,
-            textTransform: 'uppercase', cursor: (sharing || filtered.length === 0) ? 'default' : 'pointer',
-            opacity: filtered.length === 0 ? 0.4 : 1,
-            transition: 'opacity 0.15s',
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-            <polyline points="16 6 12 2 8 6"/>
-            <line x1="12" y1="2" x2="12" y2="15"/>
-          </svg>
-          {sharing ? '...' : 'Udostępnij'}
-        </button>
+        {/* Icon row — calendar + share, same pill style as BottomNav */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* Calendar icon button */}
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            onClick={() => navigate('/calendar')}
+            style={{
+              width: 46, height: 42,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(6,14,30,0.62)',
+              backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(120,190,255,0.14)',
+              borderTop: '1px solid rgba(160,210,255,0.22)',
+              borderRadius: 99, cursor: 'pointer',
+              color: 'rgba(180,120,80,0.75)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07)',
+            }}
+          >
+            {/* Hexagon calendar icon — matches ClubIcon style */}
+            <svg width="20" height="20" viewBox="0 0 90 90" fill="none" style={{ overflow: 'visible' }}>
+              <polygon
+                points="45,6 82,32 82,58 45,84 8,58 8,32"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="6"
+                strokeLinejoin="round"
+              />
+              {/* 3 dot grid inside hex suggesting a calendar/heatmap */}
+              <circle cx="32" cy="38" r="5" fill="currentColor" opacity="0.7"/>
+              <circle cx="45" cy="38" r="5" fill="currentColor" opacity="0.7"/>
+              <circle cx="58" cy="38" r="5" fill="currentColor" opacity="0.7"/>
+              <circle cx="32" cy="52" r="5" fill="currentColor" opacity="0.5"/>
+              <circle cx="45" cy="52" r="5" fill="currentColor" opacity="0.5"/>
+              <circle cx="58" cy="52" r="5" fill="currentColor" opacity="0.3"/>
+            </svg>
+          </motion.button>
+
+          {/* Share icon button */}
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            onClick={handleShare}
+            disabled={sharing || filtered.length === 0}
+            style={{
+              width: 46, height: 42,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(6,14,30,0.62)',
+              backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(120,190,255,0.14)',
+              borderTop: '1px solid rgba(160,210,255,0.22)',
+              borderRadius: 99,
+              cursor: (sharing || filtered.length === 0) ? 'default' : 'pointer',
+              color: 'rgba(180,120,80,0.75)',
+              opacity: filtered.length === 0 ? 0.3 : 1,
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07)',
+              transition: 'opacity 0.15s',
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+              <polyline points="16 6 12 2 8 6"/>
+              <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+          </motion.button>
+        </div>
       </div>
 
       {/* ── FILTRY ── */}
@@ -375,48 +411,6 @@ export default function StatsPage() {
         </div>
       )}
 
-      {/* ── CALENDAR WIDGET ── */}
-      <motion.button
-        whileTap={{ scale: 0.97 }}
-        onClick={() => navigate('/calendar')}
-        style={{
-          width: '100%', marginTop: 8, marginBottom: 32,
-          ...glassCard,
-          padding: '16px 18px',
-          display: 'flex', alignItems: 'center', gap: 14,
-          cursor: 'pointer', textAlign: 'left',
-          border: '1px solid rgba(120,190,255,0.14)',
-          borderTop: '1px solid rgba(160,210,255,0.22)',
-        }}
-      >
-        {/* Hex icon cluster */}
-        <div style={{ position: 'relative', width: 46, height: 46, flexShrink: 0 }}>
-          {[
-            { top: 0,  left: 4,  bg: 'linear-gradient(135deg,#4a5a6f,#c8dce8,#e8f4ff)', size: 22 },
-            { top: 12, left: 20, bg: 'rgba(91,184,245,0.35)', size: 20 },
-            { top: 24, left: 2,  bg: 'rgba(255,255,255,0.09)', size: 18 },
-          ].map((h, i) => (
-            <div key={i} style={{
-              position: 'absolute', top: h.top, left: h.left,
-              width: h.size, height: h.size * 1.15,
-              clipPath: HEX_CLIP, background: h.bg,
-            }} />
-          ))}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{
-            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15,
-            color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.8,
-          }}>Kalendarz aktywności</p>
-          <p style={{ color: 'var(--text-dim)', fontSize: 11, marginTop: 2, fontWeight: 500 }}>
-            Historia treningów · hexagony
-          </p>
-        </div>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-          stroke="var(--text-dim)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 18l6-6-6-6"/>
-        </svg>
-      </motion.button>
 
     </div>
   )

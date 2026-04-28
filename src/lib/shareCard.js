@@ -232,7 +232,7 @@ export async function shareSessionCard({ made, attempted, target, shotType, play
   ctx.font = `900 ${pct >= 100 ? 220 : 260}px "Barlow Condensed", sans-serif`
   ctx.textAlign = 'center'
   ctx.shadowColor = pctColor
-  ctx.shadowBlur = 48
+  ctx.shadowBlur = 20
   ctx.fillText(`${pct}%`, W / 2, 390)
   ctx.shadowBlur = 0
 
@@ -336,7 +336,7 @@ export async function shareStatsCard({ sessions, profile, filter }) {
   ctx.font = '900 280px "Barlow Condensed", sans-serif'
   ctx.textAlign = 'center'
   ctx.shadowColor = pctColor
-  ctx.shadowBlur = 55
+  ctx.shadowBlur = 22
   ctx.fillText(`${totalPct}%`, W / 2, 400)
   ctx.shadowBlur = 0
 
