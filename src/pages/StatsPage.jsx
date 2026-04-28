@@ -196,59 +196,48 @@ export default function StatsPage() {
       <p className="section-label" style={{ marginBottom: 4 }}>Twoje wyniki</p>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <h1 className="display-title" style={{ fontSize: 38 }}>Statystyki</h1>
-        {/* Icon row — calendar + share, same pill style as BottomNav */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {/* Calendar icon button */}
+        {/* Icon row — bare icon buttons, no background */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {/* Calendar icon — bare, matches gear/sparkle style */}
           <motion.button
-            whileTap={{ scale: 0.88 }}
+            whileTap={{ scale: 0.82 }}
             onClick={() => navigate('/calendar')}
             style={{
-              width: 46, height: 42,
+              width: 40, height: 40,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(6,14,30,0.62)',
-              backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-              border: '1px solid rgba(120,190,255,0.14)',
-              borderTop: '1px solid rgba(160,210,255,0.22)',
-              borderRadius: 99, cursor: 'pointer',
-              color: 'rgba(180,120,80,0.75)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07)',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'rgba(200,210,230,0.55)',
             }}
           >
-            {/* Activity heatmap icon — 3×3 grid of rounded squares, same style as nav icons */}
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2"    y="2"    width="5.5" height="5.5" rx="1.2"/>
-              <rect x="9.25" y="2"    width="5.5" height="5.5" rx="1.2"/>
-              <rect x="16.5" y="2"    width="5.5" height="5.5" rx="1.2"/>
-              <rect x="2"    y="9.25" width="5.5" height="5.5" rx="1.2"/>
-              <rect x="9.25" y="9.25" width="5.5" height="5.5" rx="1.2"/>
-              <rect x="16.5" y="9.25" width="5.5" height="5.5" rx="1.2"/>
-              <rect x="2"    y="16.5" width="5.5" height="5.5" rx="1.2"/>
-              <rect x="9.25" y="16.5" width="5.5" height="5.5" rx="1.2"/>
-              <rect x="16.5" y="16.5" width="5.5" height="5.5" rx="1.2"/>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              {/* Calendar outline */}
+              <rect x="3" y="4" width="18" height="17" rx="2"/>
+              <path d="M16 2v4M8 2v4M3 9h18"/>
+              {/* Dot grid — activity indicators */}
+              <circle cx="8"  cy="14" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="8"  cy="18" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/>
             </svg>
           </motion.button>
 
-          {/* Share icon button */}
+          {/* Share icon — bare, same style */}
           <motion.button
-            whileTap={{ scale: 0.88 }}
+            whileTap={{ scale: 0.82 }}
             onClick={handleShare}
             disabled={sharing || filtered.length === 0}
             style={{
-              width: 46, height: 42,
+              width: 40, height: 40,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(6,14,30,0.62)',
-              backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-              border: '1px solid rgba(120,190,255,0.14)',
-              borderTop: '1px solid rgba(160,210,255,0.22)',
-              borderRadius: 99,
+              background: 'none', border: 'none',
               cursor: (sharing || filtered.length === 0) ? 'default' : 'pointer',
-              color: 'rgba(180,120,80,0.75)',
-              opacity: filtered.length === 0 ? 0.3 : 1,
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07)',
+              color: 'rgba(200,210,230,0.55)',
+              opacity: filtered.length === 0 ? 0.25 : 1,
               transition: 'opacity 0.15s',
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
               <polyline points="16 6 12 2 8 6"/>
               <line x1="12" y1="2" x2="12" y2="15"/>
