@@ -193,11 +193,9 @@ export default function StatsPage() {
 
   return (
     <div className="page-content" style={{ padding: '32px 22px' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
-        <div>
-          <p className="section-label" style={{ marginBottom: 4 }}>Twoje wyniki</p>
-          <h1 className="display-title" style={{ fontSize: 38 }}>Statystyki</h1>
-        </div>
+      <p className="section-label" style={{ marginBottom: 4 }}>Twoje wyniki</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+        <h1 className="display-title" style={{ fontSize: 38 }}>Statystyki</h1>
         {/* Icon row — bare icon buttons, no background */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {/* Calendar icon — bare, matches gear/sparkle style */}

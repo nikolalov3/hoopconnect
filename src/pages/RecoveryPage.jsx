@@ -122,7 +122,41 @@ export default function RecoveryPage() {
         .eq('user_id', profile.id)
         .eq('date', TODAY)
         .eq('activity', activityId)
-      setDoneActivities(prev => { const n = new Set(prev); n.delete(activityId); return n })
+
+      const newDone = new Set(doneActivities)
+      newDone.delete(activityId)
+      setDoneActivities(newDone)
+
+      // Jeśli to była ostatnia aktywność dziś — sprawdź czy cofnąć serię
+      if (newDone.size === 0) {
+        const [{ data: todayLog }, { data: fp }] = await Promise.all([
+          supabase.from('activity_log')
+            .select('trainings_completed')
+            .eq('user_id', profile.id)
+            .eq('date', TODAY)
+            .maybeSingle(),
+          supabase.from('profiles')
+            .select('streak, last_active')
+            .eq('id', profile.id)
+            .single(),
+        ])
+        const hasTrainings = (todayLog?.trainings_completed?.length || 0) > 0
+        if (!hasTrainings && (fp?.last_active || '').slice(0, 10) === TODAY) {
+          const newStreak = Math.max(0, (fp.streak || 0) - 1)
+          await supabase.from('profiles').update({
+            streak:      newStreak,
+            last_active: null,
+          }).eq('id', profile.id)
+          // Wyczyść też activity_log ustawiony przez creditRestDayStreak
+          await supabase.from('activity_log')
+            .delete()
+            .eq('user_id', profile.id)
+            .eq('date', TODAY)
+            .eq('all_done', true)
+            .filter('trainings_completed', 'eq', '{}')
+          await refreshProfile()
+        }
+      }
 
     } else {
       await supabase.from('recovery_log').insert({

@@ -939,7 +939,7 @@ export default function HomePage() {
             </span>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'flex-start', paddingTop: 2 }}>
           {/* Settings — matches StatsPage icon style */}
           <motion.button whileTap={{ scale: 0.82 }} onClick={openSettings} style={{
             background: 'none', border: 'none',
