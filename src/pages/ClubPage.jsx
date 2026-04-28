@@ -1111,11 +1111,12 @@ function MatchCard({ match, dist, onPress }) {
 }
 
 // ── MAP PICKER ────────────────────────────────────────────────────────────────
-function MapPicker({ center, onPin, existingPin }) {
+function MapPicker({ center, onPin, existingPin, flyTo }) {
   const elRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
 
+  // Initialise map once
   useEffect(() => {
     if (!document.querySelector('#leaflet-css')) {
       const link = document.createElement('link')
@@ -1152,6 +1153,18 @@ function MapPicker({ center, onPin, existingPin }) {
     return () => { map.remove(); mapRef.current = null; markerRef.current = null }
   }, [])
 
+  // Fly to location when flyTo prop changes (e.g. "Moja lokalizacja" button)
+  useEffect(() => {
+    if (!flyTo || !mapRef.current) return
+    const pinIcon = L.divIcon({
+      html: `<div style="width:22px;height:22px;background:linear-gradient(135deg,#00CCFF,#0055AA);border-radius:50%;border:2.5px solid rgba(255,255,255,0.9);box-shadow:0 2px 14px rgba(0,180,255,0.75)"></div>`,
+      className: '', iconSize: [22, 22], iconAnchor: [11, 11],
+    })
+    mapRef.current.flyTo([flyTo.lat, flyTo.lng], 15, { animate: true, duration: 0.8 })
+    if (markerRef.current) markerRef.current.setLatLng([flyTo.lat, flyTo.lng])
+    else markerRef.current = L.marker([flyTo.lat, flyTo.lng], { icon: pinIcon }).addTo(mapRef.current)
+  }, [flyTo])
+
   return <div ref={elRef} style={{ width: '100%', height: '100%' }}/>
 }
 
@@ -1167,6 +1180,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
   const [err,        setErr]        = useState(null)
   const [locLoading, setLocLoading] = useState(false)
   const [userLoc,    setUserLoc]    = useState(null)
+  const [flyTo,      setFlyTo]      = useState(null)
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
@@ -1188,6 +1202,8 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
       async p => {
         const loc = { lat: p.coords.latitude, lng: p.coords.longitude }
         setPin(loc)
+        // Trigger map flyTo — ts ensures the effect fires even if coords unchanged
+        setFlyTo({ ...loc, ts: Date.now() })
         const a = await reverseGeocode(loc.lat, loc.lng)
         setAddr(a)
         setLocLoading(false)
@@ -1281,7 +1297,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
             color: C.dim, margin: '0 0 10px' }}>Lokalizacja</p>
           <div style={{ height: 224, borderRadius: 16, overflow: 'hidden', marginBottom: 10,
             border: `1.5px solid ${pin ? `${C.accentLo}60` : `${C.dim}40`}`, position: 'relative' }}>
-            <MapPicker center={userLoc} onPin={handlePin} existingPin={pin}/>
+            <MapPicker center={userLoc} onPin={handlePin} existingPin={pin} flyTo={flyTo}/>
             {!pin && (
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
                 justifyContent: 'center', pointerEvents: 'none', background: 'rgba(4,8,15,0.35)', zIndex: 1000 }}>
