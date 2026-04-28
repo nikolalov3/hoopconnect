@@ -56,7 +56,6 @@ body {
   max-width: 430px;
   margin: 0 auto;
   position: relative;
-  transform: translateZ(0); /* Makes position:fixed children use this as containing block */
   background:
     radial-gradient(ellipse 90% 55% at 62% -8%,   rgba(91,184,245,0.22) 0%, transparent 58%),
     radial-gradient(ellipse 70% 45% at -8%  78%,  rgba(50,120,230,0.16) 0%, transparent 55%),

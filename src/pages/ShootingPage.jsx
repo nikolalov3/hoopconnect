@@ -48,7 +48,11 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
       style={{
-        position: 'fixed', inset: 0, zIndex: 300,
+        position: 'fixed',
+        top: 0, bottom: 0,
+        left: 'max(0px, calc((100vw - 430px) / 2))',
+        width: 'min(100vw, 430px)',
+        zIndex: 300,
         background: 'rgba(6,4,2,0.97)',
         backdropFilter: 'blur(40px)',
         WebkitBackdropFilter: 'blur(40px)',

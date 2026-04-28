@@ -7,6 +7,22 @@ import StreakToast from '../components/ui/StreakToast'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
+const SCHEDULES = {
+  3: ['T','O','T','O','T','R','O'],
+  4: ['T','T','O','T','T','R','O'],
+  5: ['T','T','R','T','T','T','O'],
+  6: ['T','T','T','R','T','T','T'],
+}
+function getTodayType(profile) {
+  if (profile?.created_at) {
+    const reg = new Date(profile.created_at).toISOString().split('T')[0]
+    if (reg === TODAY) return 'T'
+  }
+  const schedule = SCHEDULES[profile?.training_days || 4] || SCHEDULES[4]
+  const dow = new Date().getDay()
+  return schedule[dow === 0 ? 6 : dow - 1]
+}
+
 const QUICK_ACTIVITIES = [
   { id: 'sleep',     emoji: '😴', label: 'Sen 9h+',         minutes: 540, color: '#7C5CBF' },
   { id: 'foam',      emoji: '🎯', label: 'Foam rolling',    minutes: 20,  color: '#2980B9' },
@@ -167,9 +183,12 @@ export default function RecoveryPage() {
       })
       setDoneActivities(prev => new Set([...prev, activityId]))
 
-      // Pierwsza aktywność regeneracyjna dnia zalicza serię (każdy typ dnia)
-      const credited = await creditRestDayStreak(profile, refreshProfile)
-      if (credited) setStreakToast(credited)
+      // Seria kredytowana tylko w dni wolne/regeneracji — NIE w dni treningowe
+      const dayType = getTodayType(profile)
+      if (dayType !== 'T') {
+        const credited = await creditRestDayStreak(profile, refreshProfile)
+        if (credited) setStreakToast(credited)
+      }
     }
   }
 
