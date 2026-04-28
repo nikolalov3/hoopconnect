@@ -1130,9 +1130,7 @@ function MapPicker({ center, onPin, existingPin, flyTo }) {
     const map = L.map(elRef.current, { zoomControl: false, attributionControl: false })
       .setView(center ? [center.lat, center.lng] : [52.0, 20.0], center ? 13 : 6)
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-    }).addTo(map)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
     L.control.zoom({ position: 'bottomright' }).addTo(map)
 
     const pinIcon = L.divIcon({
@@ -1300,6 +1298,12 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
           <div style={{ height: 224, borderRadius: 16, overflow: 'hidden', marginBottom: 10,
             border: `1.5px solid ${pin ? `${C.accentLo}60` : `${C.dim}40`}`, position: 'relative' }}>
             <MapPicker center={userLoc} onPin={handlePin} existingPin={pin} flyTo={flyTo}/>
+            {/* Dark overlay — pointer-events:none keeps map fully interactive */}
+            <div style={{
+              position: 'absolute', inset: 0, zIndex: 500,
+              background: 'rgba(4,9,20,0.45)',
+              pointerEvents: 'none',
+            }} />
             {!pin && (
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
                 justifyContent: 'center', pointerEvents: 'none', background: 'rgba(4,8,15,0.35)', zIndex: 1000 }}>
