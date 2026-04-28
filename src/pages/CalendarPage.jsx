@@ -203,27 +203,27 @@ export default function CalendarPage() {
 
       <div className="page-content" style={{ padding: '0 20px', paddingBottom: 40 }}>
 
-        {/* ── HEADER ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingTop: 52, paddingBottom: 28 }}>
-          <motion.button
-            whileTap={{ scale: 0.86 }}
-            onClick={() => navigate('/stats')}
-            style={{
-              width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-              stroke="var(--text-primary)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 18l-6-6 6-6"/>
-            </svg>
-          </motion.button>
-          <div>
-            <p className="section-label" style={{ marginBottom: 2 }}>Historia aktywności</p>
-            <h1 className="display-title" style={{ fontSize: 30, lineHeight: 1 }}>Kalendarz</h1>
+        {/* ── HEADER — identical structure to StatsPage / HomePage ── */}
+        <div style={{ padding: '32px 0 0' }}>
+          <p className="section-label" style={{ marginBottom: 4 }}>Historia aktywności</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+            <h1 className="display-title" style={{ fontSize: 38 }}>Kalendarz</h1>
+            {/* X — close, same bare-icon style as gear/sparkle/calendar icons */}
+            <motion.button
+              whileTap={{ scale: 0.82 }}
+              onClick={() => navigate('/stats')}
+              style={{
+                background: 'none', border: 'none',
+                width: 40, height: 40, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'rgba(200,210,230,0.55)',
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </motion.button>
           </div>
         </div>
 

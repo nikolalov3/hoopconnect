@@ -158,19 +158,26 @@ export default function RecoveryPage() {
         ])
         const hasTrainings = (todayLog?.trainings_completed?.length || 0) > 0
         if (!hasTrainings && (fp?.last_active || '').slice(0, 10) === TODAY) {
+          // Cofnij serię
           const newStreak = Math.max(0, (fp.streak || 0) - 1)
           await supabase.from('profiles').update({
             streak:      newStreak,
             last_active: null,
           }).eq('id', profile.id)
-          // Wyczyść też activity_log ustawiony przez creditRestDayStreak
+          // Usuń wpis activity_log wstawiony przez creditRestDayStreak
+          // (brak treningów + brak aktywności = dzień nieaktywny w kalendarzu)
           await supabase.from('activity_log')
             .delete()
             .eq('user_id', profile.id)
             .eq('date', TODAY)
-            .eq('all_done', true)
-            .filter('trainings_completed', 'eq', '{}')
           await refreshProfile()
+        } else if (hasTrainings) {
+          // Są treningi → zostaw activity_log, ale zresetuj all_done na false
+          // bo sam recovery nie wystarczy do "wszystko zrobione"
+          await supabase.from('activity_log')
+            .update({ all_done: false })
+            .eq('user_id', profile.id)
+            .eq('date', TODAY)
         }
       }
 
