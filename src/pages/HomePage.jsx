@@ -928,46 +928,48 @@ export default function HomePage() {
       </AnimatePresence>
       <StreakToast streak={streakToast} visible={streakToast > 0} onHide={() => setStreakToast(0)} />
 
-      {/* Header */}
-      <div style={{ padding: '32px 22px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <div>
-          <p className="section-label">{dateStr}</p>
-          <h1 className="display-title" style={{ fontSize: 28, marginTop: 4 }}>{greeting}</h1>
-          {dayType !== 'T' && (
-            <span className={`badge ${dayType === 'R' ? 'badge-green' : 'badge-gray'}`} style={{ marginTop: 6, display: 'inline-flex' }}>
-              {dayType === 'R' ? '🧘 Regeneracja' : '😴 Odpoczynek'}
-            </span>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 4, alignItems: 'flex-start', paddingTop: 2 }}>
-          {/* Settings — matches StatsPage icon style */}
-          <motion.button whileTap={{ scale: 0.82 }} onClick={openSettings} style={{
-            background: 'none', border: 'none',
-            width: 40, height: 40, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'rgba(200,210,230,0.55)',
-          }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-          </motion.button>
-          {/* Quote / sparkle — SVG 4-point star, same style */}
-          <motion.button whileTap={{ scale: 0.82 }} onClick={() => setShowQuote(true)} style={{
-            background: 'none', border: 'none',
-            width: 40, height: 40, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'rgba(200,210,230,0.55)',
-          }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2 L13.5 10.5 L22 12 L13.5 13.5 L12 22 L10.5 13.5 L2 12 L10.5 10.5 Z"/>
-            </svg>
-          </motion.button>
+      {/* Header — identical structure to StatsPage */}
+      <div style={{ padding: '32px 22px 0' }}>
+        <p className="section-label" style={{ marginBottom: 4 }}>{dateStr}</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+          <div>
+            <h1 className="display-title" style={{ fontSize: 38 }}>{greeting}</h1>
+            {dayType !== 'T' && (
+              <span className={`badge ${dayType === 'R' ? 'badge-green' : 'badge-gray'}`} style={{ marginTop: 6, display: 'inline-flex' }}>
+                {dayType === 'R' ? '🧘 Regeneracja' : '😴 Odpoczynek'}
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            {/* Settings */}
+            <motion.button whileTap={{ scale: 0.82 }} onClick={openSettings} style={{
+              background: 'none', border: 'none',
+              width: 40, height: 40, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'rgba(200,210,230,0.55)',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </motion.button>
+            {/* Quote / sparkle */}
+            <motion.button whileTap={{ scale: 0.82 }} onClick={() => setShowQuote(true)} style={{
+              background: 'none', border: 'none',
+              width: 40, height: 40, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'rgba(200,210,230,0.55)',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2 L13.5 10.5 L22 12 L13.5 13.5 L12 22 L10.5 13.5 L2 12 L10.5 10.5 Z"/>
+              </svg>
+            </motion.button>
+          </div>
         </div>
       </div>
 
       {/* Ocena Raportu */}
-      <div style={{ padding: '24px 22px 4px' }}>
+      <div style={{ padding: '0 22px 4px' }}>
         {/* Label + badge */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
