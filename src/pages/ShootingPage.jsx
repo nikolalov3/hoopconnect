@@ -7,6 +7,7 @@ import { useShootingSession } from '../hooks/useShootingSession'
 import { checkShotAchievements, checkPerfectSession } from '../lib/achievements'
 import { creditRestDayStreak } from '../lib/streak'
 import StreakToast from '../components/ui/StreakToast'
+import { shareSessionCard, doShare } from '../lib/shareCard'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -24,8 +25,19 @@ const MEDAL_COLORS = {
   platinum: '#E8E8F0',
 }
 
-function SuccessScreen({ made, attempted, target, shotType, onBack, newAchievements = [] }) {
+function SuccessScreen({ made, attempted, target, shotType, onBack, newAchievements = [], playerName }) {
   const pct = attempted > 0 ? Math.round((made / attempted) * 100) : 0
+  const [sharing, setSharing] = useState(false)
+
+  async function handleShare() {
+    setSharing(true)
+    try {
+      const blob = await shareSessionCard({ made, attempted, target, shotType, playerName })
+      await doShare(blob, 'hoopconnect-sesja.png')
+    } finally {
+      setSharing(false)
+    }
+  }
   const missed = attempted - made
   const pctColor = pct >= 60 ? 'var(--green-shot)' : pct >= 40 ? 'var(--orange)' : 'var(--red-shot)'
   const filledPct = Math.min(attempted / target, 1)
@@ -188,9 +200,37 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
         </motion.div>
       )}
 
-      {/* Spacer + przycisk */}
+      {/* Spacer + przyciski */}
       <div style={{ flex: 1 }} />
-      <div style={{ padding: '12px 0 28px', position: 'relative', zIndex: 1 }}>
+      <div style={{ padding: '12px 0 28px', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Share button */}
+        <button
+          onClick={handleShare}
+          disabled={sharing}
+          style={{
+            width: '100%', padding: '14px',
+            background: 'rgba(6,14,30,0.52)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border: '1px solid rgba(120,190,255,0.18)',
+            borderTop: '1px solid rgba(160,210,255,0.28)',
+            borderRadius: 'var(--radius-sm)',
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-display)',
+            fontSize: 15, fontWeight: 700, letterSpacing: 1.5,
+            textTransform: 'uppercase', cursor: sharing ? 'default' : 'pointer',
+            opacity: sharing ? 0.6 : 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            transition: 'opacity 0.15s',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+            <polyline points="16 6 12 2 8 6"/>
+            <line x1="12" y1="2" x2="12" y2="15"/>
+          </svg>
+          {sharing ? 'Generuję...' : 'Udostępnij wyniki'}
+        </button>
         <button className="btn-primary" onClick={onBack} style={{ fontSize: 15, padding: '16px' }}>
           Wróć do planu
         </button>
@@ -379,6 +419,7 @@ export default function ShootingPage() {
             shotType={training.type}
             onBack={() => navigate('/', { replace: true })}
             newAchievements={newAchievements}
+            playerName={profile?.name}
           />
         )}
       </AnimatePresence>

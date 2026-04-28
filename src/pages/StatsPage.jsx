@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { getCache, setCache } from '../lib/queryCache'
+import { shareStatsCard, doShare } from '../lib/shareCard'
+import ActivityCalendar from '../components/ui/ActivityCalendar'
 
 const SHOT_LABELS = { '3pt': 'Trójki', '2pt': 'Dwójki', ft: 'Wolne' }
 
@@ -170,6 +172,17 @@ export default function StatsPage() {
 
   const filterLabel = filter === '7d' ? 'ostatnie 7 dni' : filter === '30d' ? 'ostatnie 30 dni' : 'wszystkie'
 
+  const [sharing, setSharing] = useState(false)
+  async function handleShare() {
+    setSharing(true)
+    try {
+      const blob = await shareStatsCard({ sessions: filtered, profile, filter })
+      await doShare(blob, 'hoopconnect-statystyki.png')
+    } finally {
+      setSharing(false)
+    }
+  }
+
   const SCROLL_CARDS = [
     { key: 'all', icon: <IconOverall />, label: 'Ogólnie',   type: null },
     { key: '3pt', icon: <IconThree />,   label: 'Trójki',    type: '3pt' },
@@ -180,7 +193,35 @@ export default function StatsPage() {
   return (
     <div className="page-content" style={{ padding: '32px 22px' }}>
       <p className="section-label" style={{ marginBottom: 4 }}>Twoje wyniki</p>
-      <h1 className="display-title" style={{ fontSize: 38, marginBottom: 18 }}>Statystyki</h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+        <h1 className="display-title" style={{ fontSize: 38 }}>Statystyki</h1>
+        <button
+          onClick={handleShare}
+          disabled={sharing || filtered.length === 0}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 14px',
+            background: 'rgba(6,14,30,0.52)',
+            backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+            border: '1px solid rgba(120,190,255,0.14)',
+            borderTop: '1px solid rgba(160,210,255,0.22)',
+            borderRadius: 99,
+            color: sharing ? 'var(--text-dim)' : 'var(--text-secondary)',
+            fontFamily: 'var(--font-display)',
+            fontSize: 13, fontWeight: 700, letterSpacing: 1,
+            textTransform: 'uppercase', cursor: (sharing || filtered.length === 0) ? 'default' : 'pointer',
+            opacity: filtered.length === 0 ? 0.4 : 1,
+            transition: 'opacity 0.15s',
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+            <polyline points="16 6 12 2 8 6"/>
+            <line x1="12" y1="2" x2="12" y2="15"/>
+          </svg>
+          {sharing ? '...' : 'Udostępnij'}
+        </button>
+      </div>
 
       {/* ── FILTRY ── */}
       <div style={{
@@ -330,6 +371,12 @@ export default function StatsPage() {
           })}
         </div>
       )}
+
+      {/* ── KALENDARZ AKTYWNOŚCI ── */}
+      <div style={{ ...glassCard, padding: '18px 16px', marginTop: 8, marginBottom: 32 }}>
+        <ActivityCalendar userId={profile?.id} />
+      </div>
+
     </div>
   )
 }
