@@ -214,22 +214,17 @@ export default function StatsPage() {
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07)',
             }}
           >
-            {/* Hexagon calendar icon — matches ClubIcon style */}
-            <svg width="20" height="20" viewBox="0 0 90 90" fill="none" style={{ overflow: 'visible' }}>
-              <polygon
-                points="45,6 82,32 82,58 45,84 8,58 8,32"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="6"
-                strokeLinejoin="round"
-              />
-              {/* 3 dot grid inside hex suggesting a calendar/heatmap */}
-              <circle cx="32" cy="38" r="5" fill="currentColor" opacity="0.7"/>
-              <circle cx="45" cy="38" r="5" fill="currentColor" opacity="0.7"/>
-              <circle cx="58" cy="38" r="5" fill="currentColor" opacity="0.7"/>
-              <circle cx="32" cy="52" r="5" fill="currentColor" opacity="0.5"/>
-              <circle cx="45" cy="52" r="5" fill="currentColor" opacity="0.5"/>
-              <circle cx="58" cy="52" r="5" fill="currentColor" opacity="0.3"/>
+            {/* Activity heatmap icon — 3×3 grid of rounded squares, same style as nav icons */}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2"    y="2"    width="5.5" height="5.5" rx="1.2"/>
+              <rect x="9.25" y="2"    width="5.5" height="5.5" rx="1.2"/>
+              <rect x="16.5" y="2"    width="5.5" height="5.5" rx="1.2"/>
+              <rect x="2"    y="9.25" width="5.5" height="5.5" rx="1.2"/>
+              <rect x="9.25" y="9.25" width="5.5" height="5.5" rx="1.2"/>
+              <rect x="16.5" y="9.25" width="5.5" height="5.5" rx="1.2"/>
+              <rect x="2"    y="16.5" width="5.5" height="5.5" rx="1.2"/>
+              <rect x="9.25" y="16.5" width="5.5" height="5.5" rx="1.2"/>
+              <rect x="16.5" y="16.5" width="5.5" height="5.5" rx="1.2"/>
             </svg>
           </motion.button>
 
