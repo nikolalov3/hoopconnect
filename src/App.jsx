@@ -10,6 +10,7 @@ const AuthPage        = lazy(() => import('./pages/AuthPage'))
 const OnboardingPage  = lazy(() => import('./pages/OnboardingPage'))
 const HomePage        = lazy(() => import('./pages/HomePage'))
 const ShootingPage    = lazy(() => import('./pages/ShootingPage'))
+const CalendarPage    = lazy(() => import('./pages/CalendarPage'))
 const StatsPage       = lazy(() => import('./pages/StatsPage'))
 const AchievementsPage = lazy(() => import('./pages/AchievementsPage'))
 const RecoveryPage    = lazy(() => import('./pages/RecoveryPage'))
@@ -43,9 +44,10 @@ function AppShell() {
   const location = useLocation()
   const path = location.pathname
   const isTabRoute  = TAB_PATHS.has(path)
-  const inShooting  = path.startsWith('/shooting')
+  const inShooting   = path.startsWith('/shooting')
   const inOnboarding = path === '/onboarding'
-  const showNav     = !inShooting && !inOnboarding
+  const inCalendar   = path === '/calendar'
+  const showNav      = !inShooting && !inOnboarding && !inCalendar
 
   // Lazy-mount: a tab mounts on first visit, then stays mounted forever (keep-alive).
   // Switching tabs = instant CSS visibility swap, zero re-fetch, zero remount.
@@ -110,6 +112,7 @@ function AppShell() {
             <AnimatePresence mode="wait" initial={false}>
               <Routes location={location} key={location.pathname}>
                 <Route path="/shooting/:id" element={<ShootingPage />} />
+                <Route path="/calendar"     element={<CalendarPage />} />
                 <Route path="/onboarding"   element={<OnboardingPage />} />
               </Routes>
             </AnimatePresence>

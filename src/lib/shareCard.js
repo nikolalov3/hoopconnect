@@ -74,6 +74,130 @@ function drawStatBox(ctx, x, y, w, h, value, label, color) {
   ctx.fillText(label, x + w / 2, y + h * 0.87)
 }
 
+// ── HEX LOGO ─────────────────────────────────────────────────────────────────
+// Draws pointy-top hexagon outline + "HC" text centred at (cx, cy)
+function drawHexLogo(ctx, cx, cy, size, color) {
+  ctx.save()
+  ctx.beginPath()
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 3 * i - Math.PI / 6   // pointy-top: start at -30°
+    const x = cx + size * Math.cos(a)
+    const y = cy + size * Math.sin(a)
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+  }
+  ctx.closePath()
+  ctx.strokeStyle = color
+  ctx.lineWidth = size * 0.12
+  ctx.shadowColor = color
+  ctx.shadowBlur = size * 0.6
+  ctx.stroke()
+  ctx.shadowBlur = 0
+
+  // Inner hex (smaller, filled dimly)
+  ctx.beginPath()
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 3 * i - Math.PI / 6
+    const x = cx + (size * 0.65) * Math.cos(a)
+    const y = cy + (size * 0.65) * Math.sin(a)
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+  }
+  ctx.closePath()
+  ctx.fillStyle = `${color}18`
+  ctx.fill()
+
+  // "HC" text
+  ctx.fillStyle = color
+  ctx.font = `800 ${Math.round(size * 0.68)}px "Barlow Condensed", sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('HC', cx, cy + size * 0.04)
+  ctx.textBaseline = 'alphabetic'
+  ctx.restore()
+}
+
+// ── SHOT TYPE GRAPHIC ─────────────────────────────────────────────────────────
+// Draws a simplified court-line icon at (cx, cy) representing the shot zone.
+function drawShotTypeGraphic(ctx, cx, cy, color) {
+  ctx.save()
+  ctx.strokeStyle = `${color}70`
+  ctx.lineWidth = 7
+  ctx.lineCap = 'round'
+
+  // Basket (small circle at top)
+  const baskY = cy - 110
+  ctx.beginPath()
+  ctx.arc(cx, baskY, 18, 0, Math.PI * 2)
+  ctx.fillStyle = `${color}25`
+  ctx.fill()
+  ctx.strokeStyle = `${color}88`
+  ctx.lineWidth = 6
+  ctx.stroke()
+
+  // Rim line
+  ctx.beginPath()
+  ctx.moveTo(cx - 24, baskY + 18)
+  ctx.lineTo(cx + 24, baskY + 18)
+  ctx.strokeStyle = `${color}55`
+  ctx.lineWidth = 5
+  ctx.stroke()
+
+  // Shot arc / line — differs by type
+  ctx.lineWidth = 6
+  ctx.strokeStyle = `${color}60`
+
+  // The three arcs are centred on the *basket*, curving from the shooter's spot
+  // We draw them from cy (shooter level) up toward the basket
+  const rad3  = 200   // 3pt — wide arc
+  const rad2  = 130   // 2pt — mid arc
+  const radFT = 0     // ft  — straight
+
+  if (color /* always true, just for structure */) {
+    // Ball dot (shooter position)
+    ctx.beginPath()
+    ctx.arc(cx, cy, 22, 0, Math.PI * 2)
+    ctx.fillStyle = `${color}30`
+    ctx.fill()
+    ctx.strokeStyle = `${color}70`
+    ctx.lineWidth = 5
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.arc(cx, cy, 10, 0, Math.PI * 2)
+    ctx.fillStyle = color
+    ctx.shadowColor = color
+    ctx.shadowBlur = 14
+    ctx.fill()
+    ctx.shadowBlur = 0
+  }
+
+  ctx.restore()
+}
+
+// Draws a basketball-court zone indicator below the badge area
+function drawCourtZone(ctx, W, shotType, pctColor) {
+  // position: right side, vertically between header and big %
+  const cx = W - 72 - 90, cy = 175
+  const sz  = 54
+
+  ctx.save()
+
+  // Background hex
+  drawHexLogo(ctx, cx, cy, sz, pctColor)
+
+  // Shot-type label inside (already drawn by hex logo as "HC")
+  // Overwrite inner text with shot type abbreviation
+  const abbr = shotType === '3pt' ? '3PT' : shotType === '2pt' ? '2PT' : 'FT'
+  ctx.fillStyle = pctColor
+  ctx.font = `900 ${Math.round(sz * 0.5)}px "Barlow Condensed", sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.shadowColor = pctColor
+  ctx.shadowBlur = 10
+  ctx.fillText(abbr, cx, cy + sz * 0.04)
+  ctx.shadowBlur = 0
+  ctx.textBaseline = 'alphabetic'
+  ctx.restore()
+}
+
 // ── SESSION CARD ─────────────────────────────────────────────────────────────
 
 export async function shareSessionCard({ made, attempted, target, shotType, playerName }) {
@@ -93,25 +217,15 @@ export async function shareSessionCard({ made, attempted, target, shotType, play
 
   drawBackground(ctx, W, H, pctColor)
 
-  // ── HEADER ──
+  // ── HEADER: hex logo + HOOPCONNECT wordmark ──
+  drawHexLogo(ctx, 72 + 34, 76, 34, '#5BB8F5')
   ctx.fillStyle = '#5BB8F5'
-  ctx.font = '700 30px "Barlow Condensed", sans-serif'
+  ctx.font = '700 28px "Barlow Condensed", sans-serif'
   ctx.textAlign = 'left'
-  ctx.fillText('HOOPCONNECT', 72, 88)
+  ctx.fillText('HOOPCONNECT', 72 + 34 + 46, 84)
 
-  // type badge
-  const bdW = 180, bdH = 40, bdX = W - 72 - bdW, bdY = 60
-  ctx.fillStyle = `${pctColor}20`
-  roundRect(ctx, bdX, bdY, bdW, bdH, 20)
-  ctx.fill()
-  ctx.strokeStyle = `${pctColor}45`
-  ctx.lineWidth = 1.5
-  roundRect(ctx, bdX, bdY, bdW, bdH, 20)
-  ctx.stroke()
-  ctx.fillStyle = pctColor
-  ctx.font = '700 20px "Barlow Condensed", sans-serif'
-  ctx.textAlign = 'center'
-  ctx.fillText(typeLabel, bdX + bdW / 2, bdY + 26)
+  // ── SHOT-TYPE HEX (right side of header) ──
+  drawCourtZone(ctx, W, shotType, pctColor)
 
   // ── BIG % ──
   ctx.fillStyle = pctColor
@@ -198,11 +312,12 @@ export async function shareStatsCard({ sessions, profile, filter }) {
 
   drawBackground(ctx, W, H, mainColor)
 
-  // ── HEADER ──
+  // ── HEADER: hex logo + wordmark ──
+  drawHexLogo(ctx, 72 + 34, 76, 34, mainColor)
   ctx.fillStyle = mainColor
-  ctx.font = '700 30px "Barlow Condensed", sans-serif'
+  ctx.font = '700 28px "Barlow Condensed", sans-serif'
   ctx.textAlign = 'left'
-  ctx.fillText('HOOPCONNECT', 72, 88)
+  ctx.fillText('HOOPCONNECT', 72 + 34 + 46, 84)
 
   if (profile?.name) {
     ctx.fillStyle = 'rgba(255,255,255,0.35)'

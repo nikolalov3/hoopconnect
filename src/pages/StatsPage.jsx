@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { getCache, setCache } from '../lib/queryCache'
 import { shareStatsCard, doShare } from '../lib/shareCard'
-import ActivityCalendar from '../components/ui/ActivityCalendar'
 
 const SHOT_LABELS = { '3pt': 'Trójki', '2pt': 'Dwójki', ft: 'Wolne' }
 
@@ -129,8 +129,11 @@ function filterByDate(sessions, range) {
   return sessions.filter(s => new Date(s.session_date) >= cutoff)
 }
 
+const HEX_CLIP = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
+
 export default function StatsPage() {
   const { profile } = useAuth()
+  const navigate = useNavigate()
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('7d')
@@ -372,10 +375,48 @@ export default function StatsPage() {
         </div>
       )}
 
-      {/* ── KALENDARZ AKTYWNOŚCI ── */}
-      <div style={{ ...glassCard, padding: '18px 16px', marginTop: 8, marginBottom: 32 }}>
-        <ActivityCalendar userId={profile?.id} />
-      </div>
+      {/* ── CALENDAR WIDGET ── */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={() => navigate('/calendar')}
+        style={{
+          width: '100%', marginTop: 8, marginBottom: 32,
+          ...glassCard,
+          padding: '16px 18px',
+          display: 'flex', alignItems: 'center', gap: 14,
+          cursor: 'pointer', textAlign: 'left',
+          border: '1px solid rgba(120,190,255,0.14)',
+          borderTop: '1px solid rgba(160,210,255,0.22)',
+        }}
+      >
+        {/* Hex icon cluster */}
+        <div style={{ position: 'relative', width: 46, height: 46, flexShrink: 0 }}>
+          {[
+            { top: 0,  left: 4,  bg: 'linear-gradient(135deg,#4a5a6f,#c8dce8,#e8f4ff)', size: 22 },
+            { top: 12, left: 20, bg: 'rgba(91,184,245,0.35)', size: 20 },
+            { top: 24, left: 2,  bg: 'rgba(255,255,255,0.09)', size: 18 },
+          ].map((h, i) => (
+            <div key={i} style={{
+              position: 'absolute', top: h.top, left: h.left,
+              width: h.size, height: h.size * 1.15,
+              clipPath: HEX_CLIP, background: h.bg,
+            }} />
+          ))}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15,
+            color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.8,
+          }}>Kalendarz aktywności</p>
+          <p style={{ color: 'var(--text-dim)', fontSize: 11, marginTop: 2, fontWeight: 500 }}>
+            Historia treningów · hexagony
+          </p>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="var(--text-dim)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </motion.button>
 
     </div>
   )
