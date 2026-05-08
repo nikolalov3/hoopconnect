@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { getCache, setCache } from '../lib/queryCache'
+import { shareStatsCard, doShare } from '../lib/shareCard'
 
 const SHOT_LABELS = { '3pt': 'Trójki', '2pt': 'Dwójki', ft: 'Wolne' }
 
@@ -42,13 +45,13 @@ const FILTERS = [
 ]
 
 const glassCard = {
-  background: 'rgba(12,8,4,0.60)',
-  backdropFilter: 'blur(28px) saturate(1.5)',
-  WebkitBackdropFilter: 'blur(28px) saturate(1.5)',
-  border: '1px solid rgba(180,180,200,0.18)',
-  borderTop: '1px solid rgba(200,200,220,0.30)',
+  background: 'rgba(6,14,30,0.52)',
+  backdropFilter: 'blur(24px) saturate(1.7)',
+  WebkitBackdropFilter: 'blur(24px) saturate(1.7)',
+  border: '1px solid rgba(120,190,255,0.09)',
+  borderTop: '1px solid rgba(160,210,255,0.16)',
   borderRadius: 'var(--radius)',
-  boxShadow: '0 8px 28px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 0.5px rgba(160,160,180,0.10)',
+  boxShadow: '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
 }
 
 function StatTile({ label, value, sub, accent }) {
@@ -128,18 +131,27 @@ function filterByDate(sessions, range) {
 
 export default function StatsPage() {
   const { profile } = useAuth()
+  const navigate = useNavigate()
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('7d')
 
   useEffect(() => {
     if (!profile) return
+    const cacheKey = `sessions:${profile.id}`
+    // Pokaż cache natychmiast — zero opóźnienia przy powrocie na kartę
+    const cached = getCache(cacheKey)
+    if (cached) { setSessions(cached); setLoading(false) }
+    // Odśwież w tle
     supabase
       .from('shooting_sessions')
       .select('*, trainings(title)')
       .eq('user_id', profile.id)
       .order('session_date', { ascending: false })
-      .then(({ data }) => { setSessions(data || []); setLoading(false) })
+      .then(({ data }) => {
+        if (data) { setCache(cacheKey, data, 2 * 60 * 1000); setSessions(data) }
+        setLoading(false)
+      })
   }, [profile])
 
   const filtered = useMemo(() => filterByDate(sessions, filter), [sessions, filter])
@@ -161,6 +173,17 @@ export default function StatsPage() {
 
   const filterLabel = filter === '7d' ? 'ostatnie 7 dni' : filter === '30d' ? 'ostatnie 30 dni' : 'wszystkie'
 
+  const [sharing, setSharing] = useState(false)
+  async function handleShare() {
+    setSharing(true)
+    try {
+      const blob = await shareStatsCard({ sessions: filtered, profile, filter })
+      await doShare(blob, 'hoopconnect-statystyki.png')
+    } finally {
+      setSharing(false)
+    }
+  }
+
   const SCROLL_CARDS = [
     { key: 'all', icon: <IconOverall />, label: 'Ogólnie',   type: null },
     { key: '3pt', icon: <IconThree />,   label: 'Trójki',    type: '3pt' },
@@ -171,14 +194,69 @@ export default function StatsPage() {
   return (
     <div className="page-content" style={{ padding: '32px 22px' }}>
       <p className="section-label" style={{ marginBottom: 4 }}>Twoje wyniki</p>
-      <h1 className="display-title" style={{ fontSize: 38, marginBottom: 18 }}>Statystyki</h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+        <h1 className="display-title" style={{ fontSize: 38 }}>Statystyki</h1>
+        {/* Icon row — bare icon buttons, no background */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {/* Calendar icon — bare, matches gear/sparkle style */}
+          <motion.button
+            whileTap={{ scale: 0.82 }}
+            onClick={() => navigate('/calendar')}
+            style={{
+              width: 40, height: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'rgba(200,210,230,0.55)',
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              {/* Calendar outline */}
+              <rect x="3" y="4" width="18" height="17" rx="2"/>
+              <path d="M16 2v4M8 2v4M3 9h18"/>
+              {/* Dot grid — activity indicators */}
+              <circle cx="8"  cy="14" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="8"  cy="18" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </motion.button>
+
+          {/* Share icon — bare, same style */}
+          <motion.button
+            whileTap={{ scale: 0.82 }}
+            onClick={handleShare}
+            disabled={sharing || filtered.length === 0}
+            style={{
+              width: 40, height: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none',
+              cursor: (sharing || filtered.length === 0) ? 'default' : 'pointer',
+              color: 'rgba(200,210,230,0.55)',
+              opacity: filtered.length === 0 ? 0.25 : 1,
+              transition: 'opacity 0.15s',
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+              <polyline points="16 6 12 2 8 6"/>
+              <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+          </motion.button>
+        </div>
+      </div>
 
       {/* ── FILTRY ── */}
       <div style={{
-        display: 'flex', gap: 6, marginBottom: 20,
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 99, padding: 4,
+        display: 'flex', marginBottom: 20,
+        background: 'rgba(6,14,30,0.52)',
+        backdropFilter: 'blur(24px) saturate(1.7)',
+        WebkitBackdropFilter: 'blur(24px) saturate(1.7)',
+        border: '1px solid rgba(120,190,255,0.09)',
+        borderTop: '1px solid rgba(160,210,255,0.15)',
+        borderRadius: 99,
+        padding: 3,
+        boxShadow: '0 4px 18px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.05)',
       }}>
         {FILTERS.map(({ key, label }) => {
           const active = filter === key
@@ -188,18 +266,28 @@ export default function StatsPage() {
               whileTap={{ scale: 0.94 }}
               onClick={() => setFilter(key)}
               style={{
-                flex: 1, padding: '8px 0',
+                position: 'relative', flex: 1,
+                padding: '11px 0',
                 borderRadius: 99, border: 'none', cursor: 'pointer',
-                fontFamily: 'var(--font-display)', fontWeight: 700,
-                fontSize: 12, letterSpacing: 1, textTransform: 'uppercase',
-                background: active
-                  ? 'linear-gradient(145deg, rgba(40,130,220,0.92), rgba(16,90,180,0.96))'
-                  : 'transparent',
-                color: active ? '#fff' : 'rgba(180,120,80,0.60)',
-                boxShadow: active ? '0 2px 12px rgba(91,184,245,0.35)' : 'none',
-                transition: 'all 0.2s ease',
+                background: 'transparent',
+                fontFamily: 'var(--font-body)', fontWeight: active ? 700 : 500,
+                fontSize: 9.5, letterSpacing: 1.2, textTransform: 'uppercase',
+                color: active ? 'var(--text-primary)' : 'var(--text-dim)',
+                transition: 'color 0.18s',
+                zIndex: 1,
               }}
             >
+              {active && (
+                <motion.div
+                  layoutId="stats-filter-pill"
+                  transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                  style={{
+                    position: 'absolute', inset: 0, borderRadius: 99, zIndex: -1,
+                    background: 'linear-gradient(145deg, rgba(40,130,220,0.90), rgba(16,90,180,0.95))',
+                    boxShadow: '0 2px 14px rgba(91,184,245,0.28), inset 0 1px 0 rgba(180,230,255,0.18)',
+                  }}
+                />
+              )}
               {label}
             </motion.button>
           )
@@ -306,6 +394,8 @@ export default function StatsPage() {
           })}
         </div>
       )}
+
+
     </div>
   )
 }

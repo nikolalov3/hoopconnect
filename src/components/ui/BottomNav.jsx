@@ -30,19 +30,34 @@ const RecoveryIcon = ({ active }) => (
   </svg>
 )
 
+// Hexagonal diamond icon for Club tab — mirrors the app logo
+const ClubIcon = ({ active }) => (
+  <svg width="22" height="22" viewBox="0 0 90 90" style={{ overflow: 'visible' }}>
+    <polygon
+      points="45,6 82,32 82,58 45,84 8,58 8,32"
+      fill="none"
+      stroke={active ? '#ffffff' : 'rgba(180,120,80,0.60)'}
+      strokeWidth={active ? 7 : 5}
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
 const TABS = [
-  { path: '/',             Icon: HomeIcon,    label: 'Dziś' },
-  { path: '/stats',        Icon: StatsIcon,   label: 'Stats' },
-  { path: '/recovery',     Icon: RecoveryIcon,label: 'Regen' },
-  { path: '/achievements', Icon: TrophyIcon,  label: 'Trofea' },
+  { path: '/',             Icon: HomeIcon,    label: 'Dziś',   center: false },
+  { path: '/stats',        Icon: StatsIcon,   label: 'Stats',  center: false },
+  { path: '/club',         Icon: ClubIcon,    label: 'Klub',   center: true  },
+  { path: '/recovery',     Icon: RecoveryIcon,label: 'Regen',  center: false },
+  { path: '/achievements', Icon: TrophyIcon,  label: 'Trofea', center: false },
 ]
 
 export default function BottomNav() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { profile } = useAuth()
-  const { settingsOpen } = useUI()
+  const { settingsOpen, leagueOpen, leaderboardOpen } = useUI()
   const [hasUnread, setHasUnread] = useState(false)
+  const [hasNewMatch, setHasNewMatch] = useState(false)
 
   useEffect(() => {
     if (!profile) return
@@ -54,9 +69,58 @@ export default function BottomNav() {
       .then(({ count }) => setHasUnread((count ?? 0) > 0))
   }, [pathname, profile])
 
+  // Team match notification — localStorage cache + DB fallback
+  useEffect(() => {
+    if (!profile) return
+
+    if (pathname === '/club') {
+      setHasNewMatch(false)
+      localStorage.removeItem(`hcNewTeamMatch_${profile.id}`)
+      // Persist "seen now" to DB for cross-device sync
+      supabase.from('profiles')
+        .update({ last_matches_seen_at: new Date().toISOString() })
+        .eq('id', profile.id)
+        .then(() => {})
+      return
+    }
+
+    // Fast path: localStorage cache already set by MatchesPanel
+    const cached = localStorage.getItem(`hcNewTeamMatch_${profile.id}`)
+    if (cached === '1') { setHasNewMatch(true); return }
+
+    // Slow path: query DB (enables cross-device notifications)
+    async function checkDB() {
+      const { data: membership } = await supabase
+        .from('club_members').select('club_id')
+        .eq('user_id', profile.id).maybeSingle()
+      if (!membership) return
+
+      const [{ data: prof }, { data: members }] = await Promise.all([
+        supabase.from('profiles').select('last_matches_seen_at').eq('id', profile.id).single(),
+        supabase.from('club_members').select('user_id')
+          .eq('club_id', membership.club_id).neq('user_id', profile.id),
+      ])
+
+      const lastSeen = prof?.last_matches_seen_at || '2020-01-01T00:00:00Z'
+      const memberIds = (members || []).map(m => m.user_id)
+      if (!memberIds.length) return
+
+      const { count } = await supabase
+        .from('match_players').select('*', { count: 'exact', head: true })
+        .in('user_id', memberIds)
+        .gt('joined_at', lastSeen)
+
+      const hasNew = (count ?? 0) > 0
+      setHasNewMatch(hasNew)
+      if (hasNew) localStorage.setItem(`hcNewTeamMatch_${profile.id}`, '1')
+    }
+
+    checkDB()
+  }, [pathname, profile])
+
   return (
     <AnimatePresence initial={false}>
-    {!settingsOpen && (
+    {!settingsOpen && !leagueOpen && !leaderboardOpen && (
     <div style={{ position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)', zIndex: 200 }}>
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -81,9 +145,55 @@ export default function BottomNav() {
         padding: '6px 8px',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.30)',
       }}>
-        {TABS.map(({ path, Icon, label }) => {
+        {TABS.map(({ path, Icon, label, center }) => {
           const active = pathname === path
           const showDot = path === '/achievements' && hasUnread && !active
+          const showMatchDot = path === '/club' && hasNewMatch && !active
+
+          if (center) {
+            return (
+              <motion.button key={path} onClick={() => navigate(path)} whileTap={{ scale: 0.88 }}
+                style={{
+                  position: 'relative',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 52, height: 48,
+                  background: active
+                    ? 'linear-gradient(145deg, rgba(40,130,220,0.92) 0%, rgba(16,90,180,0.96) 100%)'
+                    : 'transparent',
+                  border: active ? '1px solid rgba(91,184,245,0.50)' : '1px solid transparent',
+                  borderRadius: 9999,
+                  cursor: 'pointer',
+                  transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+                  boxShadow: active ? '0 4px 20px rgba(91,184,245,0.50), inset 0 1px 0 rgba(180,230,255,0.25)' : 'none',
+                }}
+              >
+                <Icon active={active} />
+                {showMatchDot && (
+                  <motion.div
+                    initial={{ scale: 0 }} animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                    style={{
+                      position: 'absolute', top: 8, right: 10,
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: '#FF3B30',
+                      boxShadow: '0 0 6px 2px rgba(255,59,48,0.70)',
+                      border: '1.5px solid rgba(10,6,3,0.85)',
+                    }}
+                  />
+                )}
+                {active && (
+                  <motion.div layoutId="nav-glow" transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    style={{
+                      position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)',
+                      width: 4, height: 4, borderRadius: '50%',
+                      background: '#5BB8F5', boxShadow: '0 0 8px 2px rgba(91,184,245,0.60)',
+                    }}
+                  />
+                )}
+              </motion.button>
+            )
+          }
+
           return (
             <motion.button key={path} onClick={() => navigate(path)} whileTap={{ scale: 0.88 }}
               style={{

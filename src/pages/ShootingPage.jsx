@@ -1,11 +1,14 @@
-import { useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useShootingSession } from '../hooks/useShootingSession'
 import { checkShotAchievements, checkPerfectSession } from '../lib/achievements'
+import { recalcFraud } from '../lib/anticheat'
+import { creditRestDayStreak } from '../lib/streak'
+import StreakToast from '../components/ui/StreakToast'
+import { shareSessionCard, doShare } from '../lib/shareCard'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -23,8 +26,19 @@ const MEDAL_COLORS = {
   platinum: '#E8E8F0',
 }
 
-function SuccessScreen({ made, attempted, target, shotType, onBack, newAchievements = [] }) {
+function SuccessScreen({ made, attempted, target, shotType, onBack, newAchievements = [], playerName }) {
   const pct = attempted > 0 ? Math.round((made / attempted) * 100) : 0
+  const [sharing, setSharing] = useState(false)
+
+  async function handleShare() {
+    setSharing(true)
+    try {
+      const blob = await shareSessionCard({ made, attempted, target, shotType, playerName })
+      await doShare(blob, 'hoopconnect-sesja.png')
+    } finally {
+      setSharing(false)
+    }
+  }
   const missed = attempted - made
   const pctColor = pct >= 60 ? 'var(--green-shot)' : pct >= 40 ? 'var(--orange)' : 'var(--red-shot)'
   const filledPct = Math.min(attempted / target, 1)
@@ -35,7 +49,11 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
       style={{
-        position: 'fixed', inset: 0, zIndex: 300,
+        position: 'fixed',
+        top: 0, bottom: 0,
+        left: 'max(0px, calc((100vw - 430px) / 2))',
+        width: 'min(100vw, 430px)',
+        zIndex: 300,
         background: 'rgba(6,4,2,0.97)',
         backdropFilter: 'blur(40px)',
         WebkitBackdropFilter: 'blur(40px)',
@@ -187,9 +205,37 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
         </motion.div>
       )}
 
-      {/* Spacer + przycisk */}
+      {/* Spacer + przyciski */}
       <div style={{ flex: 1 }} />
-      <div style={{ padding: '12px 0 28px', position: 'relative', zIndex: 1 }}>
+      <div style={{ padding: '12px 0 28px', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Share button */}
+        <button
+          onClick={handleShare}
+          disabled={sharing}
+          style={{
+            width: '100%', padding: '14px',
+            background: 'rgba(6,14,30,0.52)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border: '1px solid rgba(120,190,255,0.18)',
+            borderTop: '1px solid rgba(160,210,255,0.28)',
+            borderRadius: 'var(--radius-sm)',
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-display)',
+            fontSize: 15, fontWeight: 700, letterSpacing: 1.5,
+            textTransform: 'uppercase', cursor: sharing ? 'default' : 'pointer',
+            opacity: sharing ? 0.6 : 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            transition: 'opacity 0.15s',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+            <polyline points="16 6 12 2 8 6"/>
+            <line x1="12" y1="2" x2="12" y2="15"/>
+          </svg>
+          {sharing ? 'Generuję...' : 'Udostępnij wyniki'}
+        </button>
         <button className="btn-primary" onClick={onBack} style={{ fontSize: 15, padding: '16px' }}>
           Wróć do planu
         </button>
@@ -202,13 +248,16 @@ export default function ShootingPage() {
   const { id } = useParams()
   const { state } = useLocation()
   const navigate = useNavigate()
-  const { profile } = useAuth()
+  const { profile, refreshProfile } = useAuth()
+  const [streakToast, setStreakToast] = useState(0)
 
   const training = state?.training
   const config = TYPE_CONFIG[training?.type] || TYPE_CONFIG.shooting_3pt
   const target = training?.target_reps || config.target
 
   const { history, addShot, undoShot, clearSession, loaded } = useShootingSession(id)
+  const sessionStartRef = useRef(null)
+  useEffect(() => { if (loaded && !sessionStartRef.current) sessionStartRef.current = new Date().toISOString() }, [loaded])
   const [flashKey, setFlashKey] = useState(0)
   const [flash, setFlash] = useState(null)
   const [finished, setFinished] = useState(false)
@@ -230,6 +279,50 @@ export default function ShootingPage() {
     setTimeout(() => setFlash(null), 260)
   }
 
+  // Współdzielona logika: odznacz trening w activity_log + zalicz serię
+  async function markDoneAndCreditStreak(trainingId) {
+    // 1. Pobierz aktualny activity_log dla dzisiaj
+    const { data: existingLog } = await supabase
+      .from('activity_log')
+      .select('*')
+      .eq('user_id', profile.id)
+      .eq('date', TODAY)
+      .maybeSingle()
+
+    // 2. Dodaj trening do ukończonych (jeśli nie ma)
+    const prevCompleted = existingLog?.trainings_completed || []
+    if (!prevCompleted.includes(trainingId)) {
+      const newCompleted = [...prevCompleted, trainingId]
+
+      await supabase.from('activity_log').upsert(
+        { user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: true },
+        { onConflict: 'user_id,date' }
+      )
+    }
+
+    // 3. Pobierz świeży profil z DB (bez stale closure!)
+    const { data: freshProfile } = await supabase
+      .from('profiles')
+      .select('streak, longest_streak, last_active')
+      .eq('id', profile.id)
+      .single()
+
+    const lastActiveDate = (freshProfile?.last_active || '').slice(0, 10)
+    if (lastActiveDate !== TODAY) {
+      const newStreak = (freshProfile?.streak || 0) + 1
+      const { error: strErr } = await supabase.from('profiles').update({
+        streak:         newStreak,
+        longest_streak: Math.max(newStreak, freshProfile?.longest_streak || 0),
+        last_active:    TODAY,
+      }).eq('id', profile.id)
+
+      if (!strErr) {
+        await refreshProfile()
+        setStreakToast(newStreak)
+      }
+    }
+  }
+
   async function handleShot(isMade) {
     if (finished || saving || !loaded) return
     addShot(isMade)
@@ -240,33 +333,29 @@ export default function ShootingPage() {
       setSaving(true)
 
       await supabase.from('shooting_sessions').insert({
-        user_id: profile.id,
+        user_id:    profile.id,
         training_id: id,
-        shot_type: config.shotType,
-        made: finalMade,
-        attempted: newAttempted,
+        shot_type:  config.shotType,
+        made:       finalMade,
+        attempted:  newAttempted,
+        started_at: sessionStartRef.current,
       })
 
-      // Auto-odznacz trening w activity_log
-      const { data: existingLog } = await supabase
-        .from('activity_log')
-        .select('*')
-        .eq('user_id', profile.id)
-        .eq('date', TODAY)
-        .single()
+      // Log verified shooting session points to league
+      const TODAY_DATE = new Date().toISOString().split('T')[0]
+      const daysSinceJoin2 = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
+      const weekNum2 = Math.floor(daysSinceJoin2 / 7) + 1
+      await supabase.from('points_log').insert({
+        user_id: profile.id,
+        training_id: id,
+        points: 30,
+        week_number: weekNum2,
+        date: TODAY_DATE,
+        source: 'shooting_session',
+      })
 
-      const prevCompleted = existingLog?.trainings_completed || []
-      if (!prevCompleted.includes(id)) {
-        const newCompleted = [...prevCompleted, id]
-        if (existingLog) {
-          await supabase.from('activity_log')
-            .update({ trainings_completed: newCompleted })
-            .eq('id', existingLog.id)
-        } else {
-          await supabase.from('activity_log')
-            .insert({ user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: false })
-        }
-      }
+      // Odznacz trening w activity_log i zalicz serię
+      await markDoneAndCreditStreak(id)
 
       setFinalStats({ made: finalMade, attempted: newAttempted })
       clearSession()
@@ -281,6 +370,7 @@ export default function ShootingPage() {
       const allNew = [...unlocked, ...perfect]
       if (allNew.length > 0) setNewAchievements(allNew)
 
+      recalcFraud(profile.id)   // fire-and-forget anti-cheat
       setSaving(false)
       setFinished(true)
     }
@@ -295,32 +385,29 @@ export default function ShootingPage() {
     setShowManualInput(false)
 
     await supabase.from('shooting_sessions').insert({
-      user_id: profile.id,
+      user_id:    profile.id,
       training_id: id,
-      shot_type: config.shotType,
-      made: m,
-      attempted: total,
+      shot_type:  config.shotType,
+      made:       m,
+      attempted:  total,
+      started_at: sessionStartRef.current,
     })
 
-    const { data: existingLog } = await supabase
-      .from('activity_log')
-      .select('*')
-      .eq('user_id', profile.id)
-      .eq('date', TODAY)
-      .single()
+    // Log verified shooting session points to league
+    const TODAY_DATE = new Date().toISOString().split('T')[0]
+    const daysSinceJoin2 = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
+    const weekNum2 = Math.floor(daysSinceJoin2 / 7) + 1
+    await supabase.from('points_log').insert({
+      user_id: profile.id,
+      training_id: id,
+      points: 30,
+      week_number: weekNum2,
+      date: TODAY_DATE,
+      source: 'shooting_session',
+    })
 
-    const prevCompleted = existingLog?.trainings_completed || []
-    if (!prevCompleted.includes(id)) {
-      const newCompleted = [...prevCompleted, id]
-      if (existingLog) {
-        await supabase.from('activity_log')
-          .update({ trainings_completed: newCompleted })
-          .eq('id', existingLog.id)
-      } else {
-        await supabase.from('activity_log')
-          .insert({ user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: false })
-      }
-    }
+    // Odznacz trening w activity_log i zalicz serię
+    await markDoneAndCreditStreak(id)
 
     setFinalStats({ made: m, attempted: total })
     clearSession()
@@ -334,6 +421,7 @@ export default function ShootingPage() {
     const allNew = [...unlocked, ...perfect]
     if (allNew.length > 0) setNewAchievements(allNew)
 
+    recalcFraud(profile.id)   // fire-and-forget anti-cheat
     setSaving(false)
     setFinished(true)
   }
@@ -368,6 +456,7 @@ export default function ShootingPage() {
             shotType={training.type}
             onBack={() => navigate('/', { replace: true })}
             newAchievements={newAchievements}
+            playerName={profile?.name}
           />
         )}
       </AnimatePresence>
@@ -669,6 +758,8 @@ export default function ShootingPage() {
           )}
         </button>
       </div>
+
+      <StreakToast streak={streakToast} visible={streakToast > 0} onHide={() => setStreakToast(0)} />
     </div>
   )
 }

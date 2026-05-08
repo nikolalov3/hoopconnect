@@ -57,31 +57,13 @@ body {
   margin: 0 auto;
   position: relative;
   background:
-    radial-gradient(ellipse 90% 55% at 60% -10%,  rgba(80,160,255,0.22) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 45% at -10% 75%,  rgba(40,120,220,0.16) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 50% at 110% 60%,  rgba(100,180,255,0.12) 0%, transparent 55%),
-    radial-gradient(ellipse 100% 60% at 50% 115%, rgba(20,80,160,0.20) 0%, transparent 50%),
-    linear-gradient(170deg, #071525 0%, #050E1A 40%, #040810 100%);
+    radial-gradient(ellipse 90% 55% at 62% -8%,   rgba(91,184,245,0.22) 0%, transparent 58%),
+    radial-gradient(ellipse 70% 45% at -8%  78%,  rgba(50,120,230,0.16) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 108% 58%,  rgba(110,185,255,0.13) 0%, transparent 54%),
+    radial-gradient(ellipse 100% 60% at 50% 112%, rgba(30,90,180,0.20) 0%, transparent 50%),
+    linear-gradient(170deg, #0C1F38 0%, #091828 42%, #060F1E 100%);
 }
 
-#root::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  max-width: 430px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 39px,
-      rgba(100,180,255,0.025) 39px,
-      rgba(100,180,255,0.025) 40px
-    );
-  pointer-events: none;
-  z-index: 0;
-}
 
 .page-content {
   flex: 1;
@@ -101,13 +83,12 @@ body {
 
 /* LIQUID GLASS */
 .glass, .card {
-  background: var(--glass-dark);
-  backdrop-filter: blur(32px) saturate(1.8) brightness(1.08);
-  -webkit-backdrop-filter: blur(32px) saturate(1.8) brightness(1.08);
-  border: 1px solid var(--glass-border);
-  border-top-color: var(--glass-border-hi);
-  border-left-color: rgba(140,200,255,0.10);
-  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-inner-top);
+  background: rgba(6,14,30,0.52);
+  backdrop-filter: blur(24px) saturate(1.7);
+  -webkit-backdrop-filter: blur(24px) saturate(1.7);
+  border: 1px solid rgba(120,190,255,0.09);
+  border-top-color: rgba(160,210,255,0.16);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06);
 }
 .card { border-radius: var(--radius); padding: 16px; }
 
@@ -192,3 +173,77 @@ body {
 .spinner { width: 28px; height: 28px; border: 2px solid rgba(100,180,255,0.12); border-top-color: var(--orange); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 button, a { -webkit-tap-highlight-color: transparent; }
+
+
+/* ── LEAGUE PANEL — glitch & sharp ─────────────────────────────── */
+@keyframes glitch-h {
+  0%,100% { clip-path: inset(0 0 98% 0); transform: translate(-3px, 0); opacity: 0.7; }
+  20%  { clip-path: inset(30% 0 50% 0); transform: translate(3px, 0); }
+  40%  { clip-path: inset(60% 0 20% 0); transform: translate(-2px, 0); }
+  60%  { clip-path: inset(80% 0 5%  0); transform: translate(2px, 0); }
+  80%  { clip-path: inset(10% 0 70% 0); transform: translate(-3px, 0); }
+}
+@keyframes glitch-v {
+  0%,100% { clip-path: inset(0 0 98% 0); transform: translate(3px, 0); opacity: 0.5; }
+  25%  { clip-path: inset(45% 0 40% 0); transform: translate(-3px, 0); }
+  50%  { clip-path: inset(70% 0 15% 0); transform: translate(2px, 0); }
+  75%  { clip-path: inset(20% 0 65% 0); transform: translate(-2px, 0); }
+}
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+.league-glitch-wrap { position: relative; }
+.league-glitch-wrap::before {
+  content: attr(data-text);
+  position: absolute; inset: 0;
+  color: #00FFFF; font: inherit; font-weight: inherit;
+  letter-spacing: inherit; text-transform: inherit;
+  background: inherit; -webkit-background-clip: inherit;
+  -webkit-text-fill-color: #00FFFF88;
+  animation: glitch-h 4s steps(1) infinite;
+  pointer-events: none;
+}
+.league-glitch-wrap::after {
+  content: attr(data-text);
+  position: absolute; inset: 0;
+  color: #FF40A0; font: inherit; font-weight: inherit;
+  letter-spacing: inherit; text-transform: inherit;
+  background: inherit; -webkit-background-clip: inherit;
+  -webkit-text-fill-color: #FF40A066;
+  animation: glitch-v 4s steps(1) infinite 0.15s;
+  pointer-events: none;
+}
+.league-card-sharp {
+  border-radius: 0 !important;
+  border: 1px solid rgba(255,168,32,0.22) !important;
+  border-top: 1px solid rgba(255,168,32,0.45) !important;
+  position: relative;
+}
+.league-card-sharp::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px; width: 12px; height: 12px;
+  border-top: 2px solid #FFA820;
+  border-left: 2px solid #FFA820;
+  pointer-events: none;
+}
+.league-card-sharp::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; right: -1px; width: 12px; height: 12px;
+  border-bottom: 2px solid #FFA820;
+  border-right: 2px solid #FFA820;
+  pointer-events: none;
+}
+.league-section-label {
+  font-size: 8.5px; font-weight: 800; letter-spacing: 3px;
+  text-transform: uppercase; color: #FFA82088;
+  display: flex; align-items: center; gap: 10; margin: 0 0 11px;
+}
+.league-section-label::before,
+.league-section-label::after {
+  content: '';
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,168,32,0.3), transparent);
+}

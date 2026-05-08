@@ -5,7 +5,10 @@ import { supabase } from '../lib/supabase'
 import TrainingCard from '../components/training/TrainingCard'
 import { fetchAchievementsCatalog, getNewlyUnlocked, awardMedalPoints, revokeStaleAchievements } from '../lib/achievements'
 import SettingsPanel from '../components/ui/SettingsPanel'
+import LeagueInfoPanel from '../components/ui/LeagueInfoPanel'
 import { useUI } from '../context/UIContext'
+import StreakToast from '../components/ui/StreakToast'
+import { getCache, setCache, bustCache } from '../lib/queryCache'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -464,11 +467,13 @@ export default function HomePage() {
   const [reportLoading, setReportLoading] = useState(true)
   const [daysUntilReport, setDaysUntilReport] = useState(7)
   const [achievementToast, setAchievementToast] = useState(null) // { title, stage }
-  const { setSettingsOpen } = useUI()
+  const { setSettingsOpen, leagueOpen, setLeagueOpen } = useUI()
   const [showSettings, setShowSettings] = useState(false)
 
   function openSettings() { setShowSettings(true); setSettingsOpen(true) }
   function closeSettings() { setShowSettings(false); setSettingsOpen(false) }
+  function openLeague()  { setLeagueOpen(true)  }
+  function closeLeague() { setLeagueOpen(false) }
   const swipeStartX = useRef(null)
   const swipeStartY = useRef(null)
 
@@ -476,35 +481,59 @@ export default function HomePage() {
     setAchievementToast(data)
   }
   const [showDayDoneModal, setShowDayDoneModal] = useState(false)
+  const [streakToast,     setStreakToast]     = useState(0)   // >0 = visible, value = new streak
 
   useEffect(() => { loadData() }, [profile])
 
   async function loadData() {
     if (!profile) return
-    setLoading(false)
 
     const dt = getDayType(profile)
     setDayType(dt)
 
-    const { data: allTrainings } = await supabase.from('trainings').select('*').eq('is_active', true)
-    const todayTrainings = pickDailyTrainings(allTrainings || [], profile)
-    setTrainings(todayTrainings)
+    // ── 1. Natychmiastowe dane z cache (zero opóźnienia przy ponownym wejściu) ──
+    const cachedTrainings = getCache(`trainings:${TODAY}`)
+    const cachedLog       = getCache(`log:${profile.id}:${TODAY}`)
+    const cachedQuotes    = getCache('quotes')
+    const cachedReport    = getCache(`report:${profile.id}`)
 
-    const { data: log } = await supabase.from('activity_log').select('*').eq('user_id', profile.id).eq('date', TODAY).single()
+    if (cachedTrainings) {
+      setTrainings(cachedTrainings)
+      setLoading(false)
+    }
+    if (cachedLog !== null)    setActivityLog(cachedLog)
+    if (cachedQuotes)          setQuote(cachedQuotes[Math.floor(Math.random() * cachedQuotes.length)])
+    if (cachedReport != null)  { setReportScore(cachedReport.score); setDaysUntilReport(cachedReport.daysLeft); setReportLoading(false) }
+
+    // ── 2. Odświeżenie w tle — wszystkie 3 startują równolegle ──
+    const trainingsPromise = supabase.from('trainings').select('*').eq('is_active', true)
+    const logPromise       = supabase.from('activity_log').select('*').eq('user_id', profile.id).eq('date', TODAY).maybeSingle()
+    const quotesPromise    = supabase.from('quotes').select('*').eq('is_active', true)
+
+    const { data: allTrainings } = await trainingsPromise
+    if (allTrainings) {
+      const picked = pickDailyTrainings(allTrainings, profile)
+      setCache(`trainings:${TODAY}`, picked, 30 * 60 * 1000)  // 30 min
+      setTrainings(picked)
+    }
+    setLoading(false)
+
+    const [{ data: log }, { data: quotes }] = await Promise.all([logPromise, quotesPromise])
     setActivityLog(log)
+    setCache(`log:${profile.id}:${TODAY}`, log, 15 * 1000)  // 15 s — zmienia się po zaznaczeniu
 
-    const { data: quotes } = await supabase.from('quotes').select('*').eq('is_active', true)
-    if (quotes?.length) setQuote(quotes[Math.floor(Math.random() * quotes.length)])
+    if (quotes?.length) {
+      setCache('quotes', quotes, 60 * 60 * 1000)  // 1 h
+      setQuote(quotes[Math.floor(Math.random() * quotes.length)])
+    }
 
-    // Oblicz ile dni od rejestracji
+    // ── 3. Weekly report ──
     const createdAt = profile.created_at ? new Date(profile.created_at) : new Date()
-    const now = new Date()
-    const daysSinceJoin = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24))
+    const daysSinceJoin = Math.floor((new Date() - createdAt) / (1000 * 60 * 60 * 24))
     const remaining = Math.max(0, 7 - daysSinceJoin)
     setDaysUntilReport(remaining)
 
-    const currentWeek = Math.floor(daysSinceJoin / 7) + 1
-    const visibleWeek = currentWeek - 1
+    const visibleWeek = Math.floor(daysSinceJoin / 7)
 
     if (visibleWeek >= 1) {
       const { data: existingReport } = await supabase
@@ -522,16 +551,16 @@ export default function HomePage() {
           .eq('week_number', visibleWeek)
 
         const total = (pointsData || []).reduce((sum, r) => sum + r.points, 0)
-
         await supabase.from('weekly_reports').upsert({
           user_id: profile.id,
           week_number: visibleWeek,
           total_points: total,
           revealed_at: new Date().toISOString(),
         })
-
+        setCache(`report:${profile.id}`, { score: total, daysLeft: remaining }, 10 * 60 * 1000)
         setReportScore(total)
       } else {
+        setCache(`report:${profile.id}`, { score: existingReport.total_points, daysLeft: remaining }, 10 * 60 * 1000)
         setReportScore(existingReport.total_points)
       }
     }
@@ -541,39 +570,61 @@ export default function HomePage() {
 
   async function markTrainingDone(trainingId) {
     if (!profile) return
-    const completed = activityLog?.trainings_completed || []
-    if (completed.includes(trainingId)) return
-    const newCompleted = [...completed, trainingId]
-    const allDone = newCompleted.length >= trainings.length
-    if (activityLog) {
-      await supabase.from('activity_log').update({ trainings_completed: newCompleted, all_done: allDone }).eq('id', activityLog.id)
-    } else {
-      await supabase.from('activity_log').insert({ user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: allDone })
-    }
-    setActivityLog(prev => ({ ...prev, trainings_completed: newCompleted, all_done: allDone }))
 
+    // Sprawdź lokalny stan — bez czytania z DB
+    const currentCompleted = activityLog?.trainings_completed || []
+    if (currentCompleted.includes(trainingId)) return
+
+    const newCompleted = [...currentCompleted, trainingId]
+    const allDone = newCompleted.length >= trainings.length
+
+    // ── OPTIMISTIC: karta zaznacza się NATYCHMIAST, przed jakimkolwiek request ──
+    setActivityLog(prev => ({
+      ...(prev || { user_id: profile.id, date: TODAY }),
+      trainings_completed: newCompleted,
+      all_done: allDone,
+    }))
+    bustCache(`log:${profile.id}:${TODAY}`)
+
+    // ── DB: upsert logu + fresh profil lecą RÓWNOLEGLE ──
+    const [{ data: savedLog }, { data: freshProfile }] = await Promise.all([
+      supabase.from('activity_log')
+        .upsert(
+          { user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: allDone },
+          { onConflict: 'user_id,date' }
+        )
+        .select().single(),
+      supabase.from('profiles')
+        .select('streak, longest_streak, last_active')
+        .eq('id', profile.id)
+        .single(),
+    ])
+
+    // Synchronizuj z faktycznym stanem z DB (na wypadek rozbieżności)
+    if (savedLog) setActivityLog(savedLog)
+
+    // ── Streak ──
+    if ((freshProfile?.last_active || '').slice(0, 10) !== TODAY) {
+      const newStreak = (freshProfile?.streak || 0) + 1
+      const { error: strErr } = await supabase.from('profiles').update({
+        streak:         newStreak,
+        longest_streak: Math.max(newStreak, freshProfile?.longest_streak || 0),
+        last_active:    TODAY,
+      }).eq('id', profile.id)
+      if (!strErr) { await refreshProfile(); setStreakToast(newStreak) }
+    }
+
+    // ── Punkty ──
     const training = trainings.find(t => t.id === trainingId)
     const points = (training?._pts || 1) * (training?._multiplier || 1)
-    const daysSinceJoin = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
-    const weekNumber = Math.floor(daysSinceJoin / 7) + 1
-    await supabase.from('points_log').insert({
-      user_id: profile.id,
-      training_id: trainingId,
-      points,
-      week_number: weekNumber,
-      date: TODAY,
+    const weekNumber = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24 * 7)) + 1
+    supabase.from('points_log').insert({                  // fire-and-forget
+      user_id: profile.id, training_id: trainingId,
+      points, week_number: weekNumber, date: TODAY, source: 'training',
     })
 
-    if (allDone) {
-      setShowDayDoneModal(true)
-      const newStreak = (profile.streak || 0) + 1
-      await supabase.from('profiles').update({
-        streak: newStreak, longest_streak: Math.max(newStreak, profile.longest_streak || 0), last_active: TODAY,
-      }).eq('id', profile.id)
-      await refreshProfile()
-    }
-    // Sprawdź osiągnięcia po zaznaczeniu
-    checkAchievements(trainingId, allDone)
+    if (allDone) setShowDayDoneModal(true)
+    setTimeout(() => checkAchievements(trainingId, allDone), 0)
   }
 
   async function unmarkTrainingDone(trainingId) {
@@ -582,18 +633,20 @@ export default function HomePage() {
     if (!completed.includes(trainingId)) return
     const newCompleted = completed.filter(id => id !== trainingId)
 
+    // ── OPTIMISTIC: cofnij zaznaczenie natychmiast ──
+    setActivityLog(prev => ({ ...prev, trainings_completed: newCompleted, all_done: false }))
+    bustCache(`log:${profile.id}:${TODAY}`)
+
+    // DB w tle równolegle
     await Promise.all([
-      // Usuń z activity_log
       supabase.from('activity_log')
         .update({ trainings_completed: newCompleted, all_done: false })
         .eq('id', activityLog.id),
-      // Usuń punkty
       supabase.from('points_log')
         .delete()
         .eq('user_id', profile.id)
         .eq('training_id', trainingId)
         .eq('date', TODAY),
-      // Usuń sesję rzutową z dzisiejszego dnia (jeśli istnieje)
       supabase.from('shooting_sessions')
         .delete()
         .eq('user_id', profile.id)
@@ -601,7 +654,33 @@ export default function HomePage() {
         .eq('session_date', TODAY),
     ])
 
-    setActivityLog(prev => ({ ...prev, trainings_completed: newCompleted, all_done: false }))
+    // ── Cofnij serię jeśli to był jedyny trening dziś i brak recovery ──
+    const { data: freshProfile } = await supabase
+      .from('profiles')
+      .select('streak, last_active')
+      .eq('id', profile.id)
+      .single()
+
+    const lastActiveDate = (freshProfile?.last_active || '').slice(0, 10)
+    if (newCompleted.length === 0 && lastActiveDate === TODAY) {
+      // Sprawdź czy są jakieś aktywności recovery dziś
+      const { data: recoveryToday } = await supabase
+        .from('recovery_log')
+        .select('id')
+        .eq('user_id', profile.id)
+        .eq('date', TODAY)
+        .limit(1)
+
+      if (!recoveryToday?.length) {
+        // Żadnych aktywności dziś — cofnij serię
+        const newStreak = Math.max(0, (freshProfile.streak || 0) - 1)
+        await supabase.from('profiles').update({
+          streak:      newStreak,
+          last_active: null,
+        }).eq('id', profile.id)
+        await refreshProfile()
+      }
+    }
 
     // Cofnij wszystkie staged achievements które nie są już zasłużone
     await revokeStaleAchievements(profile.id)
@@ -855,6 +934,7 @@ export default function HomePage() {
       onTouchEnd={handleTouchEnd}
     >
       <SettingsPanel open={showSettings} onClose={closeSettings} />
+      <LeagueInfoPanel open={leagueOpen} onClose={closeLeague} />
       <AnimatePresence>{showQuote && <QuotePanel quote={quote} onClose={() => setShowQuote(false)} />}</AnimatePresence>
       <AnimatePresence>
         {achievementToast && (
@@ -866,43 +946,50 @@ export default function HomePage() {
           <DayDoneModal completedCount={completed.length} onClose={() => setShowDayDoneModal(false)} />
         )}
       </AnimatePresence>
+      <StreakToast streak={streakToast} visible={streakToast > 0} onHide={() => setStreakToast(0)} />
 
-      {/* Header */}
-      <div style={{ padding: '32px 22px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <div>
-          <p className="section-label">{dateStr}</p>
-          <h1 className="display-title" style={{ fontSize: 28, marginTop: 4 }}>{greeting}</h1>
-          {dayType !== 'T' && (
-            <span className={`badge ${dayType === 'R' ? 'badge-green' : 'badge-gray'}`} style={{ marginTop: 6, display: 'inline-flex' }}>
-              {dayType === 'R' ? '🧘 Regeneracja' : '😴 Odpoczynek'}
-            </span>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <button onClick={openSettings} style={{
-            background: 'rgba(10,6,3,0.65)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.12)', borderTop: '1px solid rgba(255,255,255,0.20)',
-            borderRadius: 12, width: 48, height: 48, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.40)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-          </button>
-          <button onClick={() => setShowQuote(true)} style={{
-            background: 'rgba(10,6,3,0.65)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.12)', borderTop: '1px solid rgba(255,255,255,0.20)',
-            borderRadius: 12, width: 48, height: 48, cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,0.40)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <span style={{ fontFamily: 'Georgia, serif', fontSize: 28, lineHeight: 1, color: 'var(--orange)', fontWeight: 900, display: 'block', marginTop: -4 }}>"</span>
-          </button>
+      {/* Header — identical structure to StatsPage */}
+      <div style={{ padding: '32px 22px 0' }}>
+        <p className="section-label" style={{ marginBottom: 4 }}>{dateStr}</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+          <div>
+            <h1 className="display-title" style={{ fontSize: 38 }}>{greeting}</h1>
+            {dayType !== 'T' && (
+              <span className={`badge ${dayType === 'R' ? 'badge-green' : 'badge-gray'}`} style={{ marginTop: 6, display: 'inline-flex' }}>
+                {dayType === 'R' ? '🧘 Regeneracja' : '😴 Odpoczynek'}
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            {/* Settings */}
+            <motion.button whileTap={{ scale: 0.82 }} onClick={openSettings} style={{
+              background: 'none', border: 'none',
+              width: 40, height: 40, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'rgba(200,210,230,0.55)',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </motion.button>
+            {/* Quote / sparkle */}
+            <motion.button whileTap={{ scale: 0.82 }} onClick={() => setShowQuote(true)} style={{
+              background: 'none', border: 'none',
+              width: 40, height: 40, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'rgba(200,210,230,0.55)',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2 L13.5 10.5 L22 12 L13.5 13.5 L12 22 L10.5 13.5 L2 12 L10.5 10.5 Z"/>
+              </svg>
+            </motion.button>
+          </div>
         </div>
       </div>
 
       {/* Ocena Raportu */}
-      <div style={{ padding: '24px 22px 4px' }}>
+      <div style={{ padding: '0 22px 4px' }}>
         {/* Label + badge */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
@@ -911,16 +998,56 @@ export default function HomePage() {
               Twój postęp
             </p>
           </div>
-          {!daysUntilReport && !reportLoading && (
-            <span style={{
-              padding: '4px 12px',
-              background: `${scoreColor}18`,
-              border: `1px solid ${scoreColor}40`,
-              borderRadius: 'var(--radius-full)',
-              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
-              color: scoreColor, letterSpacing: 1.5, textTransform: 'uppercase',
-            }}>{scoreLabel}</span>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {!daysUntilReport && !reportLoading && (
+              <span style={{
+                padding: '4px 12px',
+                background: `${scoreColor}18`,
+                border: `1px solid ${scoreColor}40`,
+                borderRadius: 'var(--radius-full)',
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
+                color: scoreColor, letterSpacing: 1.5, textTransform: 'uppercase',
+              }}>{scoreLabel}</span>
+            )}
+            {/* League button — golden hex */}
+            <motion.button
+              whileTap={{ scale: 0.88 }}
+              onClick={openLeague}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                position: 'relative', width: 38, height: 38, flexShrink: 0 }}
+            >
+              <svg width="38" height="38" viewBox="0 0 90 90"
+                style={{ filter: 'drop-shadow(0 0 8px rgba(255,179,0,0.55))' }}>
+                <defs>
+                  <linearGradient id="lgBtn" x1="20%" y1="0%" x2="80%" y2="100%">
+                    <stop offset="0%"   stopColor="#FFE066"/>
+                    <stop offset="100%" stopColor="#CC7A00"/>
+                  </linearGradient>
+                </defs>
+                <polygon points="45,9 84,33 84,61 45,87 6,61 6,33" fill="rgba(0,0,0,0.35)"/>
+                <polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill="url(#lgBtn)"/>
+                <polygon points="45,6 8,32 45,42" fill="rgba(255,255,255,0.22)"/>
+                <polygon points="45,6 82,32 82,58 45,84 8,58 8,32"
+                  fill="none" stroke="rgba(255,220,80,0.7)" strokeWidth="2.5" strokeLinejoin="round"/>
+                <text x="45" y="50" textAnchor="middle" dominantBaseline="middle" fontSize="30">🏆</text>
+              </svg>
+              {/* 2 coin dots at the top */}
+              {[315, 225].map((deg, i) => {
+                const r = 22, rad = (deg * Math.PI) / 180
+                return (
+                  <div key={i} style={{
+                    position: 'absolute',
+                    left: 19 + r * Math.cos(rad) - 4,
+                    top:  19 + r * Math.sin(rad) - 4,
+                    width: 7, height: 7, borderRadius: '50%',
+                    background: 'radial-gradient(circle, #FFE066, #CC7A00)',
+                    boxShadow: '0 0 4px rgba(255,179,0,0.7)',
+                    pointerEvents: 'none',
+                  }}/>
+                )
+              })}
+            </motion.button>
+          </div>
         </div>
 
         <ReportRatingRing

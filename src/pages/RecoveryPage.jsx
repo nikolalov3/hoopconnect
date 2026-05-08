@@ -2,8 +2,26 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { creditRestDayStreak } from '../lib/streak'
+import StreakToast from '../components/ui/StreakToast'
 
 const TODAY = new Date().toISOString().split('T')[0]
+
+const SCHEDULES = {
+  3: ['T','O','T','O','T','R','O'],
+  4: ['T','T','O','T','T','R','O'],
+  5: ['T','T','R','T','T','T','O'],
+  6: ['T','T','T','R','T','T','T'],
+}
+function getTodayType(profile) {
+  if (profile?.created_at) {
+    const reg = new Date(profile.created_at).toISOString().split('T')[0]
+    if (reg === TODAY) return 'T'
+  }
+  const schedule = SCHEDULES[profile?.training_days || 4] || SCHEDULES[4]
+  const dow = new Date().getDay()
+  return schedule[dow === 0 ? 6 : dow - 1]
+}
 
 const QUICK_ACTIVITIES = [
   { id: 'sleep',     emoji: '😴', label: 'Sen 9h+',         minutes: 540, color: '#7C5CBF' },
@@ -87,10 +105,11 @@ function RecoveryTile({ activity, done, onToggle }) {
 }
 
 export default function RecoveryPage() {
-  const { profile } = useAuth()
+  const { profile, refreshProfile } = useAuth()
   const [doneActivities, setDoneActivities] = useState(new Set())
-  const [tipIndex, setTipIndex] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [tipIndex,       setTipIndex]       = useState(0)
+  const [loading,        setLoading]        = useState(true)
+  const [streakToast,    setStreakToast]     = useState(0)
 
   useEffect(() => {
     if (!profile) return
@@ -119,7 +138,48 @@ export default function RecoveryPage() {
         .eq('user_id', profile.id)
         .eq('date', TODAY)
         .eq('activity', activityId)
-      setDoneActivities(prev => { const n = new Set(prev); n.delete(activityId); return n })
+
+      const newDone = new Set(doneActivities)
+      newDone.delete(activityId)
+      setDoneActivities(newDone)
+
+      // Jeśli to była ostatnia aktywność dziś — sprawdź czy cofnąć serię
+      if (newDone.size === 0) {
+        const [{ data: todayLog }, { data: fp }] = await Promise.all([
+          supabase.from('activity_log')
+            .select('trainings_completed')
+            .eq('user_id', profile.id)
+            .eq('date', TODAY)
+            .maybeSingle(),
+          supabase.from('profiles')
+            .select('streak, last_active')
+            .eq('id', profile.id)
+            .single(),
+        ])
+        const hasTrainings = (todayLog?.trainings_completed?.length || 0) > 0
+        if (!hasTrainings && (fp?.last_active || '').slice(0, 10) === TODAY) {
+          // Cofnij serię
+          const newStreak = Math.max(0, (fp.streak || 0) - 1)
+          await supabase.from('profiles').update({
+            streak:      newStreak,
+            last_active: null,
+          }).eq('id', profile.id)
+          // Usuń wpis activity_log wstawiony przez creditRestDayStreak
+          // (brak treningów + brak aktywności = dzień nieaktywny w kalendarzu)
+          await supabase.from('activity_log')
+            .delete()
+            .eq('user_id', profile.id)
+            .eq('date', TODAY)
+          await refreshProfile()
+        } else if (hasTrainings) {
+          // Są treningi → zostaw activity_log, ale zresetuj all_done na false
+          // bo sam recovery nie wystarczy do "wszystko zrobione"
+          await supabase.from('activity_log')
+            .update({ all_done: false })
+            .eq('user_id', profile.id)
+            .eq('date', TODAY)
+        }
+      }
 
     } else {
       await supabase.from('recovery_log').insert({
@@ -129,6 +189,13 @@ export default function RecoveryPage() {
         duration_minutes: activity.minutes,
       })
       setDoneActivities(prev => new Set([...prev, activityId]))
+
+      // Seria kredytowana tylko w dni wolne/regeneracji — NIE w dni treningowe
+      const dayType = getTodayType(profile)
+      if (dayType !== 'T') {
+        const credited = await creditRestDayStreak(profile, refreshProfile)
+        if (credited) setStreakToast(credited)
+      }
     }
   }
 
@@ -191,6 +258,7 @@ export default function RecoveryPage() {
         {/* Progress bar */}
         <div style={{ background: 'rgba(150,200,235,0.30)', borderRadius: 4, height: 5, overflow: 'hidden' }}>
           <motion.div
+            initial={{ width: `${Math.min(recoveryScore, 100)}%` }}
             animate={{ width: `${Math.min(recoveryScore, 100)}%` }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
             style={{
@@ -269,6 +337,8 @@ export default function RecoveryPage() {
           </p>
         </motion.div>
       )}
+
+      <StreakToast streak={streakToast} visible={streakToast > 0} onHide={() => setStreakToast(0)} />
     </div>
   )
 }

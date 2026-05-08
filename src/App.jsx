@@ -1,25 +1,32 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { UIProvider } from './context/UIContext'
+import { UIProvider, useUI } from './context/UIContext'
 import BottomNav from './components/ui/BottomNav'
+import LeaderboardDrawer from './components/ui/LeaderboardDrawer'
 
 // Lazy-loaded pages — each page loads as a separate JS chunk
 const AuthPage        = lazy(() => import('./pages/AuthPage'))
 const OnboardingPage  = lazy(() => import('./pages/OnboardingPage'))
 const HomePage        = lazy(() => import('./pages/HomePage'))
 const ShootingPage    = lazy(() => import('./pages/ShootingPage'))
+const CalendarPage    = lazy(() => import('./pages/CalendarPage'))
 const StatsPage       = lazy(() => import('./pages/StatsPage'))
 const AchievementsPage = lazy(() => import('./pages/AchievementsPage'))
 const RecoveryPage    = lazy(() => import('./pages/RecoveryPage'))
+const ClubPage        = lazy(() => import('./pages/ClubPage'))
+const JoinClubPage    = lazy(() => import('./pages/JoinClubPage'))
 
-const pageVariants = {
-  initial: { opacity: 0, y: 14, scale: 0.985 },
-  animate: { opacity: 1, y: 0,  scale: 1 },
-  exit:    { opacity: 0, y: -8, scale: 0.99 },
-}
-const pageTransition = { duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }
+// All main tab routes — rendered always (keep-alive), just CSS show/hide
+const TAB_ROUTES = [
+  { path: '/',             Component: HomePage },
+  { path: '/stats',        Component: StatsPage },
+  { path: '/achievements', Component: AchievementsPage },
+  { path: '/recovery',     Component: RecoveryPage },
+  { path: '/club',         Component: ClubPage },
+]
+const TAB_PATHS = new Set(TAB_ROUTES.map(r => r.path))
 
 // Minimal spinner shown while a lazy chunk is downloading
 function PageLoader() {
@@ -33,31 +40,35 @@ function PageLoader() {
   )
 }
 
-function Tab({ children, fast }) {
-  return (
-    <motion.div
-      variants={pageVariants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      transition={fast ? { duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] } : pageTransition}
-      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-    >
-      {children}
-    </motion.div>
-  )
-}
-
 function AppShell() {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, profileReady } = useAuth()
+  const { leaderboardOpen } = useUI()
   const location = useLocation()
-  const inShooting = location.pathname.startsWith('/shooting')
+  const path = location.pathname
+  const isTabRoute  = TAB_PATHS.has(path)
+  const inShooting   = path.startsWith('/shooting')
+  const inOnboarding = path === '/onboarding'
+  const inCalendar   = path === '/calendar'
+  const showNav      = !inShooting && !inOnboarding && !inCalendar
 
-  if (loading) {
+  // Lazy-mount: a tab mounts on first visit, then stays mounted forever (keep-alive).
+  // Switching tabs = instant CSS visibility swap, zero re-fetch, zero remount.
+  const [mounted, setMounted] = useState(() => new Set(['/']))
+  useEffect(() => {
+    if (TAB_PATHS.has(path)) {
+      setMounted(prev => {
+        if (prev.has(path)) return prev          // already mounted — no re-render
+        return new Set([...prev, path])
+      })
+    }
+  }, [path])
+
+  // Czekaj na inicjalny loading sesji LUB pierwszy fetch profilu (tylko raz, nie przy token refresh)
+  if (loading || !profileReady) {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: '100%', flexDirection: 'column', gap: 16,
+        height: '100%',
       }}>
         <div className="spinner" />
       </div>
@@ -66,25 +77,57 @@ function AppShell() {
 
   if (!user) return <Navigate to="/auth" replace />
 
-  if ((!profile || !profile.onboarding_done) && location.pathname !== '/onboarding') {
+  // Brak profilu lub onboarding nieukończony → zawsze kieruj na onboarding
+  if ((!profile || !profile.onboarding_done) && path !== '/onboarding') {
     return <Navigate to="/onboarding" replace />
   }
 
   return (
     <div className="app-shell">
       <Suspense fallback={<PageLoader />}>
-        <AnimatePresence mode="wait" initial={false}>
-          <Routes location={location} key={location.pathname}>
-            <Route path="/"             element={<Tab><HomePage /></Tab>} />
-            <Route path="/shooting/:id" element={<ShootingPage />} />
-            <Route path="/stats"        element={<Tab><StatsPage /></Tab>} />
-            <Route path="/achievements" element={<Tab><AchievementsPage /></Tab>} />
-            <Route path="/recovery"     element={<Tab fast><RecoveryPage /></Tab>} />
-            <Route path="/onboarding"   element={<OnboardingPage />} />
-          </Routes>
-        </AnimatePresence>
+
+        {/* ── Keep-alive tab container ─────────────────────────────────────── */}
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+
+          {TAB_ROUTES.map(({ path: tabPath, Component }) =>
+            mounted.has(tabPath) && (
+              <div
+                key={tabPath}
+                style={{
+                  position: 'absolute', inset: 0,
+                  // opacity:0 hides everything (incl. backdrop-filter compositing) without
+                  // changing DOM layout position — so Framer Motion sees no position delta
+                  // and doesn't fire layout/spring animations on tab switch.
+                  // translateX changed positions → triggered layout animations (pill slide,
+                  // panel slider, training cards wipe-in). opacity doesn't.
+                  opacity: (isTabRoute && path === tabPath) ? 1 : 0,
+                  pointerEvents: (isTabRoute && path === tabPath) ? 'auto' : 'none',
+                  display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                  transition: 'none',  // instant — no fade animation
+                }}
+              >
+                <Component />
+              </div>
+            )
+          )}
+
+          {/* ── Non-tab pages (shooting session, onboarding) ── */}
+          {!isTabRoute && (
+            <AnimatePresence mode="wait" initial={false}>
+              <Routes location={location} key={location.pathname}>
+                <Route path="/shooting/:id" element={<ShootingPage />} />
+                <Route path="/calendar"     element={<CalendarPage />} />
+                <Route path="/onboarding"   element={<OnboardingPage />} />
+              </Routes>
+            </AnimatePresence>
+          )}
+
+        </div>
+
       </Suspense>
-      {!inShooting && location.pathname !== '/onboarding' && <BottomNav />}
+
+      {isTabRoute && <LeaderboardDrawer />}
+      {showNav && <BottomNav />}
     </div>
   )
 }
@@ -92,7 +135,14 @@ function AppShell() {
 function AuthRoute() {
   const { user, loading } = useAuth()
   if (loading) return null
-  if (user) return <Navigate to="/" replace />
+  if (user) {
+    const returnTo = localStorage.getItem('hc_returnTo')
+    if (returnTo) {
+      localStorage.removeItem('hc_returnTo')
+      return <Navigate to={returnTo} replace />
+    }
+    return <Navigate to="/" replace />
+  }
   return (
     <Suspense fallback={<PageLoader />}>
       <AuthPage />
@@ -106,8 +156,13 @@ export default function App() {
       <AuthProvider>
         <UIProvider>
           <Routes>
-            <Route path="/auth" element={<AuthRoute />} />
-            <Route path="/*"    element={<AppShell />} />
+            <Route path="/auth"            element={<AuthRoute />} />
+            <Route path="/dolacz/:clubId"  element={
+              <Suspense fallback={<PageLoader />}>
+                <JoinClubPage />
+              </Suspense>
+            } />
+            <Route path="/*"               element={<AppShell />} />
           </Routes>
         </UIProvider>
       </AuthProvider>
