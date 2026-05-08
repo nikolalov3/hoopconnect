@@ -3080,110 +3080,24 @@ function NoClubScreen({ onCreated, profile }) {
 
   const codeRaw = codeInput.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 5)
 
-  // ── STEP CARDS — mini SVG mockups ─────────────────────────────────────────
   const STEPS = [
     {
       num: '01',
-      title: 'Utwórz swój klub',
-      body: 'Wybierz nazwę, skrót i kraj. Twój klub dostanie unikalny kod do zapraszania.',
       accent: C.accent,
-      icon: (
-        <svg width="72" height="52" viewBox="0 0 72 52" style={{ flexShrink: 0 }}>
-          {/* Mini court background */}
-          <rect x="0" y="0" width="72" height="52" rx="8" fill="#060E1E"/>
-          <rect x="0" y="0" width="72" height="52" rx="8" fill="none"
-            stroke="rgba(0,200,255,0.15)" strokeWidth="1"/>
-          {/* Court key */}
-          <rect x="24" y="24" width="24" height="24" rx="2"
-            fill="rgba(0,110,255,0.14)" stroke="rgba(0,200,255,0.25)" strokeWidth="0.8"/>
-          {/* Half circle */}
-          <path d="M24 24 A12 12 0 0 1 48 24" fill="none"
-            stroke="rgba(0,200,255,0.25)" strokeWidth="0.8"/>
-          {/* Center */}
-          <circle cx="36" cy="26" r="3.5" fill="#0A2040"
-            stroke="rgba(0,200,255,0.40)" strokeWidth="0.8"/>
-          {/* Position dots */}
-          {[{x:36,y:10},{x:18,y:20},{x:54,y:20},{x:20,y:38},{x:52,y:38}].map((d,i) => (
-            <circle key={i} cx={d.x} cy={d.y} r="3"
-              fill={i===0 ? C.accent : `${C.accent}55`}
-              style={{ filter: i===0 ? `drop-shadow(0 0 4px ${C.accent})` : 'none' }}/>
-          ))}
-          {/* Hex badge mini */}
-          <polygon points="36,2 41,5 41,10 36,13 31,10 31,5"
-            fill={C.accent} fillOpacity="0.25"
-            stroke={C.accent} strokeWidth="0.9"/>
-        </svg>
-      ),
+      title: 'Utwórz klub',
+      body: 'Nadaj nazwę, skrót i kraj. Klub otrzymuje unikalny 5-znakowy kod — wyślij go znajomym, by dołączyli.',
     },
     {
       num: '02',
-      title: 'Wyzwij inne kluby',
-      body: 'Twórz mecze 2v2, 3v3 lub 5v5 w pobliżu. Inne kluby dołączają automatycznie.',
       accent: C.hoop,
-      icon: (
-        <svg width="72" height="52" viewBox="0 0 72 52" style={{ flexShrink: 0 }}>
-          <rect x="0" y="0" width="72" height="52" rx="8" fill="#060E1E"/>
-          <rect x="0" y="0" width="72" height="52" rx="8" fill="none"
-            stroke="rgba(255,168,32,0.15)" strokeWidth="1"/>
-          {/* Match card mockup */}
-          <rect x="6" y="8" width="60" height="36" rx="6"
-            fill="#0A1628" stroke="rgba(255,168,32,0.22)" strokeWidth="0.8"/>
-          {/* Mode badge */}
-          <rect x="10" y="12" width="20" height="8" rx="3"
-            fill="rgba(255,168,32,0.20)"/>
-          <text x="20" y="18" textAnchor="middle" fill={C.hoop}
-            fontSize="5" fontWeight="800" fontFamily="sans-serif">3 NA 3</text>
-          {/* Teams */}
-          <rect x="10" y="25" width="22" height="14" rx="4"
-            fill="rgba(0,200,255,0.08)" stroke="rgba(0,200,255,0.20)" strokeWidth="0.6"/>
-          <text x="21" y="34" textAnchor="middle" fill={C.accent}
-            fontSize="5.5" fontWeight="900" fontFamily="sans-serif">HC1</text>
-          <text x="36" y="34" textAnchor="middle" fill="rgba(255,255,255,0.3)"
-            fontSize="7" fontWeight="700" fontFamily="sans-serif">VS</text>
-          <rect x="40" y="25" width="22" height="14" rx="4"
-            fill="rgba(255,168,32,0.06)" stroke="rgba(255,168,32,0.18)" strokeWidth="0.6"
-            strokeDasharray="2,2"/>
-          <text x="51" y="34" textAnchor="middle" fill="rgba(255,168,32,0.45)"
-            fontSize="5" fontWeight="700" fontFamily="sans-serif">DOŁĄCZ</text>
-          {/* Location pin */}
-          <circle cx="58" cy="14" r="4" fill="rgba(255,168,32,0.15)"
-            stroke={C.hoop} strokeWidth="0.8"/>
-          <text x="58" y="17" textAnchor="middle" fill={C.hoop}
-            fontSize="5" fontWeight="900" fontFamily="sans-serif">⚑</text>
-        </svg>
-      ),
+      title: 'Organizuj mecze',
+      body: 'Twórz spotkania 2v2, 3v3 lub 5v5 w swojej okolicy. Inne kluby odpowiadają na wyzwanie i zajmują wolne miejsca.',
     },
     {
       num: '03',
-      title: 'Rywalizujcie w lidze',
-      body: 'Za mecze i aktywność zdobywacie punkty w rankingu. Liga resetuje się w każdy poniedziałek.',
       accent: '#FFD166',
-      icon: (
-        <svg width="72" height="52" viewBox="0 0 72 52" style={{ flexShrink: 0 }}>
-          <rect x="0" y="0" width="72" height="52" rx="8" fill="#060E1E"/>
-          <rect x="0" y="0" width="72" height="52" rx="8" fill="none"
-            stroke="rgba(255,209,102,0.15)" strokeWidth="1"/>
-          {/* Rank rows */}
-          {[
-            { y: 8,  rank: '1', name: 'Warsaw B.', pts: '847', c: '#FFA820' },
-            { y: 21, rank: '2', name: 'Kraków FC',  pts: '723', c: '#C0C0C0' },
-            { y: 34, rank: '3', name: 'Gdańsk HC',  pts: '611', c: '#CD7F32' },
-          ].map(r => (
-            <g key={r.rank}>
-              <rect x="6" y={r.y} width="60" height="11" rx="3"
-                fill={`${r.c}08`} stroke={`${r.c}22`} strokeWidth="0.6"/>
-              <text x="13" y={r.y+8} textAnchor="middle" fill={r.c}
-                fontSize="6" fontWeight="900" fontFamily="sans-serif">{r.rank}</text>
-              <text x="21" y={r.y+8} fill="rgba(255,255,255,0.7)"
-                fontSize="5.5" fontWeight="600" fontFamily="sans-serif">{r.name}</text>
-              <text x="62" y={r.y+8} textAnchor="end" fill={r.c}
-                fontSize="6" fontWeight="900" fontFamily="sans-serif">{r.pts}</text>
-            </g>
-          ))}
-          {/* Gold accent line */}
-          <rect x="6" y="8" width="2" height="11" rx="1" fill="#FFA820"/>
-        </svg>
-      ),
+      title: 'Rywalizuj w lidze',
+      body: 'Mecze i aktywność przekładają się na punkty ligowe. Ranking tygodniowy resetuje się w każdy poniedziałek o 00:00.',
     },
   ]
 
@@ -3192,142 +3106,128 @@ function NoClubScreen({ onCreated, profile }) {
   }
 
   return (
-    <div className="page-content" style={{ padding: '36px 22px 48px', overflowY: 'auto' }}>
+    <div className="page-content" style={{ padding: '40px 22px 48px', overflowY: 'auto' }}>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.38 }}
-        style={{ textAlign: 'center', marginBottom: 32 }}>
+        initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        style={{ textAlign: 'center', marginBottom: 36 }}>
 
-        {/* Basketball icon */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
-          <motion.div
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}>
-            <svg width="60" height="60" viewBox="0 0 60 60">
-              <defs>
-                <radialGradient id="ncBall" cx="40%" cy="35%">
-                  <stop offset="0%" stopColor="#FFC040"/>
-                  <stop offset="100%" stopColor="#CC6600"/>
-                </radialGradient>
-              </defs>
-              <circle cx="30" cy="30" r="26" fill="url(#ncBall)"
-                style={{ filter: 'drop-shadow(0 6px 18px rgba(255,140,0,0.55))' }}/>
-              {/* Lines */}
-              <path d="M4 30 Q30 14 56 30" fill="none" stroke="rgba(0,0,0,0.30)" strokeWidth="1.8"/>
-              <path d="M4 30 Q30 46 56 30" fill="none" stroke="rgba(0,0,0,0.30)" strokeWidth="1.8"/>
-              <line x1="30" y1="4" x2="30" y2="56" stroke="rgba(0,0,0,0.30)" strokeWidth="1.8"/>
-              <circle cx="30" cy="30" r="26" fill="none"
-                stroke="rgba(0,0,0,0.18)" strokeWidth="1.5"/>
-            </svg>
-          </motion.div>
+        {/* App logo */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+          <img src="/hoop.svg" alt="HoopConnect"
+            style={{ width: 48, height: 48, opacity: 0.92,
+              filter: 'drop-shadow(0 4px 14px rgba(91,184,245,0.45))' }}/>
         </div>
 
         <h1 style={{
           fontFamily: 'var(--font-display)', fontWeight: 900,
-          fontSize: 38, textTransform: 'uppercase', letterSpacing: 0.5,
-          color: 'var(--text-primary)', margin: '0 0 10px', lineHeight: 1,
+          fontSize: 34, textTransform: 'uppercase', letterSpacing: 1,
+          color: 'var(--text-primary)', margin: '0 0 8px', lineHeight: 1,
         }}>
           Graj z innymi
         </h1>
-        <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>
-          Dołącz do klubu i rozgrywaj mecze<br/>z graczami w pobliżu
+        <p style={{ fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.6, margin: 0 }}>
+          Dołącz do klubu i rozgrywaj mecze z graczami w pobliżu
         </p>
       </motion.div>
 
-      {/* ── Step cards ─────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 30 }}>
+      {/* ── Step cards — minimal ────────────────────────────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: 32,
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderTop: '1px solid rgba(255,255,255,0.10)', borderRadius: 14, overflow: 'hidden' }}>
         {STEPS.map((s, i) => (
           <motion.div key={s.num}
-            initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.08 + i * 0.06, duration: 0.32 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            transition={{ delay: 0.06 + i * 0.05, duration: 0.28 }}
             style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              padding: '14px 14px',
-              background: 'rgba(6,14,30,0.55)',
-              backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
-              border: `1px solid ${s.accent}14`,
-              borderTop: `1px solid ${s.accent}28`,
-              borderLeft: `3px solid ${s.accent}55`,
-              borderRadius: 14,
+              display: 'flex', alignItems: 'flex-start', gap: 16,
+              padding: '16px 18px',
+              background: i % 2 === 0 ? 'rgba(6,14,30,0.60)' : 'rgba(4,10,22,0.50)',
+              borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none',
             }}>
-            {/* Mini mockup */}
-            {s.icon}
+            {/* Step number */}
+            <span style={{
+              fontFamily: 'var(--font-display)', fontWeight: 900,
+              fontSize: 11, letterSpacing: 1, flexShrink: 0, marginTop: 1,
+              color: `${s.accent}60`,
+            }}>{s.num}</span>
             {/* Text */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
-                <span style={{
-                  fontSize: 8, fontWeight: 900, letterSpacing: 1.5,
-                  color: `${s.accent}70`, fontFamily: 'var(--font-display)',
-                }}>{s.num}</span>
-                <span style={{
-                  fontSize: 13, fontWeight: 800,
-                  color: 'var(--text-primary)', fontFamily: 'var(--font-display)',
-                  letterSpacing: 0.2,
-                }}>{s.title}</span>
-              </div>
               <p style={{
-                fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0,
+                fontSize: 13, fontWeight: 700, letterSpacing: 0.2,
+                color: 'rgba(255,255,255,0.90)', margin: '0 0 4px',
+                fontFamily: 'var(--font-display)',
+              }}>{s.title}</p>
+              <p style={{
+                fontSize: 11.5, color: 'rgba(255,255,255,0.38)',
+                lineHeight: 1.6, margin: 0,
               }}>{s.body}</p>
             </div>
+            {/* Accent dot */}
+            <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+              marginTop: 5, background: s.accent, opacity: 0.5,
+              boxShadow: `0 0 6px ${s.accent}` }}/>
           </motion.div>
         ))}
       </div>
 
       {/* ── Primary CTA ────────────────────────────────────────────────── */}
       <motion.button
-        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.28, duration: 0.32 }}
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.24, duration: 0.28 }}
         whileTap={{ scale: 0.97 }}
         onClick={() => setView('create')}
         className="btn-primary"
-        style={{ marginBottom: 22 }}>
+        style={{ marginBottom: 28 }}>
         Załóż Klub
       </motion.button>
 
       {/* ── Join-by-code section ────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        transition={{ delay: 0.36, duration: 0.32 }}>
+        transition={{ delay: 0.30, duration: 0.28 }}>
 
         {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-          <div style={{ flex: 1, height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(0,200,255,0.18))' }}/>
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2,
-            color: 'rgba(0,200,255,0.35)', textTransform: 'uppercase' }}>
-            lub dołącz do istniejącego
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }}/>
+          <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: 1.5,
+            color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase' }}>
+            mam kod klubu
           </span>
-          <div style={{ flex: 1, height: 1,
-            background: 'linear-gradient(90deg, rgba(0,200,255,0.18), transparent)' }}/>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }}/>
         </div>
 
-        {/* Code input row */}
-        <div style={{
-          display: 'flex', gap: 10, alignItems: 'stretch', marginBottom: 12,
-        }}>
+        {/* Code input — compact, monospace */}
+        <div style={{ position: 'relative', marginBottom: 10 }}>
           <input
-            placeholder="Wpisz kod klubu (5 znaków)"
+            placeholder="XXXXX"
             value={codeInput}
             maxLength={5}
             onChange={e => setCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0,5))}
             style={{
-              flex: 1, padding: '14px 16px',
-              background: 'rgba(6,14,30,0.55)',
-              backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
-              border: `1px solid ${codeErr ? 'rgba(255,80,80,0.40)' : codeResult ? 'rgba(0,200,130,0.40)' : 'rgba(0,200,255,0.12)'}`,
-              borderTop: `1px solid ${codeErr ? 'rgba(255,80,80,0.55)' : codeResult ? 'rgba(0,200,130,0.55)' : 'rgba(0,200,255,0.22)'}`,
-              borderRadius: 12,
-              color: 'var(--text-primary)', outline: 'none',
-              fontFamily: 'var(--font-display)', fontWeight: 900,
-              fontSize: 20, letterSpacing: 8, textAlign: 'center',
-              transition: 'border-color 0.2s',
+              width: '100%', padding: '11px 40px 11px 16px',
+              background: 'rgba(6,12,24,0.70)',
+              border: `1px solid ${codeErr ? 'rgba(255,80,80,0.35)' : codeResult ? 'rgba(0,200,130,0.35)' : 'rgba(255,255,255,0.09)'}`,
+              borderRadius: 10, boxSizing: 'border-box',
+              color: codeErr ? '#FF8080' : codeResult ? '#00E890' : 'rgba(255,255,255,0.75)',
+              outline: 'none', fontFamily: 'monospace', fontWeight: 600,
+              fontSize: 14, letterSpacing: 6,
+              transition: 'border-color 0.18s, color 0.18s',
             }}
           />
           {codeLoading && (
-            <div style={{ display: 'flex', alignItems: 'center', paddingRight: 4 }}>
-              <div className="spinner" style={{ width: 18, height: 18 }}/>
+            <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }}>
+              <div className="spinner" style={{ width: 14, height: 14 }}/>
+            </div>
+          )}
+          {codeResult && !codeLoading && (
+            <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="#00E890" strokeWidth="2.5" strokeLinecap="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
             </div>
           )}
         </div>
