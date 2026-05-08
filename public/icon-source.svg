@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060C18"/>
+      <stop offset="100%" stop-color="#020508"/>
+    </linearGradient>
+    <linearGradient id="hex" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%"  stop-color="#C8ECFF"/>
+      <stop offset="30%" stop-color="#5BB8F5"/>
+      <stop offset="65%" stop-color="#2272C3"/>
+      <stop offset="100%" stop-color="#0D4A8A"/>
+    </linearGradient>
+    <linearGradient id="lf" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="rgba(40,130,220,0.90)"/>
+      <stop offset="100%" stop-color="rgba(91,184,245,0.60)"/>
+    </linearGradient>
+    <linearGradient id="rf" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="rgba(91,184,245,0.60)"/>
+      <stop offset="100%" stop-color="rgba(14,70,150,0.95)"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="45%" r="50%">
+      <stop offset="0%"   stop-color="#5BB8F5" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#5BB8F5" stop-opacity="0"/>
+    </radialGradient>
+    <!-- clip to rounded square (iOS style) -->
+    <clipPath id="round">
+      <rect x="0" y="0" width="1024" height="1024" rx="224" ry="224"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#round)">
+    <!-- Background -->
+    <rect width="1024" height="1024" fill="url(#bg)"/>
+
+    <!-- Subtle grid lines -->
+    <g opacity="0.06" stroke="#5BB8F5" stroke-width="1">
+      <line x1="0" y1="256"  x2="1024" y2="256"/>
+      <line x1="0" y1="512"  x2="1024" y2="512"/>
+      <line x1="0" y1="768"  x2="1024" y2="768"/>
+      <line x1="256"  y1="0" x2="256"  y2="1024"/>
+      <line x1="512"  y1="0" x2="512"  y2="1024"/>
+      <line x1="768"  y1="0" x2="768"  y2="1024"/>
+    </g>
+
+    <!-- Radial glow behind hex -->
+    <ellipse cx="512" cy="490" rx="340" ry="320" fill="url(#glow)"/>
+
+    <!-- Orange bottom accent line -->
+    <rect x="0" y="980" width="1024" height="44" fill="#FFA820" opacity="0.55"/>
+
+    <!-- Hex shadow -->
+    <polygon points="512,148 836,334 836,706 512,892 188,706 188,334"
+      fill="rgba(20,80,180,0.35)"/>
+
+    <!-- Hex main body -->
+    <polygon points="512,122 822,306 822,690 512,874 202,690 202,306"
+      fill="url(#hex)"/>
+
+    <!-- Hex facets -->
+    <polygon points="512,122 202,306 512,488" fill="rgba(255,255,255,0.36)"/>
+    <polygon points="512,122 822,306 512,488" fill="rgba(255,255,255,0.15)"/>
+    <polygon points="512,874 202,690 512,556" fill="rgba(14,60,140,0.55)"/>
+    <polygon points="512,874 822,690 512,556" fill="rgba(14,50,120,0.72)"/>
+    <polygon points="202,306 202,690 512,556 512,488" fill="url(#lf)"/>
+    <polygon points="822,306 822,690 512,556 512,488" fill="url(#rf)"/>
+
+    <!-- Hex outline -->
+    <polygon points="512,122 822,306 822,690 512,874 202,690 202,306"
+      fill="none" stroke="rgba(255,255,255,0.50)" stroke-width="6" stroke-linejoin="round"/>
+
+    <!-- HC text -->
+    <text x="512" y="560"
+      text-anchor="middle" dominant-baseline="middle"
+      fill="white"
+      font-size="210"
+      font-weight="900"
+      font-family="'Arial Black', 'Barlow Condensed', sans-serif"
+      letter-spacing="-8">
+      HC
+    </text>
+  </g>
+</svg>

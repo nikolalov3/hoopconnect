@@ -1,0 +1,31 @@
+{
+  "name": "HoopConnect",
+  "short_name": "HoopConnect",
+  "description": "Trenuj, rywalizuj i łącz się z graczami koszykówki w Polsce.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#04080F",
+  "theme_color": "#04080F",
+  "lang": "pl",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
