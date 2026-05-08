@@ -11,8 +11,9 @@ import FrameUnlockPanel from './components/ui/FrameUnlockPanel'
 const SEASON_1_END  = new Date('2026-08-24T00:00:00')
 const DIAMOND_MIN   = 850   // weekly_points threshold for Diamond tier
 
-const EARLY_ACCESS_CUTOFF = new Date('2026-06-01T00:00:00')
-const EARLY_ACCESS_SHOW   = new Date('2026-06-01T00:00:00') // show from this date
+const EARLY_ACCESS_CUTOFF  = new Date('2026-06-01T00:00:00') // kto kwalifikuje
+const EARLY_ACCESS_INSTANT = new Date('2026-05-08T00:00:00') // istniejące konta → od razu
+const EARLY_ACCESS_SHOW    = new Date('2026-06-01T00:00:00') // nowe rejestracje → od 1.06
 
 const FRAMES = {
   early_access: {
@@ -79,13 +80,18 @@ function AppShell() {
     if (!profile || !user) return
     const now = new Date()
 
-    // 1. Early Access — registered before June 1 → show red dot immediately
+    // 1. Early Access
+    //    - zarejestrowany przed 08.05 (istniejące konta) → kropka od razu
+    //    - zarejestrowany 08.05–01.06 (nowe) → kropka dopiero od 01.06
     const seenEA = `hc_frame_seen_early_access_${user.id}`
     if (!localStorage.getItem(seenEA)) {
       const reg = profile.registration_date ? new Date(profile.registration_date) : null
       if (reg && reg < EARLY_ACCESS_CUTOFF) {
-        setFrameUnlockData(FRAMES.early_access)
-        return
+        const showFrom = reg < EARLY_ACCESS_INSTANT ? now : EARLY_ACCESS_SHOW
+        if (now >= showFrom) {
+          setFrameUnlockData(FRAMES.early_access)
+          return
+        }
       }
     }
 
