@@ -222,6 +222,21 @@ export default function LeaderboardDrawer() {
   const [lastFetch, setLastFetch] = useState(0)
 
   const CACHE_MS = 5 * 60 * 1000
+  const LS_KEY   = 'hc_lb_cache_v1'
+
+  // Load persisted cache on mount — renders instantly on next open
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEY)
+      if (!raw) return
+      const { rows: cachedRows, period: cachedPeriod, ts } = JSON.parse(raw)
+      if (Date.now() - ts < CACHE_MS) {
+        setRows(cachedRows)
+        setPeriod(cachedPeriod)
+        setLastFetch(ts)
+      }
+    } catch { /* ignore corrupt cache */ }
+  }, [])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -253,18 +268,24 @@ export default function LeaderboardDrawer() {
         .from('profiles').select('id, name, fraud_probability').in('id', uids)
       const pm = Object.fromEntries((profiles || []).map(p => [p.id, p]))
 
-      setRows(
-        Object.entries(totals)
-          .map(([uid, score]) => ({
-            uid,
-            name:  pm[uid]?.name  || 'Gracz',
-            score: Math.min(score, 1000),
-            fraud: pm[uid]?.fraud_probability || 0,
-            tier:  getTier(Math.min(score, 1000)),
-          }))
-          .sort((a, b) => b.score - a.score)
-      )
-      setLastFetch(Date.now())
+      const freshRows = Object.entries(totals)
+        .map(([uid, score]) => ({
+          uid,
+          name:  pm[uid]?.name  || 'Gracz',
+          score: Math.min(score, 1000),
+          fraud: pm[uid]?.fraud_probability || 0,
+          tier:  getTier(Math.min(score, 1000)),
+        }))
+        .sort((a, b) => b.score - a.score)
+
+      setRows(freshRows)
+      const ts = Date.now()
+      setLastFetch(ts)
+
+      // Persist to localStorage so next open is instant (no loading spinner)
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify({ rows: freshRows, period: p, ts }))
+      } catch { /* quota exceeded — skip */ }
     } finally {
       setLoading(false)
     }
@@ -393,7 +414,7 @@ export default function LeaderboardDrawer() {
 
           {/* ── List ────────────────────────────────────────────── */}
           <div style={S.scrollList}>
-            {loading ? (
+            {loading && rows.length === 0 ? (
               <div style={S.spinnerWrap}><div className="spinner"/></div>
             ) : rows.length === 0 ? (
               <div style={S.emptyWrap}>

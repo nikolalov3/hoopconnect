@@ -203,17 +203,48 @@ function TierCarousel() {
   )
 }
 
+/* ─── countdown — own component so only IT re-renders every second ─ */
+const SLIDE = { type: 'tween', duration: 0.28, ease: [0.16, 1, 0.3, 1] }
+
+function CountdownTimer({ open, isWaiting, nextStart }) {
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    if (!open) return
+    const id = setInterval(() => setTick(t => t + 1), 1000)
+    return () => clearInterval(id)
+  }, [open])
+
+  const cd = msToCD(getNextMonday() - Date.now())
+
+  return (
+    <div style={{ padding:'4px 0 22px', position:'relative' }}>
+      <p style={{ fontSize:8.5, fontWeight:700, letterSpacing:2.5,
+        textTransform:'uppercase', color:`${ORANGE}44`,
+        margin:'0 0 12px', textAlign:'center' }}>
+        {isWaiting ? '— punkty startują za —' : '— reset ligi za —'}
+      </p>
+      <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:8 }}>
+        {cd.d > 0 && <><CDBlock label="dni" value={cd.d}/><Sep/></>}
+        <CDBlock label="godz" value={cd.h}/>
+        <Sep/>
+        <CDBlock label="min" value={cd.m}/>
+        <Sep/>
+        <CDBlock label="sek" value={cd.s}/>
+      </div>
+      <p style={{ fontSize:9, color:`${ORANGE}44`, textAlign:'center',
+        margin:'11px 0 0', letterSpacing:1 }}>
+        {isWaiting
+          ? <><strong style={{color:`${ORANGE}77`}}>START: {nextStart.toUpperCase()}</strong> · 00:00</>
+          : <><strong style={{color:`${ORANGE}77`}}>ZAMKNIĘCIE: {nextStart.toUpperCase()}</strong> · 00:00</>}
+      </p>
+    </div>
+  )
+}
+
 /* ─── main ─────────────────────────────────────────────────────── */
 export default function LeagueInfoPanel({ open, onClose }) {
   const { setLeaderboardOpen, setLeaderboardFromLeague } = useUI()
   const { profile } = useAuth()
-  const [, setTick] = useState(0)
-
-  useEffect(()=>{
-    if(!open) return
-    const id=setInterval(()=>setTick(t=>t+1),1000)
-    return ()=>clearInterval(id)
-  },[open])
 
   useEffect(()=>{
     if(!open||!profile?.id) return
@@ -225,7 +256,6 @@ export default function LeagueInfoPanel({ open, onClose }) {
   const nextMonday = getNextMonday()
   const joinedRaw  = profile?.id ? localStorage.getItem(`hc_league_joined_${profile.id}`) : null
   const isWaiting  = joinedRaw ? new Date(joinedRaw) >= thisMonday : false
-  const cd         = msToCD(nextMonday - Date.now())
   const weekPct    = Math.min(1,(Date.now()-thisMonday.getTime())/(7*24*3600*1000))
   const weekLabel  = `${fmtDate(thisMonday)} – ${fmtDate(new Date(nextMonday-86400000))}`
   const nextStart  = fmtDate(nextMonday)
@@ -239,13 +269,13 @@ export default function LeagueInfoPanel({ open, onClose }) {
             transition={{duration:0.2}}
             onClick={onClose}
             style={{position:'fixed',inset:0,zIndex:500,
-              background:'rgba(2,5,12,0.93)',backdropFilter:'blur(14px)',
-              WebkitBackdropFilter:'blur(14px)'}}
+              background:'rgba(2,5,12,0.90)',backdropFilter:'blur(6px)',
+              WebkitBackdropFilter:'blur(6px)'}}
           />
 
           <motion.div key="li-sheet"
             initial={{y:'100%'}} animate={{y:0}} exit={{y:'100%'}}
-            transition={{type:'spring',stiffness:280,damping:30}}
+            transition={SLIDE}
             style={{
               position:'fixed',
               left:'max(0px, calc((100vw - 430px) / 2))',
@@ -255,6 +285,8 @@ export default function LeagueInfoPanel({ open, onClose }) {
               borderRadius:'20px 20px 0 0',
               borderTop:'none',
               maxHeight:'94dvh',
+              willChange:'transform',
+              contain:'layout style',
               overflowY:'auto',
               WebkitOverflowScrolling:'touch',
             }}
@@ -364,31 +396,8 @@ export default function LeagueInfoPanel({ open, onClose }) {
                 )}
               </div>
 
-              {/* ── COUNTDOWN — no border ─────────────────────────── */}
-              <div style={{
-                padding:'4px 0 22px',
-                position:'relative',
-              }}>
-                <p style={{fontSize:8.5,fontWeight:700,letterSpacing:2.5,
-                  textTransform:'uppercase',color:`${ORANGE}44`,
-                  margin:'0 0 12px',textAlign:'center'}}>
-                  {isWaiting?'— punkty startują za —':'— reset ligi za —'}
-                </p>
-                <div style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8}}>
-                  {cd.d>0&&<><CDBlock label="dni" value={cd.d}/><Sep/></>}
-                  <CDBlock label="godz" value={cd.h}/>
-                  <Sep/>
-                  <CDBlock label="min" value={cd.m}/>
-                  <Sep/>
-                  <CDBlock label="sek" value={cd.s}/>
-                </div>
-                <p style={{fontSize:9,color:`${ORANGE}44`,textAlign:'center',
-                  margin:'11px 0 0',letterSpacing:1}}>
-                  {isWaiting
-                    ?<>START: <strong style={{color:`${ORANGE}77`}}>{nextStart.toUpperCase()}</strong> · 00:00</>
-                    :<>ZAMKNIĘCIE: <strong style={{color:`${ORANGE}77`}}>{nextStart.toUpperCase()}</strong> · 00:00</>}
-                </p>
-              </div>
+              {/* ── COUNTDOWN — isolated component (only it re-renders/s) ── */}
+              <CountdownTimer open={open} isWaiting={isWaiting} nextStart={nextStart}/>
 
               {/* ── NAGRODY ───────────────────────────────────────── */}
               <SLabel>Nagrody za sezon</SLabel>
