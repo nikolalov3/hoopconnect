@@ -333,12 +333,13 @@ export default function ShootingPage() {
       setSaving(true)
 
       await supabase.from('shooting_sessions').insert({
-        user_id:    profile.id,
-        training_id: id,
-        shot_type:  config.shotType,
-        made:       finalMade,
-        attempted:  newAttempted,
-        started_at: sessionStartRef.current,
+        user_id:      profile.id,
+        training_id:  id,
+        shot_type:    config.shotType,
+        made:         finalMade,
+        attempted:    newAttempted,
+        started_at:   sessionStartRef.current,
+        session_date: new Date().toISOString().split('T')[0],
       })
 
       // Log verified shooting session points to league
@@ -385,12 +386,13 @@ export default function ShootingPage() {
     setShowManualInput(false)
 
     await supabase.from('shooting_sessions').insert({
-      user_id:    profile.id,
-      training_id: id,
-      shot_type:  config.shotType,
-      made:       m,
-      attempted:  total,
-      started_at: sessionStartRef.current,
+      user_id:      profile.id,
+      training_id:  id,
+      shot_type:    config.shotType,
+      made:         m,
+      attempted:    total,
+      started_at:   sessionStartRef.current,
+      session_date: new Date().toISOString().split('T')[0],
     })
 
     // Log verified shooting session points to league

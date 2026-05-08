@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
+import { supabase } from '../../lib/supabase'
 
 // ── colours ──────────────────────────────────────────────────────────────────
 const GOLD  = '#FFD166'
@@ -101,8 +102,13 @@ export default function FrameUnlockPanel({ open, onClose, frameData }) {
     onClose()
   }
 
-  function handleEquip() {
-    // TODO: supabase.from('profiles').update({ equipped_frame: frameData.id }).eq('id', user.id)
+  async function handleEquip() {
+    if (user && frameData?.id) {
+      await supabase
+        .from('profiles')
+        .update({ equipped_frame: frameData.id })
+        .eq('id', user.id)
+    }
     handleClose()
   }
 

@@ -547,7 +547,7 @@ export default function SettingsPanel({ open, onClose }) {
                     boxShadow:'0 1px 6px rgba(0,0,0,0.05)',
                   }}>
                     <div style={{ position:'relative', width:50, height:50, flexShrink:0 }}>
-                      <HexFrameOnly size={50} variant="default"/>
+                      <HexFrameOnly size={50} variant={profile?.equipped_frame || 'default'}/>
                       <svg width={50} height={50} viewBox="0 0 90 90"
                         style={{ overflow:'visible', position:'relative', zIndex:1,
                           filter:'drop-shadow(0 3px 10px rgba(91,184,245,0.5))' }}>
