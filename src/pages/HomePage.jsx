@@ -467,7 +467,7 @@ export default function HomePage() {
   const [reportLoading, setReportLoading] = useState(true)
   const [daysUntilReport, setDaysUntilReport] = useState(7)
   const [achievementToast, setAchievementToast] = useState(null) // { title, stage }
-  const { setSettingsOpen, leagueOpen, setLeagueOpen, setFrameUnlockOpen, setFrameUnlockData } = useUI()
+  const { setSettingsOpen, leagueOpen, setLeagueOpen, setFrameUnlockOpen, setFrameUnlockData, frameUnlockData } = useUI()
   const [showSettings, setShowSettings] = useState(false)
 
   function openSettings() { setShowSettings(true); setSettingsOpen(true) }
@@ -475,17 +475,11 @@ export default function HomePage() {
   function openLeague()  { setLeagueOpen(true)  }
   function closeLeague() { setLeagueOpen(false) }
 
-  // ── DEV PREVIEW: league button shows frame unlock animation ─────────────────
-  // TODO: remove this before production — replace with openLeague() only
-  function openLeagueOrPreview() {
-    setFrameUnlockData({
-      id:          'diamond_s1',
-      path:        '/ramkas1diax.png',
-      label:       'Diament · Sezon 1',
-      rarity:      'legendary',
-      description: 'Nagroda za osiągnięcie rangi Diament w pierwszym sezonie HoopConnect. Tylko dla elity.',
-    })
-    setFrameUnlockOpen(true)
+  // ── Frame notification dot — show if there's a pending frame in UIContext ───
+  const hasPendingFrame = !!frameUnlockData
+
+  function openFrameNotif() {
+    if (frameUnlockData) setFrameUnlockOpen(true)
   }
   const swipeStartX = useRef(null)
   const swipeStartY = useRef(null)
@@ -966,7 +960,36 @@ export default function HomePage() {
         <p className="section-label" style={{ marginBottom: 4 }}>{dateStr}</p>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
           <div>
-            <h1 className="display-title" style={{ fontSize: 38 }}>{greeting}</h1>
+            {/* Name — clickable when frame notification pending */}
+            <motion.div
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8,
+                cursor: hasPendingFrame ? 'pointer' : 'default' }}
+              onClick={hasPendingFrame ? openFrameNotif : undefined}
+              whileTap={hasPendingFrame ? { scale: 0.97 } : {}}
+            >
+              <h1 className="display-title" style={{ fontSize: 38, margin: 0 }}>{greeting}</h1>
+              {hasPendingFrame && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 18 }}
+                  style={{
+                    width: 11, height: 11, borderRadius: '50%',
+                    background: '#FF3B30',
+                    boxShadow: '0 0 8px 3px rgba(255,59,48,0.65)',
+                    border: '2px solid rgba(4,8,14,0.90)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <motion.div
+                    animate={{ opacity: [1, 0.3, 1] }}
+                    transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+                    style={{ width: '100%', height: '100%', borderRadius: '50%',
+                      background: '#FF3B30' }}
+                  />
+                </motion.div>
+              )}
+            </motion.div>
             {dayType !== 'T' && (
               <span className={`badge ${dayType === 'R' ? 'badge-green' : 'badge-gray'}`} style={{ marginTop: 6, display: 'inline-flex' }}>
                 {dayType === 'R' ? '🧘 Regeneracja' : '😴 Odpoczynek'}
@@ -1023,10 +1046,9 @@ export default function HomePage() {
               }}>{scoreLabel}</span>
             )}
             {/* League button — golden hex */}
-            {/* DEV: onClick → frame preview. TODO: swap back to openLeague() for prod */}
             <motion.button
               whileTap={{ scale: 0.88 }}
-              onClick={openLeagueOrPreview}
+              onClick={openLeague}
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer',
                 position: 'relative', width: 38, height: 38, flexShrink: 0 }}
             >

@@ -72,36 +72,35 @@ function AppShell() {
   const { leaderboardOpen, frameUnlockOpen, setFrameUnlockOpen, frameUnlockData, setFrameUnlockData } = useUI()
   const location = useLocation()
 
-  // ── Frame reward auto-triggers ───────────────────────────────────────────────
-  // Priority: Early Access (June 1) → Diamond S1 (Aug 24). One at a time.
+  // ── Frame reward — load pending frame into UIContext (shows red dot) ─────────
+  // Panel opens only when user taps the notification dot (in HomePage header).
+  // Priority: Early Access (from June 1) → Diamond S1 (from Aug 24).
   useEffect(() => {
     if (!profile || !user) return
     const now = new Date()
 
-    // 1. Early Access — everyone who registered before June 1, shown from June 1
+    // 1. Early Access — registered before June 1, notification shown from June 1
     if (now >= EARLY_ACCESS_SHOW) {
       const seenEA = `hc_frame_seen_early_access_${user.id}`
       if (!localStorage.getItem(seenEA)) {
         const reg = profile.registration_date ? new Date(profile.registration_date) : null
         if (reg && reg < EARLY_ACCESS_CUTOFF) {
           setFrameUnlockData(FRAMES.early_access)
-          setFrameUnlockOpen(true)
           return
         }
       }
     }
 
-    // 2. Diamond S1 — Diamond tier players, shown from Aug 24
+    // 2. Diamond S1 — Diamond tier, notification shown from Aug 24
     if (now >= SEASON_1_END) {
       const seenD = `hc_frame_seen_diamond_s1_${user.id}`
       if (!localStorage.getItem(seenD)) {
         if ((profile.weekly_points || 0) >= DIAMOND_MIN) {
           setFrameUnlockData(FRAMES.diamond_s1)
-          setFrameUnlockOpen(true)
         }
       }
     }
-  }, [profile?.id]) // run once per session when profile first loads
+  }, [profile?.id]) // run once when profile loads
   const path = location.pathname
   const isTabRoute  = TAB_PATHS.has(path)
   const inShooting   = path.startsWith('/shooting')
@@ -191,7 +190,7 @@ function AppShell() {
       <FrameUnlockPanel
         open={frameUnlockOpen}
         frameData={frameUnlockData}
-        onClose={() => setFrameUnlockOpen(false)}
+        onClose={() => { setFrameUnlockOpen(false); setFrameUnlockData(null) }}
       />
     </div>
   )
