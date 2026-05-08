@@ -101,19 +101,19 @@ function PrizePlaceholder({ color, height=110 }) {
 
 /* ─── tier carousel ────────────────────────────────────────────── */
 const TIERS = [
-  { label:'Brąz',    color:'#CD7F32', min:0,   max:299,
+  { label:'Brąz',    color:'#CD7F32', min:0,   max:249,
     desc:'Punkt startowy każdego gracza.',
     sub:'Zacznij trenować i zbieraj punkty do wyższej ligi.' },
-  { label:'Srebro',  color:'#C0C0C0', min:300, max:499,
+  { label:'Srebro',  color:'#C0C0C0', min:250, max:449,
     desc:'Budujesz regularny nawyk treningowy.',
     sub:'Utrzymaj aktywność przez kilka tygodni.' },
-  { label:'Złoto',   color:'#FFD700', min:500, max:699,
+  { label:'Złoto',   color:'#FFD700', min:450, max:649,
     desc:'Zaangażowany gracz realizujący plan.',
     sub:'Co najmniej 70% zaplanowanych treningów tygodniowo.' },
-  { label:'Platyna', color:'#5BB8F5', min:700, max:849,
+  { label:'Platyna', color:'#5BB8F5', min:650, max:819,
     desc:'Doświadczony zawodnik — wysoka konsekwencja.',
     sub:'Regularny udział w sesjach i spotkaniach klubowych.' },
-  { label:'Diament', color:'#B9F2FF', min:850, max:1000,
+  { label:'Diament', color:'#B9F2FF', min:820, max:1000,
     desc:'Absolutna elita sezonu.',
     sub:'Tylko dla graczy z pełnym zaangażowaniem każdego tygodnia.' },
 ]

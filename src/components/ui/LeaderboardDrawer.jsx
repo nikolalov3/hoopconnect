@@ -8,13 +8,21 @@ const ORANGE = '#FFA820'
 const CY     = '#00FFEE'
 
 const TIERS = [
-  { key: 'diamond',  label: 'Diament', color: '#B9F2FF', min: 850 },
-  { key: 'platinum', label: 'Platyna', color: '#5BB8F5', min: 700 },
-  { key: 'gold',     label: 'Złoto',   color: '#FFD700', min: 500 },
-  { key: 'silver',   label: 'Srebro',  color: '#C0C0C0', min: 300 },
+  { key: 'diamond',  label: 'Diament', color: '#B9F2FF', min: 820 },
+  { key: 'platinum', label: 'Platyna', color: '#5BB8F5', min: 650 },
+  { key: 'gold',     label: 'Złoto',   color: '#FFD700', min: 450 },
+  { key: 'silver',   label: 'Srebro',  color: '#C0C0C0', min: 250 },
   { key: 'bronze',   label: 'Brąz',    color: '#CD7F32', min: 0   },
 ]
 function getTier(s) { return TIERS.find(t => s >= t.min) || TIERS[TIERS.length - 1] }
+
+// Monday of any given date (returns ISO date string "YYYY-MM-DD")
+function toMondayKey(dateStr) {
+  const d = new Date(dateStr)
+  const day = d.getDay()
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day))
+  return d.toISOString().split('T')[0]
+}
 
 /* ── static styles (defined once, not recreated on re-render) ──── */
 const S = {
@@ -242,6 +250,8 @@ export default function LeaderboardDrawer() {
     setLoading(true)
     try {
       const today = new Date().toISOString().split('T')[0]
+
+      // ── 1. Active league period (weekly) ────────────────────────
       const { data: periods } = await supabase
         .from('league_periods').select('*')
         .lte('starts_at', today).gte('ends_at', today)
@@ -251,38 +261,72 @@ export default function LeaderboardDrawer() {
       setPeriod(p)
       if (!p) return
 
-      const { data: pts } = await supabase
-        .from('points_log').select('user_id, points, source')
-        .gte('date', p.starts_at).lte('date', p.ends_at)
+      // ── 2. Season start (earliest league_period of this season) ─
+      const { data: firstPeriod } = await supabase
+        .from('league_periods').select('starts_at')
+        .order('starts_at', { ascending: true }).limit(1)
+      const seasonStart = firstPeriod?.[0]?.starts_at || p.starts_at
 
-      if (!pts?.length) return
+      // ── 3. Fetch all season points (for avg tier) ───────────────
+      const { data: allPts } = await supabase
+        .from('points_log').select('user_id, points, source, date')
+        .gte('date', seasonStart)
 
-      const totals = {}
-      for (const r of pts) {
-        const w = r.source === 'training' ? 0.5 : r.source === 'achievement' ? 0.75 : 1.0
-        totals[r.user_id] = (totals[r.user_id] || 0) + Math.round(r.points * w)
+      if (!allPts?.length) return
+
+      // multiplier helper
+      const mult = s => s === 'training' ? 0.5 : s === 'achievement' ? 0.75 : 1.0
+
+      // Weekly scores per user: { uid → { mondayKey → total } }
+      const userWeekMap = {}
+      for (const r of allPts) {
+        const wk = toMondayKey(r.date)
+        if (!userWeekMap[r.user_id]) userWeekMap[r.user_id] = {}
+        userWeekMap[r.user_id][wk] =
+          (userWeekMap[r.user_id][wk] || 0) + Math.round(r.points * mult(r.source))
       }
 
-      const uids = Object.keys(totals)
+      // Season average per user
+      const seasonAvg = {}
+      for (const [uid, weeks] of Object.entries(userWeekMap)) {
+        const vals = Object.values(weeks)
+        seasonAvg[uid] = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
+      }
+
+      // ── 4. Current-week score (for ranking order) ───────────────
+      const weekTotals = {}
+      for (const r of allPts) {
+        if (r.date < p.starts_at || r.date > p.ends_at) continue
+        weekTotals[r.user_id] =
+          (weekTotals[r.user_id] || 0) + Math.round(r.points * mult(r.source))
+      }
+
+      const uids = Object.keys(weekTotals)
+      if (!uids.length) return
+
       const { data: profiles } = await supabase
         .from('profiles').select('id, name, fraud_probability').in('id', uids)
-      const pm = Object.fromEntries((profiles || []).map(p => [p.id, p]))
+      const pm = Object.fromEntries((profiles || []).map(pr => [pr.id, pr]))
 
-      const freshRows = Object.entries(totals)
-        .map(([uid, score]) => ({
-          uid,
-          name:  pm[uid]?.name  || 'Gracz',
-          score: Math.min(score, 1000),
-          fraud: pm[uid]?.fraud_probability || 0,
-          tier:  getTier(Math.min(score, 1000)),
-        }))
+      const freshRows = uids
+        .map(uid => {
+          const weekScore = weekTotals[uid] || 0
+          const avg       = Math.min(seasonAvg[uid] || weekScore, 1000)
+          return {
+            uid,
+            name:  pm[uid]?.name || 'Gracz',
+            score: weekScore,           // weekly ranking position
+            avg,                        // season avg — shown in tier
+            fraud: pm[uid]?.fraud_probability || 0,
+            tier:  getTier(avg),        // tier from season average
+          }
+        })
         .sort((a, b) => b.score - a.score)
 
       setRows(freshRows)
       const ts = Date.now()
       setLastFetch(ts)
 
-      // Persist to localStorage so next open is instant (no loading spinner)
       try {
         localStorage.setItem(LS_KEY, JSON.stringify({ rows: freshRows, period: p, ts }))
       } catch { /* quota exceeded — skip */ }
@@ -399,7 +443,8 @@ export default function LeaderboardDrawer() {
                   Twoja pozycja
                 </p>
                 <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.50)', margin: 0 }}>
-                  {myRow.tier.label} · {myRow.score} pkt
+                  {myRow.tier.label} · <span style={{color:'rgba(255,255,255,0.75)',fontWeight:700}}>{myRow.score} pkt</span>
+                  <span style={{color:'rgba(255,255,255,0.25)',fontSize:9}}> · avg {myRow.avg}</span>
                 </p>
               </div>
               <span style={{ fontSize: 13, fontWeight: 900, color: ORANGE,
