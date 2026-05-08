@@ -24,10 +24,10 @@ const RARITY = {
   common:    { label: 'ZWYKŁA',     color: '#A0B0C8', glow: 'rgba(160,176,200,0.35)' },
 }
 
-// ── stable sparkle positions ─────────────────────────────────────────────────
+// ── stable sparkle positions — tighter orbit for mobile ──────────────────────
 const SPARKS = Array.from({ length: 18 }, (_, i) => {
   const angle = (i / 18) * 360 + (i % 2 === 0 ? 8 : -8)
-  const dist  = 115 + (i % 4) * 22
+  const dist  = 80 + (i % 4) * 14   // reduced: was 115 + (i%4)*22
   const rad   = (angle * Math.PI) / 180
   return {
     x:     Math.cos(rad) * dist,
@@ -125,37 +125,44 @@ export default function FrameUnlockPanel({ open, onClose, frameData }) {
           transition={{ duration: 0.28 }}
           onClick={handleClose}
           style={{
+            // fully opaque — prevents any content bleed-through
             position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(2,4,10,0.97)',
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            padding: '0 28px',
-            paddingTop:    'env(safe-area-inset-top, 0px)',
-            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+            background: '#02040A',
+            // scroll wrapper — avoids flex-center + overflow bug
             overflowY: 'auto',
+            overflowX: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+            // safe-area-aware padding (max → always at least 32px)
+            paddingTop:    'max(env(safe-area-inset-top, 0px), 32px)',
+            paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 40px)',
+            paddingLeft: 28, paddingRight: 28,
+            // center content vertically when shorter than viewport
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
           }}
         >
-          {/* radial glow */}
+          {/* radial glow — fixed so it stays centered while scrolling */}
           <motion.div
             initial={{ opacity: 0, scale: 0.3 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.75, ease: 'easeOut' }}
             style={{
               position: 'fixed',
-              width: 500, height: 500,
+              width: 420, height: 420,
               top: '50%', left: '50%',
               transform: 'translate(-50%, -50%)',
               borderRadius: '50%',
-              background: `radial-gradient(circle, ${GLOW} 0%, rgba(255,155,0,0.12) 45%, transparent 70%)`,
+              background: `radial-gradient(circle, ${GLOW} 0%, rgba(255,155,0,0.10) 45%, transparent 70%)`,
               pointerEvents: 'none',
+              zIndex: 0,
             }}
           />
 
-          {/* content — stop propagation so inner taps don't close */}
+          {/* content — margin:auto centers it when content < viewport height */}
           <div onClick={e => e.stopPropagation()}
             style={{
               position: 'relative', zIndex: 1,
-              width: '100%', maxWidth: 380,
+              width: '100%', maxWidth: 360,
+              margin: 'auto',
               display: 'flex', flexDirection: 'column', alignItems: 'center',
             }}>
 
@@ -293,14 +300,16 @@ export default function FrameUnlockPanel({ open, onClose, frameData }) {
             >
               <motion.button whileTap={{ scale: 0.97 }} onClick={handleEquip}
                 style={{
-                  width: '100%', padding: '16px',
-                  background: `linear-gradient(135deg, ${GOLD}DD, ${GOLDD}CC)`,
-                  border: `1px solid ${GOLD}66`, borderTop: `1px solid ${GOLD}`,
-                  borderRadius: 14,
+                  width: '100%', padding: '15px',
+                  background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLDD} 100%)`,
+                  border: 'none',
+                  borderTop: `2px solid ${GOLD}`,
+                  borderRadius: 0,
                   fontFamily: 'var(--font-display)', fontWeight: 900,
-                  fontSize: 13, letterSpacing: 2, textTransform: 'uppercase',
+                  fontSize: 12.5, letterSpacing: 3, textTransform: 'uppercase',
                   color: '#1A0E00', cursor: 'pointer',
-                  boxShadow: `0 6px 28px ${GOLD}38, 0 0 50px ${GOLD}14`,
+                  WebkitTapHighlightColor: 'transparent',
+                  boxShadow: `0 -4px 24px ${GOLD}30`,
                 }}
               >
                 Super, dziękuję!
@@ -308,11 +317,15 @@ export default function FrameUnlockPanel({ open, onClose, frameData }) {
 
               <motion.button whileTap={{ scale: 0.97 }} onClick={handleClose}
                 style={{
-                  width: '100%', padding: '12px',
+                  width: '100%', padding: '13px',
                   background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.10)',
-                  borderRadius: 14, fontSize: 12, fontWeight: 500,
-                  color: 'rgba(255,255,255,0.32)', cursor: 'pointer',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderTop: '1px solid rgba(255,255,255,0.14)',
+                  borderRadius: 0,
+                  fontSize: 11.5, fontWeight: 500,
+                  color: 'rgba(255,255,255,0.28)', cursor: 'pointer',
+                  WebkitTapHighlightColor: 'transparent',
+                  letterSpacing: 0.5,
                 }}
               >
                 Zamknij
