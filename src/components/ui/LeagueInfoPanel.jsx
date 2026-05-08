@@ -241,21 +241,36 @@ function CountdownTimer({ open, isWaiting, nextStart }) {
   )
 }
 
+/* ─── league status helper ──────────────────────────────────────── */
+// Returns 'notEligible' | 'waitingNextWeek' | 'active'
+// Rules:
+//   • Player needs ≥7 days since created_at before they can join the league
+//   • Even if eligible today, they enter at the START OF THE NEXT week (next Monday 00:00)
+//   • So: active only if (created_at + 7d) is BEFORE thisMonday
+function getLeagueStatus(createdAt) {
+  if (!createdAt) return 'notEligible'
+  const eligible7d = new Date(createdAt).getTime() + 7 * 24 * 3600 * 1000
+  const thisM      = getThisMonday().getTime()
+  const nextM      = getNextMonday().getTime()
+  if (eligible7d <= thisM)   return 'active'
+  if (eligible7d <= nextM)   return 'waitingNextWeek'
+  return 'notEligible'
+}
+
 /* ─── main ─────────────────────────────────────────────────────── */
 export default function LeagueInfoPanel({ open, onClose }) {
   const { setLeaderboardOpen, setLeaderboardFromLeague } = useUI()
   const { profile } = useAuth()
 
-  useEffect(()=>{
-    if(!open||!profile?.id) return
-    const key=`hc_league_joined_${profile.id}`
-    if(!localStorage.getItem(key)) localStorage.setItem(key,new Date().toISOString())
-  },[open,profile?.id])
-
   const thisMonday = getThisMonday()
   const nextMonday = getNextMonday()
-  const joinedRaw  = profile?.id ? localStorage.getItem(`hc_league_joined_${profile.id}`) : null
-  const isWaiting  = joinedRaw ? new Date(joinedRaw) >= thisMonday : false
+  const status     = getLeagueStatus(profile?.created_at)
+  const isActive   = status === 'active'
+  const isWaiting  = status === 'waitingNextWeek'  // eligible but joining next week
+  // notEligible: days remaining until 7-day mark
+  const daysLeft   = profile?.created_at
+    ? Math.max(0, Math.ceil((new Date(profile.created_at).getTime() + 7*24*3600*1000 - Date.now()) / 86400000))
+    : 7
   const weekPct    = Math.min(1,(Date.now()-thisMonday.getTime())/(7*24*3600*1000))
   const weekLabel  = `${fmtDate(thisMonday)} – ${fmtDate(new Date(nextMonday-86400000))}`
   const nextStart  = fmtDate(nextMonday)
@@ -336,68 +351,96 @@ export default function LeagueInfoPanel({ open, onClose }) {
                   Pierwszy sezon HoopConnect w Polsce.
                 </p>
                 <p style={{fontSize:11.5,color:'rgba(255,255,255,0.38)',margin:0,lineHeight:1.65}}>
-                  Rywalizuj co tydzień — treningi, mecze i osiągnięcia liczą się w rankingu. Udowodnij, że twoja praca na boisku zasługuje na pierwsze miejsce.
+                  Rywalizuj co tydzień — treningi, mecze i osiągnięcia przekładają się na punkty ligowe. Liga resetuje się każdy poniedziałek o 00:00. Aby dołączyć, musisz być aktywny przez <span style={{color:'rgba(255,255,255,0.62)',fontWeight:700}}>minimum 7 dni</span> — wchodzisz wtedy od startu kolejnego tygodnia.
                 </p>
               </div>
 
               {/* ── STATUS ────────────────────────────────────────── */}
-              <div style={{
-                marginBottom:20,
-                border: isWaiting
-                  ? `1px solid ${ORANGE}40`
-                  : `1px solid ${GREEN}30`,
-                borderTop: isWaiting
-                  ? `1px solid ${ORANGE}70`
-                  : `1px solid ${GREEN}55`,
-                borderBottom: isWaiting
-                  ? `1px solid ${ORANGE}70`
-                  : `1px solid ${GREEN}55`,
-                background: isWaiting
-                  ? `linear-gradient(135deg,${ORANGE}0C,transparent)`
-                  : `linear-gradient(135deg,${GREEN}08,transparent)`,
-                padding:'12px 14px',
-                position:'relative',
-              }}>
-                <div style={{position:'absolute',top:-1,left:-1,width:10,height:10,
-                  borderTop:`1.5px solid ${isWaiting?ORANGE:GREEN}`,
-                  borderLeft:`1.5px solid ${isWaiting?ORANGE:GREEN}`}}/>
-                <div style={{position:'absolute',bottom:-1,right:-1,width:10,height:10,
-                  borderBottom:`1.5px solid ${isWaiting?ORANGE:GREEN}`,
-                  borderRight:`1.5px solid ${isWaiting?ORANGE:GREEN}`}}/>
-                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom: !isWaiting?10:0}}>
-                  <div style={{width:7,height:7,flexShrink:0,
-                    background:isWaiting?ORANGE:GREEN,
-                    boxShadow:isWaiting?`0 0 8px ${ORANGE}`:undefined}}/>
-                  <div style={{flex:1}}>
-                    <p style={{fontSize:9.5,fontWeight:800,letterSpacing:1.8,
-                      textTransform:'uppercase',
-                      color:isWaiting?ORANGE:GREEN,margin:'0 0 2px'}}>
-                      {isWaiting?'Czekasz na start':'Aktywny uczestnik'}
-                    </p>
-                    <p style={{fontSize:11,color:'rgba(255,255,255,0.45)',margin:0}}>
-                      {isWaiting
-                        ?`Twoje punkty liczą się od ${nextStart}`
-                        :`Tydzień · ${weekLabel}`}
-                    </p>
+              {(() => {
+                // colour per state
+                const sc = isActive ? GREEN : isWaiting ? ORANGE : 'rgba(140,160,185,0.70)'
+                const bg = isActive ? `${GREEN}08` : isWaiting ? `${ORANGE}0C` : 'rgba(255,255,255,0.02)'
+                return (
+                  <div style={{
+                    marginBottom:20,
+                    border:`1px solid ${sc}30`,
+                    borderTop:`1px solid ${sc}60`,
+                    borderBottom:`1px solid ${sc}60`,
+                    background:`linear-gradient(135deg,${bg},transparent)`,
+                    padding:'12px 14px',
+                    position:'relative',
+                  }}>
+                    <div style={{position:'absolute',top:-1,left:-1,width:10,height:10,
+                      borderTop:`1.5px solid ${sc}`,borderLeft:`1.5px solid ${sc}`}}/>
+                    <div style={{position:'absolute',bottom:-1,right:-1,width:10,height:10,
+                      borderBottom:`1.5px solid ${sc}`,borderRight:`1.5px solid ${sc}`}}/>
+
+                    {/* ── ACTIVE ── */}
+                    {isActive && (
+                      <>
+                        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+                          <div style={{width:7,height:7,flexShrink:0,background:GREEN}}/>
+                          <div style={{flex:1}}>
+                            <p style={{fontSize:9.5,fontWeight:800,letterSpacing:1.8,
+                              textTransform:'uppercase',color:GREEN,margin:'0 0 2px'}}>
+                              Aktywny uczestnik
+                            </p>
+                            <p style={{fontSize:11,color:'rgba(255,255,255,0.45)',margin:0}}>
+                              Tydzień · {weekLabel}
+                            </p>
+                          </div>
+                        </div>
+                        <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+                          <span style={{fontSize:8.5,color:`${ORANGE}55`}}>{fmtDate(thisMonday)}</span>
+                          <span style={{fontSize:8.5,color:`${ORANGE}55`}}>{Math.round(weekPct*100)}%</span>
+                          <span style={{fontSize:8.5,color:`${ORANGE}55`}}>{fmtDate(new Date(nextMonday-86400000))}</span>
+                        </div>
+                        <div style={{height:3,background:'rgba(255,255,255,0.06)'}}>
+                          <div style={{height:'100%',width:`${weekPct*100}%`,
+                            background:`linear-gradient(90deg,${GREEN},#007A40)`}}/>
+                        </div>
+                      </>
+                    )}
+
+                    {/* ── WAITING (eligible, but this week doesn't count) ── */}
+                    {isWaiting && (
+                      <div style={{display:'flex',alignItems:'center',gap:10}}>
+                        <div style={{width:7,height:7,flexShrink:0,background:ORANGE,
+                          boxShadow:`0 0 8px ${ORANGE}`}}/>
+                        <div style={{flex:1}}>
+                          <p style={{fontSize:9.5,fontWeight:800,letterSpacing:1.8,
+                            textTransform:'uppercase',color:ORANGE,margin:'0 0 2px'}}>
+                            Gotowy — start od następnego tygodnia
+                          </p>
+                          <p style={{fontSize:11,color:'rgba(255,255,255,0.45)',margin:0}}>
+                            Twoje punkty liczą się od <strong style={{color:'rgba(255,255,255,0.65)'}}>{nextStart}</strong>
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── NOT ELIGIBLE ── */}
+                    {!isActive && !isWaiting && (
+                      <div style={{display:'flex',alignItems:'center',gap:10}}>
+                        <div style={{width:7,height:7,flexShrink:0,
+                          background:'rgba(140,160,185,0.50)'}}/>
+                        <div style={{flex:1}}>
+                          <p style={{fontSize:9.5,fontWeight:800,letterSpacing:1.8,
+                            textTransform:'uppercase',color:'rgba(160,185,210,0.70)',margin:'0 0 2px'}}>
+                            {daysLeft > 1 ? `Kwalifikacja za ${daysLeft} dni` : 'Kwalifikacja jutro'}
+                          </p>
+                          <p style={{fontSize:11,color:'rgba(255,255,255,0.38)',margin:0}}>
+                            Potrzebujesz pierwszego raportu tygodniowego — bądź aktywny przez 7 dni, by dołączyć do ligi.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-                {!isWaiting && (
-                  <>
-                    <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-                      <span style={{fontSize:8.5,color:`${ORANGE}55`}}>{fmtDate(thisMonday)}</span>
-                      <span style={{fontSize:8.5,color:`${ORANGE}55`}}>{Math.round(weekPct*100)}%</span>
-                      <span style={{fontSize:8.5,color:`${ORANGE}55`}}>{fmtDate(new Date(nextMonday-86400000))}</span>
-                    </div>
-                    <div style={{height:3,background:'rgba(255,255,255,0.06)'}}>
-                      <div style={{height:'100%',width:`${weekPct*100}%`,
-                        background:`linear-gradient(90deg,${GREEN},#007A40)`}}/>
-                    </div>
-                  </>
-                )}
-              </div>
+                )
+              })()}
 
               {/* ── COUNTDOWN — isolated component (only it re-renders/s) ── */}
-              <CountdownTimer open={open} isWaiting={isWaiting} nextStart={nextStart}/>
+              <CountdownTimer open={open} isWaiting={!isActive} nextStart={nextStart}/>
 
               {/* ── NAGRODY ───────────────────────────────────────── */}
               <SLabel mt={0}>Nagrody za sezon</SLabel>
@@ -540,9 +583,9 @@ export default function LeagueInfoPanel({ open, onClose }) {
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:7,marginBottom:0}}>
                 {[
                   {title:'Liga tygodniowa',   body:'Pon–niedz, reset w poniedziałek 00:00'},
-                  {title:'Pełny tydzień',     body:'Dołączasz w środę? Start od następnego pon.'},
-                  {title:'Fair play',         body:'Wynik = % realizacji planu — nie ilość dni'},
-                  {title:'Weryfikacja',       body:'GPS + czas sesji · treningi ×0.5 w lidze'},
+                  {title:'7 dni stażu',       body:'Musisz mieć pierwszy raport tygodniowy, by dołączyć do ligi'},
+                  {title:'Start od pon.',     body:'Wchodzisz zawsze od początku nowego tygodnia — nie w trakcie'},
+                  {title:'Fair play',         body:'Treningi liczą się z mnożnikiem ×0.5 · mecze i rzuty ×1.0'},
                 ].map(item=>(
                   <div key={item.title} style={{
                     padding:'11px 12px',
