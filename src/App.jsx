@@ -79,15 +79,13 @@ function AppShell() {
     if (!profile || !user) return
     const now = new Date()
 
-    // 1. Early Access — registered before June 1, notification shown from June 1
-    if (now >= EARLY_ACCESS_SHOW) {
-      const seenEA = `hc_frame_seen_early_access_${user.id}`
-      if (!localStorage.getItem(seenEA)) {
-        const reg = profile.registration_date ? new Date(profile.registration_date) : null
-        if (reg && reg < EARLY_ACCESS_CUTOFF) {
-          setFrameUnlockData(FRAMES.early_access)
-          return
-        }
+    // 1. Early Access — registered before June 1 → show red dot immediately
+    const seenEA = `hc_frame_seen_early_access_${user.id}`
+    if (!localStorage.getItem(seenEA)) {
+      const reg = profile.registration_date ? new Date(profile.registration_date) : null
+      if (reg && reg < EARLY_ACCESS_CUTOFF) {
+        setFrameUnlockData(FRAMES.early_access)
+        return
       }
     }
 
