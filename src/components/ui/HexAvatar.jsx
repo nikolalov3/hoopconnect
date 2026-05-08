@@ -24,14 +24,14 @@ const GLOWS = {
 }
 
 // ── Frame PNG paths per variant ──────────────────────────────────────────────
-// ramka.png       = ramka bazowa (wszyscy użytkownicy)
-// earlyaccess.png = Early Access (rejestracja przed 1.06.2026, przyznawana 1.06.2026)
+// earlyaccess.png = ramka bazowa (wszyscy użytkownicy od teraz)
+// ramka.png       = zarezerwowana (nieużywana aktywnie)
 // ramkas1diax.png = Diamond S1 (nagroda, przyznawana 24.08.2026)
 const FRAME_PATHS = {
-  default:      '/ramka.png',
-  betatester:   '/ramka.png',
-  beta:         '/ramka.png',
-  gold:         '/ramka.png',
+  default:      '/earlyaccess.png',
+  betatester:   '/earlyaccess.png',
+  beta:         '/earlyaccess.png',
+  gold:         '/earlyaccess.png',
   early_access: '/earlyaccess.png',
   diamond_s1:   '/ramkas1diax.png',
 }
