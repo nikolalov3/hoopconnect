@@ -25,9 +25,9 @@ function msToCD(ms){
 }
 
 /* ─── section label ────────────────────────────────────────────── */
-function SLabel({ children }) {
+function SLabel({ children, mt = 36 }) {
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:11 }}>
+    <div style={{ display:'flex', alignItems:'center', gap:10, marginTop:mt, marginBottom:14 }}>
       <div style={{flex:1,height:1,background:`linear-gradient(90deg,transparent,${ORANGE}30)`}}/>
       <span style={{ fontSize:8.5, fontWeight:800, letterSpacing:3,
         textTransform:'uppercase', color:`${ORANGE}88`, flexShrink:0 }}>
@@ -135,7 +135,7 @@ function TierCarousel() {
   }
 
   return (
-    <div style={{ marginBottom:22 }}>
+    <div style={{ marginBottom:0 }}>
       <div ref={ref} onScroll={onScroll} style={{
         display:'flex', overflowX:'scroll', gap:10,
         paddingLeft:18, paddingRight:18, margin:'0 -18px',
@@ -217,7 +217,7 @@ function CountdownTimer({ open, isWaiting, nextStart }) {
   const cd = msToCD(getNextMonday() - Date.now())
 
   return (
-    <div style={{ padding:'4px 0 22px', position:'relative' }}>
+    <div style={{ padding:'4px 0 32px', position:'relative' }}>
       <p style={{ fontSize:8.5, fontWeight:700, letterSpacing:2.5,
         textTransform:'uppercase', color:`${ORANGE}44`,
         margin:'0 0 12px', textAlign:'center' }}>
@@ -323,7 +323,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
 
               {/* ── SEASON DESCRIPTION — no border, centered ──────── */}
               <div style={{
-                margin:'26px 0 28px',
+                margin:'28px 0 32px',
                 padding:'0 8px',
                 textAlign:'center',
               }}>
@@ -342,7 +342,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
 
               {/* ── STATUS ────────────────────────────────────────── */}
               <div style={{
-                marginBottom:14,
+                marginBottom:20,
                 border: isWaiting
                   ? `1px solid ${ORANGE}40`
                   : `1px solid ${GREEN}30`,
@@ -400,7 +400,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
               <CountdownTimer open={open} isWaiting={isWaiting} nextStart={nextStart}/>
 
               {/* ── NAGRODY ───────────────────────────────────────── */}
-              <SLabel>Nagrody za sezon</SLabel>
+              <SLabel mt={0}>Nagrody za sezon</SLabel>
 
               {/* 1st — full glowing frame */}
               <div style={{
@@ -440,7 +440,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
               </div>
 
               {/* 2nd & 3rd — no border, only corner accents */}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:22}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:0}}>
                 {[
                   {rank:'2',color:BLUE,  prize:'Kupon 150 zł'},
                   {rank:'3',color:PURPLE,prize:'Kupon 150 zł'},
@@ -486,7 +486,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
 
               {/* ── PUNKTY ────────────────────────────────────────── */}
               <SLabel>Źródła punktów</SLabel>
-              <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:22}}>
+              <div style={{display:'flex',flexDirection:'column',gap:7,marginBottom:0}}>
                 {[
                   { label:'Mecz klubowy',       sub:'Potwierdzony udział w meczu drużynowym',
                     pts:'+50', weight:'×1.0', wC:'#00E676', accent:'#00E676' },
@@ -537,7 +537,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
 
               {/* ── ZASADY ────────────────────────────────────────── */}
               <SLabel>Zasady ligi</SLabel>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:7,marginBottom:24}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:7,marginBottom:0}}>
                 {[
                   {title:'Liga tygodniowa',   body:'Pon–niedz, reset w poniedziałek 00:00'},
                   {title:'Pełny tydzień',     body:'Dołączasz w środę? Start od następnego pon.'},
@@ -565,6 +565,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
               </div>
 
               {/* ── CTA ───────────────────────────────────────────── */}
+              <div style={{marginTop:36}}/>
               <motion.button whileTap={{scale:0.97}}
                 onClick={()=>{
                   setLeaderboardFromLeague(true)
