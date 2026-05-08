@@ -8,12 +8,8 @@ import LeaderboardDrawer from './components/ui/LeaderboardDrawer'
 import FrameUnlockPanel from './components/ui/FrameUnlockPanel'
 
 // ── Frame reward configs ──────────────────────────────────────────────────────
-const SEASON_1_END  = new Date('2026-08-24T00:00:00')
-const DIAMOND_MIN   = 850   // weekly_points threshold for Diamond tier
-
-const EARLY_ACCESS_CUTOFF  = new Date('2026-06-01T00:00:00') // kto kwalifikuje
-const EARLY_ACCESS_INSTANT = new Date('2026-05-08T00:00:00') // istniejące konta → od razu
-const EARLY_ACCESS_SHOW    = new Date('2026-06-01T00:00:00') // nowe rejestracje → od 1.06
+const SEASON_1_END = new Date('2026-08-24T00:00:00')
+const DIAMOND_MIN  = 820   // weekly avg threshold for Diamond tier
 
 const FRAMES = {
   early_access: {
@@ -75,27 +71,21 @@ function AppShell() {
 
   // ── Frame reward — load pending frame into UIContext (shows red dot) ─────────
   // Panel opens only when user taps the notification dot (in HomePage header).
-  // Priority: Early Access (from June 1) → Diamond S1 (from Aug 24).
+  // Priority: Early Access (every new user, immediately) → Diamond S1 (from Aug 24).
   useEffect(() => {
     if (!profile || !user) return
     const now = new Date()
 
-    // 1. Early Access
-    //    - zarejestrowany przed 08.05 (istniejące konta) → kropka od razu
-    //    - zarejestrowany 08.05–01.06 (nowe) → kropka dopiero od 01.06
+    // 1. Early Access — every registered user gets it immediately on first login.
+    //    Once they open the panel (FrameUnlockPanel.onClose → localStorage mark),
+    //    the dot disappears permanently.
     const seenEA = `hc_frame_seen_early_access_${user.id}`
     if (!localStorage.getItem(seenEA)) {
-      const reg = profile.registration_date ? new Date(profile.registration_date) : null
-      if (reg && reg < EARLY_ACCESS_CUTOFF) {
-        const showFrom = reg < EARLY_ACCESS_INSTANT ? now : EARLY_ACCESS_SHOW
-        if (now >= showFrom) {
-          setFrameUnlockData(FRAMES.early_access)
-          return
-        }
-      }
+      setFrameUnlockData(FRAMES.early_access)
+      return
     }
 
-    // 2. Diamond S1 — Diamond tier, notification shown from Aug 24
+    // 2. Diamond S1 — shown from Aug 24 to players who reached Diamond avg
     if (now >= SEASON_1_END) {
       const seenD = `hc_frame_seen_diamond_s1_${user.id}`
       if (!localStorage.getItem(seenD)) {
