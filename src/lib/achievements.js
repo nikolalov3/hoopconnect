@@ -188,13 +188,18 @@ export async function awardMedalPoints(userId, medal, weekNumber, achievementId 
   const pts = MEDAL_POINTS[medal]
   if (!pts || !weekNumber) return
   const today = new Date().toISOString().split('T')[0]
-  await supabase.from('points_log').insert({
-    user_id: userId,
-    training_id: null,
-    points: pts,
-    week_number: weekNumber,
-    date: today,
-    source: 'achievement',
+  await supabase.from('points_log').upsert({
+    user_id:        userId,
+    training_id:    null,
+    points:         pts,
+    week_number:    weekNumber,
+    date:           today,
+    source:         'achievement',
+    achievement_id: achievementId,
+  }, {
+    // If same achievement was already awarded today → update (no-op in practice)
+    onConflict: 'user_id,date,achievement_id,source',
+    ignoreDuplicates: true,
   })
 }
 
