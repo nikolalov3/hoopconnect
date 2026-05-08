@@ -2,8 +2,9 @@ import { lazy, Suspense, useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { UIProvider } from './context/UIContext'
+import { UIProvider, useUI } from './context/UIContext'
 import BottomNav from './components/ui/BottomNav'
+import LeaderboardDrawer from './components/ui/LeaderboardDrawer'
 
 // Lazy-loaded pages — each page loads as a separate JS chunk
 const AuthPage        = lazy(() => import('./pages/AuthPage'))
@@ -40,7 +41,8 @@ function PageLoader() {
 }
 
 function AppShell() {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, profileReady } = useAuth()
+  const { leaderboardOpen } = useUI()
   const location = useLocation()
   const path = location.pathname
   const isTabRoute  = TAB_PATHS.has(path)
@@ -61,7 +63,8 @@ function AppShell() {
     }
   }, [path])
 
-  if (loading) {
+  // Czekaj na inicjalny loading sesji LUB pierwszy fetch profilu (tylko raz, nie przy token refresh)
+  if (loading || !profileReady) {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -74,7 +77,8 @@ function AppShell() {
 
   if (!user) return <Navigate to="/auth" replace />
 
-  if (profile && !profile.onboarding_done && path !== '/onboarding') {
+  // Brak profilu lub onboarding nieukończony → zawsze kieruj na onboarding
+  if ((!profile || !profile.onboarding_done) && path !== '/onboarding') {
     return <Navigate to="/onboarding" replace />
   }
 
@@ -122,6 +126,7 @@ function AppShell() {
 
       </Suspense>
 
+      {isTabRoute && <LeaderboardDrawer />}
       {showNav && <BottomNav />}
     </div>
   )

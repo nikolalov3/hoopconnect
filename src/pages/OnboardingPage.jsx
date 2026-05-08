@@ -11,7 +11,7 @@ const DAYS_OPTIONS = [
   { value: 6, label: '6 DNI', sub: 'Pro · Tylko jeśli śpisz 9h i dobrze jesz', color: '#FF3D3D' },
 ]
 
-const STEP_COUNT = 3
+const STEP_COUNT = 4
 const BLUE = '#5BB8F5'
 
 function WelcomeScreen({ userName, onComplete }) {
@@ -222,6 +222,8 @@ export default function OnboardingPage() {
       })()
     : null
   const [trainingDays, setTrainingDays] = useState(4)
+  const [city,    setCity]    = useState('')
+  const [country, setCountry] = useState('PL')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [showWelcome, setShowWelcome] = useState(false)
@@ -235,12 +237,15 @@ export default function OnboardingPage() {
 
     const profileData = {
       name: name.trim(),
+      username: user.email ?? null,
       age,
       training_days: trainingDays,
       onboarding_done: true,
       schedule_type: trainingDays <= 3 ? 'light' : trainingDays <= 4 ? 'balanced' : 'intense',
       // Rejestracja = zawsze dzień treningowy
       registration_date: new Date().toISOString().split('T')[0],
+      ...(city.trim()    && { city:    city.trim()    }),
+      ...(country.trim() && { country: country.trim() }),
     }
 
     try {
@@ -432,6 +437,99 @@ export default function OnboardingPage() {
                     : 'Poważny program. Trenujesz jak zawodowiec — z zawodową dyscypliną.'}
                 </p>
               </motion.div>
+            )}
+          </motion.div>
+        )}
+
+        {/* STEP 3 — Miasto + Kraj */}
+        {step === 3 && (
+          <motion.div key="step3"
+            initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
+            style={{ flex: 1, padding: '40px 26px 0', display: 'flex', flexDirection: 'column' }}
+          >
+            <p className="section-label" style={{ marginBottom: 8 }}>Krok 4 z {STEP_COUNT}</p>
+            <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8 }}>
+              Skąd<br />jesteś?
+            </h1>
+            <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 28, letterSpacing: 0.3 }}>
+              Pomaga nam pokazywać mecze i drużyny blisko Ciebie, nawet bez GPS.
+            </p>
+
+            {/* Kraj */}
+            <div style={{ marginBottom: 16 }}>
+              <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>Kraj</p>
+              <select
+                value={country}
+                onChange={e => setCountry(e.target.value)}
+                style={{
+                  width: '100%', padding: '15px 14px',
+                  background: 'rgba(6,14,30,0.52)',
+                  backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+                  border: `1px solid ${country ? 'rgba(91,184,245,0.40)' : 'rgba(120,190,255,0.09)'}`,
+                  borderTop: `1px solid ${country ? 'rgba(91,184,245,0.55)' : 'rgba(160,210,255,0.16)'}`,
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
+                  cursor: 'pointer', outline: 'none',
+                  appearance: 'none', WebkitAppearance: 'none',
+                  boxSizing: 'border-box',
+                }}
+              >
+                {[
+                  { code: 'PL', name: 'Polska 🇵🇱' },
+                  { code: 'US', name: 'USA 🇺🇸' },
+                  { code: 'DE', name: 'Niemcy 🇩🇪' },
+                  { code: 'FR', name: 'Francja 🇫🇷' },
+                  { code: 'ES', name: 'Hiszpania 🇪🇸' },
+                  { code: 'IT', name: 'Włochy 🇮🇹' },
+                  { code: 'GB', name: 'Wielka Brytania 🇬🇧' },
+                  { code: 'PT', name: 'Portugalia 🇵🇹' },
+                  { code: 'BR', name: 'Brazylia 🇧🇷' },
+                  { code: 'NG', name: 'Nigeria 🇳🇬' },
+                  { code: 'LT', name: 'Litwa 🇱🇹' },
+                  { code: 'RS', name: 'Serbia 🇷🇸' },
+                  { code: 'HR', name: 'Chorwacja 🇭🇷' },
+                  { code: 'GR', name: 'Grecja 🇬🇷' },
+                  { code: 'AU', name: 'Australia 🇦🇺' },
+                  { code: 'CA', name: 'Kanada 🇨🇦' },
+                ].map(c => (
+                  <option key={c.code} value={c.code}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Miasto */}
+            <div>
+              <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>Miasto</p>
+              <input
+                className="input-field"
+                type="text"
+                placeholder="np. Warszawa..."
+                value={city}
+                onChange={e => setCity(e.target.value)}
+                maxLength={60}
+                style={{ fontSize: 18, padding: '16px 14px', letterSpacing: 0.4 }}
+              />
+            </div>
+
+            {city.trim().length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                style={{
+                  marginTop: 20, padding: '14px 18px',
+                  background: 'rgba(91,184,245,0.10)',
+                  border: '1px solid rgba(91,184,245,0.25)',
+                  borderRadius: 'var(--radius)',
+                }}
+              >
+                <p style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.55 }}>
+                  Mecze w <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{city.trim()}</span> będą widoczne od razu, gdy GPS jest niedostępny.
+                </p>
+              </motion.div>
+            )}
+
+            {error && (
+              <p style={{ color: 'var(--red-shot)', fontSize: 13, marginTop: 14, textAlign: 'center' }}>{error}</p>
             )}
           </motion.div>
         )}

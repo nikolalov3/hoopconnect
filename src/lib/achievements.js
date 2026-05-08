@@ -194,6 +194,7 @@ export async function awardMedalPoints(userId, medal, weekNumber) {
     points: pts,
     week_number: weekNumber,
     date: today,
+    source: 'achievement',
   })
 }
 

@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { creditRestDayStreak } from '../lib/streak'
+import { shareMatchCard, doShare } from '../lib/shareCard'
+import HexAvatar, { HexFrameOnly } from '../components/ui/HexAvatar'
 import L from 'leaflet'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -38,8 +40,8 @@ const POSITIONS = Object.keys(POS)
 
 // Court token positions (% of 343×410 court card)
 const SPOT = {
-  PG: { x: '22%', y: '12%' },
-  SG: { x: '78%', y: '12%' },
+  PG: { x: '22%', y: '15%' },
+  SG: { x: '78%', y: '15%' },
   SF: { x: '17%', y: '47%' },
   C:  { x: '50%', y: '71%' },
   PF: { x: '83%', y: '47%' },
@@ -255,7 +257,7 @@ async function apiDeleteMatch(matchId) {
   if (error) throw error
 }
 
-async function apiFetchMatches(userLat, userLng, radiusKm = 25) {
+async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds = []) {
   const { data: matches, error } = await supabase
     .from('club_matches')
     .select('*')
@@ -277,25 +279,52 @@ async function apiFetchMatches(userLat, userLng, radiusKm = 25) {
   }
   const pm = Object.fromEntries(profileRows.map(p => [p.id, p]))
 
-  // Fetch club names for home team label
-  const clubIds = [...new Set(nearby.map(m => m.club_id))]
-  const { data: clubRows } = await supabase.from('clubs').select('id,name,abbr,country_flag').in('id', clubIds)
+  // Fetch home + away club names
+  const allClubIds = [...new Set([
+    ...nearby.map(m => m.club_id),
+    ...nearby.filter(m => m.away_club_id).map(m => m.away_club_id),
+  ].filter(Boolean))]
+  const { data: clubRows } = await supabase.from('clubs').select('id,name,abbr,country_flag').in('id', allClubIds)
   const cm = Object.fromEntries((clubRows || []).map(c => [c.id, c]))
 
-  return nearby.map(m => ({
-    ...m,
-    _dist: haversineKm(userLat, userLng, m.lat, m.lng),
-    _club: cm[m.club_id] || null,
-    players: (players || []).filter(p => p.match_id === m.id).map(p => ({ ...p, profile: pm[p.user_id] || null })),
-  }))
+  return nearby.map(m => {
+    const matchPlayers = (players || []).filter(p => p.match_id === m.id).map(p => ({ ...p, profile: pm[p.user_id] || null }))
+    const hasTeammate = myClubMemberIds.length > 0 && matchPlayers.some(p => myClubMemberIds.includes(p.user_id))
+    return {
+      ...m,
+      _dist: haversineKm(userLat, userLng, m.lat, m.lng),
+      _club: cm[m.club_id] || null,
+      _awayClub: m.away_club_id ? (cm[m.away_club_id] || null) : null,
+      players: matchPlayers,
+      _hasTeammate: hasTeammate,
+    }
+  })
 }
 
 async function apiJoinMatch(matchId, userId, team, mode) {
   const n = MODE_SLOTS[mode]
+
+  if (team === 'away') {
+    // Enforce away-club exclusivity — only one club can occupy the away slots
+    const [{ data: matchRow }, { data: membership }] = await Promise.all([
+      supabase.from('club_matches').select('away_club_id').eq('id', matchId).single(),
+      supabase.from('club_members').select('club_id').eq('user_id', userId).maybeSingle(),
+    ])
+    const userClubId = membership?.club_id || null
+    if (matchRow?.away_club_id && matchRow.away_club_id !== userClubId) {
+      throw new Error('Drużyna away jest już zajęta przez inny klub')
+    }
+    // First away player — claim the slot for their club
+    if (!matchRow?.away_club_id && userClubId) {
+      await supabase.from('club_matches').update({ away_club_id: userClubId }).eq('id', matchId)
+    }
+  }
+
   const { data: existing } = await supabase.from('match_players').select('slot').eq('match_id', matchId).eq('team', team)
   const taken = new Set((existing || []).map(p => p.slot))
   const slot = Array.from({ length: n }, (_, i) => i + 1).find(s => !taken.has(s))
   if (!slot) throw new Error('Drużyna jest już pełna')
+
   const { error } = await supabase.from('match_players').insert({ match_id: matchId, user_id: userId, team, slot })
   if (error) {
     if (error.code === '23505') throw new Error('Już jesteś w tym meczu')
@@ -308,9 +337,23 @@ async function apiJoinMatch(matchId, userId, team, mode) {
 }
 
 async function apiLeaveMatch(matchId, userId) {
+  // First check which team the player was on
+  const { data: myRow } = await supabase.from('match_players')
+    .select('team').eq('match_id', matchId).eq('user_id', userId).maybeSingle()
+
   const { error } = await supabase.from('match_players').delete().eq('match_id', matchId).eq('user_id', userId)
   if (error) throw error
-  await supabase.from('club_matches').update({ status: 'open' }).eq('id', matchId)
+
+  // If the player was on away team, check if anyone else remains away
+  const updates = { status: 'open' }
+  if (myRow?.team === 'away') {
+    const { data: remaining } = await supabase.from('match_players')
+      .select('id').eq('match_id', matchId).eq('team', 'away')
+    if (!remaining || remaining.length === 0) {
+      updates.away_club_id = null  // Release away club claim — new club can now take over
+    }
+  }
+  await supabase.from('club_matches').update(updates).eq('id', matchId)
 }
 
 async function apiEnterScore(matchId, scoreHome, scoreAway) {
@@ -457,6 +500,10 @@ function Token({ posKey, member, onPress, swapMode, isSrc, isTgt }) {
             background: `radial-gradient(ellipse, ${isSrc ? 'rgba(0,221,255,0.60)' : pos.glow} 0%, transparent 70%)`,
             filter: 'blur(12px)', pointerEvents: 'none',
           }}/>
+        )}
+        {/* Sci-fi frame overlay — only for filled slots */}
+        {member && !isSrc && !isTgt && (
+          <HexFrameOnly size={TK} variant="default" />
         )}
         <svg width={TK} height={TK} viewBox="0 0 90 90"
           style={{
@@ -655,29 +702,32 @@ function PlayerSheet({ club, posKey, member, isOwner, isSelf, onClose, onRemove,
 
       {/* Avatar + name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
-        <svg width="64" height="64" viewBox="0 0 90 90"
-          style={{ flexShrink: 0, overflow: 'visible',
-            filter: `drop-shadow(0 6px 18px ${pos.glow.replace('0.55', '0.80')})` }}>
-          <defs>
-            <linearGradient id="sheetTg" x1="20%" y1="0%" x2="80%" y2="100%">
-              <stop offset="0%"   stopColor={pos.hi} stopOpacity="0.80"/>
-              <stop offset="100%" stopColor={pos.lo}/>
-            </linearGradient>
-          </defs>
-          <polygon points="45,9 84,33 84,61 45,87 6,61 6,33" fill="rgba(0,0,0,.42)"/>
-          <polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill="url(#sheetTg)"/>
-          <polygon points="45,6 8,32 45,42"  fill="rgba(255,255,255,.22)"/>
-          <polygon points="45,6 82,32 45,42" fill="rgba(255,255,255,.10)"/>
-          <polygon points="8,32 8,58 45,48 45,42"  fill={`${pos.hi}20`}/>
-          <polygon points="82,32 82,58 45,48 45,42" fill="rgba(0,0,0,.35)"/>
-          <polygon points="45,6 82,32 82,58 45,84 8,58 8,32"
-            fill="none" stroke={`${pos.hi}CC`} strokeWidth="2.2" strokeLinejoin="round"/>
-          <text x="45" y="50" textAnchor="middle" dominantBaseline="middle"
-            fill="white" fontSize="31" fontWeight="900"
-            fontFamily="var(--font-display),Montserrat,sans-serif">
-            {member.initial}
-          </text>
-        </svg>
+        <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
+          <HexFrameOnly size={64} variant="default" />
+          <svg width="64" height="64" viewBox="0 0 90 90"
+            style={{ overflow: 'visible', position: 'relative', zIndex: 1,
+              filter: `drop-shadow(0 6px 18px ${pos.glow.replace('0.55', '0.80')})` }}>
+            <defs>
+              <linearGradient id="sheetTg" x1="20%" y1="0%" x2="80%" y2="100%">
+                <stop offset="0%"   stopColor={pos.hi} stopOpacity="0.80"/>
+                <stop offset="100%" stopColor={pos.lo}/>
+              </linearGradient>
+            </defs>
+            <polygon points="45,9 84,33 84,61 45,87 6,61 6,33" fill="rgba(0,0,0,.42)"/>
+            <polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill="url(#sheetTg)"/>
+            <polygon points="45,6 8,32 45,42"  fill="rgba(255,255,255,.22)"/>
+            <polygon points="45,6 82,32 45,42" fill="rgba(255,255,255,.10)"/>
+            <polygon points="8,32 8,58 45,48 45,42"  fill={`${pos.hi}20`}/>
+            <polygon points="82,32 82,58 45,48 45,42" fill="rgba(0,0,0,.35)"/>
+            <polygon points="45,6 82,32 82,58 45,84 8,58 8,32"
+              fill="none" stroke={`${pos.hi}CC`} strokeWidth="2.2" strokeLinejoin="round"/>
+            <text x="45" y="50" textAnchor="middle" dominantBaseline="middle"
+              fill="white" fontSize="31" fontWeight="900"
+              fontFamily="var(--font-display),Montserrat,sans-serif">
+              {member.initial}
+            </text>
+          </svg>
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900,
             fontSize: 22, color: C.text, letterSpacing: -0.3, lineHeight: 1.1,
@@ -979,20 +1029,46 @@ function ClubHeader({ club, isOwner, onEditPress }) {
 }
 
 // ── MATCH CARD ────────────────────────────────────────────────────────────────
-function MatchCard({ match, dist, onPress }) {
+function MatchCard({ match, dist, uid, onPress }) {
   const slots = MODE_SLOTS[match.mode]
   const homePlayers = match.players.filter(p => p.team === 'home')
   const awayPlayers = match.players.filter(p => p.team === 'away')
   const color = MODE_COLOR[match.mode]
   const isPast = new Date(match.scheduled_at) < new Date()
   const homeTeamName = match._club?.abbr || match._club?.name || 'Klub'
+  const hasTeammate = !!match._hasTeammate
+  // Match where the current user has already joined — strongest highlight
+  const isParticipating = uid && match.players.some(p => p.user_id === uid)
+
+  const cardBorder = isParticipating
+    ? `1.5px solid rgba(0,210,255,0.55)`
+    : hasTeammate
+      ? `1.5px solid rgba(0,210,255,0.38)`
+      : `1px solid rgba(255,255,255,0.05)`
+  const cardBorderLeft = isParticipating
+    ? `3px solid ${C.accent}`
+    : hasTeammate
+      ? `3px solid ${C.accent}`
+      : `3px solid ${color}`
+  const cardBg = isParticipating
+    ? 'rgba(0,180,220,0.10)'
+    : hasTeammate
+      ? 'rgba(0,180,220,0.07)'
+      : C.surface
+  const cardShadow = isParticipating
+    ? `0 0 28px rgba(0,210,255,0.14), inset 0 0 0 0.5px rgba(0,210,255,0.12)`
+    : hasTeammate
+      ? `0 0 22px rgba(0,210,255,0.10)`
+      : 'none'
 
   return (
     <motion.div whileTap={{ scale: 0.975 }} onClick={onPress}
       style={{
         borderRadius: 16, marginBottom: 10, cursor: 'pointer',
-        background: C.surface, border: `1px solid rgba(255,255,255,0.05)`,
-        borderLeft: `3px solid ${color}`,
+        background: cardBg,
+        border: cardBorder,
+        borderLeft: cardBorderLeft,
+        boxShadow: cardShadow,
         opacity: isPast && match.status !== 'completed' ? 0.65 : 1,
         overflow: 'hidden',
       }}>
@@ -1006,6 +1082,30 @@ function MatchCard({ match, dist, onPress }) {
               fontSize: 9.5, fontWeight: 800, letterSpacing: 1.5,
               color, textTransform: 'uppercase', fontFamily: 'var(--font-display)',
             }}>{match.mode}</div>
+            {isParticipating && (
+              <div style={{
+                padding: '3px 9px', borderRadius: 6,
+                background: `${C.accent}22`, border: `1px solid ${C.accent}55`,
+                fontSize: 9, fontWeight: 800, letterSpacing: 1,
+                color: C.accentHi, textTransform: 'uppercase', fontFamily: 'var(--font-display)',
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: C.accentHi, boxShadow: `0 0 6px ${C.accentHi}` }}/>
+                Grasz
+              </div>
+            )}
+            {!isParticipating && hasTeammate && (
+              <div style={{
+                padding: '3px 9px', borderRadius: 6,
+                background: `${C.accent}18`, border: `1px solid ${C.accent}40`,
+                fontSize: 9, fontWeight: 800, letterSpacing: 1,
+                color: C.accent, textTransform: 'uppercase', fontFamily: 'var(--font-display)',
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: C.accent, boxShadow: `0 0 5px ${C.accent}` }}/>
+                Twój team
+              </div>
+            )}
             {match.status === 'completed' && (
               <div style={{ padding: '2px 7px', borderRadius: 6, background: `${C.win}12`,
                 border: `1px solid ${C.win}30`, fontSize: 9, fontWeight: 700, color: C.win, letterSpacing: 1 }}>
@@ -1069,7 +1169,7 @@ function MatchCard({ match, dist, onPress }) {
           {/* Away team */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
             <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase',
-              color: `${C.hoop}90` }}>Rywale</span>
+              color: `${C.hoop}90` }}>{match._awayClub?.abbr || match._awayClub?.name || 'Rywale'}</span>
             <div style={{ display: 'flex', gap: 4 }}>
               {Array.from({ length: slots }).map((_, i) => {
                 const filled = awayPlayers.some(p => p.slot === i + 1)
@@ -1383,7 +1483,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 }
 
 // ── MATCH DETAIL SHEET ────────────────────────────────────────────────────────
-function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft, onDeleted }) {
+function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoined, onLeft, onDeleted }) {
   const { profile, refreshProfile } = useAuth()
   const [local,        setLocal]        = useState(match)
   const [joining,      setJoining]      = useState(false)
@@ -1398,7 +1498,15 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft, o
   const isPast = new Date(local.scheduled_at) < new Date()
   // Drużyna A (home) tylko dla członków klubu tworzącego mecz
   const isHomeClubMember = userClubId === local.club_id
+  // Away team is locked for 3rd clubs: once a club claims it, only their members can join
+  const isAwayLocked = !!(local.away_club_id && local.away_club_id !== userClubId)
   const homeTeamName = local._club?.name || 'Drużyna A'
+  // If away is claimed by our club → show our name; if by another → show their name; if free → generic
+  const awayDisplayName = local._awayClub?.name
+    || (local.away_club_id === userClubId ? userClubName : null)
+    || userClubName
+    || 'Rywale'
+  const awayTeamName = awayDisplayName
   const isCreator = local.created_by === uid
 
   function getTeamSlots(team) {
@@ -1408,25 +1516,49 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft, o
     })
   }
 
-  function SlotDiamond({ team, player }) {
+  const HEX = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
+
+  function SlotHex({ team, player }) {
+    const SZ = 52  // square size so PNG frame aligns perfectly
     const tColor = team === 'home' ? C.accent : C.hoop
     const filled = !!player
     const isMe = player?.user_id === uid
     const initial = player?.profile?.name?.[0]?.toUpperCase() || '?'
     return (
-      <div style={{
-        width: 46, height: 46,
-        clipPath: 'polygon(50% 0%,100% 50%,50% 100%,0% 50%)',
-        background: filled
-          ? isMe ? `linear-gradient(135deg,${tColor},${tColor}99)` : `${tColor}28`
-          : `${C.dim}50`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {filled
-          ? <span style={{ fontSize: 15, fontWeight: 900, fontFamily: 'var(--font-display)',
-              color: isMe ? '#000' : tColor, lineHeight: 1 }}>{initial}</span>
-          : <span style={{ fontSize: 18, color: `${tColor}40`, lineHeight: 1 }}>+</span>
-        }
+      <div style={{ position: 'relative', width: SZ, height: SZ, flexShrink: 0 }}>
+        {/* Outer glow ring */}
+        {filled && (
+          <div style={{
+            position: 'absolute', inset: -2,
+            clipPath: HEX,
+            background: isMe
+              ? `linear-gradient(135deg, ${tColor}90, ${tColor}50)`
+              : `${tColor}30`,
+          }}/>
+        )}
+        {/* Hex body */}
+        <div style={{
+          position: 'absolute',
+          inset: filled ? 2 : 0,
+          clipPath: HEX,
+          background: filled
+            ? isMe
+              ? `linear-gradient(135deg, ${tColor}, ${tColor}CC)`
+              : `${tColor}20`
+            : `${C.dim}45`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {filled
+            ? <span style={{
+                fontSize: 16, fontWeight: 900, fontFamily: 'var(--font-display)',
+                color: isMe ? '#000' : tColor, lineHeight: 1,
+                textShadow: isMe ? 'none' : `0 0 8px ${tColor}70`,
+              }}>{initial}</span>
+            : <span style={{ fontSize: 20, color: `${tColor}35`, lineHeight: 1 }}>+</span>
+          }
+        </div>
+        {/* Frame overlay — only on filled slots */}
+        {filled && <HexFrameOnly size={SZ} variant="default" />}
       </div>
     )
   }
@@ -1435,11 +1567,23 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft, o
     if (myPlayer || joining || isFull) return
     setJoining(true); setErr(null)
     try {
+      // Demo match — simulate join without DB call
+      if (local._isDemo) {
+        const fakePlayer = {
+          match_id: local.id, user_id: uid, team, slot: 1,
+          profile: { id: uid, name: profile?.name || 'Ty' },
+        }
+        const updated = { ...local, players: [fakePlayer] }
+        setLocal(updated)
+        onJoined?.(updated, true)
+        return
+      }
+
       await apiJoinMatch(local.id, uid, team, local.mode)
       const { data } = await supabase.from('match_players').select('*').eq('match_id', local.id)
       const updated = { ...local, players: data || [] }
       if ((data || []).length >= n * 2) updated.status = 'full'
-      setLocal(updated); onJoined?.(updated)
+      setLocal(updated); onJoined?.(updated, true)
 
       // Dzień odpoczynku ('O') — dołączenie do meczu zalicza serię
       await creditRestDayStreak(profile, refreshProfile)
@@ -1458,6 +1602,12 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft, o
   async function doLeave(deleteMatch = false) {
     setLeaving(true); setErr(null); setConfirmLeave(false)
     try {
+      // Demo match — simulate leave without DB call
+      if (local._isDemo) {
+        const updated = { ...local, status: 'open', players: [] }
+        setLocal(updated); onLeft?.(updated)
+        return
+      }
       if (deleteMatch && isCreator) {
         await apiDeleteMatch(local.id)
         onDeleted?.(local.id)
@@ -1569,11 +1719,11 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft, o
                 <div key={team} style={{ flex: 1 }}>
                   <p style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase',
                     color: tColor, margin: '0 0 12px', textAlign: 'center' }}>
-                    {team === 'home' ? homeTeamName : 'Rywale'}
+                    {team === 'home' ? homeTeamName : awayTeamName}
                   </p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
                     {getTeamSlots(team).map(({ slot, player }) => (
-                      <SlotDiamond key={slot} team={team} player={player}/>
+                      <SlotHex key={slot} team={team} player={player}/>
                     ))}
                   </div>
                 </div>
@@ -1590,8 +1740,11 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft, o
                 const tColor = team === 'home' ? C.accent : C.hoop
                 const teamFull = local.players.filter(p => p.team === team).length >= n
                 // Drużyna A (home) — tylko dla członków klubu tworzącego mecz
-                const locked = team === 'home' && !isHomeClubMember
+                const locked = (team === 'home' && !isHomeClubMember) || (team === 'away' && isAwayLocked)
                 const disabled = joining || teamFull || locked
+                const lockedLabel = team === 'home'
+                  ? '🔒 Tylko twój klub'
+                  : `🔒 ${local._awayClub?.abbr || local._awayClub?.name || 'Inny klub'}`
                 return (
                   <motion.button key={team} whileTap={!disabled ? { scale: 0.96 } : {}}
                     onClick={() => !disabled && handleJoin(team)}
@@ -1604,7 +1757,7 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft, o
                       fontSize: 11, fontWeight: 800, letterSpacing: 1,
                       fontFamily: 'var(--font-display)', transition: 'all 0.18s',
                       opacity: joining ? 0.7 : 1 }}>
-                    {locked ? '🔒 Tylko klub' : teamFull ? 'Pełna' : joining ? '…' : `Dołącz — ${team === 'home' ? homeTeamName : 'Rywale'}`}
+                    {locked ? lockedLabel : teamFull ? 'Pełna' : joining ? '…' : `Dołącz — ${team === 'home' ? homeTeamName : awayTeamName}`}
                   </motion.button>
                 )
               })}
@@ -1647,7 +1800,7 @@ function MatchDetailSheet({ match, uid, userClubId, onClose, onJoined, onLeft, o
                 border: `1px solid ${myPlayer.team === 'home' ? C.accent : C.hoop}35` }}>
                 <p style={{ margin: 0, fontSize: 11, fontWeight: 800,
                   color: myPlayer.team === 'home' ? C.accent : C.hoop }}>
-                  {myPlayer.team === 'home' ? homeTeamName : 'Rywale'} ✓
+                  {myPlayer.team === 'home' ? homeTeamName : awayTeamName} ✓
                 </p>
               </div>
               {!isPast && (
@@ -1758,27 +1911,306 @@ function ResultSheet({ match, onClose, onSaved }) {
   )
 }
 
+// ── JOIN SUCCESS MODAL ────────────────────────────────────────────────────────
+function JoinSuccessModal({ match, uid, clubName, playerName, onClose }) {
+  const [sharing, setSharing] = useState(false)
+  const color = MODE_COLOR[match.mode] || C.accent
+  const modeLabels = { '2v2': '2 na 2', '3v3': '3 na 3', '5v5': '5 na 5' }
+  const myPlayer = match.players?.find(p => p.user_id === uid)
+  // Always show the user's own club name regardless of which team slot they joined
+  const teamLabel = myPlayer?.team === 'home' ? (match._club?.name || 'Drużyna A') : (clubName || 'Twój klub')
+
+  async function handleShare() {
+    setSharing(true)
+    try {
+      const blob = await shareMatchCard({ match, clubName, playerName })
+      await doShare(blob, 'hoopconnect-mecz.png')
+    } catch (e) { console.error(e) }
+    finally { setSharing(false) }
+  }
+
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 500,
+        background: 'rgba(2,5,14,0.94)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: 24,
+      }}>
+      <motion.div
+        initial={{ scale: 0.82, opacity: 0, y: 40 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.82, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+        style={{
+          position: 'relative',
+          width: '100%', maxWidth: 380,
+          background: C.surface, borderRadius: 28, padding: '38px 24px 28px',
+          border: `1.5px solid ${color}40`,
+          boxShadow: `0 28px 80px rgba(0,0,0,0.65), 0 0 0 1px ${color}20, 0 0 60px ${color}15`,
+          textAlign: 'center', overflow: 'hidden',
+        }}>
+
+        {/* Glow ring behind the icon */}
+        <div style={{
+          position: 'absolute', width: 120, height: 120,
+          background: `radial-gradient(circle, ${color}35 0%, transparent 70%)`,
+          left: '50%', transform: 'translateX(-50%)', top: 10, borderRadius: '50%',
+          pointerEvents: 'none',
+        }}/>
+
+        {/* Animated ball */}
+        <motion.div
+          initial={{ scale: 0, rotate: -30 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 350, damping: 18, delay: 0.08 }}
+          style={{ fontSize: 66, lineHeight: 1, marginBottom: 18, position: 'relative', zIndex: 1 }}>
+          🏀
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.16 }}
+          style={{
+            fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 38,
+            color: C.text, letterSpacing: 0.5, textTransform: 'uppercase',
+            margin: '0 0 4px', lineHeight: 1,
+          }}>
+          Jesteś w grze!
+        </motion.p>
+
+        <motion.p
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          transition={{ delay: 0.24 }}
+          style={{ fontSize: 12, color: C.sub, margin: '0 0 22px', lineHeight: 1.5 }}>
+          Dołączyłeś do meczu jako{' '}
+          <span style={{ color, fontWeight: 700 }}>{teamLabel}</span>
+        </motion.p>
+
+        {/* Match details */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.30 }}
+          style={{
+            padding: '14px 16px', borderRadius: 16,
+            background: `${color}10`, border: `1px solid ${color}28`,
+            marginBottom: 20, textAlign: 'left',
+          }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <div style={{
+              padding: '3px 10px', borderRadius: 6, background: `${color}18`,
+              border: `1px solid ${color}40`, fontSize: 10, fontWeight: 800,
+              color, letterSpacing: 1.5, fontFamily: 'var(--font-display)', textTransform: 'uppercase',
+            }}>{match.mode}</div>
+            <span style={{ fontSize: 10.5, color: C.sub }}>
+              {fmtMatchDate(match.scheduled_at)} · {fmtMatchTime(match.scheduled_at)}
+            </span>
+          </div>
+          {match.address && (
+            <p style={{ fontSize: 10.5, color: C.text, margin: 0, lineHeight: 1.4 }}>
+              📍 {match.address}
+            </p>
+          )}
+          {match.note && (
+            <p style={{ fontSize: 10, color: C.sub, margin: '6px 0 0' }}>
+              💬 {match.note}
+            </p>
+          )}
+        </motion.div>
+
+        {/* Share button */}
+        <motion.button
+          whileTap={{ scale: 0.97 }} onClick={handleShare} disabled={sharing}
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.38 }}
+          style={{
+            width: '100%', padding: '15px', border: 'none', borderRadius: 14, marginBottom: 10,
+            background: sharing ? C.dim : `linear-gradient(135deg, ${color}, ${color}BB)`,
+            color: match.mode === '5v5' ? '#000' : '#fff',
+            fontFamily: 'var(--font-display)', fontWeight: 900,
+            fontSize: 12, letterSpacing: 2, textTransform: 'uppercase',
+            cursor: sharing ? 'default' : 'pointer',
+            boxShadow: sharing ? 'none' : `0 6px 26px ${color}45`,
+            transition: 'all 0.2s', opacity: sharing ? 0.7 : 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
+          }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+            <polyline points="16 6 12 2 8 6"/>
+            <line x1="12" y1="2" x2="12" y2="15"/>
+          </svg>
+          {sharing ? 'Generowanie…' : 'Zaproś znajomych'}
+        </motion.button>
+
+        <motion.button
+          whileTap={{ scale: 0.97 }} onClick={onClose}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          transition={{ delay: 0.44 }}
+          style={{
+            width: '100%', padding: '12px', border: 'none', borderRadius: 14,
+            background: 'transparent', color: C.sub, fontSize: 11, fontWeight: 600,
+            cursor: 'pointer',
+          }}>
+          Zamknij
+        </motion.button>
+      </motion.div>
+    </motion.div>,
+    document.body
+  )
+}
+
 // ── MATCHES PANEL ─────────────────────────────────────────────────────────────
+// Build a demo match near the user for UI simulation
+function createDemoMatch(userLoc) {
+  return {
+    id: '__demo__',
+    club_id: '__demo_club__',
+    created_by: '__demo_user__',
+    mode: '3v3',
+    lat: userLoc.lat + 0.0012,
+    lng: userLoc.lng + 0.0008,
+    address: 'Hala Sportowa "Arena", ul. Koszykowa 15',
+    scheduled_at: new Date(Date.now() + 1.5 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'open',
+    note: 'Potrzeba graczy! Hala z klimatyzacją 🏀',
+    score_home: null, score_away: null,
+    _dist: 0.15,
+    _club: { id: '__demo_club__', name: 'Demo FC', abbr: 'DFC', country_flag: '🇵🇱' },
+    players: [],
+    _hasTeammate: false,
+    _isDemo: true,
+  }
+}
+
+async function forwardGeocode(city) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`,
+      { headers: { 'User-Agent': 'HoopConnect/1.0' } }
+    )
+    const d = await res.json()
+    if (d && d[0]) return { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon) }
+  } catch { /* ignore */ }
+  return null
+}
+
 function MatchesPanel({ club, uid, isActive }) {
+  const { profile } = useAuth()
   const [locState, setLocState] = useState('idle')
+  const [locError,  setLocError]  = useState(null)   // 'permission' | 'unavailable' | null
   const [userLoc,  setUserLoc]  = useState(null)
+  const [cityFallback, setCityFallback] = useState(false)
   const [matches,  setMatches]  = useState([])
   const [loading,  setLoading]  = useState(false)
   const [sheet,    setSheet]    = useState(null)
   const [active,   setActive]   = useState(null)
   const [pending,  setPending]  = useState(null)
+  const [joinedMatch, setJoinedMatch] = useState(null)
   const RADIUS = 25
 
   const isMember = Object.values(club.members).some(m => m?.id === uid)
 
+  // Club member IDs (excluding self) — used for teammate detection
+  const myMemberIds = Object.values(club.members)
+    .filter(Boolean)
+    .map(m => m.id)
+    .filter(id => id !== uid)
+
+  // Ref always holds current real match IDs for the Realtime handler
+  const matchIdsRef = useRef([])
   useEffect(() => {
-    if (!navigator.geolocation) { setLocState('denied'); return }
+    matchIdsRef.current = matches.filter(m => !m._isDemo).map(m => m.id)
+  }, [matches])
+
+  // Clear notification when user opens Mecze tab + persist to DB (cross-device)
+  useEffect(() => {
+    if (!isActive || !uid) return
+    localStorage.removeItem(`hcNewTeamMatch_${uid}`)
+    supabase.from('profiles')
+      .update({ last_matches_seen_at: new Date().toISOString() })
+      .eq('id', uid)
+      .then(() => {})
+  }, [isActive, uid])
+
+  // Supabase Realtime — live slot updates while tab is active
+  useEffect(() => {
+    if (!isActive) return
+
+    const channel = supabase
+      .channel(`match-players-${uid}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'match_players',
+      }, async payload => {
+        const changedId = payload.new?.match_id || payload.old?.match_id
+        if (!changedId || !matchIdsRef.current.includes(changedId)) return
+
+        // Fetch updated players for this match
+        const { data: players } = await supabase
+          .from('match_players').select('*').eq('match_id', changedId)
+
+        const uids = [...new Set((players || []).map(p => p.user_id))]
+        let pm = {}
+        if (uids.length) {
+          const { data: pd } = await supabase.from('profiles').select('id,name').in('id', uids)
+          pm = Object.fromEntries((pd || []).map(p => [p.id, p]))
+        }
+        const updatedPlayers = (players || []).map(p => ({ ...p, profile: pm[p.user_id] || null }))
+
+        setMatches(prev => prev.map(m => {
+          if (m.id !== changedId) return m
+          const filled = updatedPlayers.length
+          const cap = (MODE_SLOTS[m.mode] || 0) * 2
+          return {
+            ...m,
+            players: updatedPlayers,
+            status: filled >= cap ? 'full' : 'open',
+          }
+        }))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [isActive, uid])
+
+  async function tryCity() {
+    const city = profile?.city
+    if (!city) return false
+    const coords = await forwardGeocode(city)
+    if (!coords) return false
+    setUserLoc(coords)
+    setCityFallback(true)
+    setLocState('granted')
+    return true
+  }
+
+  function requestGeo() {
+    if (!navigator.geolocation) {
+      setLocError('permission')
+      setCityFallback(false)
+      tryCity().then(ok => { if (!ok) setLocState('denied') })
+      return
+    }
     setLocState('requesting')
+    setLocError(null)
     navigator.geolocation.getCurrentPosition(
-      pos => { setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocState('granted') },
-      () => setLocState('denied')
+      pos => {
+        setCityFallback(false)
+        setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setLocState('granted')
+      },
+      async err => {
+        // err.code: 1=PERMISSION_DENIED, 2=POSITION_UNAVAILABLE, 3=TIMEOUT
+        setLocError(err.code === 1 ? 'permission' : 'unavailable')
+        const ok = await tryCity()
+        if (!ok) setLocState('denied')
+      },
+      { timeout: 10000, maximumAge: 60000 }
     )
-  }, [])
+  }
+
+  useEffect(() => { requestGeo() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (locState === 'granted' && userLoc) loadMatches()
@@ -1787,9 +2219,17 @@ function MatchesPanel({ club, uid, isActive }) {
   async function loadMatches() {
     setLoading(true)
     try {
-      const data = await apiFetchMatches(userLoc.lat, userLoc.lng, RADIUS)
-      setMatches(data)
+      const data = await apiFetchMatches(userLoc.lat, userLoc.lng, RADIUS, myMemberIds)
+      // Demo match only in development — for testing the join flow
+      const demoList = import.meta.env.DEV ? [createDemoMatch(userLoc)] : []
+      const allMatches = [...demoList, ...data]
+      setMatches(allMatches)
       checkPendingResult(data)
+      // If there are team matches and user isn't on the tab — set notification flag
+      const hasTeam = data.some(m => m._hasTeammate)
+      if (hasTeam && !isActive) {
+        localStorage.setItem(`hcNewTeamMatch_${uid}`, '1')
+      }
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
   }
@@ -1814,8 +2254,21 @@ function MatchesPanel({ club, uid, isActive }) {
     setMatches(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m))
   }
 
-  const upcoming = matches.filter(m => m.status !== 'completed' && new Date(m.scheduled_at) > new Date())
-  const past     = matches.filter(m => m.status === 'completed' || new Date(m.scheduled_at) <= new Date())
+  // Sort: team matches (hasTeammate) first, then by date
+  function sortByTeam(arr) {
+    return [...arr].sort((a, b) => {
+      if (a._hasTeammate && !b._hasTeammate) return -1
+      if (!a._hasTeammate && b._hasTeammate) return 1
+      return 0
+    })
+  }
+
+  const upcoming = sortByTeam(
+    matches.filter(m => m.status !== 'completed' && new Date(m.scheduled_at) > new Date())
+  )
+  const past = sortByTeam(
+    matches.filter(m => m.status === 'completed' || new Date(m.scheduled_at) <= new Date())
+  )
 
   return (
     <div style={{ padding: '0 16px var(--nav-h)' }}>
@@ -1823,7 +2276,11 @@ function MatchesPanel({ club, uid, isActive }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0 16px' }}>
         <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.8, textTransform: 'uppercase',
-          color: C.dim, margin: 0 }}>Mecze w pobliżu</p>
+          color: C.dim, margin: 0 }}>
+          {cityFallback && profile?.city
+            ? `Mecze w pobliżu · ${profile.city}`
+            : 'Mecze w pobliżu'}
+        </p>
         <div style={{ padding: '3px 10px', borderRadius: 8,
           background: `${C.accent}10`, border: `1px solid ${C.accent}22` }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: C.accent }}>{RADIUS} km</span>
@@ -1841,23 +2298,29 @@ function MatchesPanel({ club, uid, isActive }) {
       {locState === 'denied' && (
         <div style={{ padding: '36px 20px', borderRadius: 20, textAlign: 'center',
           background: C.surface, border: `1px solid ${C.dim}40` }}>
-          <div style={{ fontSize: 38, marginBottom: 14 }}>🗺️</div>
-          <p style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: '0 0 8px' }}>Lokalizacja wyłączona</p>
+          {/* SVG pin icon */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none"
+              stroke={C.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+              style={{ opacity: 0.7 }}>
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <p style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: '0 0 8px' }}>
+            {locError === 'permission' ? 'Brak dostępu do lokalizacji' : 'Nie można ustalić lokalizacji'}
+          </p>
           <p style={{ fontSize: 10.5, color: C.sub, margin: '0 0 22px', lineHeight: 1.6 }}>
-            Zezwól na dostęp do lokalizacji,{'\n'}aby zobaczyć mecze w pobliżu
+            {locError === 'permission'
+              ? 'Zezwól tej stronie na dostęp\ndo lokalizacji w ustawieniach przeglądarki'
+              : 'Sprawdź czy GPS jest włączony\ni spróbuj ponownie'}
           </p>
           <motion.button whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              setLocState('requesting')
-              navigator.geolocation?.getCurrentPosition(
-                p => { setUserLoc({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocState('granted') },
-                () => setLocState('denied')
-              )
-            }}
+            onClick={requestGeo}
             style={{ padding: '11px 26px', borderRadius: 12, border: 'none', cursor: 'pointer',
               background: `${C.accent}18`, outline: `1px solid ${C.accent}40`,
               color: C.accent, fontSize: 11, fontWeight: 700 }}>
-            Włącz lokalizację
+            {locError === 'permission' ? 'Spróbuj ponownie' : 'Włącz lokalizację'}
           </motion.button>
         </div>
       )}
@@ -1877,7 +2340,7 @@ function MatchesPanel({ club, uid, isActive }) {
               <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
                 color: C.dim, margin: '0 0 10px 2px' }}>Nadchodzące</p>
               {upcoming.map(m => (
-                <MatchCard key={m.id} match={m} dist={m._dist}
+                <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
                   onPress={() => { setActive(m); setSheet('detail') }}/>
               ))}
             </>
@@ -1887,7 +2350,7 @@ function MatchesPanel({ club, uid, isActive }) {
               <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
                 color: C.dim, margin: '16px 0 10px 2px' }}>Ostatnie</p>
               {past.map(m => (
-                <MatchCard key={m.id} match={m} dist={m._dist}
+                <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
                   onPress={() => { setActive(m); setSheet('detail') }}/>
               ))}
             </>
@@ -1932,15 +2395,30 @@ function MatchesPanel({ club, uid, isActive }) {
         )}
         {sheet === 'detail' && active && (
           <MatchDetailSheet key="detail" match={active} uid={uid}
-            userClubId={club.id}
+            userClubId={club.id} userClubName={club.name}
             onClose={() => { setSheet(null); setActive(null) }}
-            onJoined={updateMatch} onLeft={updateMatch}
+            onJoined={(updated, showModal) => {
+              updateMatch(updated)
+              if (showModal) {
+                setJoinedMatch(updated)
+                setSheet('joinSuccess')
+                setActive(null)
+              }
+            }}
+            onLeft={updateMatch}
             onDeleted={id => { setMatches(prev => prev.filter(m => m.id !== id)); setSheet(null); setActive(null) }}/>
         )}
         {sheet === 'result' && pending && (
           <ResultSheet key="result" match={pending}
             onClose={() => { setSheet(null); setPending(null) }}
             onSaved={(h, a) => updateMatch({ ...pending, status: 'completed', score_home: h, score_away: a })}/>
+        )}
+        {sheet === 'joinSuccess' && joinedMatch && (
+          <JoinSuccessModal key="joinSuccess"
+            match={joinedMatch} uid={uid}
+            clubName={club.name}
+            playerName={profile?.name || ''}
+            onClose={() => { setSheet(null); setJoinedMatch(null) }}/>
         )}
       </AnimatePresence>
     </div>

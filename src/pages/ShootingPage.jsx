@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useShootingSession } from '../hooks/useShootingSession'
 import { checkShotAchievements, checkPerfectSession } from '../lib/achievements'
+import { recalcFraud } from '../lib/anticheat'
 import { creditRestDayStreak } from '../lib/streak'
 import StreakToast from '../components/ui/StreakToast'
 import { shareSessionCard, doShare } from '../lib/shareCard'
@@ -255,6 +256,8 @@ export default function ShootingPage() {
   const target = training?.target_reps || config.target
 
   const { history, addShot, undoShot, clearSession, loaded } = useShootingSession(id)
+  const sessionStartRef = useRef(null)
+  useEffect(() => { if (loaded && !sessionStartRef.current) sessionStartRef.current = new Date().toISOString() }, [loaded])
   const [flashKey, setFlashKey] = useState(0)
   const [flash, setFlash] = useState(null)
   const [finished, setFinished] = useState(false)
@@ -330,11 +333,25 @@ export default function ShootingPage() {
       setSaving(true)
 
       await supabase.from('shooting_sessions').insert({
+        user_id:    profile.id,
+        training_id: id,
+        shot_type:  config.shotType,
+        made:       finalMade,
+        attempted:  newAttempted,
+        started_at: sessionStartRef.current,
+      })
+
+      // Log verified shooting session points to league
+      const TODAY_DATE = new Date().toISOString().split('T')[0]
+      const daysSinceJoin2 = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
+      const weekNum2 = Math.floor(daysSinceJoin2 / 7) + 1
+      await supabase.from('points_log').insert({
         user_id: profile.id,
         training_id: id,
-        shot_type: config.shotType,
-        made: finalMade,
-        attempted: newAttempted,
+        points: 30,
+        week_number: weekNum2,
+        date: TODAY_DATE,
+        source: 'shooting_session',
       })
 
       // Odznacz trening w activity_log i zalicz serię
@@ -353,6 +370,7 @@ export default function ShootingPage() {
       const allNew = [...unlocked, ...perfect]
       if (allNew.length > 0) setNewAchievements(allNew)
 
+      recalcFraud(profile.id)   // fire-and-forget anti-cheat
       setSaving(false)
       setFinished(true)
     }
@@ -367,11 +385,25 @@ export default function ShootingPage() {
     setShowManualInput(false)
 
     await supabase.from('shooting_sessions').insert({
+      user_id:    profile.id,
+      training_id: id,
+      shot_type:  config.shotType,
+      made:       m,
+      attempted:  total,
+      started_at: sessionStartRef.current,
+    })
+
+    // Log verified shooting session points to league
+    const TODAY_DATE = new Date().toISOString().split('T')[0]
+    const daysSinceJoin2 = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
+    const weekNum2 = Math.floor(daysSinceJoin2 / 7) + 1
+    await supabase.from('points_log').insert({
       user_id: profile.id,
       training_id: id,
-      shot_type: config.shotType,
-      made: m,
-      attempted: total,
+      points: 30,
+      week_number: weekNum2,
+      date: TODAY_DATE,
+      source: 'shooting_session',
     })
 
     // Odznacz trening w activity_log i zalicz serię
@@ -389,6 +421,7 @@ export default function ShootingPage() {
     const allNew = [...unlocked, ...perfect]
     if (allNew.length > 0) setNewAchievements(allNew)
 
+    recalcFraud(profile.id)   // fire-and-forget anti-cheat
     setSaving(false)
     setFinished(true)
   }

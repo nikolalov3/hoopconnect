@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import TrainingCard from '../components/training/TrainingCard'
 import { fetchAchievementsCatalog, getNewlyUnlocked, awardMedalPoints, revokeStaleAchievements } from '../lib/achievements'
 import SettingsPanel from '../components/ui/SettingsPanel'
+import LeagueInfoPanel from '../components/ui/LeagueInfoPanel'
 import { useUI } from '../context/UIContext'
 import StreakToast from '../components/ui/StreakToast'
 import { getCache, setCache, bustCache } from '../lib/queryCache'
@@ -466,11 +467,13 @@ export default function HomePage() {
   const [reportLoading, setReportLoading] = useState(true)
   const [daysUntilReport, setDaysUntilReport] = useState(7)
   const [achievementToast, setAchievementToast] = useState(null) // { title, stage }
-  const { setSettingsOpen } = useUI()
+  const { setSettingsOpen, leagueOpen, setLeagueOpen } = useUI()
   const [showSettings, setShowSettings] = useState(false)
 
   function openSettings() { setShowSettings(true); setSettingsOpen(true) }
   function closeSettings() { setShowSettings(false); setSettingsOpen(false) }
+  function openLeague()  { setLeagueOpen(true)  }
+  function closeLeague() { setLeagueOpen(false) }
   const swipeStartX = useRef(null)
   const swipeStartY = useRef(null)
 
@@ -617,7 +620,7 @@ export default function HomePage() {
     const weekNumber = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24 * 7)) + 1
     supabase.from('points_log').insert({                  // fire-and-forget
       user_id: profile.id, training_id: trainingId,
-      points, week_number: weekNumber, date: TODAY,
+      points, week_number: weekNumber, date: TODAY, source: 'training',
     })
 
     if (allDone) setShowDayDoneModal(true)
@@ -915,6 +918,7 @@ export default function HomePage() {
       onTouchEnd={handleTouchEnd}
     >
       <SettingsPanel open={showSettings} onClose={closeSettings} />
+      <LeagueInfoPanel open={leagueOpen} onClose={closeLeague} />
       <AnimatePresence>{showQuote && <QuotePanel quote={quote} onClose={() => setShowQuote(false)} />}</AnimatePresence>
       <AnimatePresence>
         {achievementToast && (
@@ -978,16 +982,56 @@ export default function HomePage() {
               Twój postęp
             </p>
           </div>
-          {!daysUntilReport && !reportLoading && (
-            <span style={{
-              padding: '4px 12px',
-              background: `${scoreColor}18`,
-              border: `1px solid ${scoreColor}40`,
-              borderRadius: 'var(--radius-full)',
-              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
-              color: scoreColor, letterSpacing: 1.5, textTransform: 'uppercase',
-            }}>{scoreLabel}</span>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {!daysUntilReport && !reportLoading && (
+              <span style={{
+                padding: '4px 12px',
+                background: `${scoreColor}18`,
+                border: `1px solid ${scoreColor}40`,
+                borderRadius: 'var(--radius-full)',
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
+                color: scoreColor, letterSpacing: 1.5, textTransform: 'uppercase',
+              }}>{scoreLabel}</span>
+            )}
+            {/* League button — golden hex */}
+            <motion.button
+              whileTap={{ scale: 0.88 }}
+              onClick={openLeague}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                position: 'relative', width: 38, height: 38, flexShrink: 0 }}
+            >
+              <svg width="38" height="38" viewBox="0 0 90 90"
+                style={{ filter: 'drop-shadow(0 0 8px rgba(255,179,0,0.55))' }}>
+                <defs>
+                  <linearGradient id="lgBtn" x1="20%" y1="0%" x2="80%" y2="100%">
+                    <stop offset="0%"   stopColor="#FFE066"/>
+                    <stop offset="100%" stopColor="#CC7A00"/>
+                  </linearGradient>
+                </defs>
+                <polygon points="45,9 84,33 84,61 45,87 6,61 6,33" fill="rgba(0,0,0,0.35)"/>
+                <polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill="url(#lgBtn)"/>
+                <polygon points="45,6 8,32 45,42" fill="rgba(255,255,255,0.22)"/>
+                <polygon points="45,6 82,32 82,58 45,84 8,58 8,32"
+                  fill="none" stroke="rgba(255,220,80,0.7)" strokeWidth="2.5" strokeLinejoin="round"/>
+                <text x="45" y="50" textAnchor="middle" dominantBaseline="middle" fontSize="30">🏆</text>
+              </svg>
+              {/* 2 coin dots at the top */}
+              {[315, 225].map((deg, i) => {
+                const r = 22, rad = (deg * Math.PI) / 180
+                return (
+                  <div key={i} style={{
+                    position: 'absolute',
+                    left: 19 + r * Math.cos(rad) - 4,
+                    top:  19 + r * Math.sin(rad) - 4,
+                    width: 7, height: 7, borderRadius: '50%',
+                    background: 'radial-gradient(circle, #FFE066, #CC7A00)',
+                    boxShadow: '0 0 4px rgba(255,179,0,0.7)',
+                    pointerEvents: 'none',
+                  }}/>
+                )
+              })}
+            </motion.button>
+          </div>
         </div>
 
         <ReportRatingRing

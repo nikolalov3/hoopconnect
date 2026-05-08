@@ -393,6 +393,218 @@ export async function shareStatsCard({ sessions, profile, filter }) {
   return canvasToBlob(canvas)
 }
 
+// ── MATCH CARD ───────────────────────────────────────────────────────────────
+
+export async function shareMatchCard({ match, clubName, playerName }) {
+  await document.fonts.ready
+
+  const W = 1080, H = 1080
+  const canvas = document.createElement('canvas')
+  canvas.width = W; canvas.height = H
+  const ctx = canvas.getContext('2d')
+
+  const modeColors = { '2v2': '#9050FF', '3v3': '#00CCFF', '5v5': '#FFA820' }
+  const color = modeColors[match.mode] || '#00CCFF'
+
+  // ── SLOT HEX HELPER ──
+  function drawSlotHex(cx, cy, r, player, slotColor) {
+    const hexPath = () => {
+      ctx.beginPath()
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI / 3 * i - Math.PI / 6
+        const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a)
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+      }
+      ctx.closePath()
+    }
+    if (player) {
+      // Outer glow ring
+      hexPath()
+      ctx.fillStyle = `${slotColor}18`; ctx.fill()
+      ctx.strokeStyle = slotColor; ctx.lineWidth = r * 0.13
+      ctx.shadowColor = slotColor; ctx.shadowBlur = r * 0.7
+      ctx.stroke(); ctx.shadowBlur = 0
+      // Initial letter
+      const init = player.profile?.name?.[0]?.toUpperCase() || '?'
+      ctx.fillStyle = slotColor
+      ctx.font = `900 ${Math.round(r * 0.88)}px "Barlow Condensed", sans-serif`
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.shadowColor = slotColor; ctx.shadowBlur = 8
+      ctx.fillText(init, cx, cy + r * 0.06)
+      ctx.shadowBlur = 0; ctx.textBaseline = 'alphabetic'
+    } else {
+      hexPath()
+      ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fill()
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = r * 0.09; ctx.stroke()
+      ctx.fillStyle = 'rgba(255,255,255,0.14)'
+      ctx.font = `300 ${Math.round(r * 0.80)}px "Barlow Condensed", sans-serif`
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.fillText('+', cx, cy + r * 0.06)
+      ctx.textBaseline = 'alphabetic'
+    }
+  }
+
+  drawBackground(ctx, W, H, color)
+
+  // ── HEADER ──
+  drawHexLogo(ctx, 72 + 34, 76, 34, color)
+  ctx.fillStyle = color
+  ctx.font = '700 28px "Barlow Condensed", sans-serif'
+  ctx.textAlign = 'left'
+  ctx.fillText('HOOPCONNECT', 72 + 34 + 46, 84)
+
+  // Mode hex badge (top right) — reuse drawHexLogo then overwrite text
+  const badgeCx = W - 72 - 34
+  drawHexLogo(ctx, badgeCx, 76, 34, color)
+  ctx.fillStyle = color
+  ctx.font = `900 ${Math.round(34 * 0.52)}px "Barlow Condensed", sans-serif`
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+  ctx.shadowColor = color; ctx.shadowBlur = 8
+  ctx.fillText(match.mode.toUpperCase(), badgeCx, 76 + 34 * 0.04)
+  ctx.shadowBlur = 0; ctx.textBaseline = 'alphabetic'
+
+  // ── BIG HEADLINE ──
+  ctx.fillStyle = '#FFFFFF'
+  ctx.font = '900 190px "Barlow Condensed", sans-serif'
+  ctx.textAlign = 'center'
+  ctx.shadowColor = color; ctx.shadowBlur = 55
+  ctx.fillText('GRAMY!', W / 2, 284)
+  ctx.shadowBlur = 0
+
+  ctx.fillStyle = color
+  ctx.font = '700 44px "Barlow Condensed", sans-serif'
+  ctx.fillText('DOŁĄCZYŁEM DO MECZU', W / 2, 342)
+
+  // ── DIVIDER ──
+  ctx.strokeStyle = `${color}28`; ctx.lineWidth = 1
+  ctx.beginPath(); ctx.moveTo(72, 374); ctx.lineTo(W - 72, 374); ctx.stroke()
+
+  // ── TEAMS SECTION (hero) ──────────────────────────────────────────────────
+  const n = match.mode === '5v5' ? 5 : match.mode === '3v3' ? 3 : 2
+  const homePlayers = (match.players || []).filter(p => p.team === 'home')
+  const awayPlayers = (match.players || []).filter(p => p.team === 'away')
+  const homeTeamName = (match._club?.name || 'Drużyna A').toUpperCase()
+  const awayTeamName = (clubName || 'Rywale').toUpperCase()
+
+  const hexR   = n === 5 ? 28 : n === 3 ? 38 : 44
+  const hexGap = n === 5 ? 66 : n === 3 ? 88 : 100
+  const homeGC = n === 5 ? W * 0.24 : W * 0.265
+  const awayGC = n === 5 ? W * 0.76 : W * 0.735
+  const slotsY = 536
+
+  // Subtle glow halo behind each team group
+  const gR = (n - 1) * hexGap / 2 + hexR * 1.8
+  ;[{ cx: homeGC, c: color }, { cx: awayGC, c: '#FFA820' }].forEach(({ cx, c }) => {
+    const glow = ctx.createRadialGradient(cx, slotsY, 0, cx, slotsY, gR)
+    glow.addColorStop(0, `${c}14`)
+    glow.addColorStop(1, 'transparent')
+    ctx.fillStyle = glow
+    ctx.fillRect(cx - gR, slotsY - gR, gR * 2, gR * 2)
+  })
+
+  // Team name labels
+  const teamLabelY = slotsY - hexR - 36
+  ctx.font = '800 34px "Barlow Condensed", sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillStyle = color
+  ctx.shadowColor = color; ctx.shadowBlur = 10
+  ctx.fillText(homeTeamName.slice(0, 14), homeGC, teamLabelY)
+  ctx.shadowBlur = 0
+
+  ctx.fillStyle = '#FFA820'
+  ctx.shadowColor = '#FFA820'; ctx.shadowBlur = 10
+  ctx.fillText(awayTeamName.slice(0, 14), awayGC, teamLabelY)
+  ctx.shadowBlur = 0
+
+  // VS label (vertical center of slots)
+  ctx.fillStyle = 'rgba(255,255,255,0.18)'
+  ctx.font = '900 40px "Barlow Condensed", sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('VS', W / 2, slotsY + hexR * 0.38)
+
+  // Home slots
+  const homeStartX = homeGC - (n - 1) * hexGap / 2
+  for (let i = 0; i < n; i++) {
+    drawSlotHex(homeStartX + i * hexGap, slotsY, hexR,
+      homePlayers.find(p => p.slot === i + 1) || null, color)
+  }
+
+  // Away slots
+  const awayStartX = awayGC - (n - 1) * hexGap / 2
+  for (let i = 0; i < n; i++) {
+    drawSlotHex(awayStartX + i * hexGap, slotsY, hexR,
+      awayPlayers.find(p => p.slot === i + 1) || null, '#FFA820')
+  }
+
+  // Player count
+  const totalFilled = homePlayers.length + awayPlayers.length
+  ctx.fillStyle = 'rgba(255,255,255,0.28)'
+  ctx.font = '600 26px "Barlow Condensed", sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText(`${totalFilled} / ${n * 2} GRACZY`, W / 2, slotsY + hexR + 46)
+
+  // ── DIVIDER ──
+  const divY2 = slotsY + hexR + 82
+  ctx.strokeStyle = `${color}20`; ctx.lineWidth = 1
+  ctx.beginPath(); ctx.moveTo(72, divY2); ctx.lineTo(W - 72, divY2); ctx.stroke()
+
+  // ── MATCH INFO ───────────────────────────────────────────────────────────
+  const infoY = divY2 + 20
+  const infoH = 208
+  ctx.fillStyle = `${color}0C`
+  roundRect(ctx, 72, infoY, W - 144, infoH, 24); ctx.fill()
+  ctx.strokeStyle = `${color}1E`; ctx.lineWidth = 1.5
+  roundRect(ctx, 72, infoY, W - 144, infoH, 24); ctx.stroke()
+  // top highlight
+  ctx.strokeStyle = `${color}38`; ctx.lineWidth = 1
+  roundRect(ctx, 73, infoY + 1, W - 146, 1, 0); ctx.stroke()
+
+  const d = new Date(match.scheduled_at)
+  const dateStr = d.toLocaleDateString('pl-PL', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  }).toUpperCase()
+  const timeStr = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+
+  // Mode — just "3V3", big + colored, left side
+  ctx.fillStyle = color
+  ctx.font = '900 60px "Barlow Condensed", sans-serif'
+  ctx.textAlign = 'left'
+  ctx.shadowColor = color; ctx.shadowBlur = 14
+  ctx.fillText(match.mode.toUpperCase(), 72 + 36, infoY + 68)
+  ctx.shadowBlur = 0
+
+  ctx.fillStyle = 'rgba(255,255,255,0.65)'
+  ctx.font = '600 34px "Barlow Condensed", sans-serif'
+  ctx.fillText(dateStr, 72 + 36, infoY + 116)
+
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'
+  ctx.font = '500 30px "Barlow Condensed", sans-serif'
+  ctx.fillText(`🕐  ${timeStr}`, 72 + 36, infoY + 158)
+
+  if (match.address) {
+    ctx.fillStyle = 'rgba(255,255,255,0.30)'
+    ctx.font = '400 24px Barlow, sans-serif'
+    const addr = match.address.length > 56 ? match.address.slice(0, 53) + '…' : match.address
+    ctx.fillText('📍  ' + addr, 72 + 36, infoY + 196)
+  }
+
+  // ── CTA ──
+  ctx.fillStyle = 'rgba(255,255,255,0.14)'
+  ctx.font = '600 23px Barlow, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('DOŁĄCZ PRZEZ HOOPCONNECT', W / 2, infoY + infoH + 56)
+
+  drawFooter(ctx, W, H)
+
+  // ── COLORED BORDER FRAME ──
+  ctx.strokeStyle = `${color}50`; ctx.lineWidth = 10
+  roundRect(ctx, 5, 5, W - 10, H - 10, 0); ctx.stroke()
+  ctx.strokeStyle = `${color}1A`; ctx.lineWidth = 3
+  roundRect(ctx, 16, 16, W - 32, H - 32, 0); ctx.stroke()
+
+  return canvasToBlob(canvas)
+}
+
 // ── WEB SHARE / DOWNLOAD ─────────────────────────────────────────────────────
 
 export async function doShare(blob, filename = 'hoopconnect.png') {
