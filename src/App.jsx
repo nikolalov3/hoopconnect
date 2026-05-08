@@ -5,6 +5,18 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { UIProvider, useUI } from './context/UIContext'
 import BottomNav from './components/ui/BottomNav'
 import LeaderboardDrawer from './components/ui/LeaderboardDrawer'
+import FrameUnlockPanel from './components/ui/FrameUnlockPanel'
+
+// ── Season 1 Diamond frame reward config ─────────────────────────────────────
+const SEASON_1_END   = new Date('2026-08-24T00:00:00')
+const DIAMOND_MIN    = 850   // weekly_points threshold for Diamond tier
+const DIAMOND_FRAME  = {
+  id:          'diamond_s1',
+  path:        '/ramkas1diax.png',
+  label:       'Diament · Sezon 1',
+  rarity:      'legendary',
+  description: 'Nagroda za osiągnięcie rangi Diament w pierwszym sezonie HoopConnect. Tylko dla elity.',
+}
 
 // Lazy-loaded pages — each page loads as a separate JS chunk
 const AuthPage        = lazy(() => import('./pages/AuthPage'))
@@ -42,8 +54,19 @@ function PageLoader() {
 
 function AppShell() {
   const { user, profile, loading, profileReady } = useAuth()
-  const { leaderboardOpen } = useUI()
+  const { leaderboardOpen, frameUnlockOpen, setFrameUnlockOpen, frameUnlockData, setFrameUnlockData } = useUI()
   const location = useLocation()
+
+  // ── Season 1 Diamond frame auto-trigger ─────────────────────────────────────
+  useEffect(() => {
+    if (!profile || !user) return
+    if (new Date() < SEASON_1_END) return                                    // too early
+    const seenKey = `hc_frame_seen_diamond_s1_${user.id}`
+    if (localStorage.getItem(seenKey)) return                                // already seen
+    if ((profile.weekly_points || 0) < DIAMOND_MIN) return                  // not Diamond
+    setFrameUnlockData(DIAMOND_FRAME)
+    setFrameUnlockOpen(true)
+  }, [profile?.id]) // run once per session when profile loads
   const path = location.pathname
   const isTabRoute  = TAB_PATHS.has(path)
   const inShooting   = path.startsWith('/shooting')
@@ -128,6 +151,13 @@ function AppShell() {
 
       {isTabRoute && <LeaderboardDrawer />}
       {showNav && <BottomNav />}
+
+      {/* ── Frame unlock panel — global overlay, highest z-index ── */}
+      <FrameUnlockPanel
+        open={frameUnlockOpen}
+        frameData={frameUnlockData}
+        onClose={() => setFrameUnlockOpen(false)}
+      />
     </div>
   )
 }

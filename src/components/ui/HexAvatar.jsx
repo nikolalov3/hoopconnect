@@ -24,11 +24,14 @@ const GLOWS = {
 }
 
 // ── Frame PNG paths per variant ──────────────────────────────────────────────
+// ramka.png     = ramka bazowa (wszyscy użytkownicy)
+// ramkas1diax.png = ramka Diamond S1 (nagroda, przyznawana 24.08.2026)
 const FRAME_PATHS = {
-  default:     '/ramkas1diax.png',
-  betatester:  '/ramkas1diax.png',
-  beta:        '/ramkas1diax.png',
-  gold:        '/ramkas1diax.png',
+  default:     '/ramka.png',
+  betatester:  '/ramka.png',
+  beta:        '/ramka.png',
+  gold:        '/ramka.png',
+  diamond_s1:  '/ramkas1diax.png',
 }
 
 // ── Shared frame SVG ─────────────────────────────────────────────────────────

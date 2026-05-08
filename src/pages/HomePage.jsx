@@ -467,13 +467,26 @@ export default function HomePage() {
   const [reportLoading, setReportLoading] = useState(true)
   const [daysUntilReport, setDaysUntilReport] = useState(7)
   const [achievementToast, setAchievementToast] = useState(null) // { title, stage }
-  const { setSettingsOpen, leagueOpen, setLeagueOpen } = useUI()
+  const { setSettingsOpen, leagueOpen, setLeagueOpen, setFrameUnlockOpen, setFrameUnlockData } = useUI()
   const [showSettings, setShowSettings] = useState(false)
 
   function openSettings() { setShowSettings(true); setSettingsOpen(true) }
   function closeSettings() { setShowSettings(false); setSettingsOpen(false) }
   function openLeague()  { setLeagueOpen(true)  }
   function closeLeague() { setLeagueOpen(false) }
+
+  // ── DEV PREVIEW: league button shows frame unlock animation ─────────────────
+  // TODO: remove this before production — replace with openLeague() only
+  function openLeagueOrPreview() {
+    setFrameUnlockData({
+      id:          'diamond_s1',
+      path:        '/ramkas1diax.png',
+      label:       'Diament · Sezon 1',
+      rarity:      'legendary',
+      description: 'Nagroda za osiągnięcie rangi Diament w pierwszym sezonie HoopConnect. Tylko dla elity.',
+    })
+    setFrameUnlockOpen(true)
+  }
   const swipeStartX = useRef(null)
   const swipeStartY = useRef(null)
 
@@ -1010,9 +1023,10 @@ export default function HomePage() {
               }}>{scoreLabel}</span>
             )}
             {/* League button — golden hex */}
+            {/* DEV: onClick → frame preview. TODO: swap back to openLeague() for prod */}
             <motion.button
               whileTap={{ scale: 0.88 }}
-              onClick={openLeague}
+              onClick={openLeagueOrPreview}
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer',
                 position: 'relative', width: 38, height: 38, flexShrink: 0 }}
             >
