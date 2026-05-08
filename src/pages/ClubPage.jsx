@@ -126,6 +126,7 @@ function dbToUi(club) {
     id: club.id, name: club.name, abbr: club.abbr,
     country: { code: club.country_code, name: club.country_name, flag: club.country_flag },
     ownerId: club.owner_id, members: m,
+    joinCode: club.join_code ?? null,
   }
 }
 
@@ -140,7 +141,7 @@ async function apiFetch(uid) {
   // 2. Fetch club row + all members (no nested profiles — avoids FK requirement)
   const [{ data: club }, { data: members }] = await Promise.all([
     supabase.from('clubs')
-      .select('id,name,abbr,country_code,country_name,country_flag,owner_id')
+      .select('id,name,abbr,country_code,country_name,country_flag,owner_id,join_code')
       .eq('id', clubId).single(),
     supabase.from('club_members')
       .select('position,user_id,joined_at')
@@ -181,10 +182,19 @@ async function apiCreate({ name, abbr, country, profile }) {
     else await supabase.from('club_members').delete().eq('user_id', profile.id)
   }
 
+  // Generate unique 5-char join code (retry on collision)
+  let joinCode = null
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = genJoinCode()
+    const { data: exists } = await supabase.from('clubs')
+      .select('id').eq('join_code', candidate).maybeSingle()
+    if (!exists) { joinCode = candidate; break }
+  }
+
   const { data: club, error } = await supabase.from('clubs')
     .insert({ name, abbr: abbr.toUpperCase(),
       country_code: country.code, country_name: country.name, country_flag: country.flag,
-      owner_id: profile.id }).select().single()
+      owner_id: profile.id, join_code: joinCode }).select().single()
   if (error) throw new Error(`clubs insert: ${error.message}`)
 
   const { error: memErr } = await supabase.from('club_members')
@@ -227,6 +237,37 @@ async function apiLeave(clubId, userId) {
 async function apiDisband(clubId) {
   const { error } = await supabase.from('clubs').delete().eq('id', clubId)
   if (error) throw error
+}
+
+// ── JOIN-CODE helpers ─────────────────────────────────────────────────────────
+// 5-char code from unambiguous chars (no 0/O, 1/I/L)
+function genJoinCode() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+  return Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+}
+
+async function apiFetchByCode(code) {
+  const { data: club } = await supabase.from('clubs')
+    .select('id,name,abbr,country_code,country_name,country_flag,join_code')
+    .eq('join_code', code.toUpperCase().trim())
+    .maybeSingle()
+  if (!club) return null
+  const { data: members } = await supabase.from('club_members')
+    .select('position,user_id').eq('club_id', club.id)
+  return { club, members: members ?? [] }
+}
+
+async function apiJoinByCode({ code, userId, position }) {
+  const result = await apiFetchByCode(code)
+  if (!result) throw new Error('Nie znaleziono klubu z tym kodem.')
+  const { club, members } = result
+  if (members.length >= 5)              throw new Error('Klub jest pełny.')
+  if (members.some(m => m.user_id === userId))  throw new Error('Już jesteś w tym klubie.')
+  if (members.some(m => m.position === position)) throw new Error('Ta pozycja jest zajęta.')
+  const { error } = await supabase.from('club_members')
+    .insert({ club_id: club.id, user_id: userId, position })
+  if (error) throw new Error(error.message)
+  return club.id
 }
 
 async function apiUpdateClub(clubId, { name, abbr, country }) {
@@ -631,9 +672,22 @@ function Sheet({ onClose, children }) {
 
 // ── EMPTY SLOT SHEET ──────────────────────────────────────────────────────────
 function EmptySlotSheet({ club, posKey, onClose }) {
-  const pos = POS[posKey]
+  const pos  = POS[posKey]
+  const [mode,   setMode]   = useState('link') // 'link' | 'code'
   const [copied, setCopied] = useState(false)
+
   const link = `https://hoopconnect.pl/dolacz/${club.id}?pos=${posKey}`
+  const code = club.joinCode ?? null
+
+  function copyText(text) {
+    navigator.clipboard.writeText(text)
+      .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500) })
+  }
+
+  const TABS = [
+    { key: 'link', label: 'LINK' },
+    { key: 'code', label: 'KOD KLUBU' },
+  ]
 
   return (
     <Sheet onClose={onClose}>
@@ -651,29 +705,111 @@ function EmptySlotSheet({ club, posKey, onClose }) {
       </div>
 
       <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 24,
-        color: C.text, marginBottom: 14, letterSpacing: -0.3 }}>
+        color: C.text, marginBottom: 18, letterSpacing: -0.3 }}>
         Zaproś zawodnika
       </p>
-      <div style={{ padding: '11px 14px', background: '#0A1626',
-        border: '1px solid rgba(0,200,255,0.14)', borderRadius: 12, marginBottom: 14,
-        fontFamily: 'monospace', fontSize: 11, color: C.sub,
-        wordBreak: 'break-all', lineHeight: 1.5 }}>
-        {link}
+
+      {/* Tab switcher — same style as Boisko/Mecze/Statystyki */}
+      <div style={{
+        display: 'flex', gap: 4, padding: '4px',
+        background: 'rgba(0,0,0,0.35)',
+        border: '1px solid rgba(0,200,255,0.10)',
+        borderRadius: 12, marginBottom: 18,
+      }}>
+        {TABS.map(t => (
+          <button key={t.key} onClick={() => { setMode(t.key); setCopied(false) }}
+            style={{
+              flex: 1, padding: '9px 4px', border: 'none', borderRadius: 9,
+              fontFamily: 'var(--font-display)', fontWeight: 800,
+              fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase',
+              cursor: 'pointer', transition: 'all 0.17s',
+              background: mode === t.key
+                ? `linear-gradient(135deg, ${C.accent}28, ${C.accentLo}18)`
+                : 'transparent',
+              color: mode === t.key ? C.accent : C.sub,
+              borderBottom: mode === t.key
+                ? `1.5px solid ${C.accent}70` : '1.5px solid transparent',
+            }}>
+            {t.label}
+          </button>
+        ))}
       </div>
-      <motion.button whileTap={{ scale: 0.97 }}
-        onClick={() => navigator.clipboard.writeText(link)
-          .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500) })}
-        style={{
-          width: '100%', padding: '15px', borderRadius: 14, border: 'none',
-          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, letterSpacing: 1,
-          cursor: 'pointer', transition: 'all 0.2s',
-          background: copied ? 'rgba(0,200,130,0.10)' : `linear-gradient(135deg, ${C.accent}, ${C.accentLo})`,
-          border: copied ? '1.5px solid rgba(0,200,130,0.30)' : 'none',
-          color: copied ? C.win : '#fff',
-          boxShadow: copied ? 'none' : `0 6px 22px ${C.accentLo}60`,
-        }}>
-        {copied ? '✓ Skopiowano!' : '🔗 Kopiuj link zaproszenia'}
-      </motion.button>
+
+      <AnimatePresence mode="wait" initial={false}>
+        {mode === 'link' ? (
+          <motion.div key="link"
+            initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.15 }}>
+            <div style={{ padding: '11px 14px', background: '#0A1626',
+              border: '1px solid rgba(0,200,255,0.14)', borderRadius: 12, marginBottom: 14,
+              fontFamily: 'monospace', fontSize: 11, color: C.sub,
+              wordBreak: 'break-all', lineHeight: 1.5 }}>
+              {link}
+            </div>
+            <motion.button whileTap={{ scale: 0.97 }} onClick={() => copyText(link)}
+              style={{
+                width: '100%', padding: '15px', borderRadius: 14,
+                fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, letterSpacing: 1,
+                cursor: 'pointer', transition: 'all 0.2s',
+                background: copied ? 'rgba(0,200,130,0.10)' : `linear-gradient(135deg, ${C.accent}, ${C.accentLo})`,
+                border: copied ? '1.5px solid rgba(0,200,130,0.30)' : 'none',
+                color: copied ? C.win : '#fff',
+                boxShadow: copied ? 'none' : `0 6px 22px ${C.accentLo}60`,
+              }}>
+              {copied ? '✓ Skopiowano!' : '🔗 Kopiuj link zaproszenia'}
+            </motion.button>
+          </motion.div>
+        ) : (
+          <motion.div key="code"
+            initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 8 }} transition={{ duration: 0.15 }}>
+            {code ? (
+              <>
+                <p style={{ fontSize: 11, color: C.sub, marginBottom: 12, lineHeight: 1.6 }}>
+                  Podaj ten kod znajomemu — wpisze go w zakładce Klub, żeby dołączyć.
+                </p>
+                {/* Big code display */}
+                <div style={{
+                  textAlign: 'center', padding: '22px 16px',
+                  background: '#0A1626',
+                  border: `1px solid ${C.accent}22`,
+                  borderTop: `1px solid ${C.accent}44`,
+                  borderRadius: 16, marginBottom: 14,
+                }}>
+                  <p style={{ fontSize: 8, letterSpacing: 3, fontWeight: 700,
+                    color: `${C.accent}55`, textTransform: 'uppercase', marginBottom: 10 }}>
+                    Kod klubu
+                  </p>
+                  <p style={{
+                    fontFamily: 'var(--font-display)', fontSize: 42, fontWeight: 900,
+                    letterSpacing: 14, color: C.accent,
+                    textShadow: `0 0 28px ${C.accent}55`,
+                    margin: 0,
+                  }}>
+                    {code}
+                  </p>
+                </div>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => copyText(code)}
+                  style={{
+                    width: '100%', padding: '15px', borderRadius: 14,
+                    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, letterSpacing: 1,
+                    cursor: 'pointer', transition: 'all 0.2s',
+                    background: copied ? 'rgba(0,200,130,0.10)' : `linear-gradient(135deg, ${C.accent}, ${C.accentLo})`,
+                    border: copied ? '1.5px solid rgba(0,200,130,0.30)' : 'none',
+                    color: copied ? C.win : '#fff',
+                    boxShadow: copied ? 'none' : `0 6px 22px ${C.accentLo}60`,
+                  }}>
+                  {copied ? '✓ Skopiowano!' : '📋 Kopiuj kod'}
+                </motion.button>
+              </>
+            ) : (
+              <p style={{ fontSize: 12, color: C.sub, textAlign: 'center', padding: '20px 0' }}>
+                Kod klubu niedostępny — odśwież aplikację.
+              </p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Sheet>
   )
 }
@@ -1023,6 +1159,11 @@ function ClubHeader({ club, isOwner, onEditPress }) {
             {filled}/5 graczy
           </p>
         </div>
+
+        {/* Join code chip */}
+        {club.joinCode && (
+          <JoinCodeChip code={club.joinCode}/>
+        )}
       </div>
     </div>
   )
@@ -2857,8 +2998,448 @@ function ClubView({ club, onUpdate, uid }) {
   )
 }
 
+// ── JOIN CODE CHIP (in ClubHeader) ────────────────────────────────────────────
+function JoinCodeChip({ code }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <motion.button
+      whileTap={{ scale: 0.94 }}
+      onClick={() => navigator.clipboard.writeText(code)
+        .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 7,
+        marginTop: 9, padding: '5px 12px 5px 8px',
+        background: copied ? 'rgba(0,200,130,0.08)' : 'rgba(0,200,255,0.06)',
+        border: `1px solid ${copied ? 'rgba(0,200,130,0.30)' : 'rgba(0,200,255,0.18)'}`,
+        borderTop: `1px solid ${copied ? 'rgba(0,200,130,0.45)' : 'rgba(0,200,255,0.32)'}`,
+        borderRadius: 8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+        transition: 'all 0.2s',
+      }}>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+        stroke={copied ? '#00E890' : C.accent} strokeWidth="2.2"
+        strokeLinecap="round" strokeLinejoin="round">
+        {copied
+          ? <polyline points="20 6 9 17 4 12"/>
+          : <><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></>
+        }
+      </svg>
+      <span style={{
+        fontFamily: 'var(--font-display)', fontWeight: 900, letterSpacing: 3,
+        fontSize: 13, color: copied ? '#00E890' : C.accent,
+      }}>
+        {copied ? 'SKOPIOWANO' : code}
+      </span>
+      {!copied && (
+        <span style={{ fontSize: 8, color: `${C.accent}55`, letterSpacing: 1,
+          fontWeight: 700, textTransform: 'uppercase' }}>kod</span>
+      )}
+    </motion.button>
+  )
+}
+
+// ── NO-CLUB SCREEN — welcome + create + join by code ─────────────────────────
+function NoClubScreen({ onCreated, profile }) {
+  const { user } = useAuth()
+  const [view, setView] = useState('welcome') // 'welcome' | 'create'
+
+  // ── join-by-code state (inline in welcome view) ───────────────────────────
+  const [codeInput,   setCodeInput]   = useState('')
+  const [codeResult,  setCodeResult]  = useState(null)  // { club, members }
+  const [codeLoading, setCodeLoading] = useState(false)
+  const [codeErr,     setCodeErr]     = useState(null)
+  const [selPos,      setSelPos]      = useState(null)
+  const [joining,     setJoining]     = useState(false)
+
+  // Auto-lookup when code reaches 5 chars
+  useEffect(() => {
+    const raw = codeInput.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 5)
+    if (raw.length < 5) { setCodeResult(null); setCodeErr(null); setSelPos(null); return }
+    setCodeLoading(true); setCodeErr(null); setCodeResult(null); setSelPos(null)
+    apiFetchByCode(raw).then(r => {
+      setCodeLoading(false)
+      if (!r) { setCodeErr('Nie znaleziono klubu z tym kodem.'); return }
+      setCodeResult(r)
+    })
+  }, [codeInput])
+
+  async function handleJoin() {
+    if (!selPos || !codeResult || joining) return
+    setJoining(true); setCodeErr(null)
+    try {
+      const raw = codeInput.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 5)
+      await apiJoinByCode({ code: raw, userId: user.id, position: selPos })
+      // Reload club
+      const apiFetchResult = await apiFetch(user.id)  // reuse existing fetch
+      onCreated(apiFetchResult)
+    } catch (e) {
+      setCodeErr(e?.message ?? 'Błąd dołączania.')
+      setJoining(false)
+    }
+  }
+
+  const codeRaw = codeInput.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 5)
+
+  // ── STEP CARDS — mini SVG mockups ─────────────────────────────────────────
+  const STEPS = [
+    {
+      num: '01',
+      title: 'Utwórz swój klub',
+      body: 'Wybierz nazwę, skrót i kraj. Twój klub dostanie unikalny kod do zapraszania.',
+      accent: C.accent,
+      icon: (
+        <svg width="72" height="52" viewBox="0 0 72 52" style={{ flexShrink: 0 }}>
+          {/* Mini court background */}
+          <rect x="0" y="0" width="72" height="52" rx="8" fill="#060E1E"/>
+          <rect x="0" y="0" width="72" height="52" rx="8" fill="none"
+            stroke="rgba(0,200,255,0.15)" strokeWidth="1"/>
+          {/* Court key */}
+          <rect x="24" y="24" width="24" height="24" rx="2"
+            fill="rgba(0,110,255,0.14)" stroke="rgba(0,200,255,0.25)" strokeWidth="0.8"/>
+          {/* Half circle */}
+          <path d="M24 24 A12 12 0 0 1 48 24" fill="none"
+            stroke="rgba(0,200,255,0.25)" strokeWidth="0.8"/>
+          {/* Center */}
+          <circle cx="36" cy="26" r="3.5" fill="#0A2040"
+            stroke="rgba(0,200,255,0.40)" strokeWidth="0.8"/>
+          {/* Position dots */}
+          {[{x:36,y:10},{x:18,y:20},{x:54,y:20},{x:20,y:38},{x:52,y:38}].map((d,i) => (
+            <circle key={i} cx={d.x} cy={d.y} r="3"
+              fill={i===0 ? C.accent : `${C.accent}55`}
+              style={{ filter: i===0 ? `drop-shadow(0 0 4px ${C.accent})` : 'none' }}/>
+          ))}
+          {/* Hex badge mini */}
+          <polygon points="36,2 41,5 41,10 36,13 31,10 31,5"
+            fill={C.accent} fillOpacity="0.25"
+            stroke={C.accent} strokeWidth="0.9"/>
+        </svg>
+      ),
+    },
+    {
+      num: '02',
+      title: 'Wyzwij inne kluby',
+      body: 'Twórz mecze 2v2, 3v3 lub 5v5 w pobliżu. Inne kluby dołączają automatycznie.',
+      accent: C.hoop,
+      icon: (
+        <svg width="72" height="52" viewBox="0 0 72 52" style={{ flexShrink: 0 }}>
+          <rect x="0" y="0" width="72" height="52" rx="8" fill="#060E1E"/>
+          <rect x="0" y="0" width="72" height="52" rx="8" fill="none"
+            stroke="rgba(255,168,32,0.15)" strokeWidth="1"/>
+          {/* Match card mockup */}
+          <rect x="6" y="8" width="60" height="36" rx="6"
+            fill="#0A1628" stroke="rgba(255,168,32,0.22)" strokeWidth="0.8"/>
+          {/* Mode badge */}
+          <rect x="10" y="12" width="20" height="8" rx="3"
+            fill="rgba(255,168,32,0.20)"/>
+          <text x="20" y="18" textAnchor="middle" fill={C.hoop}
+            fontSize="5" fontWeight="800" fontFamily="sans-serif">3 NA 3</text>
+          {/* Teams */}
+          <rect x="10" y="25" width="22" height="14" rx="4"
+            fill="rgba(0,200,255,0.08)" stroke="rgba(0,200,255,0.20)" strokeWidth="0.6"/>
+          <text x="21" y="34" textAnchor="middle" fill={C.accent}
+            fontSize="5.5" fontWeight="900" fontFamily="sans-serif">HC1</text>
+          <text x="36" y="34" textAnchor="middle" fill="rgba(255,255,255,0.3)"
+            fontSize="7" fontWeight="700" fontFamily="sans-serif">VS</text>
+          <rect x="40" y="25" width="22" height="14" rx="4"
+            fill="rgba(255,168,32,0.06)" stroke="rgba(255,168,32,0.18)" strokeWidth="0.6"
+            strokeDasharray="2,2"/>
+          <text x="51" y="34" textAnchor="middle" fill="rgba(255,168,32,0.45)"
+            fontSize="5" fontWeight="700" fontFamily="sans-serif">DOŁĄCZ</text>
+          {/* Location pin */}
+          <circle cx="58" cy="14" r="4" fill="rgba(255,168,32,0.15)"
+            stroke={C.hoop} strokeWidth="0.8"/>
+          <text x="58" y="17" textAnchor="middle" fill={C.hoop}
+            fontSize="5" fontWeight="900" fontFamily="sans-serif">⚑</text>
+        </svg>
+      ),
+    },
+    {
+      num: '03',
+      title: 'Rywalizujcie w lidze',
+      body: 'Za mecze i aktywność zdobywacie punkty w rankingu. Liga resetuje się w każdy poniedziałek.',
+      accent: '#FFD166',
+      icon: (
+        <svg width="72" height="52" viewBox="0 0 72 52" style={{ flexShrink: 0 }}>
+          <rect x="0" y="0" width="72" height="52" rx="8" fill="#060E1E"/>
+          <rect x="0" y="0" width="72" height="52" rx="8" fill="none"
+            stroke="rgba(255,209,102,0.15)" strokeWidth="1"/>
+          {/* Rank rows */}
+          {[
+            { y: 8,  rank: '1', name: 'Warsaw B.', pts: '847', c: '#FFA820' },
+            { y: 21, rank: '2', name: 'Kraków FC',  pts: '723', c: '#C0C0C0' },
+            { y: 34, rank: '3', name: 'Gdańsk HC',  pts: '611', c: '#CD7F32' },
+          ].map(r => (
+            <g key={r.rank}>
+              <rect x="6" y={r.y} width="60" height="11" rx="3"
+                fill={`${r.c}08`} stroke={`${r.c}22`} strokeWidth="0.6"/>
+              <text x="13" y={r.y+8} textAnchor="middle" fill={r.c}
+                fontSize="6" fontWeight="900" fontFamily="sans-serif">{r.rank}</text>
+              <text x="21" y={r.y+8} fill="rgba(255,255,255,0.7)"
+                fontSize="5.5" fontWeight="600" fontFamily="sans-serif">{r.name}</text>
+              <text x="62" y={r.y+8} textAnchor="end" fill={r.c}
+                fontSize="6" fontWeight="900" fontFamily="sans-serif">{r.pts}</text>
+            </g>
+          ))}
+          {/* Gold accent line */}
+          <rect x="6" y="8" width="2" height="11" rx="1" fill="#FFA820"/>
+        </svg>
+      ),
+    },
+  ]
+
+  if (view === 'create') {
+    return <CreateClubForm onCreated={onCreated} profile={profile} onBack={() => setView('welcome')}/>
+  }
+
+  return (
+    <div className="page-content" style={{ padding: '36px 22px 48px', overflowY: 'auto' }}>
+
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.38 }}
+        style={{ textAlign: 'center', marginBottom: 32 }}>
+
+        {/* Basketball icon */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+          <motion.div
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}>
+            <svg width="60" height="60" viewBox="0 0 60 60">
+              <defs>
+                <radialGradient id="ncBall" cx="40%" cy="35%">
+                  <stop offset="0%" stopColor="#FFC040"/>
+                  <stop offset="100%" stopColor="#CC6600"/>
+                </radialGradient>
+              </defs>
+              <circle cx="30" cy="30" r="26" fill="url(#ncBall)"
+                style={{ filter: 'drop-shadow(0 6px 18px rgba(255,140,0,0.55))' }}/>
+              {/* Lines */}
+              <path d="M4 30 Q30 14 56 30" fill="none" stroke="rgba(0,0,0,0.30)" strokeWidth="1.8"/>
+              <path d="M4 30 Q30 46 56 30" fill="none" stroke="rgba(0,0,0,0.30)" strokeWidth="1.8"/>
+              <line x1="30" y1="4" x2="30" y2="56" stroke="rgba(0,0,0,0.30)" strokeWidth="1.8"/>
+              <circle cx="30" cy="30" r="26" fill="none"
+                stroke="rgba(0,0,0,0.18)" strokeWidth="1.5"/>
+            </svg>
+          </motion.div>
+        </div>
+
+        <h1 style={{
+          fontFamily: 'var(--font-display)', fontWeight: 900,
+          fontSize: 38, textTransform: 'uppercase', letterSpacing: 0.5,
+          color: 'var(--text-primary)', margin: '0 0 10px', lineHeight: 1,
+        }}>
+          Graj z innymi
+        </h1>
+        <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>
+          Dołącz do klubu i rozgrywaj mecze<br/>z graczami w pobliżu
+        </p>
+      </motion.div>
+
+      {/* ── Step cards ─────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 30 }}>
+        {STEPS.map((s, i) => (
+          <motion.div key={s.num}
+            initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.08 + i * 0.06, duration: 0.32 }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '14px 14px',
+              background: 'rgba(6,14,30,0.55)',
+              backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
+              border: `1px solid ${s.accent}14`,
+              borderTop: `1px solid ${s.accent}28`,
+              borderLeft: `3px solid ${s.accent}55`,
+              borderRadius: 14,
+            }}>
+            {/* Mini mockup */}
+            {s.icon}
+            {/* Text */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+                <span style={{
+                  fontSize: 8, fontWeight: 900, letterSpacing: 1.5,
+                  color: `${s.accent}70`, fontFamily: 'var(--font-display)',
+                }}>{s.num}</span>
+                <span style={{
+                  fontSize: 13, fontWeight: 800,
+                  color: 'var(--text-primary)', fontFamily: 'var(--font-display)',
+                  letterSpacing: 0.2,
+                }}>{s.title}</span>
+              </div>
+              <p style={{
+                fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0,
+              }}>{s.body}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* ── Primary CTA ────────────────────────────────────────────────── */}
+      <motion.button
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.28, duration: 0.32 }}
+        whileTap={{ scale: 0.97 }}
+        onClick={() => setView('create')}
+        className="btn-primary"
+        style={{ marginBottom: 22 }}>
+        Załóż Klub
+      </motion.button>
+
+      {/* ── Join-by-code section ────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        transition={{ delay: 0.36, duration: 0.32 }}>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+          <div style={{ flex: 1, height: 1,
+            background: 'linear-gradient(90deg, transparent, rgba(0,200,255,0.18))' }}/>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2,
+            color: 'rgba(0,200,255,0.35)', textTransform: 'uppercase' }}>
+            lub dołącz do istniejącego
+          </span>
+          <div style={{ flex: 1, height: 1,
+            background: 'linear-gradient(90deg, rgba(0,200,255,0.18), transparent)' }}/>
+        </div>
+
+        {/* Code input row */}
+        <div style={{
+          display: 'flex', gap: 10, alignItems: 'stretch', marginBottom: 12,
+        }}>
+          <input
+            placeholder="Wpisz kod klubu (5 znaków)"
+            value={codeInput}
+            maxLength={5}
+            onChange={e => setCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0,5))}
+            style={{
+              flex: 1, padding: '14px 16px',
+              background: 'rgba(6,14,30,0.55)',
+              backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
+              border: `1px solid ${codeErr ? 'rgba(255,80,80,0.40)' : codeResult ? 'rgba(0,200,130,0.40)' : 'rgba(0,200,255,0.12)'}`,
+              borderTop: `1px solid ${codeErr ? 'rgba(255,80,80,0.55)' : codeResult ? 'rgba(0,200,130,0.55)' : 'rgba(0,200,255,0.22)'}`,
+              borderRadius: 12,
+              color: 'var(--text-primary)', outline: 'none',
+              fontFamily: 'var(--font-display)', fontWeight: 900,
+              fontSize: 20, letterSpacing: 8, textAlign: 'center',
+              transition: 'border-color 0.2s',
+            }}
+          />
+          {codeLoading && (
+            <div style={{ display: 'flex', alignItems: 'center', paddingRight: 4 }}>
+              <div className="spinner" style={{ width: 18, height: 18 }}/>
+            </div>
+          )}
+        </div>
+
+        {/* Error */}
+        {codeErr && (
+          <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+            style={{ fontSize: 12, color: 'var(--red-shot)', textAlign: 'center',
+              marginBottom: 12 }}>
+            {codeErr}
+          </motion.p>
+        )}
+
+        {/* Club preview after valid code */}
+        <AnimatePresence>
+          {codeResult && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }}>
+
+              {/* Club card */}
+              <div style={{
+                padding: '14px', marginBottom: 12,
+                background: 'rgba(6,14,30,0.55)',
+                border: '1px solid rgba(0,200,130,0.22)',
+                borderTop: '1px solid rgba(0,200,130,0.38)',
+                borderRadius: 14,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <Badge abbr={codeResult.club.abbr} size={44}/>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: 2,
+                      textTransform: 'uppercase', fontWeight: 700, marginBottom: 2 }}>
+                      {codeResult.club.country_flag}&nbsp;{codeResult.club.country_name}
+                    </p>
+                    <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900,
+                      fontSize: 18, color: 'var(--text-primary)', margin: 0,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      textTransform: 'uppercase' }}>
+                      {codeResult.club.name}
+                    </p>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <p style={{ fontSize: 9, color: '#00E890', letterSpacing: 1,
+                      fontWeight: 700, textTransform: 'uppercase', marginBottom: 1 }}>Znaleziono</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0 }}>
+                      {codeResult.members.length}/5 graczy
+                    </p>
+                  </div>
+                </div>
+
+                {/* Position picker */}
+                <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2,
+                  color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8 }}>
+                  Wybierz pozycję
+                </p>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {POSITIONS.map(pos => {
+                    const taken  = codeResult.members.some(m => m.position === pos)
+                    const active = selPos === pos
+                    const col    = POS[pos].hi
+                    return (
+                      <motion.button key={pos}
+                        whileTap={taken ? {} : { scale: 0.93 }}
+                        onClick={() => !taken && setSelPos(pos)}
+                        style={{
+                          flex: 1, padding: '8px 2px', borderRadius: 8,
+                          fontFamily: 'var(--font-display)', fontWeight: 900,
+                          fontSize: 10, letterSpacing: 0.5,
+                          border: active ? `1.5px solid ${col}70` : taken
+                            ? '1px solid rgba(255,255,255,0.05)'
+                            : '1px solid rgba(120,190,255,0.12)',
+                          background: active ? `${col}18` : taken
+                            ? 'rgba(255,255,255,0.03)' : 'rgba(6,14,30,0.5)',
+                          color: active ? col : taken
+                            ? 'rgba(255,255,255,0.20)' : 'var(--text-secondary)',
+                          cursor: taken ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.15s',
+                        }}>
+                        {pos}
+                        {taken && (
+                          <div style={{ fontSize: 6, color: 'rgba(255,255,255,0.20)',
+                            marginTop: 2, letterSpacing: 0.5 }}>ZAJĘTE</div>
+                        )}
+                      </motion.button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {codeErr && (
+                <p style={{ fontSize: 12, color: 'var(--red-shot)', textAlign: 'center',
+                  marginBottom: 8 }}>{codeErr}</p>
+              )}
+
+              <motion.button
+                whileTap={{ scale: 0.97 }} onClick={handleJoin}
+                disabled={!selPos || joining}
+                className="btn-primary"
+                style={{ opacity: selPos && !joining ? 1 : 0.35 }}>
+                {joining ? 'Dołączanie…' : selPos ? `Dołącz jako ${selPos}` : 'Wybierz pozycję'}
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+      </motion.div>
+    </div>
+  )
+}
+
 // ── CREATE CLUB ───────────────────────────────────────────────────────────────
-function CreateClub({ onCreated, profile }) {
+function CreateClubForm({ onCreated, profile, onBack }) {
   const [name,   setName]   = useState('')
   const [abbr,   setAbbr]   = useState('')
   const [ctry,   setCtry]   = useState(COUNTRIES[0])
@@ -2891,10 +3472,27 @@ function CreateClub({ onCreated, profile }) {
   })
 
   return (
-    <div className="page-content" style={{ padding: '36px 22px 40px' }}>
+    <div className="page-content" style={{ padding: '24px 22px 40px' }}>
       <AnimatePresence>
         {picker && <CountryPicker value={ctry} onChange={c => { setCtry(c); setPicker(false) }} onClose={() => setPicker(false)}/>}
       </AnimatePresence>
+
+      {/* Back button */}
+      {onBack && (
+        <button onClick={onBack} style={{
+          display: 'inline-flex', alignItems: 'center', gap: 7,
+          background: 'transparent', border: 'none', cursor: 'pointer',
+          color: 'var(--text-dim)', fontSize: 12, fontWeight: 600,
+          letterSpacing: 1, marginBottom: 24, padding: 0,
+          WebkitTapHighlightColor: 'transparent',
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Wróć
+        </button>
+      )}
 
       {/* Header row — badge + title side by side */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 28 }}>
@@ -3011,7 +3609,7 @@ export default function ClubPage() {
   return (
     <div className="page-content" style={{ padding: 0 }}>
       {!club
-        ? <CreateClub profile={profile} onCreated={setClub}/>
+        ? <NoClubScreen profile={profile} onCreated={setClub}/>
         : <ClubView club={club} onUpdate={c => { setClub(c) }} uid={user?.id}/>
       }
     </div>
