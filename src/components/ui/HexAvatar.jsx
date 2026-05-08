@@ -25,10 +25,10 @@ const GLOWS = {
 
 // ── Frame PNG paths per variant ──────────────────────────────────────────────
 const FRAME_PATHS = {
-  default:     '/ramka.png',
-  betatester:  '/ramka.png',
-  beta:        '/ramka.png',
-  gold:        '/ramka.png',
+  default:     '/ramkas1diax.png',
+  betatester:  '/ramkas1diax.png',
+  beta:        '/ramkas1diax.png',
+  gold:        '/ramkas1diax.png',
 }
 
 // ── Shared frame SVG ─────────────────────────────────────────────────────────
