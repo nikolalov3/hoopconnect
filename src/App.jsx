@@ -7,15 +7,30 @@ import BottomNav from './components/ui/BottomNav'
 import LeaderboardDrawer from './components/ui/LeaderboardDrawer'
 import FrameUnlockPanel from './components/ui/FrameUnlockPanel'
 
-// ── Season 1 Diamond frame reward config ─────────────────────────────────────
-const SEASON_1_END   = new Date('2026-08-24T00:00:00')
-const DIAMOND_MIN    = 850   // weekly_points threshold for Diamond tier
-const DIAMOND_FRAME  = {
-  id:          'diamond_s1',
-  path:        '/ramkas1diax.png',
-  label:       'Diament · Sezon 1',
-  rarity:      'legendary',
-  description: 'Nagroda za osiągnięcie rangi Diament w pierwszym sezonie HoopConnect. Tylko dla elity.',
+// ── Frame reward configs ──────────────────────────────────────────────────────
+const SEASON_1_END  = new Date('2026-08-24T00:00:00')
+const DIAMOND_MIN   = 850   // weekly_points threshold for Diamond tier
+
+const EARLY_ACCESS_CUTOFF = new Date('2026-06-01T00:00:00')
+const EARLY_ACCESS_SHOW   = new Date('2026-06-01T00:00:00') // show from this date
+
+const FRAMES = {
+  early_access: {
+    id:          'early_access',
+    path:        '/earlyaccess.png',
+    label:       'Early Access',
+    rarity:      'rare',
+    sublabel:    'Dostęp przed premierą · Sezon 1',
+    description: 'Za dołączenie do HoopConnect przed startem pierwszego sezonu. Jesteś częścią historii.',
+  },
+  diamond_s1: {
+    id:          'diamond_s1',
+    path:        '/ramkas1diax.png',
+    label:       'Diament · Sezon 1',
+    rarity:      'legendary',
+    sublabel:    'Koniec Sezonu 1 · 24.08.2026',
+    description: 'Nagroda za osiągnięcie rangi Diament w pierwszym sezonie HoopConnect. Tylko dla elity.',
+  },
 }
 
 // Lazy-loaded pages — each page loads as a separate JS chunk
@@ -57,16 +72,36 @@ function AppShell() {
   const { leaderboardOpen, frameUnlockOpen, setFrameUnlockOpen, frameUnlockData, setFrameUnlockData } = useUI()
   const location = useLocation()
 
-  // ── Season 1 Diamond frame auto-trigger ─────────────────────────────────────
+  // ── Frame reward auto-triggers ───────────────────────────────────────────────
+  // Priority: Early Access (June 1) → Diamond S1 (Aug 24). One at a time.
   useEffect(() => {
     if (!profile || !user) return
-    if (new Date() < SEASON_1_END) return                                    // too early
-    const seenKey = `hc_frame_seen_diamond_s1_${user.id}`
-    if (localStorage.getItem(seenKey)) return                                // already seen
-    if ((profile.weekly_points || 0) < DIAMOND_MIN) return                  // not Diamond
-    setFrameUnlockData(DIAMOND_FRAME)
-    setFrameUnlockOpen(true)
-  }, [profile?.id]) // run once per session when profile loads
+    const now = new Date()
+
+    // 1. Early Access — everyone who registered before June 1, shown from June 1
+    if (now >= EARLY_ACCESS_SHOW) {
+      const seenEA = `hc_frame_seen_early_access_${user.id}`
+      if (!localStorage.getItem(seenEA)) {
+        const reg = profile.registration_date ? new Date(profile.registration_date) : null
+        if (reg && reg < EARLY_ACCESS_CUTOFF) {
+          setFrameUnlockData(FRAMES.early_access)
+          setFrameUnlockOpen(true)
+          return
+        }
+      }
+    }
+
+    // 2. Diamond S1 — Diamond tier players, shown from Aug 24
+    if (now >= SEASON_1_END) {
+      const seenD = `hc_frame_seen_diamond_s1_${user.id}`
+      if (!localStorage.getItem(seenD)) {
+        if ((profile.weekly_points || 0) >= DIAMOND_MIN) {
+          setFrameUnlockData(FRAMES.diamond_s1)
+          setFrameUnlockOpen(true)
+        }
+      }
+    }
+  }, [profile?.id]) // run once per session when profile first loads
   const path = location.pathname
   const isTabRoute  = TAB_PATHS.has(path)
   const inShooting   = path.startsWith('/shooting')
