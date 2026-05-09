@@ -404,11 +404,34 @@ async function apiLeaveMatch(matchId, userId) {
   await supabase.from('club_matches').update(updates).eq('id', matchId)
 }
 
-async function apiEnterScore(matchId, scoreHome, scoreAway) {
-  const { error } = await supabase
-    .from('club_matches')
-    .update({ score_home: scoreHome, score_away: scoreAway, status: 'completed' })
-    .eq('id', matchId)
+// Home captain submits score — if no away players: auto-complete, else: pending confirmation
+async function apiSubmitHomeScore(matchId, scoreHome, scoreAway, autoComplete = false) {
+  const update = autoComplete
+    ? { score_home: scoreHome, score_away: scoreAway, status: 'completed' }
+    : { score_home: scoreHome, score_away: scoreAway, status: 'result_pending',
+        result_submitted_at: new Date().toISOString() }
+  const { error } = await supabase.from('club_matches').update(update).eq('id', matchId)
+  if (error) throw error
+}
+
+// Away captain confirms home's submitted score
+async function apiConfirmAwayScore(matchId) {
+  const { error } = await supabase.from('club_matches')
+    .update({ status: 'completed' }).eq('id', matchId)
+  if (error) throw error
+}
+
+// Away captain disputes — scores don't match
+async function apiDisputeScore(matchId) {
+  const { error } = await supabase.from('club_matches')
+    .update({ status: 'disputed' }).eq('id', matchId)
+  if (error) throw error
+}
+
+// Mark walkover: 'home_cancelled' (creator cancels < 2h) or 'away_noshow'
+async function apiMarkWalkover(matchId, side) {
+  const { error } = await supabase.from('club_matches')
+    .update({ status: 'completed', walkover: side }).eq('id', matchId)
   if (error) throw error
 }
 
@@ -1257,7 +1280,19 @@ function MatchCard({ match, dist, uid, onPress }) {
             {match.status === 'completed' && (
               <div style={{ padding: '2px 7px', borderRadius: 6, background: `${C.win}12`,
                 border: `1px solid ${C.win}30`, fontSize: 9, fontWeight: 700, color: C.win, letterSpacing: 1 }}>
-                ZAKOŃCZONY
+                {match.walkover ? 'WALKOWER' : 'ZAKOŃCZONY'}
+              </div>
+            )}
+            {match.status === 'result_pending' && (
+              <div style={{ padding: '2px 7px', borderRadius: 6, background: `${C.hoop}12`,
+                border: `1px solid ${C.hoop}35`, fontSize: 9, fontWeight: 700, color: C.hoop, letterSpacing: 1 }}>
+                CZEKA NA POTWIERDZENIE
+              </div>
+            )}
+            {match.status === 'disputed' && (
+              <div style={{ padding: '2px 7px', borderRadius: 6, background: `${C.loss}12`,
+                border: `1px solid ${C.loss}35`, fontSize: 9, fontWeight: 700, color: C.loss, letterSpacing: 1 }}>
+                ⚠ SPÓR O WYNIK
               </div>
             )}
             {match.status === 'full' && (
@@ -1637,8 +1672,10 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
   const [joining,       setJoining]       = useState(false)
   const [leaving,       setLeaving]       = useState(false)
   const [confirmLeave,  setConfirmLeave]  = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [deleting,      setDeleting]      = useState(false)
+  const [confirmDelete,  setConfirmDelete]  = useState(false)
+  const [twoHourWarn,    setTwoHourWarn]    = useState(false)
+  const [deleting,       setDeleting]       = useState(false)
+  const [noShowSaving,   setNoShowSaving]   = useState(false)
   const [err,           setErr]           = useState(null)
 
   const myPlayer = local.players.find(p => p.user_id === uid)
@@ -1662,17 +1699,35 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
   // Creator can delete if no enemy joined, cancel if they did
   const canCreatorRemove = isCreator && !isPast && local.status !== 'completed'
 
+  // < 2h before start AND away joined → warn about L first
+  const twoHoursMs = 2 * 60 * 60 * 1000
+  const isUnder2h  = awayHasPlayers && !isPast &&
+    (new Date(local.scheduled_at).getTime() - Date.now() < twoHoursMs)
+
   async function handleCreatorRemove() {
+    if (isUnder2h && !twoHourWarn) { setTwoHourWarn(true); return }
     setDeleting(true); setErr(null)
     try {
       if (awayHasPlayers) {
-        await apiCancelMatch(local.id)
-        onDeleted?.(local.id)   // remove from list (status: cancelled hidden from feed)
+        if (isUnder2h) {
+          await apiMarkWalkover(local.id, 'home_cancelled')
+        } else {
+          await apiCancelMatch(local.id)
+        }
       } else {
         await apiDeleteMatch(local.id)
-        onDeleted?.(local.id)
       }
+      onDeleted?.(local.id)
     } catch (e) { setErr(e.message); setDeleting(false) }
+  }
+
+  async function handleNoShow() {
+    setNoShowSaving(true); setErr(null)
+    try {
+      await apiMarkWalkover(local.id, 'away_noshow')
+      setLocal(prev => ({ ...prev, status:'completed', walkover:'away_noshow' }))
+      onLeft?.({ ...local, status:'completed', walkover:'away_noshow' })
+    } catch(e) { setErr(e.message) } finally { setNoShowSaving(false) }
   }
 
   function getTeamSlots(team) {
@@ -1980,55 +2035,113 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
             </div>
           )}
 
+          {/* No-show button — for home captain on past unresolved matches */}
+          {isCreator && isPast && local.status !== 'completed' && local.status !== 'cancelled' && awayHasPlayers && (
+            <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }}
+              style={{ marginTop:10, padding:'12px 14px', borderRadius:12,
+                background:`${C.loss}08`, border:`1px solid ${C.loss}25` }}>
+              <p style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.70)',
+                margin:'0 0 4px' }}>Rywale nie stawili się?</p>
+              <p style={{ fontSize:10, color:C.sub, margin:'0 0 12px', lineHeight:1.5 }}>
+                Walkower — rywale otrzymują L, Ty nie otrzymujesz W.
+              </p>
+              <motion.button whileTap={{ scale:0.97 }} onClick={handleNoShow}
+                disabled={noShowSaving}
+                style={{ width:'100%', padding:'11px', border:'none', borderRadius:8,
+                  background:`${C.loss}18`, outline:`1px solid ${C.loss}40`,
+                  color:C.loss, fontSize:11, fontWeight:800, cursor:'pointer',
+                  opacity: noShowSaving ? 0.7 : 1,
+                  WebkitTapHighlightColor:'transparent' }}>
+                {noShowSaving ? '…' : 'Oznacz niestawienie — walkower'}
+              </motion.button>
+            </motion.div>
+          )}
+
           {/* Creator: delete (no enemy) or cancel (enemy joined) */}
           {canCreatorRemove && (
             <AnimatePresence>
-              {!confirmDelete ? (
+              {!confirmDelete && !twoHourWarn && (
                 <motion.button
                   key="del-trigger"
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  whileTap={{ scale: 0.97 }}
+                  initial={{ opacity:0 }} animate={{ opacity:1 }}
+                  whileTap={{ scale:0.97 }}
                   onClick={() => setConfirmDelete(true)}
-                  style={{ width: '100%', marginTop: 10, padding: '11px',
-                    borderRadius: 12, border: 'none', cursor: 'pointer',
-                    background: 'transparent',
-                    outline: `1px solid ${C.loss}30`,
-                    color: `${C.loss}88`, fontSize: 10.5, fontWeight: 700,
-                    letterSpacing: 0.5 }}>
+                  style={{ width:'100%', marginTop:10, padding:'11px',
+                    borderRadius:12, border:'none', cursor:'pointer',
+                    background:'transparent',
+                    outline:`1px solid ${C.loss}30`,
+                    color:`${C.loss}88`, fontSize:10.5, fontWeight:700,
+                    letterSpacing:0.5, WebkitTapHighlightColor:'transparent' }}>
                   {awayHasPlayers ? 'Anuluj mecz' : 'Usuń spotkanie'}
                 </motion.button>
-              ) : (
+              )}
+
+              {/* 2h warning step */}
+              {twoHourWarn && (
+                <motion.div key="two-hour-warn"
+                  initial={{ opacity:0, y:6 }} animate={{ opacity:1, y:0 }}
+                  style={{ marginTop:10, padding:'14px', borderRadius:14,
+                    background:`${C.loss}0E`, border:`1px solid ${C.loss}50` }}>
+                  <p style={{ fontSize:12, fontWeight:800, color:C.loss,
+                    margin:'0 0 6px', textAlign:'center' }}>⚠ Anulowanie &lt; 2h od meczu</p>
+                  <p style={{ fontSize:10.5, color:C.sub, margin:'0 0 14px',
+                    textAlign:'center', lineHeight:1.55 }}>
+                    Anulowanie tak blisko startu skutkuje <strong style={{color:C.loss}}>przegraną (L)</strong> dla Twojej drużyny. Rywale zostaną powiadomieni.
+                  </p>
+                  {err && <p style={{ fontSize:10, color:C.loss, textAlign:'center', margin:'0 0 10px' }}>{err}</p>}
+                  <div style={{ display:'flex', gap:8 }}>
+                    <motion.button whileTap={{ scale:0.96 }}
+                      onClick={() => { setTwoHourWarn(false); setConfirmDelete(false) }}
+                      style={{ flex:1, padding:'11px', borderRadius:10, border:'none',
+                        cursor:'pointer', background:C.surface,
+                        color:C.sub, fontSize:11, fontWeight:700 }}>
+                      Wróć
+                    </motion.button>
+                    <motion.button whileTap={{ scale:0.96 }}
+                      onClick={handleCreatorRemove} disabled={deleting}
+                      style={{ flex:1, padding:'11px', borderRadius:10, border:'none',
+                        cursor:'pointer', background:`${C.loss}18`,
+                        outline:`1px solid ${C.loss}50`,
+                        color:C.loss, fontSize:11, fontWeight:800,
+                        opacity: deleting ? 0.7 : 1 }}>
+                      {deleting ? '…' : 'Anuluj mimo to (L)'}
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+
+              {confirmDelete && !twoHourWarn && (
                 <motion.div
                   key="del-confirm"
-                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                  style={{ marginTop: 10, padding: '14px', borderRadius: 14,
-                    background: `${C.loss}0C`, border: `1px solid ${C.loss}35` }}>
-                  <p style={{ fontSize: 11.5, fontWeight: 700, color: C.text,
-                    margin: '0 0 4px', textAlign: 'center' }}>
+                  initial={{ opacity:0, y:6 }} animate={{ opacity:1, y:0 }}
+                  style={{ marginTop:10, padding:'14px', borderRadius:14,
+                    background:`${C.loss}0C`, border:`1px solid ${C.loss}35` }}>
+                  <p style={{ fontSize:11.5, fontWeight:700, color:C.text,
+                    margin:'0 0 4px', textAlign:'center' }}>
                     {awayHasPlayers ? 'Anulować mecz?' : 'Usunąć spotkanie?'}
                   </p>
-                  <p style={{ fontSize: 10, color: C.sub, margin: '0 0 14px',
-                    textAlign: 'center', lineHeight: 1.5 }}>
+                  <p style={{ fontSize:10, color:C.sub, margin:'0 0 14px',
+                    textAlign:'center', lineHeight:1.5 }}>
                     {awayHasPlayers
                       ? 'Rywale zostaną powiadomieni. Brak W/L dla obu drużyn.'
                       : 'Spotkanie zostanie trwale usunięte.'}
                   </p>
-                  {err && <p style={{ fontSize: 10, color: C.loss, textAlign: 'center',
-                    margin: '0 0 10px' }}>{err}</p>}
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <motion.button whileTap={{ scale: 0.96 }}
+                  {err && <p style={{ fontSize:10, color:C.loss, textAlign:'center',
+                    margin:'0 0 10px' }}>{err}</p>}
+                  <div style={{ display:'flex', gap:8 }}>
+                    <motion.button whileTap={{ scale:0.96 }}
                       onClick={() => setConfirmDelete(false)}
-                      style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none',
-                        cursor: 'pointer', background: C.surface,
-                        color: C.sub, fontSize: 11, fontWeight: 700 }}>
+                      style={{ flex:1, padding:'11px', borderRadius:10, border:'none',
+                        cursor:'pointer', background:C.surface,
+                        color:C.sub, fontSize:11, fontWeight:700 }}>
                       Wróć
                     </motion.button>
-                    <motion.button whileTap={{ scale: 0.96 }}
+                    <motion.button whileTap={{ scale:0.96 }}
                       onClick={handleCreatorRemove} disabled={deleting}
-                      style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none',
-                        cursor: 'pointer', background: `${C.loss}18`,
-                        outline: `1px solid ${C.loss}50`,
-                        color: C.loss, fontSize: 11, fontWeight: 800,
+                      style={{ flex:1, padding:'11px', borderRadius:10, border:'none',
+                        cursor:'pointer', background:`${C.loss}18`,
+                        outline:`1px solid ${C.loss}50`,
+                        color:C.loss, fontSize:11, fontWeight:800,
                         opacity: deleting ? 0.7 : 1 }}>
                       {deleting ? '…' : awayHasPlayers ? 'Anuluj mecz' : 'Usuń'}
                     </motion.button>
@@ -2045,91 +2158,290 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
 }
 
 // ── RESULT SHEET ──────────────────────────────────────────────────────────────
-function ResultSheet({ match, onClose, onSaved }) {
-  const [scoreHome, setScoreHome] = useState('')
-  const [scoreAway, setScoreAway] = useState('')
-  const [saving, setSaving]       = useState(false)
-  const [err, setErr]             = useState(null)
+// role: 'home' | 'home_only' | 'away_confirm' | 'disputed_home' | 'disputed_away'
+function ResultSheet({ match, role = 'home', onClose, onUpdate }) {
+  const hasAway  = match.players.some(p => p.team === 'away')
+  const homeClub = match._club?.name      || 'Drużyna A'
+  const awayClub = match._awayClub?.name  || 'Drużyna B'
 
-  const h = parseInt(scoreHome)
-  const a = parseInt(scoreAway)
-  const canSave = !isNaN(h) && !isNaN(a) && h >= 0 && a >= 0
-  const homeWins = canSave && h > a
-  const awayWins = canSave && a > h
+  const hoursLeft = match.result_submitted_at
+    ? Math.max(0, Math.floor(
+        (new Date(match.result_submitted_at).getTime() + 24*3600*1000 - Date.now()) / 3600000))
+    : null
 
-  async function handleSave() {
-    if (!canSave || saving) return
-    setSaving(true); setErr(null)
-    try {
-      await apiEnterScore(match.id, h, a)
-      onSaved?.(h, a)
-      onClose()
-    } catch (e) { setErr(e.message) }
-    finally { setSaving(false) }
+  // ── shared primitives ──────────────────────────────────────────────────────
+  function ScoreInputs({ sh, sa, setSh, setSa }) {
+    const h = parseInt(sh), a = parseInt(sa)
+    const hW = !isNaN(h) && !isNaN(a) && h > a
+    const aW = !isNaN(h) && !isNaN(a) && a > h
+    return (
+      <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'center',
+        gap:12, marginBottom:20 }}>
+        {[{v:sh,sv:setSh,lbl:homeClub,col:C.accent,w:hW},
+          {v:sa,sv:setSa,lbl:awayClub,col:C.hoop,  w:aW}].map(({v,sv,lbl,col,w},i) => (
+          <div key={i} style={{ flex:1, textAlign:'center' }}>
+            <p style={{ fontSize:9, fontWeight:700, letterSpacing:1.5, textTransform:'uppercase',
+              color:`${col}80`, margin:'0 0 8px',
+              overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{lbl}</p>
+            <input type="number" min="0" max="999" value={v}
+              onChange={e => sv(e.target.value)} placeholder="0"
+              style={{ width:'100%', padding:'10px 0', textAlign:'center',
+                fontSize:46, fontWeight:900, letterSpacing:-2, lineHeight:1,
+                background: w ? `${col}14` : C.bg, border:'none',
+                outline:`2px solid ${w ? col : C.dim}`, borderRadius:14,
+                color: w ? col : C.text, fontFamily:'var(--font-display)',
+                boxSizing:'border-box', colorScheme:'dark',
+                textShadow: w ? `0 0 24px ${col}60` : 'none', transition:'all 0.2s' }}/>
+          </div>
+        ))}
+        <span style={{ fontSize:28, fontWeight:900, color:C.dim, paddingBottom:10 }}>:</span>
+      </div>
+    )
   }
 
-  return createPortal(
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, zIndex: 300,
-        background: 'rgba(4,8,15,0.95)', backdropFilter: 'blur(20px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+  function PrimaryBtn({ active, saving, onClick, label, color = C.win }) {
+    return (
+      <motion.button whileTap={{ scale:0.97 }} onClick={onClick}
+        disabled={!active || saving}
+        style={{ width:'100%', padding:'15px', border:'none', borderRadius:0,
+          borderTop:`2px solid ${active ? color : C.dim}`,
+          background: active ? `linear-gradient(135deg,${color},${color}BB)` : C.dim,
+          color: active ? '#000' : C.sub, fontFamily:'var(--font-display)',
+          fontWeight:900, fontSize:12, letterSpacing:2.5, textTransform:'uppercase',
+          cursor: active && !saving ? 'pointer' : 'default',
+          boxShadow: active ? `0 -4px 20px ${color}28` : 'none',
+          opacity: saving ? 0.7 : 1, marginBottom:10,
+          WebkitTapHighlightColor:'transparent' }}>
+        {saving ? '…' : label}
+      </motion.button>
+    )
+  }
 
-      <motion.div initial={{ scale: 0.88, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.88, opacity: 0 }}
-        style={{ width: '100%', maxWidth: 360, background: C.surface, borderRadius: 24,
-          padding: '32px 24px', border: `1px solid ${C.line}`,
-          boxShadow: `0 20px 70px rgba(0,200,255,0.12)` }}>
+  function SecBtn({ onClick, label }) {
+    return (
+      <motion.button whileTap={{ scale:0.97 }} onClick={onClick}
+        style={{ width:'100%', padding:'12px', border:'none', borderRadius:0,
+          outline:'1px solid rgba(255,255,255,0.07)',
+          background:'transparent', color:C.sub, fontSize:11, fontWeight:500,
+          cursor:'pointer', WebkitTapHighlightColor:'transparent', marginBottom:8 }}>
+        {label}
+      </motion.button>
+    )
+  }
 
-        <p style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 3.5, textTransform: 'uppercase',
-          color: C.dim, textAlign: 'center', margin: '0 0 4px' }}>Wynik meczu</p>
-        <p style={{ fontSize: 12, fontWeight: 600, color: C.sub, textAlign: 'center', margin: '0 0 28px' }}>
+  // ── HOME entry ──────────────────────────────────────────────────────────────
+  function HomeEntry() {
+    const [sh, setSh] = useState('')
+    const [sa, setSa] = useState('')
+    const [saving, setSaving] = useState(false)
+    const [err, setErr] = useState(null)
+    const h = parseInt(sh), a = parseInt(sa)
+    const ok = !isNaN(h) && !isNaN(a) && h >= 0 && a >= 0
+    const autoConfirm = !hasAway || role === 'home_only'
+
+    async function submit() {
+      if (!ok || saving) return
+      setSaving(true); setErr(null)
+      try {
+        await apiSubmitHomeScore(match.id, h, a, autoConfirm)
+        onUpdate?.({ score_home:h, score_away:a,
+          status: autoConfirm ? 'completed' : 'result_pending',
+          result_submitted_at: new Date().toISOString() })
+        onClose()
+      } catch(e) { setErr(e.message) } finally { setSaving(false) }
+    }
+
+    return (
+      <>
+        <p style={{ fontSize:9.5, fontWeight:800, letterSpacing:3.5, textTransform:'uppercase',
+          color:C.dim, textAlign:'center', margin:'0 0 4px' }}>Wpisz wynik</p>
+        <p style={{ fontSize:11.5, fontWeight:600, color:C.sub, textAlign:'center', margin:'0 0 6px' }}>
+          {fmtMatchDate(match.scheduled_at)} · {fmtMatchTime(match.scheduled_at)}
+        </p>
+        {!autoConfirm && (
+          <p style={{ fontSize:10, color:`${C.hoop}88`, textAlign:'center', margin:'0 0 22px', lineHeight:1.5 }}>
+            Kapitan rywali potwierdzi wynik · limit <strong style={{color:C.hoop}}>24h</strong>
+          </p>
+        )}
+        {autoConfirm && (
+          <p style={{ fontSize:10, color:`${C.win}77`, textAlign:'center', margin:'0 0 22px' }}>
+            Brak drużyny przeciwnej — wynik zostanie zatwierdzony od razu.
+          </p>
+        )}
+        <ScoreInputs sh={sh} sa={sa} setSh={setSh} setSa={setSa}/>
+        {err && <p style={{ fontSize:11, color:C.loss, textAlign:'center', margin:'0 0 10px' }}>{err}</p>}
+        <PrimaryBtn active={ok} saving={saving} onClick={submit}
+          label={autoConfirm ? 'Zatwierdź wynik' : 'Zatwierdź i wyślij rywalom'}/>
+        <SecBtn onClick={onClose} label="Wpisz później"/>
+      </>
+    )
+  }
+
+  // ── AWAY confirmation ───────────────────────────────────────────────────────
+  function AwayConfirm() {
+    const [mode, setMode]   = useState('confirm')
+    const [sh, setSh]       = useState(String(match.score_home ?? ''))
+    const [sa, setSa]       = useState(String(match.score_away ?? ''))
+    const [saving, setSaving] = useState(false)
+    const [err, setErr]     = useState(null)
+    const h = parseInt(sh), a = parseInt(sa)
+    const ok = !isNaN(h) && !isNaN(a) && h >= 0 && a >= 0
+
+    async function confirm() {
+      setSaving(true); setErr(null)
+      try {
+        await apiConfirmAwayScore(match.id)
+        onUpdate?.({ status:'completed' })
+        onClose()
+      } catch(e) { setErr(e.message) } finally { setSaving(false) }
+    }
+
+    async function submitDispute() {
+      if (!ok || saving) return
+      setSaving(true); setErr(null)
+      try {
+        if (h === match.score_home && a === match.score_away) {
+          await apiConfirmAwayScore(match.id)
+          onUpdate?.({ status:'completed' })
+        } else {
+          await apiDisputeScore(match.id)
+          onUpdate?.({ status:'disputed' })
+        }
+        onClose()
+      } catch(e) { setErr(e.message) } finally { setSaving(false) }
+    }
+
+    return (
+      <>
+        <p style={{ fontSize:9.5, fontWeight:800, letterSpacing:3.5, textTransform:'uppercase',
+          color:C.hoop, textAlign:'center', margin:'0 0 4px' }}>Potwierdź wynik</p>
+        <p style={{ fontSize:11.5, fontWeight:600, color:C.sub, textAlign:'center', margin:'0 0 18px' }}>
           {fmtMatchDate(match.scheduled_at)} · {fmtMatchTime(match.scheduled_at)}
         </p>
 
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 12, marginBottom: 28 }}>
-          {[
-            { val: scoreHome, set: setScoreHome, label: 'Drużyna A', col: C.accent, wins: homeWins },
-            { val: scoreAway, set: setScoreAway, label: 'Drużyna B', col: C.hoop,   wins: awayWins },
-          ].map(({ val, set, label, col, wins }, idx) => (
-            <div key={idx} style={{ flex: 1, textAlign: 'center' }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase',
-                color: `${col}80`, margin: '0 0 8px' }}>{label}</p>
-              <input type="number" min="0" max="999" value={val}
-                onChange={e => set(e.target.value)} placeholder="0"
-                style={{ width: '100%', padding: '10px 0', textAlign: 'center',
-                  fontSize: 48, fontWeight: 900, letterSpacing: -2, lineHeight: 1,
-                  background: wins ? `${col}14` : C.bg,
-                  border: 'none', outline: `2px solid ${wins ? col : C.dim}`,
-                  borderRadius: 16, color: wins ? col : C.text,
-                  fontFamily: 'var(--font-display)', boxSizing: 'border-box',
-                  textShadow: wins ? `0 0 24px ${col}60` : 'none', transition: 'all 0.2s',
-                  colorScheme: 'dark' }}
-              />
-            </div>
-          ))}
-          <span style={{ fontSize: 30, fontWeight: 900, color: C.dim, paddingBottom: 10 }}>:</span>
+        <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:14,
+          padding:'14px 20px', marginBottom:18,
+          background:`${C.accent}0A`, border:`1px solid ${C.accent}25`,
+          borderTop:`1px solid ${C.accent}45`, borderRadius:14 }}>
+          <div style={{ textAlign:'center' }}>
+            <p style={{ fontSize:8.5, color:`${C.accent}77`, fontWeight:700, letterSpacing:1.5,
+              textTransform:'uppercase', margin:'0 0 4px',
+              overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+              maxWidth:100 }}>{homeClub}</p>
+            <span style={{ fontSize:42, fontWeight:900, color:C.text,
+              fontFamily:'var(--font-display)' }}>{match.score_home ?? '–'}</span>
+          </div>
+          <span style={{ fontSize:24, fontWeight:900, color:C.dim }}>:</span>
+          <div style={{ textAlign:'center' }}>
+            <p style={{ fontSize:8.5, color:`${C.hoop}77`, fontWeight:700, letterSpacing:1.5,
+              textTransform:'uppercase', margin:'0 0 4px',
+              overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+              maxWidth:100 }}>{awayClub}</p>
+            <span style={{ fontSize:42, fontWeight:900, color:C.text,
+              fontFamily:'var(--font-display)' }}>{match.score_away ?? '–'}</span>
+          </div>
         </div>
 
-        {err && <p style={{ fontSize: 11, color: C.loss, textAlign: 'center', marginBottom: 12 }}>{err}</p>}
+        {hoursLeft !== null && (
+          <p style={{ fontSize:10, color:C.dim, textAlign:'center', margin:'0 0 16px' }}>
+            Brak potwierdzenia → wynik zatwierdzi się za <strong style={{color:'rgba(255,255,255,0.55)'}}>{hoursLeft}h</strong>
+          </p>
+        )}
 
-        <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={!canSave || saving}
-          style={{ width: '100%', padding: '15px', border: 'none', borderRadius: 14,
-            background: canSave ? `linear-gradient(135deg, ${C.win}, #009955)` : C.dim,
-            color: canSave ? '#000' : C.sub,
-            fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 12,
-            letterSpacing: 2.5, textTransform: 'uppercase',
-            cursor: canSave && !saving ? 'pointer' : 'default',
-            boxShadow: canSave ? '0 6px 24px rgba(0,200,130,0.32)' : 'none',
-            transition: 'all 0.2s', opacity: saving ? 0.7 : 1, marginBottom: 10 }}>
-          {saving ? 'Zapisywanie…' : 'Zatwierdź wynik'}
-        </motion.button>
+        {mode === 'confirm' && (
+          <>
+            {err && <p style={{ fontSize:11, color:C.loss, textAlign:'center', margin:'0 0 10px' }}>{err}</p>}
+            <PrimaryBtn active saving={saving} onClick={confirm} label="Potwierdzam wynik ✓" color={C.win}/>
+            <SecBtn onClick={() => setMode('dispute')} label="Inny wynik"/>
+            <SecBtn onClick={onClose} label="Wpisz później"/>
+          </>
+        )}
 
-        <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
-          style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 14,
-            background: 'transparent', color: C.sub, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
-          Wpisz później
-        </motion.button>
-      </motion.div>
+        {mode === 'dispute' && (
+          <>
+            <p style={{ fontSize:10.5, color:C.sub, textAlign:'center', margin:'0 0 14px' }}>
+              Wpisz wynik według Ciebie:
+            </p>
+            <ScoreInputs sh={sh} sa={sa} setSh={setSh} setSa={setSa}/>
+            {err && <p style={{ fontSize:11, color:C.loss, textAlign:'center', margin:'0 0 10px' }}>{err}</p>}
+            <PrimaryBtn active={ok} saving={saving} onClick={submitDispute} label="Zatwierdź"/>
+            <SecBtn onClick={() => setMode('confirm')} label="← Wróć"/>
+          </>
+        )}
+      </>
+    )
+  }
+
+  // ── DISPUTED ────────────────────────────────────────────────────────────────
+  function Disputed() {
+    const [saving, setSaving] = useState(false)
+    const [err, setErr] = useState(null)
+    const isHome = role === 'disputed_home'
+
+    async function confirmHomeScore() {
+      setSaving(true); setErr(null)
+      try {
+        await apiConfirmAwayScore(match.id)
+        onUpdate?.({ status:'completed' })
+        onClose()
+      } catch(e) { setErr(e.message) } finally { setSaving(false) }
+    }
+
+    return (
+      <>
+        <p style={{ fontSize:9.5, fontWeight:800, letterSpacing:3, textTransform:'uppercase',
+          color:C.loss, textAlign:'center', margin:'0 0 6px' }}>⚠ Niezgodny wynik</p>
+        <p style={{ fontSize:11, color:C.sub, textAlign:'center', margin:'0 0 18px', lineHeight:1.6 }}>
+          {isHome
+            ? 'Kapitan rywali wpisał inny wynik. Skontaktujcie się bezpośrednio.'
+            : 'Twój wynik różni się od zgłoszonego. Skontaktujcie się z gospodarzami.'}
+        </p>
+        <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:14,
+          padding:'12px 20px', marginBottom:14,
+          background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.08)',
+          borderRadius:12 }}>
+          <span style={{ fontSize:36, fontWeight:900, color:C.text,
+            fontFamily:'var(--font-display)' }}>{match.score_home}</span>
+          <span style={{ fontSize:20, fontWeight:900, color:C.dim }}>:</span>
+          <span style={{ fontSize:36, fontWeight:900, color:C.text,
+            fontFamily:'var(--font-display)' }}>{match.score_away}</span>
+        </div>
+        <p style={{ fontSize:9.5, color:C.dim, textAlign:'center', margin:'0 0 18px', letterSpacing:1 }}>
+          WYNIK ZGŁOSZONY PRZEZ {homeClub.toUpperCase()}
+        </p>
+        {err && <p style={{ fontSize:11, color:C.loss, textAlign:'center', margin:'0 0 10px' }}>{err}</p>}
+        {!isHome && (
+          <PrimaryBtn active saving={saving} onClick={confirmHomeScore}
+            label={`Potwierdzam ${match.score_home}:${match.score_away}`} color={C.win}/>
+        )}
+        {isHome && (
+          <p style={{ fontSize:10, color:C.dim, textAlign:'center', margin:'0 0 16px', lineHeight:1.55 }}>
+            Twój wynik zostanie zatwierdzony automatycznie jeśli rywale nie zareagują w ciągu 24h.
+          </p>
+        )}
+        <SecBtn onClick={onClose} label="Zamknij"/>
+      </>
+    )
+  }
+
+  return createPortal(
+    <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+      style={{ position:'fixed', inset:0, zIndex:300,
+        background:'rgba(4,8,15,0.97)', backdropFilter:'blur(20px)',
+        WebkitBackdropFilter:'blur(20px)',
+        overflowY:'auto', WebkitOverflowScrolling:'touch',
+        paddingTop:'max(env(safe-area-inset-top,0px),28px)',
+        paddingBottom:'max(env(safe-area-inset-bottom,0px),28px)',
+        paddingLeft:24, paddingRight:24,
+        display:'flex', flexDirection:'column', alignItems:'center' }}>
+      <div style={{ width:'100%', maxWidth:360, margin:'auto',
+        background:C.surface, borderRadius:20, padding:'28px 22px',
+        border:`1px solid ${C.line}`,
+        boxShadow:'0 20px 70px rgba(0,180,255,0.10)' }}>
+        {(role === 'home' || role === 'home_only') && <HomeEntry/>}
+        {role === 'away_confirm'                   && <AwayConfirm/>}
+        {(role === 'disputed_home' || role === 'disputed_away') && <Disputed/>}
+      </div>
     </motion.div>,
     document.body
   )
@@ -2330,7 +2642,8 @@ function MatchesPanel({ club, uid, isActive }) {
   const [loading,  setLoading]  = useState(false)
   const [sheet,    setSheet]    = useState(null)
   const [active,   setActive]   = useState(null)
-  const [pending,  setPending]  = useState(null)
+  const [pending,     setPending]     = useState(null)
+  const [pendingRole, setPendingRole] = useState('home')
   const [joinedMatch, setJoinedMatch] = useState(null)
   const RADIUS = 25
 
@@ -2462,17 +2775,43 @@ function MatchesPanel({ club, uid, isActive }) {
     const now = new Date()
     for (const m of list) {
       if (m.status === 'completed' || m.status === 'cancelled') continue
-      if (new Date(m.scheduled_at) > now) continue
-      // Skip if user snoozed this match ("Wpisz później")
-      if (localStorage.getItem(`hc_result_snooze_${m.id}_${uid}`)) continue
-      const mySlot = m.players.find(p => p.user_id === uid)
-      if (!mySlot) continue
-      const home = m.players.filter(p => p.team === 'home').sort((a, b) => a.slot - b.slot)
-      const away = m.players.filter(p => p.team === 'away').sort((a, b) => a.slot - b.slot)
+      const snoozeKey = `hc_result_snooze_${m.id}_${uid}`
+      if (localStorage.getItem(snoozeKey)) continue
+
+      const home = m.players.filter(p => p.team === 'home').sort((a,b) => a.slot - b.slot)
+      const away = m.players.filter(p => p.team === 'away').sort((a,b) => a.slot - b.slot)
       const ownerInHome = home.some(p => p.user_id === club.ownerId)
       const homeLeadId = (ownerInHome ? home.find(p => p.user_id === club.ownerId) : home[0])?.user_id
-      const awayLeadId = away[0]?.user_id
-      if (uid === homeLeadId || uid === awayLeadId) { setPending(m); setSheet('result'); break }
+      const awayLeadId  = away[0]?.user_id
+
+      // result_pending → away captain needs to confirm
+      if (m.status === 'result_pending' && uid === awayLeadId) {
+        // 24h auto-confirm if deadline passed
+        if (m.result_submitted_at) {
+          const deadline = new Date(m.result_submitted_at).getTime() + 24*3600*1000
+          if (Date.now() > deadline) {
+            apiConfirmAwayScore(m.id).catch(() => {})
+            continue
+          }
+        }
+        setPending(m); setPendingRole('away_confirm'); setSheet('result'); break
+      }
+
+      // disputed → both captains see dispute panel
+      if (m.status === 'disputed') {
+        if (uid !== homeLeadId && uid !== awayLeadId) continue
+        setPending(m)
+        setPendingRole(uid === homeLeadId ? 'disputed_home' : 'disputed_away')
+        setSheet('result'); break
+      }
+
+      // standard: match time passed → home captain enters score
+      if (new Date(m.scheduled_at) > now) continue
+      if (uid !== homeLeadId) continue
+      const hasAway = away.length > 0
+      setPending(m)
+      setPendingRole(hasAway ? 'home' : 'home_only')
+      setSheet('result'); break
     }
   }
 
@@ -2640,16 +2979,14 @@ function MatchesPanel({ club, uid, isActive }) {
             onDeleted={id => { setMatches(prev => prev.filter(m => m.id !== id)); setSheet(null); setActive(null) }}/>
         )}
         {sheet === 'result' && pending && (
-          <ResultSheet key="result" match={pending}
+          <ResultSheet key="result" match={pending} role={pendingRole}
             onClose={() => {
-              // "Wpisz później" — snooze this match until next app session
               if (uid) localStorage.setItem(`hc_result_snooze_${pending.id}_${uid}`, '1')
               setSheet(null); setPending(null)
             }}
-            onSaved={(h, a) => {
-              // Clear snooze when actually saved
+            onUpdate={upd => {
               if (uid) localStorage.removeItem(`hc_result_snooze_${pending.id}_${uid}`)
-              updateMatch({ ...pending, status: 'completed', score_home: h, score_away: a })
+              updateMatch({ ...pending, ...upd })
             }}/>
         )}
         {sheet === 'joinSuccess' && joinedMatch && (
