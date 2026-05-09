@@ -3399,6 +3399,31 @@ function ClubView({ club, onUpdate, uid }) {
   const [swapError, setSwapError] = useState(null)
   const [removing, setRemoving] = useState(false)
 
+  // ── Touch swipe (direction-aware — won't steal vertical scroll) ──────────────
+  const touchRef = useRef(null)
+  function handleTouchStart(e) {
+    touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, locked: null }
+  }
+  function handleTouchMove(e) {
+    const t = touchRef.current
+    if (!t) return
+    const dx = e.touches[0].clientX - t.x
+    const dy = e.touches[0].clientY - t.y
+    if (t.locked === null) {
+      if (Math.abs(dy) > Math.abs(dx) + 4) { t.locked = 'y'; return }   // clearly vertical → let scroll
+      if (Math.abs(dx) > Math.abs(dy) + 4) { t.locked = 'x' }           // clearly horizontal → capture
+    }
+    if (t.locked === 'x') e.preventDefault()  // block scroll while swiping panels
+  }
+  function handleTouchEnd(e) {
+    const t = touchRef.current
+    touchRef.current = null
+    if (!t || t.locked !== 'x') return
+    const dx = e.changedTouches[0].clientX - t.x
+    if (dx < -50 && panel < 2) setPanel(p => p + 1)
+    if (dx >  50 && panel > 0) setPanel(p => p - 1)
+  }
+
   const isOwner = club.ownerId === uid
 
   function handleTokenTap(posKey) {
@@ -3475,15 +3500,13 @@ function ClubView({ club, onUpdate, uid }) {
       <PanelDots active={panel} onChange={setPanel}/>
 
       {/* ── Sliding content area only ── */}
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+      <div
+        style={{ flex: 1, overflow: 'hidden', position: 'relative' }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <motion.div
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.15}
-          onDragEnd={(_, info) => {
-            if (info.offset.x < -50 && panel < 2) setPanel(p => p + 1)
-            if (info.offset.x > 50  && panel > 0) setPanel(p => p - 1)
-          }}
           initial={false}
           animate={{ x: panel === 0 ? '0%' : panel === 1 ? '-33.333%' : '-66.666%' }}
           transition={{ type: 'spring', stiffness: 320, damping: 32 }}
