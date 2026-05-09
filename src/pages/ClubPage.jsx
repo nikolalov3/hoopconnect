@@ -2704,6 +2704,7 @@ function MatchesPanel({ club, uid, isActive }) {
   const [pending,     setPending]     = useState(null)
   const [pendingRole, setPendingRole] = useState('home')
   const [joinedMatch, setJoinedMatch] = useState(null)
+  const [autoCancelNotif, setAutoCancelNotif] = useState(null) // { count } — shown when creator's match was auto-cancelled
   const RADIUS = 25
 
   const isMember = Object.values(club.members).some(m => m?.id === uid)
@@ -2816,13 +2817,36 @@ function MatchesPanel({ club, uid, isActive }) {
     setLoading(true)
     try {
       const data = await apiFetchMatches(userLoc.lat, userLoc.lng, RADIUS, myMemberIds, club.id)
+
+      // ── Auto-cancel matches starting in <5min with no away players ───────────
+      const now = new Date()
+      const fiveMin = 5 * 60 * 1000
+      let autoCancelledMine = 0
+      const autoCancel = data.filter(m => {
+        if (m.status !== 'pending' && m.status !== 'full') return false
+        const startsIn = new Date(m.scheduled_at).getTime() - now.getTime()
+        if (startsIn > fiveMin || startsIn < -fiveMin) return false   // not in the 5min window
+        const awayPlayers = m.players.filter(p => p.team === 'away')
+        return awayPlayers.length === 0   // no one joined away side
+      })
+      for (const m of autoCancel) {
+        await supabase.from('club_matches').update({ status: 'cancelled' }).eq('id', m.id)
+        if (m.created_by === uid) autoCancelledMine++
+      }
+      if (autoCancelledMine > 0) setAutoCancelNotif({ count: autoCancelledMine })
+
+      // Remove auto-cancelled from the list
+      const cancelledIds = new Set(autoCancel.map(m => m.id))
+      const filtered = data.filter(m => !cancelledIds.has(m.id))
+      // ─────────────────────────────────────────────────────────────────────────
+
       // Demo match only in development — for testing the join flow
       const demoList = import.meta.env.DEV ? [createDemoMatch(userLoc)] : []
-      const allMatches = [...demoList, ...data]
+      const allMatches = [...demoList, ...filtered]
       setMatches(allMatches)
-      checkPendingResult(data)
+      checkPendingResult(filtered)
       // If there are team matches and user isn't on the tab — set notification flag
-      const hasTeam = data.some(m => m._hasTeammate)
+      const hasTeam = filtered.some(m => m._hasTeammate)
       if (hasTeam && !isActive) {
         localStorage.setItem(`hcNewTeamMatch_${uid}`, '1')
       }
@@ -2955,6 +2979,40 @@ function MatchesPanel({ club, uid, isActive }) {
           <div className="spinner"/>
         </div>
       )}
+
+      {/* Auto-cancel notification */}
+      <AnimatePresence>
+        {autoCancelNotif && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              marginBottom: 14, padding: '14px 16px',
+              background: 'rgba(255,100,60,0.10)',
+              border: '1px solid rgba(255,100,60,0.25)',
+              borderTop: '1px solid rgba(255,100,60,0.40)',
+              display: 'flex', alignItems: 'flex-start', gap: 12,
+            }}
+          >
+            <span style={{ fontSize: 18, lineHeight: 1 }}>⚠️</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,0.88)', margin: '0 0 4px' }}>
+                Mecz odwołany automatycznie
+              </p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.5 }}>
+                Nikt nie dołączył do Twojego meczu 5 minut przed startem. Spróbuj zaplanować kolejny!
+              </p>
+            </div>
+            <button
+              onClick={() => setAutoCancelNotif(null)}
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.30)',
+                cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0, flexShrink: 0 }}
+            >×</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Match list */}
       {!loading && locState === 'granted' && (
