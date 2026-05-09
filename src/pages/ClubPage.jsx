@@ -121,7 +121,7 @@ function dbToUi(club) {
         initial: n.trim()[0]?.toUpperCase() ?? '?',
         isOwner: r.user_id === club.owner_id,
         joinedAt: r.joined_at,
-        frame: r.profiles?.equipped_frame || 'default',
+        frame: r.profiles?.equipped_frame || 'none',
       }
     }
   }
@@ -604,7 +604,7 @@ function Token({ posKey, member, onPress, swapMode, isSrc, isTgt }) {
         )}
         {/* Sci-fi frame overlay — only for filled slots */}
         {member && !isSrc && !isTgt && (
-          <HexFrameOnly size={TK} variant={member.frame || 'default'} />
+          <HexFrameOnly size={TK} variant={member.frame || 'none'} />
         )}
         <svg width={TK} height={TK} viewBox="0 0 90 90"
           style={{
@@ -899,7 +899,7 @@ function PlayerSheet({ club, posKey, member, isOwner, isSelf, onClose, onRemove,
       {/* Avatar + name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
         <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
-          <HexFrameOnly size={64} variant={member?.frame || 'default'} />
+          <HexFrameOnly size={64} variant={member?.frame || 'none'} />
           <svg width="64" height="64" viewBox="0 0 90 90"
             style={{ overflow: 'visible', position: 'relative', zIndex: 1,
               filter: `drop-shadow(0 6px 18px ${pos.glow.replace('0.55', '0.80')})` }}>
@@ -1849,7 +1849,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
           }
         </div>
         {/* Frame overlay — only on filled slots */}
-        {filled && <HexFrameOnly size={SZ} variant={player?.profile?.equipped_frame || 'default'} />}
+        {filled && <HexFrameOnly size={SZ} variant={player?.profile?.equipped_frame || 'none'} />}
       </div>
     )
   }

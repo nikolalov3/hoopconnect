@@ -381,10 +381,20 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved }) {
   )
 }
 
-// ── Sub-view: Trening ─────────────────────────────────────────────────────────
-function TrainingView({ onBack, onClose, profile, user, onProfileSaved }) {
-  const [days,      setDays]      = useState(profile?.training_days || 4)
+// ── Mini-sheet: Plan tygodnia ─────────────────────────────────────────────────
+// Wysuwa się z dołu WEWNĄTRZ panelu ustawień (position:absolute, bottom:0).
+function TrainingMiniSheet({ open, onClose, profile, user, onProfileSaved }) {
+  const uid = user?.id
+  // Inicjalizuj z localStorage (instant) → nadpisz profilem z DB gdy dostępny
+  const [days, setDays] = useState(() => {
+    const cached = uid ? +localStorage.getItem(`hc_tdays_${uid}`) : 0
+    return cached || profile?.training_days || 4
+  })
   const [saveState, setSaveState] = useState('idle')
+
+  useEffect(() => {
+    if (open && profile?.training_days) setDays(profile.training_days)
+  }, [open])
 
   async function handleSaveDays() {
     setSaveState('saving')
@@ -392,58 +402,120 @@ function TrainingView({ onBack, onClose, profile, user, onProfileSaved }) {
       const { error } = await supabase.from('profiles')
         .update({ training_days: days }).eq('id', user.id)
       if (error) throw error
+      if (uid) localStorage.setItem(`hc_tdays_${uid}`, String(days))
       setSaveState('saved')
       onProfileSaved?.()
-      setTimeout(() => setSaveState('idle'), 2000)
+      setTimeout(() => { setSaveState('idle'); onClose() }, 1000)
     } catch { setSaveState('error'); setTimeout(() => setSaveState('idle'), 2000) }
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <SubHeader title="Plan treningu" onBack={onBack} onClose={onClose}/>
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch',
-        padding: '0 18px 36px' }}>
+    <AnimatePresence>
+      {open && (
+        <>
+          {/* Półprzezroczysty overlay na treść panelu */}
+          <motion.div
+            key="tr-bd"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={onClose}
+            style={{
+              position: 'absolute', inset: 0, zIndex: 9,
+              background: 'rgba(4,8,15,0.55)',
+            }}
+          />
+          {/* Mini-sheet */}
+          <motion.div
+            key="tr-sheet"
+            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+            transition={SHEET}
+            style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10,
+              background: C.surface,
+              borderRadius: '18px 18px 0 0',
+              borderTop: `1px solid ${C.borderT}`,
+              padding: '0 18px 48px',
+              overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            {/* Handle */}
+            <div style={{
+              width: 32, height: 4, borderRadius: 2,
+              background: 'rgba(255,255,255,0.14)',
+              margin: '10px auto 18px',
+            }}/>
 
-        <SLabel>Liczba dni treningowych w tygodniu</SLabel>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[3, 4, 5, 6].map(n => (
-            <button key={n} onClick={() => setDays(n)} style={{
-              flex: 1, padding: '12px 0',
-              background: days === n ? 'rgba(0,204,255,0.12)' : 'rgba(255,255,255,0.025)',
-              border: `1.5px solid ${days === n ? C.accent + '80' : C.border}`,
-              borderRadius: 10, cursor: 'pointer',
-              WebkitTapHighlightColor: 'transparent',
-              transition: 'all 0.15s',
-            }}>
-              <p style={{ fontSize: 20, fontWeight: 900, margin: 0,
-                color: days === n ? C.accent : C.sub,
-                fontFamily: 'var(--font-display)' }}>{n}</p>
-              <p style={{ fontSize: 8, color: C.dim, margin: '2px 0 0',
-                letterSpacing: 0.5 }}>dni</p>
-            </button>
-          ))}
-        </div>
+            {/* Nagłówek */}
+            <div style={{ display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between', marginBottom: 18 }}>
+              <p style={{
+                fontSize: 11, fontWeight: 800, letterSpacing: 2,
+                textTransform: 'uppercase', color: C.sub, margin: 0,
+              }}>Plan tygodnia</p>
+              <button onClick={onClose} style={{
+                width: 28, height: 28, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.06)', border: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+              }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                  stroke={C.sub} strokeWidth="2.8" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
 
-        {days !== (profile?.training_days || 4) && (
-          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-            style={{ marginTop: 12 }}>
-            <PrimaryBtn
-              label={saveState === 'saved' ? '✓ Zapisano' : saveState === 'saving' ? 'Zapisywanie…' : 'Zapisz'}
-              onClick={handleSaveDays}
-              disabled={saveState === 'saving'}
-              state={saveState}
-            />
+            {/* Wybór liczby dni */}
+            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5,
+              textTransform: 'uppercase', color: C.dim, margin: '0 0 10px 2px' }}>
+              Dni w tygodniu
+            </p>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+              {[3, 4, 5, 6].map(n => (
+                <button key={n} onClick={() => setDays(n)} style={{
+                  flex: 1, padding: '12px 0',
+                  background: days === n ? 'rgba(0,204,255,0.12)' : 'rgba(255,255,255,0.025)',
+                  border: `1.5px solid ${days === n ? C.accent + '80' : C.border}`,
+                  borderRadius: 10, cursor: 'pointer',
+                  WebkitTapHighlightColor: 'transparent',
+                  transition: 'all 0.15s',
+                }}>
+                  <p style={{ fontSize: 20, fontWeight: 900, margin: 0,
+                    color: days === n ? C.accent : C.sub,
+                    fontFamily: 'var(--font-display)' }}>{n}</p>
+                  <p style={{ fontSize: 8, color: C.dim, margin: '2px 0 0',
+                    letterSpacing: 0.5 }}>dni</p>
+                </button>
+              ))}
+            </div>
+
+            {/* WeekPicker */}
+            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5,
+              textTransform: 'uppercase', color: C.dim, margin: '0 0 10px 2px' }}>
+              Ten tydzień
+            </p>
+            <WeekPicker trainingDays={days} open={open}/>
+
+            {/* Zapisz — tylko gdy zmieniono */}
+            <AnimatePresence>
+              {days !== (profile?.training_days || 4) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  style={{ marginTop: 16 }}>
+                  <PrimaryBtn
+                    label={saveState === 'saved' ? '✓ Zapisano' : saveState === 'saving' ? 'Zapisywanie…' : 'Zapisz'}
+                    onClick={handleSaveDays}
+                    disabled={saveState === 'saving'}
+                    state={saveState}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
-        )}
-
-        <SLabel>Dni tego tygodnia</SLabel>
-        <p style={{ fontSize: 10, color: C.sub, margin: '-4px 0 10px', lineHeight: 1.5 }}>
-          Odznacz dzień i zaznacz inny aby przesunąć trening.
-        </p>
-        <WeekPicker trainingDays={days} open={true}/>
-
-      </div>
-    </div>
+        </>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -568,9 +640,12 @@ function InfoView({ onBack, onClose }) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function SettingsPanel({ open, onClose }) {
   const { profile, user, signOut, refreshProfile } = useAuth()
-  const [view, setView] = useState('main')
+  const [view,         setView]         = useState('main')
+  const [trainingOpen, setTrainingOpen] = useState(false)
 
-  useEffect(() => { if (!open) setTimeout(() => setView('main'), 300) }, [open])
+  useEffect(() => {
+    if (!open) setTimeout(() => { setView('main'); setTrainingOpen(false) }, 300)
+  }, [open])
 
   async function handleSignOut() { onClose(); await signOut() }
 
@@ -644,7 +719,7 @@ export default function SettingsPanel({ open, onClose }) {
                   <div style={{ flexShrink: 0 }}>
                     <HexAvatar
                       name={profile?.name}
-                      variant={profile?.equipped_frame || 'default'}
+                      variant={profile?.equipped_frame || 'none'}
                       size={72}
                     />
                   </div>
@@ -693,7 +768,7 @@ export default function SettingsPanel({ open, onClose }) {
                   <Row
                     label="Plan tygodnia"
                     sub={`${profile?.training_days || 4} dni treningowych`}
-                    onClick={() => setView('training')}
+                    onClick={() => setTrainingOpen(true)}
                   />
                 </CardGroup>
 
@@ -773,13 +848,6 @@ export default function SettingsPanel({ open, onClose }) {
                   onProfileSaved={refreshProfile}
                 />
               )}
-              {view === 'training' && (
-                <TrainingView
-                  onBack={() => setView('main')} onClose={onClose}
-                  profile={profile} user={user}
-                  onProfileSaved={refreshProfile}
-                />
-              )}
               {view === 'account' && (
                 <AccountView
                   onBack={() => setView('main')} onClose={onClose}
@@ -810,6 +878,14 @@ export default function SettingsPanel({ open, onClose }) {
                 <InfoView onBack={() => setView('main')} onClose={onClose}/>
               )}
             </motion.div>
+
+            {/* ── TRAINING MINI-SHEET ── */}
+            <TrainingMiniSheet
+              open={trainingOpen}
+              onClose={() => setTrainingOpen(false)}
+              profile={profile} user={user}
+              onProfileSaved={refreshProfile}
+            />
 
           </motion.div>
         </>
