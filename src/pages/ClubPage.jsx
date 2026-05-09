@@ -299,6 +299,12 @@ async function apiDeleteMatch(matchId) {
   if (error) throw error
 }
 
+async function apiCancelMatch(matchId) {
+  const { error } = await supabase.from('club_matches')
+    .update({ status: 'cancelled' }).eq('id', matchId)
+  if (error) throw error
+}
+
 async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds = []) {
   const { data: matches, error } = await supabase
     .from('club_matches')
@@ -1627,11 +1633,13 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 // ── MATCH DETAIL SHEET ────────────────────────────────────────────────────────
 function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoined, onLeft, onDeleted }) {
   const { profile, refreshProfile } = useAuth()
-  const [local,        setLocal]        = useState(match)
-  const [joining,      setJoining]      = useState(false)
-  const [leaving,      setLeaving]      = useState(false)
-  const [confirmLeave, setConfirmLeave] = useState(false)
-  const [err,          setErr]          = useState(null)
+  const [local,         setLocal]         = useState(match)
+  const [joining,       setJoining]       = useState(false)
+  const [leaving,       setLeaving]       = useState(false)
+  const [confirmLeave,  setConfirmLeave]  = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting,      setDeleting]      = useState(false)
+  const [err,           setErr]           = useState(null)
 
   const myPlayer = local.players.find(p => p.user_id === uid)
   const n = MODE_SLOTS[local.mode]
@@ -1650,6 +1658,22 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
     || 'Rywale'
   const awayTeamName = awayDisplayName
   const isCreator = local.created_by === uid
+  const awayHasPlayers = local.players.some(p => p.team === 'away')
+  // Creator can delete if no enemy joined, cancel if they did
+  const canCreatorRemove = isCreator && !isPast && local.status !== 'completed'
+
+  async function handleCreatorRemove() {
+    setDeleting(true); setErr(null)
+    try {
+      if (awayHasPlayers) {
+        await apiCancelMatch(local.id)
+        onDeleted?.(local.id)   // remove from list (status: cancelled hidden from feed)
+      } else {
+        await apiDeleteMatch(local.id)
+        onDeleted?.(local.id)
+      }
+    } catch (e) { setErr(e.message); setDeleting(false) }
+  }
 
   function getTeamSlots(team) {
     return Array.from({ length: n }, (_, i) => {
@@ -1954,6 +1978,64 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                 </motion.button>
               )}
             </div>
+          )}
+
+          {/* Creator: delete (no enemy) or cancel (enemy joined) */}
+          {canCreatorRemove && (
+            <AnimatePresence>
+              {!confirmDelete ? (
+                <motion.button
+                  key="del-trigger"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setConfirmDelete(true)}
+                  style={{ width: '100%', marginTop: 10, padding: '11px',
+                    borderRadius: 12, border: 'none', cursor: 'pointer',
+                    background: 'transparent',
+                    outline: `1px solid ${C.loss}30`,
+                    color: `${C.loss}88`, fontSize: 10.5, fontWeight: 700,
+                    letterSpacing: 0.5 }}>
+                  {awayHasPlayers ? 'Anuluj mecz' : 'Usuń spotkanie'}
+                </motion.button>
+              ) : (
+                <motion.div
+                  key="del-confirm"
+                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                  style={{ marginTop: 10, padding: '14px', borderRadius: 14,
+                    background: `${C.loss}0C`, border: `1px solid ${C.loss}35` }}>
+                  <p style={{ fontSize: 11.5, fontWeight: 700, color: C.text,
+                    margin: '0 0 4px', textAlign: 'center' }}>
+                    {awayHasPlayers ? 'Anulować mecz?' : 'Usunąć spotkanie?'}
+                  </p>
+                  <p style={{ fontSize: 10, color: C.sub, margin: '0 0 14px',
+                    textAlign: 'center', lineHeight: 1.5 }}>
+                    {awayHasPlayers
+                      ? 'Rywale zostaną powiadomieni. Brak W/L dla obu drużyn.'
+                      : 'Spotkanie zostanie trwale usunięte.'}
+                  </p>
+                  {err && <p style={{ fontSize: 10, color: C.loss, textAlign: 'center',
+                    margin: '0 0 10px' }}>{err}</p>}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <motion.button whileTap={{ scale: 0.96 }}
+                      onClick={() => setConfirmDelete(false)}
+                      style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none',
+                        cursor: 'pointer', background: C.surface,
+                        color: C.sub, fontSize: 11, fontWeight: 700 }}>
+                      Wróć
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.96 }}
+                      onClick={handleCreatorRemove} disabled={deleting}
+                      style={{ flex: 1, padding: '11px', borderRadius: 10, border: 'none',
+                        cursor: 'pointer', background: `${C.loss}18`,
+                        outline: `1px solid ${C.loss}50`,
+                        color: C.loss, fontSize: 11, fontWeight: 800,
+                        opacity: deleting ? 0.7 : 1 }}>
+                      {deleting ? '…' : awayHasPlayers ? 'Anuluj mecz' : 'Usuń'}
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           )}
         </div>
       </motion.div>
@@ -2381,6 +2463,8 @@ function MatchesPanel({ club, uid, isActive }) {
     for (const m of list) {
       if (m.status === 'completed' || m.status === 'cancelled') continue
       if (new Date(m.scheduled_at) > now) continue
+      // Skip if user snoozed this match ("Wpisz później")
+      if (localStorage.getItem(`hc_result_snooze_${m.id}_${uid}`)) continue
       const mySlot = m.players.find(p => p.user_id === uid)
       if (!mySlot) continue
       const home = m.players.filter(p => p.team === 'home').sort((a, b) => a.slot - b.slot)
@@ -2557,8 +2641,16 @@ function MatchesPanel({ club, uid, isActive }) {
         )}
         {sheet === 'result' && pending && (
           <ResultSheet key="result" match={pending}
-            onClose={() => { setSheet(null); setPending(null) }}
-            onSaved={(h, a) => updateMatch({ ...pending, status: 'completed', score_home: h, score_away: a })}/>
+            onClose={() => {
+              // "Wpisz później" — snooze this match until next app session
+              if (uid) localStorage.setItem(`hc_result_snooze_${pending.id}_${uid}`, '1')
+              setSheet(null); setPending(null)
+            }}
+            onSaved={(h, a) => {
+              // Clear snooze when actually saved
+              if (uid) localStorage.removeItem(`hc_result_snooze_${pending.id}_${uid}`)
+              updateMatch({ ...pending, status: 'completed', score_home: h, score_away: a })
+            }}/>
         )}
         {sheet === 'joinSuccess' && joinedMatch && (
           <JoinSuccessModal key="joinSuccess"
