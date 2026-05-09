@@ -26,10 +26,19 @@ export function AuthProvider({ children }) {
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else {
+      if (session?.user) {
+        // SIGNED_IN = fresh login after being logged out.
+        // Reset profileReady so AppShell waits for the profile fetch to complete
+        // before rendering (prevents "!profile → /onboarding" flash on re-login).
+        // TOKEN_REFRESHED = silent background refresh — don't retrigger spinner.
+        if (event === 'SIGNED_IN') {
+          profileReadyRef.current = false
+          setProfileReady(false)
+        }
+        fetchProfile(session.user.id)
+      } else {
         setProfile(null)
         setProfileReady(true)
         profileReadyRef.current = true
