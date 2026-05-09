@@ -29,3 +29,6 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Admin panel — local only, never deploy
+/admin/
