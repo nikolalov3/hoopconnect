@@ -412,6 +412,25 @@ async function apiSubmitHomeScore(matchId, scoreHome, scoreAway, autoComplete = 
         result_submitted_at: new Date().toISOString() }
   const { error } = await supabase.from('club_matches').update(update).eq('id', matchId)
   if (error) throw error
+  if (autoComplete) await awardMatchPoints(matchId)
+}
+
+// Award 20 pts to every player who participated in a completed match
+async function awardMatchPoints(matchId) {
+  const { data: players } = await supabase
+    .from('match_players')
+    .select('user_id')
+    .eq('match_id', matchId)
+  if (!players || players.length === 0) return
+  const today = new Date().toISOString().split('T')[0]
+  const rows = players.map(p => ({
+    user_id:  p.user_id,
+    points:   20,
+    source:   'match',
+    date:     today,
+    match_id: matchId,
+  }))
+  await supabase.from('points_log').insert(rows)
 }
 
 // Away captain confirms home's submitted score
@@ -419,6 +438,7 @@ async function apiConfirmAwayScore(matchId) {
   const { error } = await supabase.from('club_matches')
     .update({ status: 'completed' }).eq('id', matchId)
   if (error) throw error
+  await awardMatchPoints(matchId)
 }
 
 // Away captain disputes — scores don't match
@@ -1497,14 +1517,49 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 
   const canCreate = !!(mode && pin && date && time)
 
+  // Gap in minutes between match start times for each mode
+  const MODE_GAP = { '2v2': 45, '3v3': 75, '5v5': 75 }
+
   async function handleCreate() {
     if (!canCreate || saving) return
     setSaving(true); setErr(null)
     try {
+      const scheduledAt = new Date(`${date}T${time}`)
+
+      // ── Validate daily limit + time gap ────────────────────────────────────
+      const dayStart = new Date(`${date}T00:00:00`).toISOString()
+      const dayEnd   = new Date(`${date}T23:59:59`).toISOString()
+      const { data: todayMatches } = await supabase
+        .from('match_players')
+        .select('match_id, club_matches(scheduled_at, mode)')
+        .eq('user_id', uid)
+        .gte('club_matches.scheduled_at', dayStart)
+        .lte('club_matches.scheduled_at', dayEnd)
+        .not('club_matches', 'is', null)
+
+      const validToday = (todayMatches || []).filter(r => r.club_matches)
+
+      if (validToday.length >= 3) {
+        setErr('Możesz zagrać maksymalnie 3 mecze dziennie.')
+        setSaving(false); return
+      }
+
+      const gapMs = (MODE_GAP[mode] || 75) * 60 * 1000
+      const conflict = validToday.find(r => {
+        const other = new Date(r.club_matches.scheduled_at).getTime()
+        return Math.abs(scheduledAt.getTime() - other) < gapMs
+      })
+      if (conflict) {
+        const mins = MODE_GAP[mode] || 75
+        setErr(`Za mała przerwa między meczami. Odstęp musi wynosić co najmniej ${mins} minut.`)
+        setSaving(false); return
+      }
+      // ───────────────────────────────────────────────────────────────────────
+
       const match = await apiCreateMatch({
         clubId: club.id, createdBy: uid, mode,
         lat: pin.lat, lng: pin.lng, address: addr || null,
-        scheduledAt: new Date(`${date}T${time}`).toISOString(),
+        scheduledAt: scheduledAt.toISOString(),
         note: note.trim() || null,
       })
       onCreated(match)

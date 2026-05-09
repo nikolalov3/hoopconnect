@@ -531,8 +531,8 @@ export default function LeagueInfoPanel({ open, onClose }) {
               <SLabel>Źródła punktów</SLabel>
               <div style={{display:'flex',flexDirection:'column',gap:7,marginBottom:0}}>
                 {[
-                  { label:'Mecz klubowy',       sub:'Potwierdzony udział w meczu drużynowym',
-                    pts:'+50', weight:'×1.0', wC:'#00E676', accent:'#00E676' },
+                  { label:'Mecz klubowy',       sub:'Zagrany i potwierdzony mecz drużynowy · maks. 3 dziennie',
+                    pts:'+20', weight:'×1.0', wC:'#00E676', accent:'#00E676' },
                   { label:'Sesja rzutów',        sub:'Ukończona sesja rejestrowana w aplikacji',
                     pts:'+30', weight:'×1.0', wC:'#00E676', accent:'#00C870' },
                   { label:'Osiągnięcia',         sub:'Brąz +20 · Srebro +30 · Złoto +50 · Platyna +75 · Diament +100',
@@ -586,6 +586,8 @@ export default function LeagueInfoPanel({ open, onClose }) {
                   {title:'7 dni stażu',       body:'Musisz mieć pierwszy raport tygodniowy, by dołączyć do ligi'},
                   {title:'Start od pon.',     body:'Wchodzisz zawsze od początku nowego tygodnia — nie w trakcie'},
                   {title:'Fair play',         body:'Treningi liczą się z mnożnikiem ×0.5 · mecze i rzuty ×1.0'},
+                  {title:'Limit meczów',      body:'Maks. 3 mecze dziennie · punkty naliczane po potwierdzeniu wyniku'},
+                  {title:'Przerwa meczowa',   body:'3v3 / 5v5 — min. 75 min odstępu · 2v2 — min. 45 min odstępu'},
                 ].map(item=>(
                   <div key={item.title} style={{
                     padding:'11px 12px',
