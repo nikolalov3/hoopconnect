@@ -237,7 +237,8 @@ export async function checkTeamWinAchievements(userId, weekNumber) {
 }
 
 // ── PUNKTY ZA MEDALE ─────────────────────────────────────────────────────────
-export const MEDAL_POINTS = { bronze: 20, silver: 25, gold: 50, diamond: 75, platinum: 100 }
+// Kolejność: bronze < silver < gold < platinum < diamond (najwyższy)
+export const MEDAL_POINTS = { bronze: 20, silver: 25, gold: 50, platinum: 75, diamond: 100 }
 
 export async function awardMedalPoints(userId, medal, weekNumber, achievementId = null) {
   const pts = MEDAL_POINTS[medal]

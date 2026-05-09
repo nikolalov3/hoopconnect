@@ -9,8 +9,8 @@ const MEDAL_STYLE = {
   bronze:   { glow: 'rgba(205,127,50,0.40)'  },
   silver:   { glow: 'rgba(168,168,168,0.40)' },
   gold:     { glow: 'rgba(255,215,0,0.45)'   },
-  diamond:  { glow: 'rgba(91,184,245,0.50)'  },
   platinum: { glow: 'rgba(229,228,226,0.55)' },
+  diamond:  { glow: 'rgba(91,184,245,0.65)'  },  // highest tier
 }
 
 function titleFontSize(title) {
@@ -29,7 +29,7 @@ function AchievementModal({ achievement, onClose }) {
   const displayDescription = currentStage.description || description
   const medal = MEDAL_STYLE[currentStage.medal]
   const color = {
-    bronze: '#CD7F32', silver: '#A8A8A8', gold: '#FFD700', diamond: '#5BB8F5', platinum: '#E5E4E2',
+    bronze: '#CD7F32', silver: '#A8A8A8', gold: '#FFD700', platinum: '#E5E4E2', diamond: '#5BB8F5',
   }[currentStage.medal]
 
   return (
