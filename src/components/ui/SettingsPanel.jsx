@@ -332,18 +332,22 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
 
   async function handlePickFrame(id) {
     if (frameState === 'saving') return
+    const equipped = id === 'none' ? null : id
     setFrameId(id)
-    // Optimistic update — hero card w głównym widoku aktualizuje się natychmiast
-    onFrameChange?.(id === 'none' ? null : id)
+    // Optimistic: natychmiast zaktualizuj AuthContext — Token/PlayerSheet/SlotHex reagują
+    onFrameChange?.(equipped)
     setFrameState('saving')
     try {
-      const { error } = await supabase.from('profiles')
-        .update({ equipped_frame: id === 'none' ? null : id })
+      const { error, count } = await supabase.from('profiles')
+        .update({ equipped_frame: equipped })
         .eq('id', user.id)
+        .select('equipped_frame')   // wymusza zwrot danych zamiast null
       if (error) throw error
+      // Nie wywołujemy onProfileSaved/refreshProfile — re-fetch z DB cofnąłby
+      // optimistyczną zmianę gdyby RLS cicho zablokował zapis (0 wierszy).
+      // AuthContext jest już aktualny dzięki onFrameChange powyżej.
       setFrameState('saved')
-      onProfileSaved?.()
-      setTimeout(() => setFrameState('idle'), 1600)
+      setTimeout(() => setFrameState('idle'), 1400)
     } catch (e) {
       console.error('[SettingsPanel] handlePickFrame error:', e)
       // Revert optimistic update
