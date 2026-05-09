@@ -576,6 +576,7 @@ function Badge({ abbr = '?', size = 64 }) {
 const TK = 78  // token size px
 
 function Token({ posKey, member, onPress, swapMode, isSrc, isTgt }) {
+  const { profile, user } = useAuth()
   const pos = POS[posKey]
   const hi  = isSrc ? C.swap : pos.hi
   const lo  = isSrc ? '#083858' : pos.lo
@@ -604,7 +605,7 @@ function Token({ posKey, member, onPress, swapMode, isSrc, isTgt }) {
         )}
         {/* Sci-fi frame overlay — only for filled slots */}
         {member && !isSrc && !isTgt && (
-          <HexFrameOnly size={TK} variant={member.frame || 'none'} />
+          <HexFrameOnly size={TK} variant={(member.id === user?.id ? profile?.equipped_frame : member.frame) || 'none'} />
         )}
         <svg width={TK} height={TK} viewBox="0 0 90 90"
           style={{
@@ -876,6 +877,7 @@ function EmptySlotSheet({ club, posKey, onClose }) {
 
 // ── PLAYER PROFILE SHEET ──────────────────────────────────────────────────────
 function PlayerSheet({ club, posKey, member, isOwner, isSelf, onClose, onRemove, onLeave, removing }) {
+  const { profile } = useAuth()
   const pos = POS[posKey]
   const joinedDate = member?.joinedAt
     ? new Date(member.joinedAt).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -899,7 +901,7 @@ function PlayerSheet({ club, posKey, member, isOwner, isSelf, onClose, onRemove,
       {/* Avatar + name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
         <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
-          <HexFrameOnly size={64} variant={member?.frame || 'none'} />
+          <HexFrameOnly size={64} variant={(isSelf ? profile?.equipped_frame : member?.frame) || 'none'} />
           <svg width="64" height="64" viewBox="0 0 90 90"
             style={{ overflow: 'visible', position: 'relative', zIndex: 1,
               filter: `drop-shadow(0 6px 18px ${pos.glow.replace('0.55', '0.80')})` }}>
@@ -1849,7 +1851,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
           }
         </div>
         {/* Frame overlay — only on filled slots */}
-        {filled && <HexFrameOnly size={SZ} variant={player?.profile?.equipped_frame || 'none'} />}
+        {filled && <HexFrameOnly size={SZ} variant={(isMe ? profile?.equipped_frame : player?.profile?.equipped_frame) || 'none'} />}
       </div>
     )
   }
