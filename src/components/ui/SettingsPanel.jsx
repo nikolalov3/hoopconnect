@@ -5,25 +5,27 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import HexAvatar from './HexAvatar'
 
-// ── Design tokens (dark theme, matching app) ──────────────────────────────────
+// ── Design tokens ─────────────────────────────────────────────────────────────
+// Bardziej szary, przygaszone baby-blue ramki
 const C = {
-  bg:      '#04080F',
-  surface: '#08111E',
-  card:    '#0C1828',
-  border:  'rgba(255,255,255,0.07)',
-  borderT: 'rgba(255,255,255,0.12)',
+  bg:      '#0A0D13',
+  surface: '#111520',
+  card:    '#161C28',
+  border:  'rgba(85,145,205,0.13)',
+  borderT: 'rgba(85,145,205,0.22)',
   accent:  '#00CCFF',
+  bb:      'rgba(85,145,205,0.18)',   // baby-blue tło dla aktywnych
   orange:  '#FFA820',
-  text:    '#E0EEFF',
-  sub:     'rgba(180,210,240,0.45)',
-  dim:     'rgba(120,160,200,0.30)',
+  text:    '#D8E6F4',
+  sub:     'rgba(145,190,230,0.50)',
+  dim:     'rgba(85,140,195,0.35)',
   red:     '#FF5060',
   green:   '#00E890',
 }
 
 const SLIDE = { type: 'tween', duration: 0.26, ease: [0.16, 1, 0.3, 1] }
 const SHEET = { type: 'spring', stiffness: 340, damping: 38 }
-const APP_VERSION = '1.2.0-beta'
+const APP_VERSION = '1.2.1-beta'
 
 const DAY_SHORT = ['Nd', 'Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob']
 const SCHEDULES = {
@@ -33,15 +35,13 @@ const SCHEDULES = {
   6: ['T','T','T','R','T','T','T'],
 }
 
-// All available frames — id matches HexAvatar variant, label shown in picker
-// id:'none' = brak ramki (wariant 'none' → src: null w HexAvatar)
 const ALL_FRAMES = [
-  { id: 'none',         label: 'Brak'          },
-  { id: 'early_access', label: 'Early Access'  },
-  { id: 'diamond_s1',   label: 'Diament S1'    },
+  { id: 'none',         label: 'Brak'         },
+  { id: 'early_access', label: 'Early Access' },
+  { id: 'diamond_s1',   label: 'Diament S1'   },
 ]
 
-// ── Section label ─────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function SLabel({ children, style }) {
   return (
     <p style={{
@@ -52,19 +52,19 @@ function SLabel({ children, style }) {
   )
 }
 
-// ── Card row ──────────────────────────────────────────────────────────────────
-function Row({ label, sub, right, onClick, danger, noBorder }) {
+function Divider() {
+  return <div style={{ height: 1, background: C.border, margin: '20px 0' }}/>
+}
+
+function Row({ label, sub, right, onClick, danger }) {
   return (
     <button onClick={onClick} style={{
       display: 'flex', alignItems: 'center', gap: 12,
       padding: '13px 16px',
       background: C.card,
-      border: `1px solid ${C.border}`,
-      borderTop: `1px solid ${C.borderT}`,
-      borderRadius: 0,
-      width: '100%', cursor: onClick ? 'pointer' : 'default',
+      border: 'none', width: '100%',
+      cursor: onClick ? 'pointer' : 'default',
       textAlign: 'left', WebkitTapHighlightColor: 'transparent',
-      ...(noBorder && { border: 'none', borderTop: 'none' }),
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 13, fontWeight: 600, margin: 0,
@@ -81,12 +81,14 @@ function Row({ label, sub, right, onClick, danger, noBorder }) {
   )
 }
 
-// ── Card group (rounded corners on first/last) ────────────────────────────────
 function CardGroup({ children }) {
   const items = Array.isArray(children) ? children.filter(Boolean) : [children]
   return (
-    <div style={{ borderRadius: 14, overflow: 'hidden',
-      border: `1px solid ${C.border}`, borderTop: `1px solid ${C.borderT}` }}>
+    <div style={{
+      borderRadius: 14, overflow: 'hidden',
+      border: `1px solid ${C.border}`,
+      borderTop: `1px solid ${C.borderT}`,
+    }}>
       {items.map((child, i) => (
         <div key={i} style={{ borderTop: i > 0 ? `1px solid ${C.border}` : 'none' }}>
           {child}
@@ -96,7 +98,6 @@ function CardGroup({ children }) {
   )
 }
 
-// ── Sub-view header ───────────────────────────────────────────────────────────
 function SubHeader({ title, onBack, onClose }) {
   return (
     <div style={{
@@ -106,7 +107,7 @@ function SubHeader({ title, onBack, onClose }) {
     }}>
       <button onClick={onBack} style={{
         width: 30, height: 30, borderRadius: '50%',
-        background: 'rgba(255,255,255,0.06)', border: 'none',
+        background: 'rgba(255,255,255,0.05)', border: 'none',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         cursor: 'pointer', WebkitTapHighlightColor: 'transparent', flexShrink: 0,
       }}>
@@ -119,7 +120,7 @@ function SubHeader({ title, onBack, onClose }) {
         textTransform: 'uppercase', color: C.sub, margin: 0 }}>{title}</p>
       <button onClick={onClose} style={{
         width: 30, height: 30, borderRadius: '50%',
-        background: 'rgba(255,255,255,0.06)', border: 'none',
+        background: 'rgba(255,255,255,0.05)', border: 'none',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
       }}>
@@ -132,8 +133,7 @@ function SubHeader({ title, onBack, onClose }) {
   )
 }
 
-// ── Input field ───────────────────────────────────────────────────────────────
-function Field({ label, value, onChange, type = 'text', placeholder = '' }) {
+function Field({ label, value, onChange, placeholder = '' }) {
   return (
     <div style={{
       background: C.card,
@@ -144,7 +144,7 @@ function Field({ label, value, onChange, type = 'text', placeholder = '' }) {
       <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5,
         textTransform: 'uppercase', color: C.dim, margin: '0 0 5px' }}>{label}</p>
       <input
-        type={type} value={value}
+        value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         style={{
@@ -158,7 +158,6 @@ function Field({ label, value, onChange, type = 'text', placeholder = '' }) {
   )
 }
 
-// ── Primary button ────────────────────────────────────────────────────────────
 function PrimaryBtn({ label, onClick, disabled, state }) {
   const bg = state === 'saved' ? C.green : state === 'error' ? C.red : C.accent
   return (
@@ -176,59 +175,8 @@ function PrimaryBtn({ label, onClick, disabled, state }) {
   )
 }
 
-// ── Frame picker ──────────────────────────────────────────────────────────────
-function FramePicker({ current, uid, profile, onPick }) {
-  // 'none' is always available; other frames require localStorage unlock flag
-  const unlocked = useMemo(() => {
-    const frames = new Set(['none'])
-    if (uid && localStorage.getItem(`hc_frame_seen_early_access_${uid}`))
-      frames.add('early_access')
-    if (uid && localStorage.getItem(`hc_frame_seen_diamond_s1_${uid}`))
-      frames.add('diamond_s1')
-    return frames
-  }, [uid])
-
-  return (
-    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', paddingBottom: 4 }}>
-      {ALL_FRAMES.filter(f => unlocked.has(f.id)).map(f => {
-        // equipped_frame: null / undefined → 'none' is active
-        const equippedVariant = current || 'none'
-        const active = equippedVariant === f.id
-        return (
-          <motion.button key={f.id} whileTap={{ scale: 0.93 }}
-            onClick={() => onPick(f.id)}
-            style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: 0, WebkitTapHighlightColor: 'transparent',
-            }}>
-            <div style={{
-              width: 68, height: 68, borderRadius: 10,
-              background: active ? `rgba(0,204,255,0.10)` : 'rgba(255,255,255,0.03)',
-              border: active ? `2px solid ${C.accent}` : `2px solid ${C.border}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'border-color 0.15s',
-            }}>
-              <HexAvatar
-                name={profile?.name}
-                variant={f.id}
-                size={48}
-                noAnim
-              />
-            </div>
-            <p style={{
-              fontSize: 9, fontWeight: active ? 800 : 500, letterSpacing: 0.5,
-              color: active ? C.accent : C.sub, margin: 0, textAlign: 'center',
-            }}>{f.label}</p>
-          </motion.button>
-        )
-      })}
-    </div>
-  )
-}
-
 // ── Week picker ───────────────────────────────────────────────────────────────
-function WeekPicker({ trainingDays, open }) {
+function WeekPicker({ trainingDays }) {
   const maxDays = trainingDays || 4
   const days = useMemo(() => {
     const today = new Date()
@@ -242,12 +190,12 @@ function WeekPicker({ trainingDays, open }) {
       const dow = d.getDay(); const idx = dow === 0 ? 6 : dow - 1
       return schedule[idx] === 'T' ? i : null
     }).filter(i => i !== null)
-  ), [])
+  ), [maxDays])
   const [selected, setSelected] = useState(initSelected)
   const [showWarn, setShowWarn] = useState(false)
-  useEffect(() => {
-    if (!open && selected.size !== maxDays) { setSelected(new Set(initSelected)); setShowWarn(false) }
-  }, [open])
+
+  useEffect(() => { setSelected(initSelected); setShowWarn(false) }, [maxDays])
+
   function toggle(i) {
     setShowWarn(false)
     setSelected(prev => {
@@ -258,6 +206,7 @@ function WeekPicker({ trainingDays, open }) {
       return next
     })
   }
+
   return (
     <div>
       <div style={{ display: 'flex', gap: 5 }}>
@@ -269,11 +218,11 @@ function WeekPicker({ trainingDays, open }) {
               alignItems: 'center', justifyContent: 'center', gap: 4,
               padding: '10px 0 8px', borderRadius: 10,
               border: isToday
-                ? `1.5px solid ${isSel ? C.orange : 'rgba(255,168,32,0.40)' }`
-                : `1.5px solid ${isSel ? C.accent + '80' : C.border}`,
+                ? `1.5px solid ${isSel ? C.orange : 'rgba(255,168,32,0.35)'}`
+                : `1.5px solid ${isSel ? C.border : C.border}`,
               background: isSel
-                ? isToday ? 'rgba(255,168,32,0.18)' : 'rgba(0,204,255,0.12)'
-                : 'rgba(255,255,255,0.025)',
+                ? isToday ? 'rgba(255,168,32,0.14)' : C.bb
+                : 'rgba(255,255,255,0.02)',
               cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
               transition: 'all 0.15s',
             }}>
@@ -300,31 +249,80 @@ function WeekPicker({ trainingDays, open }) {
   )
 }
 
+// ── Frame picker ──────────────────────────────────────────────────────────────
+function FramePicker({ current, uid, profile, onPick }) {
+  const unlocked = useMemo(() => {
+    const frames = new Set(['none'])
+    if (uid && localStorage.getItem(`hc_frame_seen_early_access_${uid}`)) frames.add('early_access')
+    if (uid && localStorage.getItem(`hc_frame_seen_diamond_s1_${uid}`))   frames.add('diamond_s1')
+    return frames
+  }, [uid])
+
+  return (
+    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      {ALL_FRAMES.filter(f => unlocked.has(f.id)).map(f => {
+        const active = (current || 'none') === f.id
+        return (
+          <motion.button key={f.id} whileTap={{ scale: 0.93 }}
+            onClick={() => onPick(f.id)}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: 0, WebkitTapHighlightColor: 'transparent',
+            }}>
+            <div style={{
+              width: 68, height: 68, borderRadius: 10,
+              background: active ? C.bb : 'rgba(255,255,255,0.025)',
+              border: active ? `2px solid ${C.accent}` : `2px solid ${C.border}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+            }}>
+              <HexAvatar name={profile?.name} variant={f.id} size={48} noAnim/>
+            </div>
+            <p style={{
+              fontSize: 9, fontWeight: active ? 800 : 500, letterSpacing: 0.5,
+              color: active ? C.accent : C.sub, margin: 0, textAlign: 'center',
+            }}>{f.label}</p>
+          </motion.button>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Sub-view: Edytuj profil ───────────────────────────────────────────────────
+// Zawiera: dane profilowe + plan tygodnia + ramka avatara
 function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFrameChange }) {
+  const uid = user?.id
   const [name,       setName]       = useState(profile?.name || '')
   const [city,       setCity]       = useState(profile?.city || '')
+  const [days,       setDays]       = useState(() => {
+    const cached = uid ? +localStorage.getItem(`hc_tdays_${uid}`) : 0
+    return cached || profile?.training_days || 4
+  })
   const [saveState,  setSaveState]  = useState('idle')
   const [frameId,    setFrameId]    = useState(profile?.equipped_frame || 'none')
-  const [frameState, setFrameState] = useState('idle') // idle | saving | saved | error
+  const [frameState, setFrameState] = useState('idle')
 
   const dirty = name.trim() !== (profile?.name || '').trim()
     || city.trim() !== (profile?.city || '').trim()
+    || days !== (profile?.training_days || 4)
 
   async function handleSave() {
     setSaveState('saving')
     try {
       const { error } = await supabase.from('profiles').update({
-        name: name.trim(),
-        city: city.trim() || null,
-        equipped_frame: frameId === 'none' ? null : frameId,
-      }).eq('id', user.id)
+        name:          name.trim(),
+        city:          city.trim() || null,
+        training_days: days,
+      }).eq('id', uid)
       if (error) throw error
+      if (uid) localStorage.setItem(`hc_tdays_${uid}`, String(days))
       setSaveState('saved')
       onProfileSaved?.()
       setTimeout(() => setSaveState('idle'), 2000)
     } catch (e) {
-      console.error('[SettingsPanel] handleSave error:', e)
+      console.error('[EditProfileView] handleSave:', e)
       setSaveState('error')
       setTimeout(() => setSaveState('idle'), 2000)
     }
@@ -334,23 +332,18 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
     if (frameState === 'saving') return
     const equipped = id === 'none' ? null : id
     setFrameId(id)
-    // Optimistic: natychmiast zaktualizuj AuthContext — Token/PlayerSheet/SlotHex reagują
     onFrameChange?.(equipped)
     setFrameState('saving')
     try {
-      const { error, count } = await supabase.from('profiles')
+      const { error } = await supabase.from('profiles')
         .update({ equipped_frame: equipped })
-        .eq('id', user.id)
-        .select('equipped_frame')   // wymusza zwrot danych zamiast null
+        .eq('id', uid)
+        .select('equipped_frame')
       if (error) throw error
-      // Nie wywołujemy onProfileSaved/refreshProfile — re-fetch z DB cofnąłby
-      // optimistyczną zmianę gdyby RLS cicho zablokował zapis (0 wierszy).
-      // AuthContext jest już aktualny dzięki onFrameChange powyżej.
       setFrameState('saved')
       setTimeout(() => setFrameState('idle'), 1400)
     } catch (e) {
-      console.error('[SettingsPanel] handlePickFrame error:', e)
-      // Revert optimistic update
+      console.error('[EditProfileView] handlePickFrame:', e)
       setFrameId(profile?.equipped_frame || 'none')
       onFrameChange?.(profile?.equipped_frame ?? null)
       setFrameState('error')
@@ -362,21 +355,54 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <SubHeader title="Edytuj profil" onBack={onBack} onClose={onClose}/>
       <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch',
-        padding: '0 18px 36px' }}>
+        padding: '0 18px 40px' }}>
 
+        {/* ── Dane profilowe ── */}
         <SLabel>Dane profilowe</SLabel>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <Field label="Imię / Nazwa" value={name} onChange={setName} placeholder="Twoja nazwa"/>
           <Field label="Miasto" value={city} onChange={setCity} placeholder="np. Warszawa"/>
         </div>
 
+        {/* ── Plan tygodnia ── */}
+        <Divider/>
+        <SLabel style={{ margin: '0 0 12px 2px' }}>Plan tygodnia</SLabel>
+
+        {/* Wybór liczby dni */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {[3, 4, 5, 6].map(n => (
+            <button key={n} onClick={() => setDays(n)} style={{
+              flex: 1, padding: '11px 0',
+              background: days === n ? C.bb : 'rgba(255,255,255,0.025)',
+              border: `1.5px solid ${days === n ? C.accent + '70' : C.border}`,
+              borderRadius: 10, cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent', transition: 'all 0.15s',
+            }}>
+              <p style={{ fontSize: 19, fontWeight: 900, margin: 0,
+                color: days === n ? C.accent : C.sub,
+                fontFamily: 'var(--font-display)' }}>{n}</p>
+              <p style={{ fontSize: 8, color: C.dim, margin: '1px 0 0', letterSpacing: 0.5 }}>dni</p>
+            </button>
+          ))}
+        </div>
+
+        {/* WeekPicker */}
+        <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase',
+          color: C.dim, margin: '0 0 8px 2px' }}>Ten tydzień</p>
+        <WeekPicker trainingDays={days}/>
+
+        {/* Przycisk zapisz (profil + plan) */}
         <AnimatePresence>
           {(dirty || saveState !== 'idle') && (
             <motion.div
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              style={{ marginTop: 12 }}>
+              style={{ marginTop: 14 }}>
               <PrimaryBtn
-                label={saveState === 'saved' ? '✓ Zapisano' : saveState === 'error' ? 'Błąd — spróbuj ponownie' : saveState === 'saving' ? 'Zapisywanie…' : 'Zapisz zmiany'}
+                label={
+                  saveState === 'saved'  ? '✓ Zapisano' :
+                  saveState === 'error'  ? 'Błąd — spróbuj ponownie' :
+                  saveState === 'saving' ? 'Zapisywanie…' : 'Zapisz zmiany'
+                }
                 onClick={handleSave}
                 disabled={saveState === 'saving'}
                 state={saveState}
@@ -385,165 +411,31 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
           )}
         </AnimatePresence>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 10 }}>
+        {/* ── Ramka avatara ── */}
+        <Divider/>
+        <div style={{ display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', marginBottom: 12 }}>
           <SLabel style={{ margin: 0 }}>Ramka avatara</SLabel>
           <AnimatePresence>
             {frameState !== 'idle' && (
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 style={{ fontSize: 10, fontWeight: 700, margin: 0,
-                  color: frameState === 'error' ? C.red : frameState === 'saving' ? C.dim : C.green }}>
-                {frameState === 'error' ? '✗ Błąd zapisu' : frameState === 'saving' ? '…' : '✓ Zmieniono'}
+                  color: frameState === 'error' ? C.red
+                       : frameState === 'saving' ? C.dim : C.green }}>
+                {frameState === 'error' ? '✗ Błąd' : frameState === 'saving' ? '…' : '✓ Zmieniono'}
               </motion.p>
             )}
           </AnimatePresence>
         </div>
-        <FramePicker current={frameId} uid={user?.id} profile={profile} onPick={handlePickFrame}/>
+        <FramePicker current={frameId} uid={uid} profile={profile} onPick={handlePickFrame}/>
 
       </div>
     </div>
   )
 }
 
-// ── Mini-sheet: Plan tygodnia ─────────────────────────────────────────────────
-// Wysuwa się z dołu WEWNĄTRZ panelu ustawień (position:absolute, bottom:0).
-function TrainingMiniSheet({ open, onClose, profile, user, onProfileSaved }) {
-  const uid = user?.id
-  // Inicjalizuj z localStorage (instant) → nadpisz profilem z DB gdy dostępny
-  const [days, setDays] = useState(() => {
-    const cached = uid ? +localStorage.getItem(`hc_tdays_${uid}`) : 0
-    return cached || profile?.training_days || 4
-  })
-  const [saveState, setSaveState] = useState('idle')
-
-  useEffect(() => {
-    if (open && profile?.training_days) setDays(profile.training_days)
-  }, [open])
-
-  async function handleSaveDays() {
-    setSaveState('saving')
-    try {
-      const { error } = await supabase.from('profiles')
-        .update({ training_days: days }).eq('id', user.id)
-      if (error) throw error
-      if (uid) localStorage.setItem(`hc_tdays_${uid}`, String(days))
-      setSaveState('saved')
-      onProfileSaved?.()
-      setTimeout(() => { setSaveState('idle'); onClose() }, 1000)
-    } catch { setSaveState('error'); setTimeout(() => setSaveState('idle'), 2000) }
-  }
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <>
-          {/* Półprzezroczysty overlay na treść panelu */}
-          <motion.div
-            key="tr-bd"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            onClick={onClose}
-            style={{
-              position: 'absolute', inset: 0, zIndex: 9,
-              background: 'rgba(4,8,15,0.55)',
-            }}
-          />
-          {/* Mini-sheet */}
-          <motion.div
-            key="tr-sheet"
-            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-            transition={SHEET}
-            style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10,
-              background: C.surface,
-              borderRadius: '18px 18px 0 0',
-              borderTop: `1px solid ${C.borderT}`,
-              padding: '0 18px 48px',
-              overflowY: 'auto', WebkitOverflowScrolling: 'touch',
-            }}
-          >
-            {/* Handle */}
-            <div style={{
-              width: 32, height: 4, borderRadius: 2,
-              background: 'rgba(255,255,255,0.14)',
-              margin: '10px auto 18px',
-            }}/>
-
-            {/* Nagłówek */}
-            <div style={{ display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between', marginBottom: 18 }}>
-              <p style={{
-                fontSize: 11, fontWeight: 800, letterSpacing: 2,
-                textTransform: 'uppercase', color: C.sub, margin: 0,
-              }}>Plan tygodnia</p>
-              <button onClick={onClose} style={{
-                width: 28, height: 28, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.06)', border: 'none',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
-              }}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-                  stroke={C.sub} strokeWidth="2.8" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-
-            {/* Wybór liczby dni */}
-            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5,
-              textTransform: 'uppercase', color: C.dim, margin: '0 0 10px 2px' }}>
-              Dni w tygodniu
-            </p>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-              {[3, 4, 5, 6].map(n => (
-                <button key={n} onClick={() => setDays(n)} style={{
-                  flex: 1, padding: '12px 0',
-                  background: days === n ? 'rgba(0,204,255,0.12)' : 'rgba(255,255,255,0.025)',
-                  border: `1.5px solid ${days === n ? C.accent + '80' : C.border}`,
-                  borderRadius: 10, cursor: 'pointer',
-                  WebkitTapHighlightColor: 'transparent',
-                  transition: 'all 0.15s',
-                }}>
-                  <p style={{ fontSize: 20, fontWeight: 900, margin: 0,
-                    color: days === n ? C.accent : C.sub,
-                    fontFamily: 'var(--font-display)' }}>{n}</p>
-                  <p style={{ fontSize: 8, color: C.dim, margin: '2px 0 0',
-                    letterSpacing: 0.5 }}>dni</p>
-                </button>
-              ))}
-            </div>
-
-            {/* WeekPicker */}
-            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5,
-              textTransform: 'uppercase', color: C.dim, margin: '0 0 10px 2px' }}>
-              Ten tydzień
-            </p>
-            <WeekPicker trainingDays={days} open={open}/>
-
-            {/* Zapisz — tylko gdy zmieniono */}
-            <AnimatePresence>
-              {days !== (profile?.training_days || 4) && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                  style={{ marginTop: 16 }}>
-                  <PrimaryBtn
-                    label={saveState === 'saved' ? '✓ Zapisano' : saveState === 'saving' ? 'Zapisywanie…' : 'Zapisz'}
-                    onClick={handleSaveDays}
-                    disabled={saveState === 'saving'}
-                    state={saveState}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  )
-}
-
 // ── Sub-view: Konto ───────────────────────────────────────────────────────────
-function AccountView({ onBack, onClose, profile, user }) {
+function AccountView({ onBack, onClose, user }) {
   const [pwState,  setPwState]  = useState('idle')
   const [delState, setDelState] = useState('idle')
 
@@ -575,7 +467,8 @@ function AccountView({ onBack, onClose, profile, user }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-                  stroke={user?.email_confirmed_at ? C.green : C.red} strokeWidth="3" strokeLinecap="round">
+                  stroke={user?.email_confirmed_at ? C.green : C.red}
+                  strokeWidth="3" strokeLinecap="round">
                   {user?.email_confirmed_at
                     ? <polyline points="20 6 9 17 4 12"/>
                     : <><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>}
@@ -588,7 +481,7 @@ function AccountView({ onBack, onClose, profile, user }) {
         <SLabel>Hasło</SLabel>
         <CardGroup>
           <Row
-            label={pwState === 'sent' ? '✓ Link wysłany na email' : pwState === 'error' ? 'Błąd — spróbuj ponownie' : 'Zmień hasło'}
+            label={pwState === 'sent' ? '✓ Link wysłany' : pwState === 'error' ? 'Błąd — spróbuj ponownie' : 'Zmień hasło'}
             sub={pwState === 'idle' ? 'Link resetujący wysyłamy na Twój email' : undefined}
             onClick={pwState === 'idle' ? handlePasswordReset : undefined}
           />
@@ -601,8 +494,7 @@ function AccountView({ onBack, onClose, profile, user }) {
           </CardGroup>
         ) : (
           <div style={{
-            background: 'rgba(255,80,96,0.06)',
-            border: `1px solid rgba(255,80,96,0.18)`,
+            background: 'rgba(255,80,96,0.06)', border: `1px solid rgba(255,80,96,0.18)`,
             borderRadius: 12, padding: '14px 16px',
           }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: C.red, margin: '0 0 4px' }}>Czy na pewno?</p>
@@ -660,14 +552,56 @@ function InfoView({ onBack, onClose }) {
   )
 }
 
+// ── Discord card (featured, tuż pod profilem) ─────────────────────────────────
+function DiscordCard() {
+  return (
+    <a href="https://discord.gg/wZrDcRea" target="_blank" rel="noopener noreferrer"
+      style={{ textDecoration: 'none', display: 'block' }}>
+      <motion.div whileTap={{ scale: 0.985 }} style={{
+        display: 'flex', alignItems: 'center', gap: 13,
+        padding: '13px 16px',
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderTop: `1px solid ${C.borderT}`,
+        borderRadius: 16,
+      }}>
+        {/* Icon */}
+        <div style={{
+          width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+          background: 'rgba(88,101,242,0.12)',
+          border: '1px solid rgba(88,101,242,0.20)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#7289DA">
+            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+          </svg>
+        </div>
+        {/* Text */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: 0 }}>
+            Dołącz na Discord
+          </p>
+          <p style={{ fontSize: 10, color: C.sub, margin: '2px 0 0' }}>
+            Społeczność HoopConnect
+          </p>
+        </div>
+        {/* Arrow */}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke={C.dim} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </motion.div>
+    </a>
+  )
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function SettingsPanel({ open, onClose }) {
   const { profile, user, signOut, refreshProfile, setProfileData } = useAuth()
-  const [view,         setView]         = useState('main')
-  const [trainingOpen, setTrainingOpen] = useState(false)
+  const [view, setView] = useState('main')
 
   useEffect(() => {
-    if (!open) setTimeout(() => { setView('main'); setTrainingOpen(false) }, 300)
+    if (!open) setTimeout(() => setView('main'), 300)
   }, [open])
 
   async function handleSignOut() { onClose(); await signOut() }
@@ -689,7 +623,7 @@ export default function SettingsPanel({ open, onClose }) {
             onClick={onClose}
             style={{
               position: 'fixed', inset: 0, zIndex: 500,
-              background: 'rgba(4,8,15,0.72)',
+              background: 'rgba(4,8,15,0.75)',
               backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
             }}
           />
@@ -699,15 +633,13 @@ export default function SettingsPanel({ open, onClose }) {
             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
             transition={SHEET}
             style={{
-              position: 'fixed',
-              bottom: 0,
+              position: 'fixed', bottom: 0,
               left: 'max(0px, calc((100vw - 430px) / 2))',
               width: 'min(100vw, 430px)',
-              height: '92%',
-              zIndex: 501,
+              height: '92%', zIndex: 501,
               borderRadius: '20px 20px 0 0',
               background: C.bg,
-              boxShadow: '0 -8px 60px rgba(0,0,0,0.6)',
+              boxShadow: '0 -8px 60px rgba(0,0,0,0.65)',
               overflow: 'hidden',
               display: 'flex', flexDirection: 'column',
             }}>
@@ -715,7 +647,7 @@ export default function SettingsPanel({ open, onClose }) {
             {/* Drag handle */}
             <div style={{
               width: 36, height: 4, borderRadius: 2,
-              background: 'rgba(255,255,255,0.14)',
+              background: 'rgba(255,255,255,0.12)',
               margin: '12px auto 0', flexShrink: 0,
             }}/>
 
@@ -729,51 +661,42 @@ export default function SettingsPanel({ open, onClose }) {
                 overflowY: 'auto', WebkitOverflowScrolling: 'touch',
               }}>
 
-              {/* ── Profile hero ── */}
-              <div style={{ padding: '16px 22px 0' }}>
+              {/* Profile hero */}
+              <div style={{ padding: '16px 18px 0' }}>
                 <div style={{
                   background: C.surface,
                   border: `1px solid ${C.border}`,
                   borderTop: `1px solid ${C.borderT}`,
                   borderRadius: 18, padding: '18px 16px',
-                  display: 'flex', alignItems: 'center', gap: 16,
+                  display: 'flex', alignItems: 'center', gap: 14,
                 }}>
-                  {/* Avatar */}
                   <div style={{ flexShrink: 0 }}>
-                    <HexAvatar
-                      name={profile?.name}
-                      variant={profile?.equipped_frame || 'none'}
-                      size={72}
-                    />
+                    <HexAvatar name={profile?.name} variant={profile?.equipped_frame || 'none'} size={70}/>
                   </div>
-
-                  {/* Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 18, fontWeight: 800, color: C.text, margin: 0,
-                      fontFamily: 'var(--font-display)', letterSpacing: 0.5,
+                      fontFamily: 'var(--font-display)', letterSpacing: 0.4,
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {profile?.name || 'Gracz'}
                     </p>
-                    <p style={{ fontSize: 10.5, color: C.sub, margin: '3px 0 0',
+                    <p style={{ fontSize: 10, color: C.sub, margin: '3px 0 0',
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {user?.email}
                     </p>
                     {memberSince && (
-                      <p style={{ fontSize: 9.5, color: C.accent, fontWeight: 600,
+                      <p style={{ fontSize: 9, color: C.accent, fontWeight: 600,
                         letterSpacing: 0.5, margin: '5px 0 0' }}>
                         Beta · {memberSince}
                       </p>
                     )}
                   </div>
-
-                  {/* Edit button */}
                   <motion.button whileTap={{ scale: 0.93 }}
                     onClick={() => setView('editProfile')}
                     style={{
                       flexShrink: 0, padding: '7px 14px',
-                      background: 'rgba(0,204,255,0.10)',
-                      border: `1px solid ${C.accent}30`,
-                      borderTop: `1px solid ${C.accent}50`,
+                      background: C.bb,
+                      border: `1px solid ${C.border}`,
+                      borderTop: `1px solid ${C.borderT}`,
                       borderRadius: 8, cursor: 'pointer',
                       WebkitTapHighlightColor: 'transparent',
                     }}>
@@ -783,54 +706,19 @@ export default function SettingsPanel({ open, onClose }) {
                 </div>
               </div>
 
-              {/* ── Sections ── */}
-              <div style={{ padding: '0 22px', flex: 1 }}>
+              {/* Discord — tuż pod profilem */}
+              <div style={{ padding: '10px 18px 0' }}>
+                <DiscordCard/>
+              </div>
 
-                <SLabel>Trening</SLabel>
-                <CardGroup>
-                  <Row
-                    label="Plan tygodnia"
-                    sub={`${profile?.training_days || 4} dni treningowych`}
-                    onClick={() => setTrainingOpen(true)}
-                  />
-                </CardGroup>
+              {/* Sekcje */}
+              <div style={{ padding: '0 18px', flex: 1 }}>
 
                 <SLabel>Konto</SLabel>
                 <CardGroup>
                   <Row label="Ustawienia konta" sub="Email · Hasło · Usuń konto" onClick={() => setView('account')}/>
                   <Row label="Język" sub="Polski" onClick={() => setView('language')}/>
                 </CardGroup>
-
-                <SLabel>Społeczność</SLabel>
-                <a href="https://discord.gg/wZrDcRea" target="_blank" rel="noopener noreferrer"
-                  style={{ textDecoration: 'none' }}>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '13px 16px',
-                    background: C.card,
-                    border: `1px solid ${C.border}`,
-                    borderTop: `1px solid ${C.borderT}`,
-                    borderRadius: 12,
-                  }}>
-                    <div style={{
-                      width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-                      background: 'rgba(88,101,242,0.15)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#5865F2">
-                        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
-                      </svg>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: C.text, margin: 0 }}>Dołącz na Discord</p>
-                      <p style={{ fontSize: 10, color: C.sub, margin: '2px 0 0' }}>Społeczność HoopConnect</p>
-                    </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                      stroke={C.dim} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </div>
-                </a>
 
                 <SLabel>Inne</SLabel>
                 <CardGroup>
@@ -839,8 +727,8 @@ export default function SettingsPanel({ open, onClose }) {
 
               </div>
 
-              {/* Sign out + version */}
-              <div style={{ padding: '24px 22px 40px', textAlign: 'center' }}>
+              {/* Sign out */}
+              <div style={{ padding: '24px 18px 44px', textAlign: 'center' }}>
                 <button onClick={handleSignOut} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   fontSize: 12, fontWeight: 600, color: C.red,
@@ -864,6 +752,7 @@ export default function SettingsPanel({ open, onClose }) {
                 display: 'flex', flexDirection: 'column',
                 pointerEvents: isMain ? 'none' : 'all',
               }}>
+
               {view === 'editProfile' && (
                 <EditProfileView
                   onBack={() => setView('main')} onClose={onClose}
@@ -873,10 +762,7 @@ export default function SettingsPanel({ open, onClose }) {
                 />
               )}
               {view === 'account' && (
-                <AccountView
-                  onBack={() => setView('main')} onClose={onClose}
-                  profile={profile} user={user}
-                />
+                <AccountView onBack={() => setView('main')} onClose={onClose} user={user}/>
               )}
               {view === 'language' && (
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -901,15 +787,8 @@ export default function SettingsPanel({ open, onClose }) {
               {view === 'info' && (
                 <InfoView onBack={() => setView('main')} onClose={onClose}/>
               )}
-            </motion.div>
 
-            {/* ── TRAINING MINI-SHEET ── */}
-            <TrainingMiniSheet
-              open={trainingOpen}
-              onClose={() => setTrainingOpen(false)}
-              profile={profile} user={user}
-              onProfileSaved={refreshProfile}
-            />
+            </motion.div>
 
           </motion.div>
         </>
