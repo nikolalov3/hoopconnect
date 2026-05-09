@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { creditRestDayStreak } from '../lib/streak'
+import { checkTeamWinAchievements } from '../lib/achievements'
 import { shareMatchCard, doShare } from '../lib/shareCard'
 import HexAvatar, { HexFrameOnly } from '../components/ui/HexAvatar'
 import L from 'leaflet'
@@ -420,6 +421,7 @@ async function apiSubmitHomeScore(matchId, scoreHome, scoreAway, autoComplete = 
 }
 
 // Award 20 pts to every player who participated in a completed match
+// and check team win achievements for each player
 async function awardMatchPoints(matchId) {
   const { data: players } = await supabase
     .from('match_players')
@@ -435,6 +437,10 @@ async function awardMatchPoints(matchId) {
     match_id: matchId,
   }))
   await supabase.from('points_log').insert(rows)
+  // Check team win achievements for all players (fire-and-forget, no await)
+  for (const p of players) {
+    checkTeamWinAchievements(p.user_id, null).catch(() => {})
+  }
 }
 
 // Away captain confirms home's submitted score

@@ -181,6 +181,61 @@ export async function revokeShotAchievementsIfNeeded(userId, shotType) {
   return allRevoked
 }
 
+// ── ZWYCIĘSTWA DRUŻYNOWE ──────────────────────────────────────────────────────
+// Sprawdza osiągnięcia za wygrane mecze drużynowe.
+// Liczy mecze gdzie gracz uczestniczył i jego drużyna wygrała.
+// Wywołuj po każdym zatwierdzonym wyniku meczu.
+
+export async function checkTeamWinAchievements(userId, weekNumber) {
+  const catalog = await fetchAchievementsCatalog()
+  const ach = catalog.find(a => a.id === 'teamwin')
+  if (!ach) return []
+
+  // Pobierz wszystkie mecze użytkownika
+  const { data: playerRows } = await supabase
+    .from('match_players')
+    .select('match_id, team')
+    .eq('user_id', userId)
+  if (!playerRows?.length) return []
+
+  const matchIds = playerRows.map(r => r.match_id)
+  const { data: completedMatches } = await supabase
+    .from('club_matches')
+    .select('id, score_home, score_away, walkover')
+    .in('id', matchIds)
+    .eq('status', 'completed')
+    .is('walkover', null)   // walkover nie liczy się jako prawdziwe zwycięstwo
+
+  const teamMap = Object.fromEntries(playerRows.map(r => [r.match_id, r.team]))
+  let wins = 0
+  for (const m of (completedMatches || [])) {
+    if (m.score_home == null || m.score_away == null) continue
+    const team = teamMap[m.id]
+    const won = team === 'home' ? m.score_home > m.score_away : m.score_away > m.score_home
+    if (won) wins++
+  }
+
+  const { data: existing } = await supabase
+    .from('user_achievements')
+    .select('achievement_id')
+    .eq('user_id', userId)
+  const unlockedIds = new Set((existing || []).map(a => a.achievement_id))
+
+  const newlyUnlocked = []
+  for (const stage of (ach.stages || [])) {
+    const key = `${ach.id}_${stage.medal}`
+    if (wins >= stage.threshold && !unlockedIds.has(key)) {
+      await supabase.from('user_achievements').insert({
+        user_id: userId, achievement_id: key, base_id: ach.id,
+      })
+      unlockedIds.add(key)
+      newlyUnlocked.push({ title: ach.title, stage, total: wins })
+      await awardMedalPoints(userId, stage.medal, weekNumber, key)
+    }
+  }
+  return newlyUnlocked
+}
+
 // ── PUNKTY ZA MEDALE ─────────────────────────────────────────────────────────
 export const MEDAL_POINTS = { bronze: 20, silver: 25, gold: 50, diamond: 75, platinum: 100 }
 
