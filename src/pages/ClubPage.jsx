@@ -55,6 +55,7 @@ const COURT_PATH = 'M24,0 L319,0 Q319,24 343,24 L343,386 Q319,386 319,410 L24,41
 const MODE_SLOTS = { '2v2': 2, '3v3': 3, '5v5': 5 }
 const MODE_LABEL = { '2v2': '2 na 2', '3v3': '3 na 3', '5v5': '5 na 5' }
 const MODE_COLOR = { '2v2': '#9050FF', '3v3': '#00CCFF', '5v5': '#FFA820' }
+const MODE_GAP   = { '2v2': 45, '3v3': 75, '5v5': 75 }  // min between match start times
 
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371, r = Math.PI / 180
@@ -325,20 +326,22 @@ async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds 
   const { data: players } = await supabase.from('match_players').select('*').in('match_id', ids)
 
   const uids = [...new Set((players || []).map(p => p.user_id))]
-  let profileRows = []
-  if (uids.length) {
-    const { data: pd } = await supabase.from('profiles').select('id,name').in('id', uids)
-    profileRows = pd || []
-  }
-  const pm = Object.fromEntries(profileRows.map(p => [p.id, p]))
-
-  // Fetch home + away club names
   const allClubIds = [...new Set([
     ...visible.map(m => m.club_id),
     ...visible.filter(m => m.away_club_id).map(m => m.away_club_id),
   ].filter(Boolean))]
-  const { data: clubRows } = await supabase.from('clubs').select('id,name,abbr,country_flag').in('id', allClubIds)
-  const cm = Object.fromEntries((clubRows || []).map(c => [c.id, c]))
+
+  // profiles + clubs are independent — fetch in parallel
+  const [profileRows, clubRows] = await Promise.all([
+    uids.length
+      ? supabase.from('profiles').select('id,name,equipped_frame').in('id', uids).then(r => r.data || [])
+      : Promise.resolve([]),
+    allClubIds.length
+      ? supabase.from('clubs').select('id,name,abbr,country_flag').in('id', allClubIds).then(r => r.data || [])
+      : Promise.resolve([]),
+  ])
+  const pm = Object.fromEntries(profileRows.map(p => [p.id, p]))
+  const cm = Object.fromEntries(clubRows.map(c => [c.id, c]))
 
   return visible.map(m => {
     const matchPlayers = (players || []).filter(p => p.match_id === m.id).map(p => ({ ...p, profile: pm[p.user_id] || null }))
@@ -437,10 +440,7 @@ async function awardMatchPoints(matchId) {
     match_id: matchId,
   }))
   await supabase.from('points_log').insert(rows)
-  // Check team win achievements for all players (fire-and-forget, no await)
-  for (const p of players) {
-    checkTeamWinAchievements(p.user_id, null).catch(() => {})
-  }
+  Promise.all(players.map(p => checkTeamWinAchievements(p.user_id, null))).catch(() => {})
 }
 
 // Away captain confirms home's submitted score
@@ -1527,9 +1527,6 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 
   const canCreate = !!(mode && pin && date && time)
 
-  // Gap in minutes between match start times for each mode
-  const MODE_GAP = { '2v2': 45, '3v3': 75, '5v5': 75 }
-
   async function handleCreate() {
     if (!canCreate || saving) return
     setSaving(true); setErr(null)
@@ -1537,17 +1534,26 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
       const scheduledAt = new Date(`${date}T${time}`)
 
       // ── Validate daily limit + time gap ────────────────────────────────────
+      // Fetch match_player rows for this user, then join to club_matches directly
+      // (Supabase embedded-resource filters don't filter parent rows — query the
+      //  parent table directly to avoid silently broken date filtering)
       const dayStart = new Date(`${date}T00:00:00`).toISOString()
       const dayEnd   = new Date(`${date}T23:59:59`).toISOString()
-      const { data: todayMatches } = await supabase
-        .from('match_players')
-        .select('match_id, club_matches(scheduled_at, mode)')
-        .eq('user_id', uid)
-        .gte('club_matches.scheduled_at', dayStart)
-        .lte('club_matches.scheduled_at', dayEnd)
-        .not('club_matches', 'is', null)
+      const { data: myPlayerRows } = await supabase
+        .from('match_players').select('match_id').eq('user_id', uid)
+      const myMatchIds = (myPlayerRows || []).map(r => r.match_id)
 
-      const validToday = (todayMatches || []).filter(r => r.club_matches)
+      let validToday = []
+      if (myMatchIds.length) {
+        const { data: todayMatches } = await supabase
+          .from('club_matches')
+          .select('id,scheduled_at,mode')
+          .in('id', myMatchIds)
+          .gte('scheduled_at', dayStart)
+          .lte('scheduled_at', dayEnd)
+          .neq('status', 'cancelled')
+        validToday = todayMatches || []
+      }
 
       if (validToday.length >= 3) {
         setErr('Możesz zagrać maksymalnie 3 mecze dziennie.')
@@ -1556,12 +1562,11 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 
       const gapMs = (MODE_GAP[mode] || 75) * 60 * 1000
       const conflict = validToday.find(r => {
-        const other = new Date(r.club_matches.scheduled_at).getTime()
+        const other = new Date(r.scheduled_at).getTime()
         return Math.abs(scheduledAt.getTime() - other) < gapMs
       })
       if (conflict) {
-        const mins = MODE_GAP[mode] || 75
-        setErr(`Za mała przerwa między meczami. Odstęp musi wynosić co najmniej ${mins} minut.`)
+        setErr(`Za mała przerwa między meczami. Odstęp musi wynosić co najmniej ${MODE_GAP[mode] || 75} minut.`)
         setSaving(false); return
       }
       // ───────────────────────────────────────────────────────────────────────
@@ -2710,7 +2715,7 @@ function MatchesPanel({ club, uid, isActive }) {
   const [pending,     setPending]     = useState(null)
   const [pendingRole, setPendingRole] = useState('home')
   const [joinedMatch, setJoinedMatch] = useState(null)
-  const [autoCancelNotif, setAutoCancelNotif] = useState(null) // { count } — shown when creator's match was auto-cancelled
+  const [autoCancelNotif, setAutoCancelNotif] = useState(false)
   const RADIUS = 25
 
   const isMember = Object.values(club.members).some(m => m?.id === uid)
@@ -2831,15 +2836,15 @@ function MatchesPanel({ club, uid, isActive }) {
       const autoCancel = data.filter(m => {
         if (m.status !== 'pending' && m.status !== 'full') return false
         const startsIn = new Date(m.scheduled_at).getTime() - now.getTime()
-        if (startsIn > fiveMin || startsIn < -fiveMin) return false   // not in the 5min window
-        const awayPlayers = m.players.filter(p => p.team === 'away')
-        return awayPlayers.length === 0   // no one joined away side
+        // Only cancel matches that haven't started yet (startsIn >= 0) and are within 5min window
+        if (startsIn < 0 || startsIn > fiveMin) return false
+        return m.players.filter(p => p.team === 'away').length === 0
       })
-      for (const m of autoCancel) {
-        await supabase.from('club_matches').update({ status: 'cancelled' }).eq('id', m.id)
-        if (m.created_by === uid) autoCancelledMine++
-      }
-      if (autoCancelledMine > 0) setAutoCancelNotif({ count: autoCancelledMine })
+      await Promise.all(autoCancel.map(m =>
+        supabase.from('club_matches').update({ status: 'cancelled' }).eq('id', m.id)
+      ))
+      autoCancelledMine = autoCancel.filter(m => m.created_by === uid).length
+      if (autoCancelledMine > 0) setAutoCancelNotif(true)
 
       // Remove auto-cancelled from the list
       const cancelledIds = new Set(autoCancel.map(m => m.id))
@@ -3012,7 +3017,7 @@ function MatchesPanel({ club, uid, isActive }) {
               </p>
             </div>
             <button
-              onClick={() => setAutoCancelNotif(null)}
+              onClick={() => setAutoCancelNotif(false)}
               style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.30)',
                 cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0, flexShrink: 0 }}
             >×</button>
@@ -3188,13 +3193,13 @@ function StatsPanel({ club }) {
     async function load() {
       setLoading(true)
       const now = new Date().toISOString()
-      const [{ data: comp }, { data: up }] = await Promise.all([
+      const [{ data: comp }, { data: up }, { data: compAway }] = await Promise.all([
         supabase.from('club_matches')
           .select('id,score_home,score_away,scheduled_at,mode,walkover,club_id,away_club_id')
-          .in('club_id', [club.id])
+          .eq('club_id', club.id)
           .eq('status', 'completed')
           .order('scheduled_at', { ascending: false })
-          .limit(20),
+          .limit(8),
         supabase.from('club_matches')
           .select('id,scheduled_at,mode,club_id,away_club_id,status')
           .eq('club_id', club.id)
@@ -3202,14 +3207,13 @@ function StatsPanel({ club }) {
           .gt('scheduled_at', now)
           .order('scheduled_at', { ascending: true })
           .limit(5),
+        supabase.from('club_matches')
+          .select('id,score_home,score_away,scheduled_at,mode,walkover,club_id,away_club_id')
+          .eq('away_club_id', club.id)
+          .eq('status', 'completed')
+          .order('scheduled_at', { ascending: false })
+          .limit(8),
       ])
-      // also fetch completed where club is away
-      const { data: compAway } = await supabase.from('club_matches')
-        .select('id,score_home,score_away,scheduled_at,mode,walkover,club_id,away_club_id')
-        .eq('away_club_id', club.id)
-        .eq('status', 'completed')
-        .order('scheduled_at', { ascending: false })
-        .limit(20)
 
       const all = [...(comp || []), ...(compAway || [])]
         .sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at))
