@@ -3056,19 +3056,83 @@ function PanelDots({ active, onChange }) {
 
 // ── STATS PANEL ───────────────────────────────────────────────────────────────
 function StatsPanel({ club }) {
-  // Matches table not implemented yet — empty state
-  const wins = 0, losses = 0
+  const [completed, setCompleted] = useState([])
+  const [upcoming,  setUpcoming]  = useState([])
+  const [loading,   setLoading]   = useState(true)
+
+  useEffect(() => {
+    if (!club?.id) return
+    async function load() {
+      setLoading(true)
+      const now = new Date().toISOString()
+      const [{ data: comp }, { data: up }] = await Promise.all([
+        supabase.from('club_matches')
+          .select('id,score_home,score_away,scheduled_at,mode,walkover,club_id,away_club_id')
+          .in('club_id', [club.id])
+          .eq('status', 'completed')
+          .order('scheduled_at', { ascending: false })
+          .limit(20),
+        supabase.from('club_matches')
+          .select('id,scheduled_at,mode,club_id,away_club_id,status')
+          .eq('club_id', club.id)
+          .in('status', ['pending', 'full'])
+          .gt('scheduled_at', now)
+          .order('scheduled_at', { ascending: true })
+          .limit(5),
+      ])
+      // also fetch completed where club is away
+      const { data: compAway } = await supabase.from('club_matches')
+        .select('id,score_home,score_away,scheduled_at,mode,walkover,club_id,away_club_id')
+        .eq('away_club_id', club.id)
+        .eq('status', 'completed')
+        .order('scheduled_at', { ascending: false })
+        .limit(20)
+
+      const all = [...(comp || []), ...(compAway || [])]
+        .sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at))
+      setCompleted(all)
+      setUpcoming(up || [])
+      setLoading(false)
+    }
+    load()
+  }, [club?.id])
+
+  // W/L: from club's perspective
+  let wins = 0, losses = 0
+  completed.forEach(m => {
+    if (m.walkover) {
+      if (m.walkover === 'away_noshow' && m.club_id === club.id) wins++
+      else if (m.walkover === 'home_cancelled' && m.club_id === club.id) losses++
+      else if (m.walkover === 'away_noshow' && m.away_club_id === club.id) losses++
+      else if (m.walkover === 'home_cancelled' && m.away_club_id === club.id) wins++
+      return
+    }
+    if (m.score_home == null || m.score_away == null) return
+    const isHome = m.club_id === club.id
+    const clubScore = isHome ? m.score_home : m.score_away
+    const oppScore  = isHome ? m.score_away : m.score_home
+    if (clubScore > oppScore) wins++
+    else if (clubScore < oppScore) losses++
+  })
   const total = wins + losses
-  const rate = total > 0 ? Math.round(wins / total * 100) : 0
+  const rate  = total > 0 ? Math.round(wins / total * 100) : 0
+
+  function fmtDate(iso) {
+    const d = new Date(iso)
+    return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })
+  }
+  function fmtMode(m) {
+    return m === '3x3' ? '3×3' : m === '5x5' ? '5×5' : m || ''
+  }
 
   return (
     <div style={{ padding: '0 16px var(--nav-h)' }}>
       {/* W / L / Rate cards */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         {[
-          { val: wins,   lbl: 'Wygrane',   col: C.win  },
-          { val: losses, lbl: 'Przegrane', col: C.loss },
-          { val: `${rate}%`, lbl: 'Win rate',   col: C.accent },
+          { val: loading ? '–' : wins,       lbl: 'Wygrane',   col: C.win    },
+          { val: loading ? '–' : losses,     lbl: 'Przegrane', col: C.loss   },
+          { val: loading ? '–' : `${rate}%`, lbl: 'Win rate',  col: C.accent },
         ].map(({ val, lbl, col }) => (
           <div key={lbl} style={{
             flex: 1, padding: '16px 10px', borderRadius: 16, textAlign: 'center',
@@ -3089,7 +3153,7 @@ function StatsPanel({ club }) {
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5,
             textTransform: 'uppercase', color: C.sub }}>Skuteczność</span>
           <span style={{ fontSize: 11, fontWeight: 800, color: C.accent }}>
-            {wins} / {total} meczów
+            {loading ? '–' : `${wins} / ${total} meczów`}
           </span>
         </div>
         <div style={{ height: 6, borderRadius: 3, background: C.dim, overflow: 'hidden' }}>
@@ -3106,15 +3170,25 @@ function StatsPanel({ club }) {
         textTransform: 'uppercase', color: C.dim, margin: '0 0 10px 2px' }}>
         Nadchodzące mecze
       </p>
-      <div style={{ padding: '20px 16px', borderRadius: 14,
-        background: C.surface, border: '1px solid rgba(255,255,255,0.05)',
-        marginBottom: 18, textAlign: 'center' }}>
-        <p style={{ fontSize: 11, color: C.sub, fontWeight: 500 }}>
-          Brak zaplanowanych meczów
-        </p>
-        <p style={{ fontSize: 9, color: C.dim, marginTop: 4 }}>
-          System meczów — wkrótce
-        </p>
+      <div style={{ borderRadius: 14, background: C.surface,
+        border: '1px solid rgba(255,255,255,0.05)', marginBottom: 18, overflow: 'hidden' }}>
+        {!loading && upcoming.length === 0 ? (
+          <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+            <p style={{ fontSize: 11, color: C.sub, fontWeight: 500 }}>Brak zaplanowanych meczów</p>
+          </div>
+        ) : upcoming.map((m, i) => (
+          <div key={m.id} style={{
+            padding: '12px 16px',
+            borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: C.text }}>{fmtDate(m.scheduled_at)}</span>
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5,
+              textTransform: 'uppercase', color: C.sub }}>{fmtMode(m.mode)}</span>
+            <span style={{ fontSize: 10, color: m.status === 'full' ? C.win : C.sub,
+              fontWeight: 600 }}>{m.status === 'full' ? 'Komplet' : 'Otwarte'}</span>
+          </div>
+        ))}
       </div>
 
       {/* Recent */}
@@ -3122,15 +3196,50 @@ function StatsPanel({ club }) {
         textTransform: 'uppercase', color: C.dim, margin: '0 0 10px 2px' }}>
         Ostatnie mecze
       </p>
-      <div style={{ padding: '20px 16px', borderRadius: 14,
-        background: C.surface, border: '1px solid rgba(255,255,255,0.05)',
-        textAlign: 'center' }}>
-        <p style={{ fontSize: 11, color: C.sub, fontWeight: 500 }}>
-          Brak rozegranych meczów
-        </p>
-        <p style={{ fontSize: 9, color: C.dim, marginTop: 4 }}>
-          Historia meczów pojawi się tutaj
-        </p>
+      <div style={{ borderRadius: 14, background: C.surface,
+        border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+        {!loading && completed.length === 0 ? (
+          <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+            <p style={{ fontSize: 11, color: C.sub, fontWeight: 500 }}>Brak rozegranych meczów</p>
+          </div>
+        ) : completed.slice(0, 8).map((m, i) => {
+          const isHome   = m.club_id === club.id
+          let result = '–', resultColor = C.sub
+          if (m.walkover) {
+            const won = (m.walkover === 'away_noshow' && isHome) || (m.walkover === 'home_cancelled' && !isHome)
+            result = won ? 'W' : 'L'
+            resultColor = won ? C.win : C.loss
+          } else if (m.score_home != null && m.score_away != null) {
+            const cs = isHome ? m.score_home : m.score_away
+            const os = isHome ? m.score_away : m.score_home
+            result = cs > os ? 'W' : cs < os ? 'L' : 'R'
+            resultColor = cs > os ? C.win : cs < os ? C.loss : C.sub
+          }
+          const sh = isHome ? m.score_home : m.score_away
+          const sa = isHome ? m.score_away : m.score_home
+          return (
+            <div key={m.id} style={{
+              padding: '12px 16px',
+              borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: C.text, minWidth: 52 }}>
+                {fmtDate(m.scheduled_at)}
+              </span>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1,
+                textTransform: 'uppercase', color: C.sub }}>{fmtMode(m.mode)}</span>
+              <span style={{ fontSize: 13, fontWeight: 900, color: C.text, minWidth: 48, textAlign: 'center',
+                fontFamily: 'var(--font-display)' }}>
+                {m.walkover ? 'WO' : (sh != null ? `${sh}:${sa}` : '–:–')}
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 900, color: resultColor,
+                textShadow: `0 0 12px ${resultColor}60`, minWidth: 16, textAlign: 'right',
+                fontFamily: 'var(--font-display)' }}>
+                {result}
+              </span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
