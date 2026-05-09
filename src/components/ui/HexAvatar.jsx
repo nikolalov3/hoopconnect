@@ -27,7 +27,9 @@ const GLOWS = {
 // earlyaccess.png = ramka bazowa (wszyscy użytkownicy od teraz)
 // ramka.png       = zarezerwowana (nieużywana aktywnie)
 // ramkas1diax.png = Diamond S1 (nagroda, przyznawana 24.08.2026)
+// null            = brak ramki (variant 'none' lub 'default' bez equipped_frame)
 const FRAME_PATHS = {
+  none:         null,
   default:      '/earlyaccess.png',
   betatester:   '/earlyaccess.png',
   beta:         '/earlyaccess.png',
@@ -39,9 +41,11 @@ const FRAME_PATHS = {
 // ── Shared frame SVG ─────────────────────────────────────────────────────────
 // viewBox "-16 -16 122 122" so the PNG (which fills the whole 122×122 space)
 // is placed at x=-16 y=-16 width=122 height=122 and perfectly covers the hex.
-function FrameSVG({ id, variant, avatarContent, size, clip = false }) {
+// noAnim: disables the glow pulse animation (use in pickers / lists)
+function FrameSVG({ id, variant, avatarContent, size, clip = false, noAnim = false }) {
   const glow = GLOWS[variant] || GLOWS.default
-  const src  = FRAME_PATHS[variant] || FRAME_PATHS.default
+  // Use explicit lookup so FRAME_PATHS.none = null skips the image
+  const src  = variant in FRAME_PATHS ? FRAME_PATHS[variant] : FRAME_PATHS.default
 
   return (
     <svg
@@ -59,36 +63,37 @@ function FrameSVG({ id, variant, avatarContent, size, clip = false }) {
         </linearGradient>
 
         {/* Ambient glow blur */}
-        <filter id={`gf${id}`} x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur stdDeviation="6" />
-        </filter>
+        {!noAnim && (
+          <filter id={`gf${id}`} x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="6" />
+          </filter>
+        )}
       </defs>
 
       {/* ── Ambient glow bloom (behind everything) ── */}
-      <polygon
-        points="45,-6 93,22 93,68 45,96 -3,68 -3,22"
-        fill="none"
-        stroke={glow}
-        strokeWidth="18"
-        filter={`url(#gf${id})`}
-      >
-        <animate attributeName="opacity"
-          values="0.35;0.80;0.35"
-          dur="2.8s"
-          repeatCount="indefinite" />
-      </polygon>
+      {!noAnim && (
+        <polygon
+          points="45,-6 93,22 93,68 45,96 -3,68 -3,22"
+          fill="none"
+          stroke={glow}
+          strokeWidth="18"
+          filter={`url(#gf${id})`}
+          opacity="0.55"
+        />
+      )}
 
       {/* ── Avatar body ── */}
       {avatarContent}
 
-      {/* ── PNG frame overlay ── */}
-      {/* x=-16 y=-16 fills the full viewBox so the PNG aligns perfectly */}
-      <image
-        href={src}
-        x="-16" y="-16"
-        width="122" height="122"
-        preserveAspectRatio="xMidYMid meet"
-      />
+      {/* ── PNG frame overlay (skipped when src is null) ── */}
+      {src && (
+        <image
+          href={src}
+          x="-16" y="-16"
+          width="122" height="122"
+          preserveAspectRatio="xMidYMid meet"
+        />
+      )}
     </svg>
   )
 }
@@ -109,7 +114,7 @@ export function HexFrameOnly({ size = 78, variant = 'default' }) {
 }
 
 // ── PUBLIC: full avatar (avatar body + frame) ─────────────────────────────────
-export default function HexAvatar({ name, size = 44, variant = 'default' }) {
+export default function HexAvatar({ name, size = 44, variant = 'default', noAnim = false }) {
   const raw = useId()
   const id  = raw.replace(/[^a-zA-Z0-9]/g, 'x')
   const initial = name ? name.trim()[0].toUpperCase() : '?'
@@ -134,5 +139,5 @@ export default function HexAvatar({ name, size = 44, variant = 'default' }) {
     </>
   )
 
-  return <FrameSVG id={id} variant={variant} avatarContent={avatar} size={size} />
+  return <FrameSVG id={id} variant={variant} avatarContent={avatar} size={size} noAnim={noAnim} />
 }

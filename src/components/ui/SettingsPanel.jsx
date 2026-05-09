@@ -33,11 +33,12 @@ const SCHEDULES = {
   6: ['T','T','T','R','T','T','T'],
 }
 
-// All available frames — path + label + unlock hint
+// All available frames — id matches HexAvatar variant, label shown in picker
+// id:'none' = brak ramki (wariant 'none' → src: null w HexAvatar)
 const ALL_FRAMES = [
-  { id: 'default',      path: null,               label: 'Brak'          },
-  { id: 'early_access', path: '/earlyaccess.png',  label: 'Early Access'  },
-  { id: 'diamond_s1',   path: '/ramkas1diax.png',  label: 'Diament S1'    },
+  { id: 'none',         label: 'Brak'          },
+  { id: 'early_access', label: 'Early Access'  },
+  { id: 'diamond_s1',   label: 'Diament S1'    },
 ]
 
 // ── Section label ─────────────────────────────────────────────────────────────
@@ -177,22 +178,22 @@ function PrimaryBtn({ label, onClick, disabled, state }) {
 
 // ── Frame picker ──────────────────────────────────────────────────────────────
 function FramePicker({ current, uid, profile, onPick }) {
-  // Determine which frames are unlocked
+  // 'none' is always available; other frames require localStorage unlock flag
   const unlocked = useMemo(() => {
-    const frames = ['default']
+    const frames = new Set(['none'])
     if (uid && localStorage.getItem(`hc_frame_seen_early_access_${uid}`))
-      frames.push('early_access')
+      frames.add('early_access')
     if (uid && localStorage.getItem(`hc_frame_seen_diamond_s1_${uid}`))
-      frames.push('diamond_s1')
-    return new Set(frames)
+      frames.add('diamond_s1')
+    return frames
   }, [uid])
-
-  const initial = profile?.name ? profile.name.trim()[0].toUpperCase() : '?'
 
   return (
     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', paddingBottom: 4 }}>
       {ALL_FRAMES.filter(f => unlocked.has(f.id)).map(f => {
-        const active = current === f.id || (f.id === 'default' && !current)
+        // equipped_frame: null / undefined → 'none' is active
+        const equippedVariant = current || 'none'
+        const active = equippedVariant === f.id
         return (
           <motion.button key={f.id} whileTap={{ scale: 0.93 }}
             onClick={() => onPick(f.id)}
@@ -202,7 +203,7 @@ function FramePicker({ current, uid, profile, onPick }) {
               padding: 0, WebkitTapHighlightColor: 'transparent',
             }}>
             <div style={{
-              width: 72, height: 72, borderRadius: 10,
+              width: 68, height: 68, borderRadius: 10,
               background: active ? `rgba(0,204,255,0.10)` : 'rgba(255,255,255,0.03)',
               border: active ? `2px solid ${C.accent}` : `2px solid ${C.border}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -211,7 +212,8 @@ function FramePicker({ current, uid, profile, onPick }) {
               <HexAvatar
                 name={profile?.name}
                 variant={f.id}
-                size={52}
+                size={48}
+                noAnim
               />
             </div>
             <p style={{
@@ -303,7 +305,7 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved }) {
   const [name,       setName]       = useState(profile?.name || '')
   const [city,       setCity]       = useState(profile?.city || '')
   const [saveState,  setSaveState]  = useState('idle')
-  const [frameId,    setFrameId]    = useState(profile?.equipped_frame || 'default')
+  const [frameId,    setFrameId]    = useState(profile?.equipped_frame || 'none')
   const [frameSaved, setFrameSaved] = useState(false)
 
   const dirty = name.trim() !== (profile?.name || '').trim()
@@ -315,7 +317,7 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved }) {
       const { error } = await supabase.from('profiles').update({
         name: name.trim(),
         city: city.trim() || null,
-        equipped_frame: frameId === 'default' ? null : frameId,
+        equipped_frame: frameId === 'none' ? null : frameId,
       }).eq('id', user.id)
       if (error) throw error
       setSaveState('saved')
@@ -327,7 +329,7 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved }) {
   async function handlePickFrame(id) {
     setFrameId(id)
     await supabase.from('profiles')
-      .update({ equipped_frame: id === 'default' ? null : id })
+      .update({ equipped_frame: id === 'none' ? null : id })
       .eq('id', user.id)
     onProfileSaved?.()
     setFrameSaved(true)
