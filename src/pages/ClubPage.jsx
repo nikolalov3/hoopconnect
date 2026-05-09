@@ -305,7 +305,7 @@ async function apiCancelMatch(matchId) {
   if (error) throw error
 }
 
-async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds = []) {
+async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds = [], myClubId = null) {
   const { data: matches, error } = await supabase
     .from('club_matches')
     .select('*')
@@ -313,10 +313,14 @@ async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds 
     .order('scheduled_at', { ascending: true })
   if (error) throw error
 
-  const nearby = (matches || []).filter(m => haversineKm(userLat, userLng, m.lat, m.lng) <= radiusKm)
-  if (!nearby.length) return []
+  // Always include own club's matches + matches within radius
+  const visible = (matches || []).filter(m =>
+    (myClubId && (m.club_id === myClubId || m.away_club_id === myClubId)) ||
+    haversineKm(userLat, userLng, m.lat, m.lng) <= radiusKm
+  )
+  if (!visible.length) return []
 
-  const ids = nearby.map(m => m.id)
+  const ids = visible.map(m => m.id)
   const { data: players } = await supabase.from('match_players').select('*').in('match_id', ids)
 
   const uids = [...new Set((players || []).map(p => p.user_id))]
@@ -329,13 +333,13 @@ async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds 
 
   // Fetch home + away club names
   const allClubIds = [...new Set([
-    ...nearby.map(m => m.club_id),
-    ...nearby.filter(m => m.away_club_id).map(m => m.away_club_id),
+    ...visible.map(m => m.club_id),
+    ...visible.filter(m => m.away_club_id).map(m => m.away_club_id),
   ].filter(Boolean))]
   const { data: clubRows } = await supabase.from('clubs').select('id,name,abbr,country_flag').in('id', allClubIds)
   const cm = Object.fromEntries((clubRows || []).map(c => [c.id, c]))
 
-  return nearby.map(m => {
+  return visible.map(m => {
     const matchPlayers = (players || []).filter(p => p.match_id === m.id).map(p => ({ ...p, profile: pm[p.user_id] || null }))
     const hasTeammate = myClubMemberIds.length > 0 && matchPlayers.some(p => myClubMemberIds.includes(p.user_id))
     return {
@@ -2811,7 +2815,7 @@ function MatchesPanel({ club, uid, isActive }) {
   async function loadMatches() {
     setLoading(true)
     try {
-      const data = await apiFetchMatches(userLoc.lat, userLoc.lng, RADIUS, myMemberIds)
+      const data = await apiFetchMatches(userLoc.lat, userLoc.lng, RADIUS, myMemberIds, club.id)
       // Demo match only in development — for testing the join flow
       const demoList = import.meta.env.DEV ? [createDemoMatch(userLoc)] : []
       const allMatches = [...demoList, ...data]
