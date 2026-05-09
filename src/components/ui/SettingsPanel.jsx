@@ -301,12 +301,12 @@ function WeekPicker({ trainingDays, open }) {
 }
 
 // ── Sub-view: Edytuj profil ───────────────────────────────────────────────────
-function EditProfileView({ onBack, onClose, profile, user, onProfileSaved }) {
+function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFrameChange }) {
   const [name,       setName]       = useState(profile?.name || '')
   const [city,       setCity]       = useState(profile?.city || '')
   const [saveState,  setSaveState]  = useState('idle')
   const [frameId,    setFrameId]    = useState(profile?.equipped_frame || 'none')
-  const [frameSaved, setFrameSaved] = useState(false)
+  const [frameState, setFrameState] = useState('idle') // idle | saving | saved | error
 
   const dirty = name.trim() !== (profile?.name || '').trim()
     || city.trim() !== (profile?.city || '').trim()
@@ -323,17 +323,35 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved }) {
       setSaveState('saved')
       onProfileSaved?.()
       setTimeout(() => setSaveState('idle'), 2000)
-    } catch { setSaveState('error'); setTimeout(() => setSaveState('idle'), 2000) }
+    } catch (e) {
+      console.error('[SettingsPanel] handleSave error:', e)
+      setSaveState('error')
+      setTimeout(() => setSaveState('idle'), 2000)
+    }
   }
 
   async function handlePickFrame(id) {
+    if (frameState === 'saving') return
     setFrameId(id)
-    await supabase.from('profiles')
-      .update({ equipped_frame: id === 'none' ? null : id })
-      .eq('id', user.id)
-    onProfileSaved?.()
-    setFrameSaved(true)
-    setTimeout(() => setFrameSaved(false), 1600)
+    // Optimistic update — hero card w głównym widoku aktualizuje się natychmiast
+    onFrameChange?.(id === 'none' ? null : id)
+    setFrameState('saving')
+    try {
+      const { error } = await supabase.from('profiles')
+        .update({ equipped_frame: id === 'none' ? null : id })
+        .eq('id', user.id)
+      if (error) throw error
+      setFrameState('saved')
+      onProfileSaved?.()
+      setTimeout(() => setFrameState('idle'), 1600)
+    } catch (e) {
+      console.error('[SettingsPanel] handlePickFrame error:', e)
+      // Revert optimistic update
+      setFrameId(profile?.equipped_frame || 'none')
+      onFrameChange?.(profile?.equipped_frame ?? null)
+      setFrameState('error')
+      setTimeout(() => setFrameState('idle'), 2000)
+    }
   }
 
   return (
@@ -366,10 +384,11 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 10 }}>
           <SLabel style={{ margin: 0 }}>Ramka avatara</SLabel>
           <AnimatePresence>
-            {frameSaved && (
+            {frameState !== 'idle' && (
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                style={{ fontSize: 10, color: C.green, fontWeight: 700, margin: 0 }}>
-                ✓ Zmieniono
+                style={{ fontSize: 10, fontWeight: 700, margin: 0,
+                  color: frameState === 'error' ? C.red : frameState === 'saving' ? C.dim : C.green }}>
+                {frameState === 'error' ? '✗ Błąd zapisu' : frameState === 'saving' ? '…' : '✓ Zmieniono'}
               </motion.p>
             )}
           </AnimatePresence>
@@ -639,7 +658,7 @@ function InfoView({ onBack, onClose }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function SettingsPanel({ open, onClose }) {
-  const { profile, user, signOut, refreshProfile } = useAuth()
+  const { profile, user, signOut, refreshProfile, setProfileData } = useAuth()
   const [view,         setView]         = useState('main')
   const [trainingOpen, setTrainingOpen] = useState(false)
 
@@ -846,6 +865,7 @@ export default function SettingsPanel({ open, onClose }) {
                   onBack={() => setView('main')} onClose={onClose}
                   profile={profile} user={user}
                   onProfileSaved={refreshProfile}
+                  onFrameChange={frame => setProfileData({ equipped_frame: frame })}
                 />
               )}
               {view === 'account' && (
