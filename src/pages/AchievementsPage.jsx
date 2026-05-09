@@ -340,7 +340,7 @@ export default function AchievementsPage() {
     })
     .filter(Boolean)
     .sort((a, b) => {
-      const ORDER = { platinum: 0, diamond: 1, gold: 2, silver: 3, bronze: 4 }
+      const ORDER = { diamond: 0, platinum: 1, gold: 2, silver: 3, bronze: 4 }
       return (ORDER[a.currentStage?.medal] ?? 9) - (ORDER[b.currentStage?.medal] ?? 9)
     })
 
