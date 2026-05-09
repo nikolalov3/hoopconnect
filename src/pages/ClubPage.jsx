@@ -2498,14 +2498,19 @@ function MatchesPanel({ club, uid, isActive }) {
             </>
           )}
           {upcoming.length === 0 && past.length === 0 && (
-            <div style={{ padding: '44px 20px', borderRadius: 20, textAlign: 'center',
-              background: C.surface, border: `1px solid ${C.dim}40` }}>
-              <div style={{ fontSize: 40, marginBottom: 14 }}>🏀</div>
-              <p style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: '0 0 6px' }}>
+            <div style={{ padding: '48px 24px', textAlign: 'center',
+              border: `1px solid rgba(255,255,255,0.06)`,
+              borderTop: `1px solid rgba(255,255,255,0.10)` }}>
+              <img src="/brokelogo.png" alt=""
+                style={{ width: 52, height: 52, opacity: 0.55, marginBottom: 16,
+                  filter: 'grayscale(0.3)' }}/>
+              <p style={{ fontSize: 13, fontWeight: 700,
+                color: 'rgba(255,255,255,0.70)', margin: '0 0 6px', letterSpacing: 0.2 }}>
                 Brak meczów w pobliżu
               </p>
-              <p style={{ fontSize: 10.5, color: C.sub, lineHeight: 1.6, margin: 0 }}>
-                Brak zaplanowanych meczów{'\n'}w zasięgu {RADIUS} km
+              <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)',
+                lineHeight: 1.65, margin: 0 }}>
+                Żaden klub nie zaplanował meczu{'\n'}w zasięgu {RADIUS} km. Możesz to zmienić.
               </p>
             </div>
           )}
