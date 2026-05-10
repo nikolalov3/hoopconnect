@@ -1152,7 +1152,7 @@ function clubNameSize(name) {
 function ClubHeader({ club, isOwner, onEditPress }) {
   const filled = Object.values(club.members).filter(Boolean).length
   return (
-    <div style={{ padding: '32px 22px 12px', display: 'flex', alignItems: 'center', gap: 16 }}>
+    <div style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 12px', display: 'flex', alignItems: 'center', gap: 16 }}>
 
       <Badge abbr={club.abbr} size={58}/>
 
@@ -3801,7 +3801,7 @@ function NoClubScreen({ onCreated, profile }) {
   }
 
   return (
-    <div className="page-content" style={{ padding: '40px 22px 48px', overflowY: 'auto' }}>
+    <div className="page-content" style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 48px', overflowY: 'auto' }}>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <motion.div
@@ -4068,7 +4068,7 @@ function CreateClubForm({ onCreated, profile, onBack }) {
   })
 
   return (
-    <div className="page-content" style={{ padding: '24px 22px 40px' }}>
+    <div className="page-content" style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 40px' }}>
       <AnimatePresence>
         {picker && <CountryPicker value={ctry} onChange={c => { setCtry(c); setPicker(false) }} onClose={() => setPicker(false)}/>}
       </AnimatePresence>

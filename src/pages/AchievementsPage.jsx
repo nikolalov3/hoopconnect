@@ -350,7 +350,7 @@ export default function AchievementsPage() {
 
 
   return (
-    <div className="page-content" style={{ padding: '32px 22px', position: 'relative' }}>
+    <div className="page-content" style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 22px', position: 'relative' }}>
       {/* Warm background overlay — covers blue global gradient */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,

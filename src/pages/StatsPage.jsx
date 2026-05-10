@@ -192,7 +192,7 @@ export default function StatsPage() {
   ]
 
   return (
-    <div className="page-content" style={{ padding: '32px 22px' }}>
+    <div className="page-content" style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 22px' }}>
       <p className="section-label" style={{ marginBottom: 4 }}>Twoje wyniki</p>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <h1 className="display-title" style={{ fontSize: 38 }}>Statystyki</h1>

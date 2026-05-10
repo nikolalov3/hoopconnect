@@ -956,7 +956,7 @@ export default function HomePage() {
       <StreakToast streak={streakToast} visible={streakToast > 0} onHide={() => setStreakToast(0)} />
 
       {/* Header — identical structure to StatsPage */}
-      <div style={{ padding: '32px 22px 0' }}>
+      <div style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 0' }}>
         <p className="section-label" style={{ marginBottom: 4 }}>{dateStr}</p>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
           <div>
