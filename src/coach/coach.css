@@ -91,15 +91,11 @@ body.coach-panel ::-webkit-scrollbar-thumb:hover { background: #5591CD; }
   align-items: center;
   gap: 10px;
 }
-.coach-sidebar-logo {
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #5591CD 0%, #1E3A5F 100%);
-  display: grid; place-items: center;
-  color: #FFFFFF;
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: -0.5px;
+.coach-sidebar-logo-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .coach-sidebar-brand {
   display: flex;

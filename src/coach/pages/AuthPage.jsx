@@ -40,12 +40,7 @@ export default function AuthPage({ mode = 'login' }) {
       }}>
         {/* Logo */}
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 24 }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 11,
-            background: 'linear-gradient(135deg, #5591CD 0%, #1E3A5F 100%)',
-            display: 'grid', placeItems: 'center',
-            color: '#FFFFFF', fontWeight: 700, fontSize: 17,
-          }}>HC</div>
+          <img src="/brokelogo.png" alt="HoopConnect" style={{ width: 44, height: 44, objectFit: 'contain' }}/>
           <div style={{ lineHeight: 1.1 }}>
             <div style={{ fontWeight: 700, fontSize: 16, color: '#1A2233' }}>HoopConnect</div>
             <div style={{ fontSize: 11, color: '#8A9AB0', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.6 }}>Trener</div>

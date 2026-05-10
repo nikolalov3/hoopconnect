@@ -64,7 +64,11 @@ export default function Sidebar() {
   return (
     <aside className="coach-sidebar">
       <div className="coach-sidebar-header">
-        <div className="coach-sidebar-logo">HC</div>
+        <img
+          src="/brokelogo.png"
+          alt="HoopConnect"
+          className="coach-sidebar-logo-img"
+        />
         <div className="coach-sidebar-brand">
           <span className="coach-sidebar-brand-name">HoopConnect</span>
           <span className="coach-sidebar-brand-sub">Trener</span>
