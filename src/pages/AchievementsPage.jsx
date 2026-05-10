@@ -6,11 +6,11 @@ import { fetchAchievementsCatalog, getCurrentStage, clearAchievementsCache } fro
 
 // ── STYLE MEDALI ──────────────────────────────────────────────────────────────
 const MEDAL_STYLE = {
-  bronze:   { glow: 'rgba(205,127,50,0.40)'  },
-  silver:   { glow: 'rgba(168,168,168,0.40)' },
-  gold:     { glow: 'rgba(255,215,0,0.45)'   },
-  platinum: { glow: 'rgba(229,228,226,0.55)' },
-  diamond:  { glow: 'rgba(91,184,245,0.65)'  },  // highest tier
+  bronze:   { glow: 'rgba(205,127,50,0.22)'  },
+  silver:   { glow: 'rgba(168,168,168,0.22)' },
+  gold:     { glow: 'rgba(255,215,0,0.26)'   },
+  platinum: { glow: 'rgba(229,228,226,0.28)' },
+  diamond:  { glow: 'rgba(91,184,245,0.32)'  },  // highest tier
 }
 
 function titleFontSize(title) {
@@ -59,7 +59,7 @@ function AchievementModal({ achievement, onClose }) {
           borderTop: `1px solid ${color}55`,
           borderRadius: 28,
           padding: '32px 28px 28px',
-          boxShadow: `0 -4px 60px rgba(0,0,0,0.60), 0 0 40px ${color}15`,
+          boxShadow: `0 -4px 40px rgba(0,0,0,0.55), 0 0 20px ${color}0A`,
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0,
         }}
       >
@@ -73,7 +73,7 @@ function AchievementModal({ achievement, onClose }) {
           loading="lazy" decoding="async"
           style={{
             maxWidth: '100%', height: 'auto',
-            filter: `drop-shadow(0 0 20px ${medal.glow})`,
+            filter: `drop-shadow(0 0 10px ${medal.glow})`,
             marginBottom: 20,
           }}
         />
@@ -146,7 +146,7 @@ function AchievementCell({ achievement, onPress, isNew }) {
           loading="lazy" decoding="async"
           style={{
             width: '100%', height: '100%', objectFit: 'contain',
-            filter: `drop-shadow(0 0 12px ${medal.glow})`,
+            filter: `drop-shadow(0 0 6px ${medal.glow})`,
           }}
         />
         {isNew && (

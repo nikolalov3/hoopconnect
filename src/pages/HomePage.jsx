@@ -990,11 +990,6 @@ export default function HomePage() {
                 </motion.div>
               )}
             </motion.div>
-            {dayType !== 'T' && (
-              <span className={`badge ${dayType === 'R' ? 'badge-green' : 'badge-gray'}`} style={{ marginTop: 6, display: 'inline-flex' }}>
-                {dayType === 'R' ? '🧘 Regeneracja' : '😴 Odpoczynek'}
-              </span>
-            )}
           </div>
           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             {/* Settings */}
