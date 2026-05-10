@@ -105,7 +105,7 @@ function RecoveryTile({ activity, done, onToggle }) {
 }
 
 export default function RecoveryPage() {
-  const { profile, refreshProfile } = useAuth()
+  const { profile, refreshProfile, setProfileData } = useAuth()
   const [doneActivities, setDoneActivities] = useState(new Set())
   const [tipIndex,       setTipIndex]       = useState(0)
   const [loading,        setLoading]        = useState(true)
@@ -193,7 +193,7 @@ export default function RecoveryPage() {
       // Seria kredytowana tylko w dni wolne/regeneracji — NIE w dni treningowe
       const dayType = getTodayType(profile)
       if (dayType !== 'T') {
-        const credited = await creditRestDayStreak(profile, refreshProfile)
+        const credited = await creditRestDayStreak(profile, setProfileData)
         if (credited) setStreakToast(credited)
       }
     }

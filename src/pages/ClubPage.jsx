@@ -1739,7 +1739,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 
 // ── MATCH DETAIL SHEET ────────────────────────────────────────────────────────
 function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoined, onLeft, onDeleted }) {
-  const { profile, refreshProfile } = useAuth()
+  const { profile, refreshProfile, setProfileData } = useAuth()
   const [local,         setLocal]         = useState(match)
   const [joining,       setJoining]       = useState(false)
   const [leaving,       setLeaving]       = useState(false)
@@ -1879,7 +1879,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
       setLocal(updated); onJoined?.(updated, true)
 
       // Dzień odpoczynku ('O') — dołączenie do meczu zalicza serię
-      await creditRestDayStreak(profile, refreshProfile)
+      await creditRestDayStreak(profile, setProfileData)
     } catch (e) { setErr(e.message) }
     finally { setJoining(false) }
   }

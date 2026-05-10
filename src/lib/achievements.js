@@ -144,41 +144,65 @@ export async function revokeStaleAchievements(userId) {
 
   if (!toRevoke.length) return
 
-  for (const achId of toRevoke) {
-    await supabase.from('user_achievements')
-      .delete()
-      .eq('user_id', userId)
-      .eq('achievement_id', achId)
-  }
+  // Batch delete jedną query zamiast N osobnych
+  await supabase.from('user_achievements')
+    .delete()
+    .eq('user_id', userId)
+    .in('achievement_id', toRevoke)
 }
 
 // Wygodny wrapper — sprawdza wszystkie shot achievements po cofnięciu sesji
+// Zoptymalizowane: jedna query do user_achievements zamiast N (po jednej na ach.id)
 export async function revokeShotAchievementsIfNeeded(userId, shotType) {
   const catalog = await fetchAchievementsCatalog()
   const shotAchs = catalog.filter(
     a => a.type === 'staged' && a.shot_type === shotType
   )
+  if (!shotAchs.length) return []
 
-  // Aktualna suma trafionych rzutów danego typu
+  // Aktualna suma trafionych rzutów + perfect count w jednej query
   const { data: sessions } = await supabase
     .from('shooting_sessions')
-    .select('made')
+    .select('made, attempted')
     .eq('user_id', userId)
     .eq('shot_type', shotType)
   const totalMade = (sessions || []).reduce((sum, r) => sum + (r.made || 0), 0)
-
-  // Aktualna liczba perfekcyjnych sesji
   const perfectCount = (sessions || []).filter(
     s => s.made === s.attempted && s.attempted > 0
   ).length
 
-  const allRevoked = []
-  for (const ach of shotAchs) {
-    const count = ach.id.startsWith('perfect_') ? perfectCount : totalMade
-    const revoked = await revokeAchievementsIfNeeded(userId, ach.id, count)
-    allRevoked.push(...revoked)
+  // Pobierz WSZYSTKIE earned achievements raz, filtruj w pamięci
+  const baseIds = shotAchs.map(a => a.id)
+  const { data: earned } = await supabase
+    .from('user_achievements')
+    .select('achievement_id, base_id')
+    .eq('user_id', userId)
+    .in('base_id', baseIds)
+
+  if (!earned?.length) return []
+
+  // Zbuduj mapę base_id → ach
+  const achById = Object.fromEntries(shotAchs.map(a => [a.id, a]))
+
+  const toRevoke = []
+  for (const ua of earned) {
+    const ach = achById[ua.base_id]
+    if (!ach) continue
+    const stage = (ach.stages || []).find(s => `${ach.id}_${s.medal}` === ua.achievement_id)
+    if (!stage) continue
+    const currentCount = ach.id.startsWith('perfect_') ? perfectCount : totalMade
+    if (currentCount < stage.threshold) toRevoke.push(ua.achievement_id)
   }
-  return allRevoked
+
+  if (!toRevoke.length) return []
+
+  // Batch delete jedną query (wcześniej: pętla N delete'ów)
+  await supabase.from('user_achievements')
+    .delete()
+    .eq('user_id', userId)
+    .in('achievement_id', toRevoke)
+
+  return toRevoke
 }
 
 // ── ZWYCIĘSTWA DRUŻYNOWE ──────────────────────────────────────────────────────

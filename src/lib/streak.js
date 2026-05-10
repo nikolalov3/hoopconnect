@@ -14,14 +14,17 @@ import { supabase } from './supabase'
  * No-op if streak was already credited today (profile.last_active === today).
  * Also writes an activity_log entry so achievement calculations stay in sync.
  *
+ * Optimistic update: returns the new streak value AND applies it locally via
+ * setProfileData (no refreshProfile fetch — saves a `profiles` SELECT per call,
+ * which at scale = N writes/min × N rest-day actions = thousands of redundant
+ * profile fetches per minute).
+ *
  * @param {object}   profile         current profile object from AuthContext
- * @param {function} refreshProfile  refreshProfile from AuthContext
+ * @param {function} setProfileData  setProfileData from AuthContext (optional —
+ *                                   if absent, caller must update local state)
+ * @returns {number} the new streak if credited, or 0 if already credited today
  */
-/**
- * Returns the new streak value if the streak was credited, or 0 if it was
- * already credited today (use the return value to decide whether to show a toast).
- */
-export async function creditRestDayStreak(profile, refreshProfile) {
+export async function creditRestDayStreak(profile, setProfileData) {
   const today = new Date().toISOString().split('T')[0]
 
   if (!profile) return 0
@@ -29,10 +32,11 @@ export async function creditRestDayStreak(profile, refreshProfile) {
   if ((profile.last_active || '').slice(0, 10) === today) return 0  // already credited today
 
   const newStreak = (profile.streak || 0) + 1
+  const newLongest = Math.max(newStreak, profile.longest_streak || 0)
 
   await supabase.from('profiles').update({
     streak:         newStreak,
-    longest_streak: Math.max(newStreak, profile.longest_streak || 0),
+    longest_streak: newLongest,
     last_active:    today,
   }).eq('id', profile.id)
 
@@ -42,6 +46,10 @@ export async function creditRestDayStreak(profile, refreshProfile) {
     { onConflict: 'user_id,date' }
   )
 
-  await refreshProfile()
+  // Optimistic local update — no DB refetch needed
+  if (typeof setProfileData === 'function') {
+    setProfileData({ streak: newStreak, longest_streak: newLongest, last_active: today })
+  }
+
   return newStreak
 }
