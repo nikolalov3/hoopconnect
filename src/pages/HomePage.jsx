@@ -956,7 +956,7 @@ export default function HomePage() {
       <StreakToast streak={streakToast} visible={streakToast > 0} onHide={() => setStreakToast(0)} />
 
       {/* Header — identical structure to StatsPage */}
-      <div style={{ padding: '32px 22px 0' }}>
+      <div style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 0' }}>
         <p className="section-label" style={{ marginBottom: 4 }}>{dateStr}</p>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
           <div>
@@ -990,11 +990,6 @@ export default function HomePage() {
                 </motion.div>
               )}
             </motion.div>
-            {dayType !== 'T' && (
-              <span className={`badge ${dayType === 'R' ? 'badge-green' : 'badge-gray'}`} style={{ marginTop: 6, display: 'inline-flex' }}>
-                {dayType === 'R' ? '🧘 Regeneracja' : '😴 Odpoczynek'}
-              </span>
-            )}
           </div>
           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             {/* Settings */}

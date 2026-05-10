@@ -208,7 +208,7 @@ export default function RecoveryPage() {
 
   return (
     <div className="page-content" style={{
-      padding: '32px 22px',
+      padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 22px',
       background: 'linear-gradient(175deg, #C8E8FA 0%, #D9EEFA 35%, #BFD9F0 100%)',
     }}>
       {/* Header */}

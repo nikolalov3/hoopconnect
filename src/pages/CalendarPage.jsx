@@ -204,7 +204,7 @@ export default function CalendarPage() {
       <div className="page-content" style={{ padding: '0 20px', paddingBottom: 40 }}>
 
         {/* ── HEADER — identical structure to StatsPage / HomePage ── */}
-        <div style={{ padding: '32px 0 0' }}>
+        <div style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 0 0' }}>
           <p className="section-label" style={{ marginBottom: 4 }}>Historia aktywności</p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
             <h1 className="display-title" style={{ fontSize: 38 }}>Kalendarz</h1>
