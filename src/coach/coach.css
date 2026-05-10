@@ -1,0 +1,321 @@
+/* HoopConnect — Coach Panel global styles
+   Scoped: only applied when <body class="coach-panel"> is set by CoachApp.
+   Overrides the default dark player-app styles. */
+
+body.coach-panel {
+  background: #F6F8FB;
+  color: #1A2233;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body.coach-panel a {
+  color: #5591CD;
+  text-decoration: none;
+}
+body.coach-panel a:hover { color: #3D78B5; }
+
+body.coach-panel button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+body.coach-panel ::selection {
+  background: #5591CD;
+  color: #FFFFFF;
+}
+
+body.coach-panel ::-webkit-scrollbar { width: 8px; height: 8px; }
+body.coach-panel ::-webkit-scrollbar-track { background: transparent; }
+body.coach-panel ::-webkit-scrollbar-thumb {
+  background: #D4DDE8;
+  border-radius: 4px;
+}
+body.coach-panel ::-webkit-scrollbar-thumb:hover { background: #5591CD; }
+
+/* layout root */
+.coach-app {
+  min-height: 100vh;
+  background: #F6F8FB;
+  color: #1A2233;
+}
+
+/* sidebar */
+.coach-sidebar {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 240px;
+  background: #FFFFFF;
+  border-right: 1px solid #E6ECF3;
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+}
+
+.coach-sidebar-header {
+  padding: 22px 22px 18px;
+  border-bottom: 1px solid #E6ECF3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.coach-sidebar-logo {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #5591CD 0%, #1E3A5F 100%);
+  display: grid; place-items: center;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.5px;
+}
+.coach-sidebar-brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.coach-sidebar-brand-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: #1A2233;
+  letter-spacing: -0.3px;
+}
+.coach-sidebar-brand-sub {
+  font-size: 11px;
+  color: #8A9AB0;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-top: 2px;
+}
+
+.coach-sidebar-nav {
+  flex: 1;
+  padding: 14px 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.coach-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: #4D5C73;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  border: 1px solid transparent;
+}
+.coach-nav-item:hover {
+  background: #F6F8FB;
+  color: #1A2233;
+}
+.coach-nav-item.active {
+  background: #E8F1FA;
+  color: #1E3A5F;
+  font-weight: 600;
+}
+.coach-nav-item-icon {
+  display: grid;
+  place-items: center;
+  width: 20px; height: 20px;
+  flex-shrink: 0;
+}
+
+.coach-nav-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #8A9AB0;
+  padding: 14px 14px 6px;
+}
+
+.coach-sidebar-footer {
+  padding: 14px;
+  border-top: 1px solid #E6ECF3;
+}
+
+/* main content */
+.coach-main {
+  margin-left: 240px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.coach-topbar {
+  height: 64px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E6ECF3;
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.coach-content {
+  flex: 1;
+  padding: 28px 32px 48px;
+  max-width: 1280px;
+  width: 100%;
+}
+
+/* primitives */
+.coach-card {
+  background: #FFFFFF;
+  border: 1px solid #E6ECF3;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 1px 2px rgba(20, 35, 60, 0.04);
+}
+
+.coach-h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #1A2233;
+  margin: 0;
+}
+.coach-h2 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: #1A2233;
+  margin: 0;
+}
+.coach-subtitle {
+  font-size: 14px;
+  color: #4D5C73;
+  margin: 4px 0 0;
+}
+
+.coach-btn-primary {
+  background: #5591CD;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.coach-btn-primary:hover { background: #3D78B5; }
+.coach-btn-primary:active { transform: translateY(1px); }
+
+.coach-btn-secondary {
+  background: #FFFFFF;
+  color: #1A2233;
+  border: 1px solid #D4DDE8;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.coach-btn-secondary:hover {
+  background: #F6F8FB;
+  border-color: #5591CD;
+  color: #1E3A5F;
+}
+
+.coach-btn-ghost {
+  background: transparent;
+  color: #5591CD;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.coach-btn-ghost:hover { background: #E8F1FA; }
+
+.coach-input {
+  width: 100%;
+  background: #FFFFFF;
+  border: 1px solid #D4DDE8;
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1A2233;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+.coach-input:focus {
+  border-color: #5591CD;
+  box-shadow: 0 0 0 3px rgba(85, 145, 205, 0.15);
+}
+.coach-input::placeholder { color: #8A9AB0; }
+
+.coach-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4D5C73;
+  margin-bottom: 6px;
+}
+
+/* mobile */
+@media (max-width: 900px) {
+  .coach-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid #E6ECF3;
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+  }
+  .coach-sidebar-header {
+    border-bottom: none;
+    border-right: 1px solid #E6ECF3;
+    padding: 14px 18px;
+  }
+  .coach-sidebar-nav {
+    flex-direction: row;
+    padding: 10px 12px;
+    gap: 4px;
+  }
+  .coach-nav-item {
+    flex-shrink: 0;
+    padding: 8px 12px;
+  }
+  .coach-nav-section-label,
+  .coach-sidebar-footer {
+    display: none;
+  }
+  .coach-main { margin-left: 0; }
+  .coach-content { padding: 20px 18px 40px; }
+}
+
+/* placeholder pages */
+.coach-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #8A9AB0;
+  font-size: 14px;
+  text-align: center;
+}
+.coach-placeholder-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4D5C73;
+  margin-bottom: 8px;
+}
