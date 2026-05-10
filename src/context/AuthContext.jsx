@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { bustAll } from '../lib/queryCache'
+import { setSentryUser } from '../lib/sentry'
 
 const AuthContext = createContext({})
 
@@ -47,6 +48,11 @@ export function AuthProvider({ children }) {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Tag Sentry events with the current user — makes errors actionable
+  useEffect(() => {
+    setSentryUser(user)
+  }, [user?.id])
 
   async function fetchProfile(userId) {
     try {
