@@ -29,12 +29,17 @@ export default function CoachApp() {
   // Apply coach-panel class to <html> and <body> for global style overrides.
   // The player app's index.css clamps #root to max-width:430px and locks overflow,
   // which breaks the desktop layout — these classes opt out of those rules.
+  // Also swap the browser-tab title so the trener.* tab is distinguishable from
+  // the main app (index.html ships a single hard-coded <title>).
   useEffect(() => {
     document.documentElement.classList.add('coach-panel-root')
     document.body.classList.add('coach-panel')
+    const prevTitle = document.title
+    document.title = 'Panel Trenera | HoopConnect'
     return () => {
       document.documentElement.classList.remove('coach-panel-root')
       document.body.classList.remove('coach-panel')
+      document.title = prevTitle
     }
   }, [])
 
