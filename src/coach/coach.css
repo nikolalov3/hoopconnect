@@ -2,12 +2,43 @@
    Scoped: only applied when <body class="coach-panel"> is set by CoachApp.
    Overrides the default dark player-app styles. */
 
+/* ─── Reset player-app constraints (index.css clamps #root to 430px,
+       locks overflow, sets dark gradients — undo all that for coach panel) ─── */
+html.coach-panel-root,
+html.coach-panel-root body.coach-panel,
+html.coach-panel-root body.coach-panel #root {
+  height: auto;
+  width: auto;
+  max-width: none;
+  overflow: visible;
+}
+
+html.coach-panel-root body.coach-panel #root {
+  display: block;
+  margin: 0;
+  background: none;
+}
+
+html.coach-panel-root,
+html.coach-panel-root body.coach-panel {
+  min-height: 100vh;
+}
+
 body.coach-panel {
   background: #F6F8FB;
   color: #1A2233;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* override player-app font on form elements too */
+body.coach-panel input,
+body.coach-panel select,
+body.coach-panel textarea,
+body.coach-panel button {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 
 body.coach-panel a {

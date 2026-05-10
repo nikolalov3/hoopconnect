@@ -26,10 +26,16 @@ function PageLoader() {
 }
 
 export default function CoachApp() {
-  // Apply coach-panel class to body for global style overrides
+  // Apply coach-panel class to <html> and <body> for global style overrides.
+  // The player app's index.css clamps #root to max-width:430px and locks overflow,
+  // which breaks the desktop layout — these classes opt out of those rules.
   useEffect(() => {
+    document.documentElement.classList.add('coach-panel-root')
     document.body.classList.add('coach-panel')
-    return () => document.body.classList.remove('coach-panel')
+    return () => {
+      document.documentElement.classList.remove('coach-panel-root')
+      document.body.classList.remove('coach-panel')
+    }
   }, [])
 
   return (
