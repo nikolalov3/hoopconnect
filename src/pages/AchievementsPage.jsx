@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { fetchAchievementsCatalog, getCurrentStage, clearAchievementsCache } from '../lib/achievements'
+import { fetchAchievementsCatalog, getCurrentStage, clearAchievementsCache, getTrainingCategoryIds } from '../lib/achievements'
+import { getCache, setCache } from '../lib/queryCache'
 
 // ── STYLE MEDALI ──────────────────────────────────────────────────────────────
 const MEDAL_STYLE = {
@@ -240,22 +241,39 @@ export default function AchievementsPage() {
   const emptyMessage = useMemo(() => EMPTY_MESSAGES[Math.floor(Math.random() * EMPTY_MESSAGES.length)], [])
 
   useEffect(() => {
-    if (!profile) return
+    if (!profile?.id) return
+    const userId = profile.id
+    const cacheKey = `achievementsProgress:${userId}`
+
+    // Pokaż cache natychmiast jeśli jest świeży (60s) — zero migotania na powrót na zakładkę
+    const cached = getCache(cacheKey)
+    if (cached) {
+      setCatalog(cached.catalog)
+      setUnseenBaseIds(cached.unseen)
+      setUserProgress(cached.progress)
+      setLoading(false)
+    }
+
+    let cancelled = false
 
     async function loadProgress() {
+      // Globalne dane (catalog + recovery IDs) cachowane modułowo,
+      // user-specific dane przez queryCache. Wcześniej: 5 zapytań co
+      // wejście. Teraz: max 3 user-specific przy cold cache, 0 przy warm.
       const [
         achievementsCatalog,
-        { data: recoveryTrainings },
+        trainingCats,
         { data: logs },
         { data: unlockedAchievements },
         { data: shotSessions },
       ] = await Promise.all([
         fetchAchievementsCatalog(),
-        supabase.from('trainings').select('id').in('category', ['recovery', 'conditioning']),
-        supabase.from('activity_log').select('trainings_completed, all_done').eq('user_id', profile.id),
-        supabase.from('user_achievements').select('achievement_id, base_id, seen_at').eq('user_id', profile.id),
-        supabase.from('shooting_sessions').select('shot_type, made').eq('user_id', profile.id),
+        getTrainingCategoryIds(),
+        supabase.from('activity_log').select('trainings_completed, all_done').eq('user_id', userId),
+        supabase.from('user_achievements').select('achievement_id, base_id, seen_at').eq('user_id', userId),
+        supabase.from('shooting_sessions').select('shot_type, made').eq('user_id', userId),
       ])
+      if (cancelled) return
 
       // Suma trafionych per shot_type
       const shotTotals = {}
@@ -263,9 +281,7 @@ export default function AchievementsPage() {
         shotTotals[s.shot_type] = (shotTotals[s.shot_type] || 0) + (s.made || 0)
       }
 
-      setCatalog(achievementsCatalog)
-
-      const recoveryIds = new Set((recoveryTrainings || []).map(t => t.id))
+      const recoveryIds = trainingCats.recovery
       let recoveryCount = 0
       let allDayCount = 0
 
@@ -278,9 +294,6 @@ export default function AchievementsPage() {
 
       const unlockedIds = new Set((unlockedAchievements || []).map(a => a.achievement_id))
 
-      // Dla repeatable z licznikiem (goat_1, goat_2...): liczymy rekordy per base_id
-      // Dla repeatable z datą (early_bird_2026-04-12): liczymy rekordy per base_id
-      // Dla staged (regeneracja_bronze): nie liczymy rekordów — używamy activityCount
       const repeatableCounts = {}
       for (const a of (unlockedAchievements || [])) {
         const baseId = a.achievement_id.replace(/_\d+$/, '').replace(/_\d{4}-\d{2}-\d{2}$/, '')
@@ -290,26 +303,31 @@ export default function AchievementsPage() {
         }
       }
 
-      // base_ids z seen_at IS NULL → nieodczytane
       const unseen = new Set(
         (unlockedAchievements || [])
           .filter(a => a.seen_at === null && a.base_id)
           .map(a => a.base_id)
       )
-      setUnseenBaseIds(unseen)
 
-      setUserProgress({
+      const progress = {
         regeneracja: recoveryCount,
         allday: allDayCount,
         _unlockedIds: unlockedIds,
         _repeatableCounts: repeatableCounts,
         _shotTotals: shotTotals,
-      })
+      }
+
+      setCatalog(achievementsCatalog)
+      setUnseenBaseIds(unseen)
+      setUserProgress(progress)
       setLoading(false)
+
+      setCache(cacheKey, { catalog: achievementsCatalog, unseen, progress }, 60 * 1000)
     }
 
     loadProgress()
-  }, [profile])
+    return () => { cancelled = true }
+  }, [profile?.id])
 
   // Tylko osiągnięcia z odblokowanym co najmniej brązem
   const unlockedIds = userProgress._unlockedIds || new Set()

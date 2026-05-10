@@ -5,6 +5,7 @@ import { supabase } from './supabase'
 // Wynik jest cachowany w module żeby nie robić wielu requestów na jednej sesji.
 
 let _catalogCache = null
+let _trainingCategoryCache = null  // { recovery: Set<id>, shooting: Set<id> } — globalne, nigdy nie zmienia się per user
 
 export async function fetchAchievementsCatalog() {
   if (_catalogCache) return _catalogCache
@@ -24,9 +25,34 @@ export async function fetchAchievementsCatalog() {
   return _catalogCache
 }
 
+/**
+ * Pobiera ID treningów per kategoria w jednej query (zamiast osobnej dla każdego),
+ * cachuje w module — kategorie treningów nie zmieniają się per user, więc każdy
+ * mount AchievementsPage / lib/achievements deduplikuje request między userami.
+ */
+export async function getTrainingCategoryIds() {
+  if (_trainingCategoryCache) return _trainingCategoryCache
+
+  const { data } = await supabase
+    .from('trainings')
+    .select('id, category')
+    .in('category', ['recovery', 'conditioning', 'shooting'])
+
+  const recovery = new Set()
+  const shooting = new Set()
+  for (const t of (data || [])) {
+    if (t.category === 'recovery' || t.category === 'conditioning') recovery.add(t.id)
+    if (t.category === 'shooting') shooting.add(t.id)
+  }
+
+  _trainingCategoryCache = { recovery, shooting }
+  return _trainingCategoryCache
+}
+
 // Wyczyść cache (np. po dodaniu nowego osiągnięcia przez admina)
 export function clearAchievementsCache() {
   _catalogCache = null
+  _trainingCategoryCache = null
 }
 
 // ── COFNIĘCIE OSIĄGNIĘĆ ───────────────────────────────────────────────────────
@@ -79,21 +105,21 @@ export async function revokeStaleAchievements(userId) {
     .eq('user_id', userId)
   if (!userAchs?.length) return
 
-  // Pobierz dane potrzebne do przeliczenia
+  // Pobierz dane potrzebne do przeliczenia.
+  // Kategorie treningów (recovery/shooting IDs) cachowane modułowo — wcześniej były
+  // 2 osobne queries z .select('*') przy każdym wywołaniu, teraz raz na sesję.
   const [
     { data: logs },
-    { data: recoveryTrainings },
-    { data: shootingTrainings },
+    trainingCats,
     { data: shotSessions },
   ] = await Promise.all([
     supabase.from('activity_log').select('trainings_completed, all_done').eq('user_id', userId),
-    supabase.from('trainings').select('id').in('category', ['recovery', 'conditioning']),
-    supabase.from('trainings').select('id').eq('category', 'shooting'),
+    getTrainingCategoryIds(),
     supabase.from('shooting_sessions').select('made, attempted, shot_type').eq('user_id', userId),
   ])
 
-  const recoveryIds = new Set((recoveryTrainings || []).map(t => t.id))
-  const shootingIds = new Set((shootingTrainings || []).map(t => t.id))
+  const recoveryIds = trainingCats.recovery
+  const shootingIds = trainingCats.shooting
 
   let recoveryCount = 0, allDayCount = 0, totalTrainingsCount = 0, shootingSessionsCount = 0
   for (const log of (logs || [])) {
