@@ -59,47 +59,60 @@ export default function BottomNav() {
   const [hasUnread, setHasUnread] = useState(false)
   const [hasNewMatch, setHasNewMatch] = useState(false)
 
+  // Achievements unread count — fetch once per profile, refresh every 2 min.
+  // Wcześniej: query na każdą zmianę tabu (przy ruchach gracza = ciągłe queries).
   useEffect(() => {
     if (!profile) return
-    supabase
-      .from('user_achievements')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', profile.id)
-      .is('seen_at', null)
-      .then(({ count }) => setHasUnread((count ?? 0) > 0))
-  }, [pathname, profile])
+    let cancelled = false
 
-  // Team match notification — localStorage cache + DB fallback
-  useEffect(() => {
-    if (!profile) return
-
-    if (pathname === '/club') {
-      setHasNewMatch(false)
-      localStorage.removeItem(`hcNewTeamMatch_${profile.id}`)
-      // Persist "seen now" to DB for cross-device sync
-      supabase.from('profiles')
-        .update({ last_matches_seen_at: new Date().toISOString() })
-        .eq('id', profile.id)
-        .then(() => {})
-      return
+    const fetchUnread = () => {
+      supabase
+        .from('user_achievements')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', profile.id)
+        .is('seen_at', null)
+        .then(({ count }) => { if (!cancelled) setHasUnread((count ?? 0) > 0) })
     }
+
+    fetchUnread()
+    const interval = setInterval(fetchUnread, 120000) // 2 min
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [profile?.id])
+
+  // /club tab visit → mark matches as seen (writes only, cheap)
+  useEffect(() => {
+    if (!profile || pathname !== '/club') return
+    setHasNewMatch(false)
+    localStorage.removeItem(`hcNewTeamMatch_${profile.id}`)
+    supabase.from('profiles')
+      .update({ last_matches_seen_at: new Date().toISOString() })
+      .eq('id', profile.id)
+      .then(() => {})
+  }, [pathname, profile?.id])
+
+  // Team match notification — DB check ONCE on mount + periodic.
+  // Wcześniej: 4 queries na każdą zmianę tabu. Teraz: 4 queries raz na ~2 min.
+  useEffect(() => {
+    if (!profile) return
 
     // Fast path: localStorage cache already set by MatchesPanel
     const cached = localStorage.getItem(`hcNewTeamMatch_${profile.id}`)
     if (cached === '1') { setHasNewMatch(true); return }
 
-    // Slow path: query DB (enables cross-device notifications)
+    let cancelled = false
+
     async function checkDB() {
       const { data: membership } = await supabase
         .from('club_members').select('club_id')
         .eq('user_id', profile.id).maybeSingle()
-      if (!membership) return
+      if (cancelled || !membership) return
 
       const [{ data: prof }, { data: members }] = await Promise.all([
         supabase.from('profiles').select('last_matches_seen_at').eq('id', profile.id).single(),
         supabase.from('club_members').select('user_id')
           .eq('club_id', membership.club_id).neq('user_id', profile.id),
       ])
+      if (cancelled) return
 
       const lastSeen = prof?.last_matches_seen_at || '2020-01-01T00:00:00Z'
       const memberIds = (members || []).map(m => m.user_id)
@@ -109,6 +122,7 @@ export default function BottomNav() {
         .from('match_players').select('*', { count: 'exact', head: true })
         .in('user_id', memberIds)
         .gt('joined_at', lastSeen)
+      if (cancelled) return
 
       const hasNew = (count ?? 0) > 0
       setHasNewMatch(hasNew)
@@ -116,7 +130,9 @@ export default function BottomNav() {
     }
 
     checkDB()
-  }, [pathname, profile])
+    const interval = setInterval(checkDB, 120000) // 2 min
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [profile?.id])
 
   return (
     <AnimatePresence initial={false}>

@@ -148,6 +148,7 @@ export default function StatsPage() {
       .select('*, trainings(title)')
       .eq('user_id', profile.id)
       .order('session_date', { ascending: false })
+      .limit(500)  // power-users z 1000+ sesji nie potrzebują wszystkich naraz
       .then(({ data }) => {
         if (data) { setCache(cacheKey, data, 2 * 60 * 1000); setSessions(data) }
         setLoading(false)

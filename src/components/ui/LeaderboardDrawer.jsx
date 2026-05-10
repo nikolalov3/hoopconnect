@@ -267,42 +267,48 @@ export default function LeaderboardDrawer() {
         .order('starts_at', { ascending: true }).limit(1)
       const seasonStart = firstPeriod?.[0]?.starts_at || p.starts_at
 
-      // ── 3. Fetch all season points (for avg tier) ───────────────
-      const { data: allPts } = await supabase
-        .from('points_log').select('user_id, points, source, date')
-        .gte('date', seasonStart)
-
-      if (!allPts?.length) return
-
       // multiplier helper
       const mult = s => s === 'training' ? 0.5 : s === 'achievement' ? 0.75 : 1.0
 
-      // Weekly scores per user: { uid → { mondayKey → total } }
+      // ── 3. Current-week points only (small query — ranks who appears) ────
+      // Wcześniej: pobieraliśmy CAŁY sezon punktów dla WSZYSTKICH userów
+      // (~50k-500k+ wierszy przy skali). Teraz: najpierw bierzemy tylko ten tydzień
+      // (mała query), potem season-data tylko dla userów z tego tygodnia.
+      const { data: weekPts } = await supabase
+        .from('points_log').select('user_id, points, source')
+        .gte('date', p.starts_at).lte('date', p.ends_at)
+
+      if (!weekPts?.length) return
+
+      const weekTotals = {}
+      for (const r of weekPts) {
+        weekTotals[r.user_id] =
+          (weekTotals[r.user_id] || 0) + Math.round(r.points * mult(r.source))
+      }
+      const uids = Object.keys(weekTotals)
+      if (!uids.length) return
+
+      // ── 4. Season points TYLKO dla aktywnych w tym tygodniu ─────────────
+      // Użytkownicy nieaktywni w tym tygodniu nie wyświetlają się na liście,
+      // więc ich season-avg nie jest potrzebny.
+      const { data: seasonPts } = await supabase
+        .from('points_log').select('user_id, points, source, date')
+        .in('user_id', uids)
+        .gte('date', seasonStart)
+
+      // Weekly scores per user → season average
       const userWeekMap = {}
-      for (const r of allPts) {
+      for (const r of (seasonPts || [])) {
         const wk = toMondayKey(r.date)
         if (!userWeekMap[r.user_id]) userWeekMap[r.user_id] = {}
         userWeekMap[r.user_id][wk] =
           (userWeekMap[r.user_id][wk] || 0) + Math.round(r.points * mult(r.source))
       }
-
-      // Season average per user
       const seasonAvg = {}
       for (const [uid, weeks] of Object.entries(userWeekMap)) {
         const vals = Object.values(weeks)
         seasonAvg[uid] = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
       }
-
-      // ── 4. Current-week score (for ranking order) ───────────────
-      const weekTotals = {}
-      for (const r of allPts) {
-        if (r.date < p.starts_at || r.date > p.ends_at) continue
-        weekTotals[r.user_id] =
-          (weekTotals[r.user_id] || 0) + Math.round(r.points * mult(r.source))
-      }
-
-      const uids = Object.keys(weekTotals)
-      if (!uids.length) return
 
       const { data: profiles } = await supabase
         .from('profiles').select('id, name, fraud_probability').in('id', uids)

@@ -308,11 +308,20 @@ async function apiCancelMatch(matchId) {
 }
 
 async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds = [], myClubId = null) {
+  // Window: -7 dni do +60 dni od dziś. Stare mecze są bezużyteczne na liście,
+  // a bez okna przy 5k userów łatwo o tabelę z dziesiątkami tysięcy wierszy.
+  const now = new Date()
+  const from = new Date(now.getTime() - 7  * 86400000).toISOString()
+  const to   = new Date(now.getTime() + 60 * 86400000).toISOString()
+
   const { data: matches, error } = await supabase
     .from('club_matches')
     .select('*')
     .neq('status', 'cancelled')
+    .gte('scheduled_at', from)
+    .lte('scheduled_at', to)
     .order('scheduled_at', { ascending: true })
+    .limit(500)  // hard cap — jeśli kiedyś przekroczymy, dodamy paginację
   if (error) throw error
 
   // Always include own club's matches + matches within radius
