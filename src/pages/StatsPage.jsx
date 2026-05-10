@@ -342,7 +342,7 @@ export default function StatsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ ...glassCard, textAlign: 'center', padding: 32 }}>
-          <p style={{ fontSize: 28 }}>🏀</p>
+          <img src="/brokelogo.png" alt="" style={{ width: 56, height: 56, objectFit: 'contain', opacity: 0.7 }}/>
           <p style={{ color: 'var(--text-secondary)', marginTop: 8, fontFamily: 'var(--font-display)', fontSize: 16, textTransform: 'uppercase', letterSpacing: 1 }}>
             Brak sesji – zacznij trening!
           </p>

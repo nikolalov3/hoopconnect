@@ -290,12 +290,53 @@ function FramePicker({ current, uid, profile, onPick }) {
   )
 }
 
+// ── Spin picker: value +/− z zakresem ────────────────────────────────────────
+function SpinPicker({ label, value, onChange, min, max, unit = '' }) {
+  return (
+    <div style={{
+      flex: 1, background: C.card,
+      border: `1px solid ${C.border}`, borderTop: `1px solid ${C.borderT}`,
+      borderRadius: 12, padding: '10px 12px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+    }}>
+      <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5,
+        textTransform: 'uppercase', color: C.dim, margin: 0 }}>{label}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button onClick={() => onChange(Math.max(min, value - 1))} style={{
+          width: 28, height: 28, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`,
+          color: C.sub, fontSize: 16, lineHeight: 1, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          WebkitTapHighlightColor: 'transparent',
+        }}>−</button>
+        <p style={{
+          fontSize: 20, fontWeight: 900, color: C.text, margin: 0,
+          fontFamily: 'var(--font-display)', minWidth: 52, textAlign: 'center',
+        }}>{value || '—'}</p>
+        <button onClick={() => onChange(Math.min(max, value + 1))} style={{
+          width: 28, height: 28, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`,
+          color: C.sub, fontSize: 16, lineHeight: 1, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          WebkitTapHighlightColor: 'transparent',
+        }}>+</button>
+      </div>
+      {unit && <p style={{ fontSize: 9, color: C.dim, margin: 0, letterSpacing: 0.5 }}>{unit}</p>}
+    </div>
+  )
+}
+
 // ── Sub-view: Edytuj profil ───────────────────────────────────────────────────
-// Zawiera: dane profilowe + plan tygodnia + ramka avatara
+// Zawiera: dane profilowe + dane fizyczne + plan tygodnia + ramka avatara
 function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFrameChange }) {
   const uid = user?.id
+  const currentYear = new Date().getFullYear()
   const [name,       setName]       = useState(profile?.name || '')
   const [city,       setCity]       = useState(profile?.city || '')
+  const [birthYear,  setBirthYear]  = useState(
+    profile?.birth_year || (profile?.age ? currentYear - profile.age : 0)
+  )
+  const [heightCm,   setHeightCm]   = useState(profile?.height_cm || 0)
   const [days,       setDays]       = useState(() => {
     const cached = uid ? +localStorage.getItem(`hc_tdays_${uid}`) : 0
     return cached || profile?.training_days || 4
@@ -307,6 +348,8 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
   const dirty = name.trim() !== (profile?.name || '').trim()
     || city.trim() !== (profile?.city || '').trim()
     || days !== (profile?.training_days || 4)
+    || birthYear !== (profile?.birth_year || (profile?.age ? currentYear - profile.age : 0))
+    || heightCm  !== (profile?.height_cm  || 0)
 
   async function handleSave() {
     setSaveState('saving')
@@ -315,6 +358,10 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
         name:          name.trim(),
         city:          city.trim() || null,
         training_days: days,
+        birth_year:    birthYear || null,
+        height_cm:     heightCm  || null,
+        // przelicz age żeby pozostał spójny
+        ...(birthYear && { age: currentYear - birthYear }),
       }).eq('id', uid)
       if (error) throw error
       if (uid) localStorage.setItem(`hc_tdays_${uid}`, String(days))
@@ -362,6 +409,27 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <Field label="Imię / Nazwa" value={name} onChange={setName} placeholder="Twoja nazwa"/>
           <Field label="Miasto" value={city} onChange={setCity} placeholder="np. Warszawa"/>
+        </div>
+
+        {/* ── Dane fizyczne ── */}
+        <Divider/>
+        <SLabel style={{ margin: '0 0 12px 2px' }}>Dane fizyczne</SLabel>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <SpinPicker
+            label="Rok urodzenia"
+            value={birthYear}
+            onChange={setBirthYear}
+            min={currentYear - 60}
+            max={currentYear - 10}
+          />
+          <SpinPicker
+            label="Wzrost"
+            value={heightCm}
+            onChange={setHeightCm}
+            min={140}
+            max={230}
+            unit="cm"
+          />
         </div>
 
         {/* ── Plan tygodnia ── */}
@@ -555,7 +623,7 @@ function InfoView({ onBack, onClose }) {
 // ── Discord card (featured, tuż pod profilem) ─────────────────────────────────
 function DiscordCard() {
   return (
-    <a href="https://discord.gg/wZrDcRea" target="_blank" rel="noopener noreferrer"
+    <a href="https://discord.gg/7TwhZAvEzb" target="_blank" rel="noopener noreferrer"
       style={{ textDecoration: 'none', display: 'block' }}>
       <motion.div whileTap={{ scale: 0.985 }} style={{
         display: 'flex', alignItems: 'center', gap: 13,
