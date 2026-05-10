@@ -32,7 +32,7 @@ export default function LandingPage() {
         borderBottom: '1px solid #E6ECF3',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src="/brokelogo.png" alt="HoopConnect" style={{ width: 36, height: 36, objectFit: 'contain' }}/>
+          <img src="/hoop.svg" alt="HoopConnect" style={{ width: 36, height: 36, objectFit: 'contain' }}/>
           <div style={{ lineHeight: 1.1 }}>
             <div style={{ fontWeight: 700, fontSize: 15, letterSpacing: '-0.3px' }}>HoopConnect</div>
             <div style={{ fontSize: 11, color: '#8A9AB0', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Trener</div>

@@ -65,7 +65,7 @@ export default function Sidebar() {
     <aside className="coach-sidebar">
       <div className="coach-sidebar-header">
         <img
-          src="/brokelogo.png"
+          src="/hoop.svg"
           alt="HoopConnect"
           className="coach-sidebar-logo-img"
         />
