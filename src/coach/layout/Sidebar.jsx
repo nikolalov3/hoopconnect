@@ -1,4 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
+import { useCoachAuth } from '../context/CoachAuthContext'
+import TeamSwitcher from './TeamSwitcher'
 
 // Inline SVG icons — match existing player-app pattern
 const Icon = {
@@ -45,20 +47,26 @@ const Icon = {
   ),
 }
 
-const NAV = [
+// Team-scoped pages (operate on currentTeam)
+const TEAM_NAV = [
   { to: '/dashboard',     label: 'Pulpit',         icon: Icon.dashboard },
   { to: '/team',          label: 'Drużyna',        icon: Icon.team },
   { to: '/schedule',      label: 'Plan tygodnia',  icon: Icon.schedule },
   { to: '/notifications', label: 'Powiadomienia',  icon: Icon.notifications },
-  { to: '/settings',      label: 'Ustawienia',     icon: Icon.settings },
+]
+// Account-wide pages (not tied to a single team)
+const ACCOUNT_NAV = [
+  { to: '/teams',         label: 'Wszystkie drużyny', icon: Icon.team },
+  { to: '/settings',      label: 'Ustawienia',        icon: Icon.settings },
 ]
 
 export default function Sidebar() {
   const navigate = useNavigate()
+  const { signOut, coachProfile } = useCoachAuth()
 
-  const handleLogout = () => {
-    // TODO: hook up to coach auth context once it exists
-    navigate('/')
+  const handleLogout = async () => {
+    await signOut()
+    navigate('/', { replace: true })
   }
 
   return (
@@ -75,8 +83,25 @@ export default function Sidebar() {
         </div>
       </div>
 
+      <TeamSwitcher />
+
       <nav className="coach-sidebar-nav">
-        {NAV.map(item => (
+        <div className="coach-nav-section-label">Drużyna</div>
+        {TEAM_NAV.map(item => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={({ isActive }) =>
+              'coach-nav-item' + (isActive ? ' active' : '')
+            }
+          >
+            <span className="coach-nav-item-icon">{item.icon}</span>
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+
+        <div className="coach-nav-section-label">Konto</div>
+        {ACCOUNT_NAV.map(item => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -91,6 +116,11 @@ export default function Sidebar() {
       </nav>
 
       <div className="coach-sidebar-footer">
+        {coachProfile && (
+          <div style={{ padding: '8px 12px 12px', fontSize: 12, color: '#8A9AB0', fontWeight: 500 }}>
+            {coachProfile.full_name}
+          </div>
+        )}
         <button
           onClick={handleLogout}
           className="coach-nav-item"

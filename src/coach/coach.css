@@ -329,6 +329,98 @@ body.coach-panel ::-webkit-scrollbar-thumb:hover { background: #5591CD; }
   .coach-content { padding: 20px 18px 40px; }
 }
 
+/* team switcher */
+.coach-team-switcher {
+  position: relative;
+  padding: 14px 12px 8px;
+  border-bottom: 1px solid #E6ECF3;
+}
+.coach-team-switcher-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #F6F8FB;
+  border: 1px solid #E6ECF3;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+}
+.coach-team-switcher-trigger:hover { border-color: #5591CD; background: #FFFFFF; }
+.coach-team-switcher-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.coach-team-switcher-info {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
+}
+.coach-team-switcher-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A2233;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.coach-team-switcher-meta {
+  font-size: 11px;
+  color: #8A9AB0;
+  font-weight: 500;
+  margin-top: 1px;
+}
+.coach-team-switcher-menu {
+  position: absolute;
+  top: calc(100% - 6px);
+  left: 12px;
+  right: 12px;
+  background: #FFFFFF;
+  border: 1px solid #E6ECF3;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(20, 35, 60, 0.12);
+  padding: 8px;
+  z-index: 100;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.coach-team-switcher-menu-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #8A9AB0;
+  padding: 6px 10px 4px;
+}
+.coach-team-switcher-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.coach-team-switcher-item:hover { background: #F6F8FB; }
+.coach-team-switcher-item.active { background: #E8F1FA; }
+.coach-team-switcher-divider {
+  height: 1px;
+  background: #E6ECF3;
+  margin: 6px 4px;
+}
+
 /* placeholder pages */
 .coach-placeholder {
   display: flex;

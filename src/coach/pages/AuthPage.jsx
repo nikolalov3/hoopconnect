@@ -1,23 +1,61 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useCoachAuth } from '../context/CoachAuthContext'
+
+const errorPL = (msg) => {
+  const m = (msg || '').toLowerCase()
+  if (m.includes('invalid login credentials')) return 'Niepoprawny email lub hasło.'
+  if (m.includes('user already registered')) return 'Konto z tym emailem już istnieje. Zaloguj się.'
+  if (m.includes('password should be at least')) return 'Hasło musi mieć minimum 8 znaków.'
+  if (m.includes('email rate limit')) return 'Za dużo prób. Spróbuj za chwilę.'
+  return msg || 'Coś poszło nie tak. Spróbuj ponownie.'
+}
 
 export default function AuthPage({ mode = 'login' }) {
   const navigate = useNavigate()
-  const [email, setEmail]       = useState('')
+  const { signIn, signUp } = useCoachAuth()
+
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [name, setName]         = useState('')
+  const [name, setName] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
 
   const isRegister = mode === 'register'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError(null)
     setSubmitting(true)
-    // TODO: integrate with Supabase coach auth + create coach_profiles row
-    setTimeout(() => {
+    try {
+      if (isRegister) {
+        if (!name.trim()) {
+          setError('Podaj imię i nazwisko.')
+          setSubmitting(false)
+          return
+        }
+        const { error } = await signUp(email.trim(), password, name.trim())
+        if (error) {
+          setError(errorPL(error.message))
+          setSubmitting(false)
+          return
+        }
+        // After signUp, onAuthStateChange will fire SIGNED_IN and load coach data
+        // ProtectedOnboardingRoute / PublicRoute then routes us to /onboarding.
+        navigate('/onboarding', { replace: true })
+      } else {
+        const { error } = await signIn(email.trim(), password)
+        if (error) {
+          setError(errorPL(error.message))
+          setSubmitting(false)
+          return
+        }
+        navigate('/dashboard', { replace: true })
+      }
+    } catch (err) {
+      setError(errorPL(err?.message))
       setSubmitting(false)
-      navigate('/dashboard')
-    }, 600)
+    }
   }
 
   return (
@@ -38,7 +76,6 @@ export default function AuthPage({ mode = 'login' }) {
         padding: '36px 32px',
         boxShadow: '0 4px 12px rgba(20, 35, 60, 0.06)',
       }}>
-        {/* Logo */}
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 24 }}>
           <img src="/hoop.svg" alt="HoopConnect" style={{ width: 44, height: 44, objectFit: 'contain' }}/>
           <div style={{ lineHeight: 1.1 }}>
@@ -66,6 +103,7 @@ export default function AuthPage({ mode = 'login' }) {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="Jan Kowalski"
+                autoComplete="name"
                 required
               />
             </div>
@@ -79,6 +117,7 @@ export default function AuthPage({ mode = 'login' }) {
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="trener@klub.pl"
+              autoComplete="email"
               required
             />
           </div>
@@ -91,16 +130,28 @@ export default function AuthPage({ mode = 'login' }) {
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder={isRegister ? 'Min. 8 znaków' : '••••••••'}
+              autoComplete={isRegister ? 'new-password' : 'current-password'}
               minLength={isRegister ? 8 : undefined}
               required
             />
           </div>
 
+          {error && (
+            <div style={{
+              background: '#FCE5E2',
+              border: '1px solid #F4B5AB',
+              color: '#A1372A',
+              padding: '10px 12px',
+              borderRadius: 10,
+              fontSize: 13,
+            }}>{error}</div>
+          )}
+
           <button
             type="submit"
             className="coach-btn-primary"
             disabled={submitting}
-            style={{ marginTop: 6, padding: '12px 18px', fontSize: 14 }}
+            style={{ marginTop: 6, padding: '12px 18px', fontSize: 14, opacity: submitting ? 0.6 : 1 }}
           >
             {submitting ? '...' : (isRegister ? 'Załóż konto' : 'Zaloguj się')}
           </button>
