@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
@@ -14,11 +14,22 @@ import { useNotifications } from '../../context/NotificationsContext'
  */
 export default function NotificationsSheet() {
   const { notificationsOpen, setNotificationsOpen } = useUI()
-  const { items, acceptTeamInvite, markRead } = useNotifications()
+  const { items, acceptTeamInvite, markRead, reload } = useNotifications()
   const navigate = useNavigate()
 
   const close = () => setNotificationsOpen(false)
   const closeAndGoHome = () => { setNotificationsOpen(false); navigate('/') }
+
+  // When the sheet opens, force a fresh fetch — covers the case where the
+  // Realtime event was missed (websocket reconnect, tab backgrounded) and the
+  // bell's count is stale relative to what's actually in the table.
+  // Diagnostic log helps us tell apart "items truly empty" vs "render path
+  // drops them" — open DevTools console while testing.
+  useEffect(() => {
+    if (!notificationsOpen) return
+    console.log('[NotificationsSheet] open — current items:', items.length, items)
+    reload?.()
+  }, [notificationsOpen])  // eslint-disable-line react-hooks/exhaustive-deps
 
   return createPortal(
     <AnimatePresence>
@@ -81,7 +92,7 @@ export default function NotificationsSheet() {
 
             {items.length === 0 ? (
               <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>
-                Nic nowego. Spoko 🏀
+                Brak powiadomień
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
