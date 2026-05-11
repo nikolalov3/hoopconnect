@@ -16,6 +16,47 @@ export default function TeamPage() {
     loadRoster()
   }, [currentTeam?.id])
 
+  // Refetch when coach returns to tab (covers cases where the websocket
+  // dropped or Realtime isn't enabled on the tables yet)
+  useEffect(() => {
+    if (!currentTeam) return
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadRoster()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [currentTeam?.id])
+
+  // Realtime: refresh roster the instant a player accepts/leaves or an
+  // invite status flips. Wrapped defensively — must not crash the page.
+  useEffect(() => {
+    if (!currentTeam?.id) return
+    const teamId = currentTeam.id
+    let channel = null
+    try {
+      channel = supabase
+        .channel(`coach-team-${teamId}`)
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'team_members',
+          filter: `team_id=eq.${teamId}`,
+        }, () => loadRoster())
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'team_invites',
+          filter: `team_id=eq.${teamId}`,
+        }, () => loadRoster())
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn('[coach/team] realtime status:', status)
+          }
+        })
+    } catch (err) {
+      console.warn('[coach/team] realtime subscribe failed:', err)
+    }
+    return () => {
+      try { if (channel) supabase.removeChannel(channel) } catch {}
+    }
+  }, [currentTeam?.id])
+
   async function loadRoster() {
     setLoading(true)
     // get_team_roster joins team_members + auth.users.email server-side
@@ -42,7 +83,26 @@ export default function TeamPage() {
             {invites.length > 0 && ` · ${invites.length} zaproszeń oczekuje`}
           </p>
         </div>
-        <button className="coach-btn-primary" onClick={() => setShowInvite(true)}>+ Dodaj zawodnika</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            className="coach-btn-secondary"
+            onClick={loadRoster}
+            disabled={loading}
+            title="Odśwież listę"
+            aria-label="Odśwież"
+            style={{ padding: '10px 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{
+              animation: loading ? 'spin 0.8s linear infinite' : 'none',
+            }}>
+              <polyline points="23 4 23 10 17 10"/>
+              <polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+            Odśwież
+          </button>
+          <button className="coach-btn-primary" onClick={() => setShowInvite(true)}>+ Dodaj zawodnika</button>
+        </div>
       </header>
 
       {loading ? (

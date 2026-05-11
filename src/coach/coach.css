@@ -329,6 +329,10 @@ body.coach-panel ::-webkit-scrollbar-thumb:hover { background: #5591CD; }
   .coach-content { padding: 20px 18px 40px; }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* team switcher */
 .coach-team-switcher {
   position: relative;
