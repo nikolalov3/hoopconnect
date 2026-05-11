@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useUI } from '../../context/UIContext'
 import { useNotifications } from '../../context/NotificationsContext'
+import { useAuth } from '../../context/AuthContext'
+import { supabase } from '../../lib/supabase'
 
 /**
  * Bottom-sheet drawer that lists the player's pending in-app notifications.
@@ -15,20 +17,39 @@ import { useNotifications } from '../../context/NotificationsContext'
 export default function NotificationsSheet() {
   const { notificationsOpen, setNotificationsOpen } = useUI()
   const { items, acceptTeamInvite, markRead, reload } = useNotifications()
+  const { user } = useAuth()
   const navigate = useNavigate()
+  const [debug, setDebug] = useState(null)
 
   const close = () => setNotificationsOpen(false)
   const closeAndGoHome = () => { setNotificationsOpen(false); navigate('/') }
 
   // When the sheet opens, force a fresh fetch — covers the case where the
-  // Realtime event was missed (websocket reconnect, tab backgrounded) and the
-  // bell's count is stale relative to what's actually in the table.
-  // Diagnostic log helps us tell apart "items truly empty" vs "render path
-  // drops them" — open DevTools console while testing.
+  // Realtime event was missed (websocket reconnect, tab backgrounded).
   useEffect(() => {
     if (!notificationsOpen) return
     console.log('[NotificationsSheet] open — current items:', items.length, items)
     reload?.()
+
+    // Visible diagnostic — does the client see the unread row directly?
+    ;(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('id, read, type, payload')
+          .eq('user_id', user?.id || '00000000-0000-0000-0000-000000000000')
+          .order('created_at', { ascending: false })
+          .limit(5)
+        setDebug({
+          userId: user?.id || '∅',
+          itemsLen: items.length,
+          query: error ? `ERR: ${error.message}` : `${data?.length || 0} rows`,
+          rows: data || [],
+        })
+      } catch (e) {
+        setDebug({ error: e?.message })
+      }
+    })()
   }, [notificationsOpen])  // eslint-disable-line react-hooks/exhaustive-deps
 
   return createPortal(
@@ -90,6 +111,26 @@ export default function NotificationsSheet() {
               <button onClick={close} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 22, cursor: 'pointer', padding: 4, lineHeight: 1 }}>×</button>
             </div>
 
+            {debug && (
+              <div style={{
+                marginBottom: 12,
+                padding: '8px 10px',
+                background: 'rgba(91,184,245,0.08)',
+                border: '1px solid rgba(91,184,245,0.22)',
+                borderRadius: 8,
+                fontSize: 10,
+                color: '#8AAEC8',
+                lineHeight: 1.45,
+                fontFamily: 'monospace',
+                wordBreak: 'break-all',
+              }}>
+                <div>user: <strong>{String(debug.userId).slice(0, 8)}…</strong> · items.length: <strong>{debug.itemsLen}</strong></div>
+                <div>direct query: <strong>{debug.query}</strong></div>
+                {debug.rows?.map(r => (
+                  <div key={r.id}>{r.id.slice(0,8)}… · read={String(r.read)} · {r.payload?.team_name}</div>
+                ))}
+              </div>
+            )}
             {items.length === 0 ? (
               <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>
                 Brak powiadomień
