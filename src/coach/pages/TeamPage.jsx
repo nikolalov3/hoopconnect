@@ -57,41 +57,49 @@ export default function TeamPage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {members.map(m => (
-                <button
-                  key={m.player_id}
-                  onClick={() => navigate(`/team/${m.player_id}`)}
-                  className="coach-card"
-                  style={{ textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, padding: 14 }}
-                >
-                  <div style={{
-                    width: 42, height: 42, borderRadius: 11,
-                    background: '#E8F1FA', color: '#1E3A5F',
-                    fontWeight: 700, fontSize: 14,
-                    display: 'grid', placeItems: 'center', flexShrink: 0,
-                  }}>
-                    {(m.display_first_name?.charAt(0) || '') + (m.display_last_name?.charAt(0) || '')}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#1A2233' }}>
-                      {m.display_first_name} {m.display_last_name}
+              {members.map(m => {
+                const fullName = [m.display_first_name, m.display_last_name].filter(Boolean).join(' ')
+                const initials = (m.display_first_name?.charAt(0) || '') + (m.display_last_name?.charAt(0) || '')
+                return (
+                  <button
+                    key={m.player_id}
+                    onClick={() => navigate(`/team/${m.player_id}`)}
+                    className="coach-card"
+                    style={{ textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, padding: 14 }}
+                  >
+                    <div style={{
+                      width: 42, height: 42, borderRadius: 11,
+                      background: '#E8F1FA', color: '#1E3A5F',
+                      fontWeight: 700, fontSize: 14,
+                      display: 'grid', placeItems: 'center', flexShrink: 0,
+                    }}>
+                      {initials || '?'}
                     </div>
-                    <div style={{ fontSize: 12, color: '#8A9AB0' }}>
-                      {m.jersey_number ? `#${m.jersey_number}` : 'bez numeru'}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: fullName ? '#1A2233' : '#8A9AB0', fontStyle: fullName ? 'normal' : 'italic' }}>
+                        {fullName || 'Bez imienia · uzupełnij'}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#8A9AB0' }}>
+                        {m.jersey_number ? `#${m.jersey_number}` : 'bez numeru'}
+                      </div>
                     </div>
-                  </div>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A9AB0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6"/>
-                  </svg>
-                </button>
-              ))}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A9AB0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                  </button>
+                )
+              })}
 
               {invites.length > 0 && (
                 <>
                   <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#8A9AB0', padding: '12px 4px 4px' }}>
                     Oczekujące zaproszenia
                   </div>
-                  {invites.map(inv => (
+                  {invites.map(inv => {
+                    const fullName = [inv.invited_first_name, inv.invited_last_name].filter(Boolean).join(' ')
+                    const initials = (inv.invited_first_name?.charAt(0) || '') + (inv.invited_last_name?.charAt(0) || '')
+                    const emailInitial = inv.invited_email?.charAt(0)?.toUpperCase() || '?'
+                    return (
                     <div key={inv.id} className="coach-card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 14, opacity: 0.7 }}>
                       <div style={{
                         width: 42, height: 42, borderRadius: 11,
@@ -99,13 +107,13 @@ export default function TeamPage() {
                         fontWeight: 700, fontSize: 14,
                         display: 'grid', placeItems: 'center', flexShrink: 0,
                       }}>
-                        {(inv.invited_first_name?.charAt(0) || '') + (inv.invited_last_name?.charAt(0) || '')}
+                        {initials || emailInitial}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 600, color: '#1A2233' }}>
-                          {inv.invited_first_name} {inv.invited_last_name}
+                          {fullName || inv.invited_email}
                         </div>
-                        <div style={{ fontSize: 12, color: '#8A9AB0' }}>{inv.invited_email}</div>
+                        {fullName && <div style={{ fontSize: 12, color: '#8A9AB0' }}>{inv.invited_email}</div>}
                       </div>
                       <span style={{ fontSize: 11, fontWeight: 700, color: '#A37416', background: '#FCF2DE', padding: '4px 9px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                         Oczekuje
@@ -119,7 +127,8 @@ export default function TeamPage() {
                         style={{ fontSize: 12, padding: '6px 10px', color: '#D85546' }}
                       >Anuluj</button>
                     </div>
-                  ))}
+                    )
+                  })}
                 </>
               )}
             </div>
@@ -149,8 +158,8 @@ function InvitePlayerModal({ team, coachId, onClose, onInvited }) {
   const submit = async (e) => {
     e.preventDefault()
     setError(null)
-    if (!email.trim() || !firstName.trim() || !lastName.trim()) {
-      setError('Wypełnij wszystkie pola.')
+    if (!email.trim()) {
+      setError('Podaj email zawodnika.')
       return
     }
     setSubmitting(true)
@@ -165,14 +174,14 @@ function InvitePlayerModal({ team, coachId, onClose, onInvited }) {
         .ilike('username', emailLower)
         .maybeSingle()
 
-      // 2. Insert invite
+      // 2. Insert invite (imię/nazwisko są opcjonalne — trener uzupełnia później)
       const { data: invite, error: inviteErr } = await supabase
         .from('team_invites')
         .insert({
           team_id: team.id,
           invited_email: emailLower,
-          invited_first_name: firstName.trim(),
-          invited_last_name: lastName.trim(),
+          invited_first_name: firstName.trim() || null,
+          invited_last_name: lastName.trim() || null,
           invited_player_id: matchingProfile?.id || null,
           invited_by: coachId,
         })
@@ -226,20 +235,10 @@ function InvitePlayerModal({ team, coachId, onClose, onInvited }) {
       }}>
         <h2 className="coach-h2" style={{ marginBottom: 4 }}>Dodaj zawodnika</h2>
         <p className="coach-subtitle" style={{ marginBottom: 20 }}>
-          Wpisz dane zawodnika. Jeśli ma już konto z tym mailem, dostanie powiadomienie. Jeśli nie, zaproszenie czeka na rejestrację.
+          Wystarczy email. Imię i nazwisko możesz uzupełnić później na profilu zawodnika.
         </p>
 
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label className="coach-label">Imię *</label>
-              <input className="coach-input" type="text" value={firstName} onChange={e => setFirstName(e.target.value)} autoFocus required />
-            </div>
-            <div>
-              <label className="coach-label">Nazwisko *</label>
-              <input className="coach-input" type="text" value={lastName} onChange={e => setLastName(e.target.value)} required />
-            </div>
-          </div>
           <div>
             <label className="coach-label">Email zawodnika *</label>
             <input
@@ -248,8 +247,19 @@ function InvitePlayerModal({ team, coachId, onClose, onInvited }) {
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="zawodnik@email.pl"
+              autoFocus
               required
             />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label className="coach-label">Imię (opcjonalne)</label>
+              <input className="coach-input" type="text" value={firstName} onChange={e => setFirstName(e.target.value)} />
+            </div>
+            <div>
+              <label className="coach-label">Nazwisko (opcjonalne)</label>
+              <input className="coach-input" type="text" value={lastName} onChange={e => setLastName(e.target.value)} />
+            </div>
           </div>
 
           {error && <div style={{ background: '#FCE5E2', border: '1px solid #F4B5AB', color: '#A1372A', padding: '10px 12px', borderRadius: 10, fontSize: 13 }}>{error}</div>}
