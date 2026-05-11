@@ -200,6 +200,7 @@ function InvitePlayerModal({ team, coachId, onClose, onInvited }) {
 
       // 3. If we resolved a player, create an in-app notification
       if (matchingProfile?.id) {
+        const coachLabel = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ') || null
         await supabase.from('notifications').insert({
           user_id: matchingProfile.id,
           type: 'team_invite',
@@ -207,7 +208,8 @@ function InvitePlayerModal({ team, coachId, onClose, onInvited }) {
             invite_id: invite.id,
             team_id: team.id,
             team_name: team.name,
-            coach_label: `${firstName.trim()} ${lastName.trim()}`,
+            organization: team.organization || null,
+            coach_label: coachLabel,
           },
           action_url: `/invites/${invite.id}`,
         })

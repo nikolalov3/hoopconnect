@@ -81,6 +81,116 @@ function Row({ label, sub, right, onClick, danger }) {
   )
 }
 
+/**
+ * Section showing the teams (sformalizowane drużyny prowadzone przez trenera)
+ * that this player is a member of. Hidden when the player has no teams.
+ * Each card has a "Opuść drużynę" button that calls leave_team() RPC.
+ */
+function TeamsSection() {
+  const [teams, setTeams] = useState(null)         // null = loading, [] = empty
+  const [confirmTeamId, setConfirmTeamId] = useState(null)
+  const [busyTeamId, setBusyTeamId] = useState(null)
+
+  const load = async () => {
+    const { data, error } = await supabase.rpc('get_my_teams')
+    if (error) { setTeams([]); return }
+    setTeams(data || [])
+  }
+
+  useEffect(() => { load() }, [])
+
+  const leave = async (teamId) => {
+    setBusyTeamId(teamId)
+    const { error } = await supabase.rpc('leave_team', { p_team_id: teamId })
+    setBusyTeamId(null)
+    setConfirmTeamId(null)
+    if (!error) await load()
+  }
+
+  if (teams === null) return null
+  if (teams.length === 0) return null
+
+  return (
+    <>
+      <SLabel>Drużyna</SLabel>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {teams.map(t => {
+          const isConfirming = confirmTeamId === t.team_id
+          const isBusy = busyTeamId === t.team_id
+          const sectionLabel = t.section === 'M' ? 'Męska' : t.section === 'K' ? 'Żeńska' : 'Mixed'
+          return (
+            <div key={t.team_id} style={{
+              borderRadius: 14,
+              border: `1px solid ${C.border}`,
+              borderTop: `1px solid ${C.borderT}`,
+              background: C.card,
+              overflow: 'hidden',
+            }}>
+              <div style={{ padding: '14px 16px 12px' }}>
+                {t.organization && (
+                  <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', color: C.sub, margin: 0 }}>
+                    {t.organization}
+                  </p>
+                )}
+                <p style={{
+                  fontSize: 16, fontWeight: 800,
+                  fontFamily: 'var(--font-display)',
+                  letterSpacing: 0.4, textTransform: 'uppercase',
+                  color: C.text, margin: '2px 0 4px',
+                }}>
+                  {t.team_name}
+                </p>
+                <p style={{ fontSize: 11, color: C.sub, margin: 0, letterSpacing: 0.3 }}>
+                  {t.age_category} · {sectionLabel}
+                  {t.jersey_number ? ` · #${t.jersey_number}` : ''}
+                </p>
+              </div>
+
+              {isConfirming ? (
+                <div style={{ borderTop: `1px solid ${C.border}`, padding: '10px 16px', display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => setConfirmTeamId(null)}
+                    disabled={isBusy}
+                    style={{
+                      flex: 1, padding: '8px 12px', borderRadius: 9,
+                      border: `1px solid ${C.border}`, background: 'transparent',
+                      color: C.sub, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    }}
+                  >Nie, zostaję</button>
+                  <button
+                    onClick={() => leave(t.team_id)}
+                    disabled={isBusy}
+                    style={{
+                      flex: 1, padding: '8px 12px', borderRadius: 9,
+                      border: `1px solid ${C.red}`, background: 'rgba(255,80,96,0.12)',
+                      color: C.red, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                      opacity: isBusy ? 0.5 : 1,
+                    }}
+                  >{isBusy ? '...' : 'Tak, opuść drużynę'}</button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmTeamId(t.team_id)}
+                  style={{
+                    width: '100%', borderTop: `1px solid ${C.border}`,
+                    background: 'transparent', border: 'none',
+                    padding: '11px 16px', cursor: 'pointer',
+                    color: C.red, fontSize: 12, fontWeight: 600,
+                    letterSpacing: 0.3, textAlign: 'center',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  Opuść drużynę
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
 function CardGroup({ children }) {
   const items = Array.isArray(children) ? children.filter(Boolean) : [children]
   return (
@@ -781,6 +891,8 @@ export default function SettingsPanel({ open, onClose }) {
 
               {/* Sekcje */}
               <div style={{ padding: '0 18px', flex: 1 }}>
+
+                <TeamsSection/>
 
                 <SLabel>Konto</SLabel>
                 <CardGroup>

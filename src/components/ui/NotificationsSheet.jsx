@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { useUI } from '../../context/UIContext'
 import { useNotifications } from '../../hooks/useNotifications'
 
@@ -14,8 +15,10 @@ import { useNotifications } from '../../hooks/useNotifications'
 export default function NotificationsSheet() {
   const { notificationsOpen, setNotificationsOpen } = useUI()
   const { items, acceptTeamInvite, markRead } = useNotifications()
+  const navigate = useNavigate()
 
   const close = () => setNotificationsOpen(false)
+  const closeAndGoHome = () => { setNotificationsOpen(false); navigate('/') }
 
   return createPortal(
     <AnimatePresence>
@@ -89,6 +92,7 @@ export default function NotificationsSheet() {
                     onAcceptInvite={acceptTeamInvite}
                     onMarkRead={markRead}
                     onClose={close}
+                    onAccepted={closeAndGoHome}
                   />
                 ))}
               </div>
@@ -101,23 +105,33 @@ export default function NotificationsSheet() {
   )
 }
 
-function NotificationCard({ notification, onAcceptInvite, onMarkRead, onClose }) {
+function NotificationCard({ notification, onAcceptInvite, onMarkRead, onClose, onAccepted }) {
   const { type, payload } = notification
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [accepted, setAccepted] = useState(null)  // { team_name } if just accepted
 
   if (type === 'team_invite') {
+    const coachLabel = payload?.coach_label
+    const orgLine = payload?.organization
     return (
       <div className="card" style={{ padding: 16 }}>
         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: '#5BB8F5', marginBottom: 6 }}>
           Zaproszenie do drużyny
         </div>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 2 }}>
           {payload?.team_name || 'Drużyna'}
         </div>
-        <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 14 }}>
-          Trener doda Cię jako <strong style={{ color: 'var(--text-primary)' }}>{payload?.coach_label || 'członka'}</strong>. Po akceptacji będzie widział Twoje statystyki treningowe i wysyłał plan tygodnia.
+        {orgLine && (
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
+            {orgLine}
+          </div>
+        )}
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 10, marginBottom: 14 }}>
+          {coachLabel
+            ? <>Trener chce dodać Cię do drużyny jako <strong style={{ color: 'var(--text-primary)' }}>{coachLabel}</strong>.</>
+            : <>Trener chce dodać Cię do swojej drużyny.</>
+          }{' '}Po akceptacji będzie widział Twoje statystyki treningowe i wysyłał plan tygodnia.
         </div>
 
         {accepted ? (
@@ -158,6 +172,8 @@ function NotificationCard({ notification, onAcceptInvite, onMarkRead, onClose })
                   try {
                     const result = await onAcceptInvite(payload.invite_id)
                     setAccepted(result)
+                    // Briefly show confirmation, then close sheet and bounce to home
+                    setTimeout(() => { onAccepted?.() }, 1200)
                   } catch (e) {
                     setError(e?.message || 'Nie udało się zaakceptować.')
                   } finally {
