@@ -228,10 +228,12 @@ function InvitePlayerModal({ team, coachId, onClose, onInvited }) {
   const [lastName, setLastName] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(null)  // { status, team_name }
 
   const submit = async (e) => {
     e.preventDefault()
     setError(null)
+    setSuccess(null)
     if (!email.trim()) {
       setError('Podaj email zawodnika.')
       return
@@ -239,62 +241,41 @@ function InvitePlayerModal({ team, coachId, onClose, onInvited }) {
     setSubmitting(true)
 
     try {
-      const emailLower = email.trim().toLowerCase()
+      // Single RPC handles everything: dedup pending, refresh notification,
+      // detect "already in team", recover from races. Never crashes.
+      const { data, error: rpcErr } = await supabase.rpc('invite_player', {
+        p_team_id:    team.id,
+        p_email:      email.trim(),
+        p_first_name: firstName.trim() || null,
+        p_last_name:  lastName.trim() || null,
+      })
 
-      // 1. Try to resolve email to existing player profile
-      const { data: matchingProfile } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .ilike('username', emailLower)
-        .maybeSingle()
-
-      // 2. Insert invite (imię/nazwisko są opcjonalne — trener uzupełnia później)
-      const { data: invite, error: inviteErr } = await supabase
-        .from('team_invites')
-        .insert({
-          team_id: team.id,
-          invited_email: emailLower,
-          invited_first_name: firstName.trim() || null,
-          invited_last_name: lastName.trim() || null,
-          invited_player_id: matchingProfile?.id || null,
-          invited_by: coachId,
-        })
-        .select()
-        .single()
-
-      if (inviteErr) {
-        if (inviteErr.code === '23505') {
-          setError('Ten email ma już aktywne zaproszenie do tej drużyny.')
-        } else {
-          setError(inviteErr.message)
-        }
+      if (rpcErr) {
+        setError(rpcErr.message)
         setSubmitting(false)
         return
       }
 
-      // 3. If we resolved a player, create an in-app notification
-      if (matchingProfile?.id) {
-        const coachLabel = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ') || null
-        await supabase.from('notifications').insert({
-          user_id: matchingProfile.id,
-          type: 'team_invite',
-          payload: {
-            invite_id: invite.id,
-            team_id: team.id,
-            team_name: team.name,
-            organization: team.organization || null,
-            coach_label: coachLabel,
-          },
-          action_url: `/invites/${invite.id}`,
-        })
-      }
+      setSuccess(data)
+      setSubmitting(false)
 
-      onInvited()
+      // For created/resent invites: tell parent to refresh, close shortly after
+      if (data?.status !== 'already_member') {
+        setTimeout(() => onInvited(), 900)
+      }
     } catch (err) {
       setError(err?.message || 'Nie udało się wysłać zaproszenia.')
       setSubmitting(false)
     }
   }
+
+  const successCopy = (() => {
+    if (!success) return null
+    if (success.status === 'invite_created') return 'Zaproszenie wysłane.'
+    if (success.status === 'invite_resent')  return 'Zaproszenie odświeżone. Powiadomienie dotarło ponownie.'
+    if (success.status === 'already_member') return 'Ten zawodnik jest już w drużynie.'
+    return 'Gotowe.'
+  })()
 
   return (
     <div style={{
@@ -338,13 +319,34 @@ function InvitePlayerModal({ team, coachId, onClose, onInvited }) {
             </div>
           </div>
 
-          {error && <div style={{ background: '#FCE5E2', border: '1px solid #F4B5AB', color: '#A1372A', padding: '10px 12px', borderRadius: 10, fontSize: 13 }}>{error}</div>}
+          {error && (
+            <div style={{ background: '#FCE5E2', border: '1px solid #F4B5AB', color: '#A1372A', padding: '10px 12px', borderRadius: 10, fontSize: 13 }}>
+              {error}
+            </div>
+          )}
+
+          {successCopy && (
+            <div style={{
+              background: success?.status === 'already_member' ? '#FCF2DE' : '#E2F4EB',
+              border: `1px solid ${success?.status === 'already_member' ? '#E8C97A' : '#9CD9B7'}`,
+              color: success?.status === 'already_member' ? '#7A5818' : '#1E6B3D',
+              padding: '10px 12px',
+              borderRadius: 10,
+              fontSize: 13,
+            }}>
+              {successCopy}
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-            <button type="button" onClick={onClose} className="coach-btn-secondary" style={{ flex: 1 }}>Anuluj</button>
-            <button type="submit" className="coach-btn-primary" disabled={submitting} style={{ flex: 1, opacity: submitting ? 0.6 : 1 }}>
-              {submitting ? 'Wysyłanie...' : 'Wyślij zaproszenie'}
+            <button type="button" onClick={onClose} className="coach-btn-secondary" style={{ flex: 1 }}>
+              {success?.status === 'already_member' ? 'Zamknij' : 'Anuluj'}
             </button>
+            {success?.status !== 'already_member' && (
+              <button type="submit" className="coach-btn-primary" disabled={submitting} style={{ flex: 1, opacity: submitting ? 0.6 : 1 }}>
+                {submitting ? 'Wysyłanie...' : 'Wyślij zaproszenie'}
+              </button>
+            )}
           </div>
         </form>
       </div>
