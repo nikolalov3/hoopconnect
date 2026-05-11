@@ -18,8 +18,11 @@ export default function TeamPage() {
 
   async function loadRoster() {
     setLoading(true)
+    // get_team_roster joins team_members + auth.users.email server-side
+    // so the UI can show the email-local-part as a label fallback when
+    // first/last name haven't been typed yet.
     const [{ data: m }, { data: inv }] = await Promise.all([
-      supabase.from('team_members').select('*').eq('team_id', currentTeam.id),
+      supabase.rpc('get_team_roster', { p_team_id: currentTeam.id }),
       supabase.from('team_invites').select('*').eq('team_id', currentTeam.id).eq('status', 'pending').order('created_at', { ascending: false }),
     ])
     setMembers(m || [])
@@ -58,8 +61,15 @@ export default function TeamPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {members.map(m => {
-                const fullName = [m.display_first_name, m.display_last_name].filter(Boolean).join(' ')
-                const initials = (m.display_first_name?.charAt(0) || '') + (m.display_last_name?.charAt(0) || '')
+                const fullName  = [m.display_first_name, m.display_last_name].filter(Boolean).join(' ')
+                const emailLocal = m.player_email?.split('@')[0] || ''
+                // Fallback chain: typed name → email local part → '?'
+                const displayLabel = fullName || emailLocal || 'Zawodnik'
+                const nameInitials = (m.display_first_name?.charAt(0) || '') + (m.display_last_name?.charAt(0) || '')
+                const initials = nameInitials || emailLocal.charAt(0).toUpperCase() || '?'
+                const subLine = fullName
+                  ? (m.jersey_number ? `#${m.jersey_number}` : 'bez numeru')
+                  : 'uzupełnij imię'
                 return (
                   <button
                     key={m.player_id}
@@ -73,14 +83,18 @@ export default function TeamPage() {
                       fontWeight: 700, fontSize: 14,
                       display: 'grid', placeItems: 'center', flexShrink: 0,
                     }}>
-                      {initials || '?'}
+                      {initials}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: fullName ? '#1A2233' : '#8A9AB0', fontStyle: fullName ? 'normal' : 'italic' }}>
-                        {fullName || 'Bez imienia · uzupełnij'}
+                      <div style={{
+                        fontSize: 14, fontWeight: 600,
+                        color: fullName ? '#1A2233' : '#4D5C73',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>
+                        {displayLabel}
                       </div>
                       <div style={{ fontSize: 12, color: '#8A9AB0' }}>
-                        {m.jersey_number ? `#${m.jersey_number}` : 'bez numeru'}
+                        {subLine}
                       </div>
                     </div>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A9AB0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
