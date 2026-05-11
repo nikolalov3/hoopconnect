@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useUI } from '../../context/UIContext'
-import { useNotifications } from '../../hooks/useNotifications'
+import { useNotifications } from '../../context/NotificationsContext'
 
 /**
  * Bottom-sheet drawer that lists the player's pending in-app notifications.

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { UIProvider, useUI } from './context/UIContext'
+import { NotificationsProvider } from './context/NotificationsContext'
 import BottomNav from './components/ui/BottomNav'
 import LeaderboardDrawer from './components/ui/LeaderboardDrawer'
 import FrameUnlockPanel from './components/ui/FrameUnlockPanel'
@@ -217,6 +218,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <UIProvider>
+          <NotificationsProvider>
           <Routes>
             <Route path="/auth"            element={<AuthRoute />} />
             <Route path="/dolacz/:clubId"  element={
@@ -226,6 +228,7 @@ export default function App() {
             } />
             <Route path="/*"               element={<AppShell />} />
           </Routes>
+          </NotificationsProvider>
         </UIProvider>
       </AuthProvider>
     </BrowserRouter>

@@ -9,7 +9,7 @@ import LeagueInfoPanel from '../components/ui/LeagueInfoPanel'
 import { useUI } from '../context/UIContext'
 import StreakToast from '../components/ui/StreakToast'
 import { getCache, setCache, bustCache } from '../lib/queryCache'
-import { useNotifications } from '../hooks/useNotifications'
+import { useNotifications } from '../context/NotificationsContext'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
