@@ -44,25 +44,41 @@ export function useNotifications() {
   }, [load])
 
   // Supabase Realtime: instant refresh when a row in `notifications` for this
-  // user is inserted, updated, or deleted. Covers the "coach just invited me
-  // and I'm staring at my phone" case — red dot appears within ~1s without
-  // needing to background+foreground the app.
-  //
-  // Requires the table to be in the supabase_realtime publication:
+  // user is inserted, updated, or deleted. Requires the table to be in the
+  // supabase_realtime publication:
   //   ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+  //
+  // Wrapped in try/catch + a global cleanup guard so that any failure here
+  // (publication not enabled, websocket blocked, channel-name collision, etc.)
+  // never crashes the host page. The visibility refetch above is the
+  // fallback when Realtime is unavailable.
   useEffect(() => {
     if (!user?.id) return
-    const channel = supabase
-      .channel(`notifications-rt-${user.id}`)
-      .on('postgres_changes', {
-        event:  '*',
-        schema: 'public',
-        table:  'notifications',
-        filter: `user_id=eq.${user.id}`,
-      }, () => { load() })
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
+    let channel = null
+    let unmounted = false
+    try {
+      channel = supabase
+        .channel(`notifications-rt-${user.id}`)
+        .on('postgres_changes', {
+          event:  '*',
+          schema: 'public',
+          table:  'notifications',
+          filter: `user_id=eq.${user.id}`,
+        }, () => { if (!unmounted) load() })
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            // Don't crash — quietly continue; visibility refetch handles updates
+            // when user comes back to the tab.
+            console.warn('[notifications] realtime status:', status)
+          }
+        })
+    } catch (err) {
+      console.warn('[notifications] realtime subscribe failed:', err)
+    }
+    return () => {
+      unmounted = true
+      try { if (channel) supabase.removeChannel(channel) } catch {}
+    }
   }, [user?.id, load])
 
   const acceptTeamInvite = useCallback(async (inviteId) => {
