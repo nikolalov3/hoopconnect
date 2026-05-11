@@ -6,6 +6,7 @@ import { UIProvider, useUI } from './context/UIContext'
 import BottomNav from './components/ui/BottomNav'
 import LeaderboardDrawer from './components/ui/LeaderboardDrawer'
 import FrameUnlockPanel from './components/ui/FrameUnlockPanel'
+import NotificationsSheet from './components/ui/NotificationsSheet'
 
 // ── Frame reward configs ──────────────────────────────────────────────────────
 const SEASON_1_END = new Date('2026-08-24T00:00:00')
@@ -186,6 +187,9 @@ function AppShell() {
         frameData={frameUnlockData}
         onClose={() => { setFrameUnlockOpen(false); setFrameUnlockData(null) }}
       />
+
+      {/* ── In-app notifications sheet (team invites etc) ── */}
+      <NotificationsSheet />
     </div>
   )
 }

@@ -9,6 +9,7 @@ export function UIProvider({ children }) {
   const [leaderboardFromLeague, setLeaderboardFromLeague] = useState(false)
   const [frameUnlockOpen,       setFrameUnlockOpen]       = useState(false)
   const [frameUnlockData,       setFrameUnlockData]       = useState(null)
+  const [notificationsOpen,     setNotificationsOpen]     = useState(false)
 
   return (
     <UIContext.Provider value={{
@@ -18,6 +19,7 @@ export function UIProvider({ children }) {
       leaderboardFromLeague, setLeaderboardFromLeague,
       frameUnlockOpen, setFrameUnlockOpen,
       frameUnlockData, setFrameUnlockData,
+      notificationsOpen, setNotificationsOpen,
     }}>
       {children}
     </UIContext.Provider>

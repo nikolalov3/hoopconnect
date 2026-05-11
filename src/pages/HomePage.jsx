@@ -9,6 +9,7 @@ import LeagueInfoPanel from '../components/ui/LeagueInfoPanel'
 import { useUI } from '../context/UIContext'
 import StreakToast from '../components/ui/StreakToast'
 import { getCache, setCache, bustCache } from '../lib/queryCache'
+import { useNotifications } from '../hooks/useNotifications'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -467,7 +468,8 @@ export default function HomePage() {
   const [reportLoading, setReportLoading] = useState(true)
   const [daysUntilReport, setDaysUntilReport] = useState(7)
   const [achievementToast, setAchievementToast] = useState(null) // { title, stage }
-  const { setSettingsOpen, leagueOpen, setLeagueOpen, setFrameUnlockOpen, setFrameUnlockData, frameUnlockData } = useUI()
+  const { setSettingsOpen, leagueOpen, setLeagueOpen, setFrameUnlockOpen, setFrameUnlockData, frameUnlockData, setNotificationsOpen } = useUI()
+  const { unreadCount: notifUnreadCount } = useNotifications()
   const [showSettings, setShowSettings] = useState(false)
 
   function openSettings() { setShowSettings(true); setSettingsOpen(true) }
@@ -992,6 +994,34 @@ export default function HomePage() {
             </motion.div>
           </div>
           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            {/* Notifications bell — red dot when any unread */}
+            <motion.button
+              whileTap={{ scale: 0.82 }}
+              onClick={() => setNotificationsOpen(true)}
+              style={{
+                background: 'none', border: 'none',
+                width: 40, height: 40, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'rgba(200,210,230,0.55)',
+                position: 'relative',
+              }}
+              aria-label="Powiadomienia"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+              </svg>
+              {notifUnreadCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: 7, right: 7,
+                  width: 10, height: 10, borderRadius: '50%',
+                  background: '#FF3B30',
+                  boxShadow: '0 0 6px 2px rgba(255,59,48,0.55)',
+                  border: '2px solid rgba(4,8,14,0.9)',
+                }}/>
+              )}
+            </motion.button>
             {/* Settings */}
             <motion.button whileTap={{ scale: 0.82 }} onClick={openSettings} style={{
               background: 'none', border: 'none',
