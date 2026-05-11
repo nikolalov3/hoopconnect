@@ -43,6 +43,28 @@ export function useNotifications() {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [load])
 
+  // Supabase Realtime: instant refresh when a row in `notifications` for this
+  // user is inserted, updated, or deleted. Covers the "coach just invited me
+  // and I'm staring at my phone" case — red dot appears within ~1s without
+  // needing to background+foreground the app.
+  //
+  // Requires the table to be in the supabase_realtime publication:
+  //   ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+  useEffect(() => {
+    if (!user?.id) return
+    const channel = supabase
+      .channel(`notifications-rt-${user.id}`)
+      .on('postgres_changes', {
+        event:  '*',
+        schema: 'public',
+        table:  'notifications',
+        filter: `user_id=eq.${user.id}`,
+      }, () => { load() })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.id, load])
+
   const acceptTeamInvite = useCallback(async (inviteId) => {
     const { data, error } = await supabase.rpc('accept_team_invite', { p_invite_id: inviteId })
     if (error) throw error
