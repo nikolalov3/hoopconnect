@@ -119,8 +119,12 @@ export default function DashboardPage() {
       action: 'Zobacz w drużynie',
       onClick: () => navigate('/team'),
     })
-    if (data.upcomingPractices.length === 0) out.push({
-      msg: 'Nie masz zaplanowanych treningów na najbliższe 4 tygodnie',
+    const sevenDaysFromNow = addDays(startOfDay(new Date()), 7).getTime()
+    const nextWeekPractices = data.upcomingPractices.filter(
+      p => new Date(p.scheduled_at).getTime() < sevenDaysFromNow
+    )
+    if (nextWeekPractices.length === 0) out.push({
+      msg: 'Brak treningów w najbliższym tygodniu',
       action: 'Zaplanuj trening',
       onClick: () => navigate('/schedule'),
     })
