@@ -11,6 +11,9 @@ export default function NotificationsPage() {
   const [revoking, setRevoking]     = useState(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [deleting, setDeleting]     = useState(null)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [bulkBusy, setBulkBusy]     = useState(false)
+  const [bulkConfirmDelete, setBulkConfirmDelete] = useState(false)
 
   // Compose form
   const [title, setTitle] = useState('')
@@ -100,7 +103,64 @@ export default function NotificationsPage() {
     setConfirmDeleteId(null)
     if (error) { setError(error.message); return }
     if (expandedId === id) setExpandedId(null)
+    setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n })
     load()
+  }
+
+  const toggleSelectBroadcast = (id) => {
+    setSelectedIds(prev => {
+      const n = new Set(prev)
+      if (n.has(id)) n.delete(id); else n.add(id)
+      return n
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === broadcasts.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(broadcasts.map(b => b.id)))
+    }
+  }
+
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    setBulkBusy(true)
+    setError(null)
+    const ids = Array.from(selectedIds)
+    for (const id of ids) {
+      const { error } = await supabase.rpc('delete_coach_broadcast', { p_broadcast_id: id })
+      if (error) { setError(error.message); break }
+    }
+    setSelectedIds(new Set())
+    setBulkConfirmDelete(false)
+    setBulkBusy(false)
+    load()
+  }
+
+  const bulkResend = async () => {
+    if (selectedIds.size === 0) return
+    setBulkBusy(true)
+    setError(null); setSuccess(null)
+    const ids = Array.from(selectedIds)
+    let total = 0
+    for (const id of ids) {
+      const b = broadcasts.find(x => x.id === id)
+      if (!b) continue
+      const { data, error } = await supabase.rpc('send_coach_broadcast', {
+        p_team_id:    currentTeam.id,
+        p_title:      b.title,
+        p_body:       b.body,
+        p_player_ids: b.recipient_player_ids,
+      })
+      if (error) { setError(error.message); break }
+      total += data?.recipient_count || 0
+    }
+    setSuccess(`Ponowiono ${ids.length} ${ids.length === 1 ? 'powiadomienie' : 'powiadomień'} (łącznie do ${total} odbiorców).`)
+    setSelectedIds(new Set())
+    setBulkBusy(false)
+    load()
+    setTimeout(() => setSuccess(null), 4000)
   }
 
   const nameOf = (playerId) => {
@@ -201,10 +261,90 @@ export default function NotificationsPage() {
 
       {/* History */}
       <div className="coach-card">
-        <h2 className="coach-h2" style={{ marginBottom: 4 }}>Historia</h2>
-        <p className="coach-subtitle" style={{ marginBottom: 16 }}>
+        <h2 className="coach-h2" style={{ marginBottom: 4 }}>
+          Historia {broadcasts.length > 0 && <span style={{ color: '#8A9AB0', fontWeight: 500 }}>({broadcasts.length})</span>}
+        </h2>
+        <p className="coach-subtitle" style={{ marginBottom: 12 }}>
           Wysłane powiadomienia. Cofnięcie usuwa je z aplikacji odbiorców.
         </p>
+
+        {/* Bulk action toolbar */}
+        {broadcasts.length > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '8px 10px', marginBottom: 12,
+            background: '#F6F8FB', border: '1px solid #E6ECF3', borderRadius: 10,
+            minHeight: 40,
+          }}>
+            <label style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              cursor: 'pointer', fontSize: 13, color: '#4D5C73',
+            }}>
+              <input
+                type="checkbox"
+                checked={selectedIds.size === broadcasts.length && broadcasts.length > 0}
+                ref={el => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < broadcasts.length }}
+                onChange={toggleSelectAll}
+                style={{ width: 16, height: 16, cursor: 'pointer' }}
+              />
+              {selectedIds.size > 0 ? (
+                <span style={{ fontWeight: 600, color: '#1E3A5F' }}>
+                  {selectedIds.size} {selectedIds.size === 1 ? 'wybrane' : 'wybranych'}
+                </span>
+              ) : (
+                <span>Zaznacz wszystkie</span>
+              )}
+            </label>
+
+            <div style={{ flex: 1 }}/>
+
+            {selectedIds.size > 0 && !bulkConfirmDelete && (
+              <>
+                <button onClick={bulkResend} disabled={bulkBusy}
+                  style={{
+                    padding: '6px 12px', borderRadius: 8,
+                    border: '1px solid #D4DDE8', background: '#FFFFFF',
+                    color: '#1A2233', fontSize: 12, fontWeight: 600,
+                    cursor: 'pointer', opacity: bulkBusy ? 0.5 : 1,
+                  }}>
+                  {bulkBusy ? '...' : 'Wyślij ponownie'}
+                </button>
+                <button onClick={() => setBulkConfirmDelete(true)} disabled={bulkBusy}
+                  style={{
+                    padding: '6px 12px', borderRadius: 8,
+                    border: '1px solid #F4B5AB', background: '#FFFFFF',
+                    color: '#D85546', fontSize: 12, fontWeight: 600,
+                    cursor: 'pointer',
+                  }}>
+                  Usuń
+                </button>
+              </>
+            )}
+
+            {bulkConfirmDelete && (
+              <>
+                <span style={{ fontSize: 12, color: '#A1372A', fontWeight: 600 }}>
+                  Usunąć {selectedIds.size}?
+                </span>
+                <button onClick={() => setBulkConfirmDelete(false)} disabled={bulkBusy}
+                  style={{
+                    padding: '6px 12px', borderRadius: 8,
+                    border: '1px solid #D4DDE8', background: '#FFFFFF',
+                    color: '#4D5C73', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  }}>Anuluj</button>
+                <button onClick={bulkDelete} disabled={bulkBusy}
+                  style={{
+                    padding: '6px 12px', borderRadius: 8,
+                    border: '1px solid #D85546', background: '#D85546',
+                    color: '#FFFFFF', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    opacity: bulkBusy ? 0.5 : 1,
+                  }}>
+                  {bulkBusy ? 'Usuwanie...' : 'Tak, usuń'}
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="coach-placeholder" style={{ minHeight: 120 }}><div className="spinner" /></div>
@@ -220,33 +360,47 @@ export default function NotificationsPage() {
               const dateStr = new Date(b.created_at).toLocaleDateString('pl-PL', {
                 day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
               })
+              const isSelected = selectedIds.has(b.id)
               return (
                 <div key={b.id} style={{
-                  border: '1px solid #E6ECF3', borderRadius: 12,
-                  background: isRevoked ? '#FAFBFC' : '#FFFFFF',
+                  border: `1px solid ${isSelected ? '#5591CD' : '#E6ECF3'}`, borderRadius: 12,
+                  background: isRevoked ? '#FAFBFC' : (isSelected ? '#F2F8FD' : '#FFFFFF'),
                   opacity: isRevoked ? 0.7 : 1,
                 }}>
-                  <button onClick={() => setExpandedId(isOpen ? null : b.id)}
-                    style={{
-                      width: '100%', background: 'transparent', border: 'none',
-                      padding: '12px 14px', display: 'flex', alignItems: 'flex-start',
-                      gap: 12, cursor: 'pointer', textAlign: 'left',
-                    }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#1A2233',
-                        textDecoration: isRevoked ? 'line-through' : 'none' }}>
-                        {b.title || b.body.slice(0, 60) + (b.body.length > 60 ? '…' : '')}
+                  <div style={{ display: 'flex', alignItems: 'stretch' }}>
+                    <label style={{
+                      display: 'flex', alignItems: 'center', padding: '0 12px',
+                      cursor: 'pointer',
+                    }} onClick={e => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectBroadcast(b.id)}
+                        style={{ width: 16, height: 16, cursor: 'pointer' }}
+                      />
+                    </label>
+                    <button onClick={() => setExpandedId(isOpen ? null : b.id)}
+                      style={{
+                        flex: 1, background: 'transparent', border: 'none',
+                        padding: '12px 14px 12px 4px', display: 'flex', alignItems: 'flex-start',
+                        gap: 12, cursor: 'pointer', textAlign: 'left',
+                      }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#1A2233',
+                          textDecoration: isRevoked ? 'line-through' : 'none' }}>
+                          {b.title || b.body.slice(0, 60) + (b.body.length > 60 ? '…' : '')}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#8A9AB0', marginTop: 2 }}>
+                          {dateStr} · {b.recipient_count} {b.recipient_count === 1 ? 'odbiorca' : 'odbiorców'}
+                          {isRevoked && ' · cofnięte'}
+                        </div>
                       </div>
-                      <div style={{ fontSize: 11, color: '#8A9AB0', marginTop: 2 }}>
-                        {dateStr} · {b.recipient_count} {b.recipient_count === 1 ? 'odbiorca' : 'odbiorców'}
-                        {isRevoked && ' · cofnięte'}
-                      </div>
-                    </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A9AB0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                      style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
-                      <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                  </button>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A9AB0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                        style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </button>
+                  </div>
                   {isOpen && (
                     <div style={{ padding: '0 14px 14px', borderTop: '1px solid #F0F3F7' }}>
                       {b.title && (
