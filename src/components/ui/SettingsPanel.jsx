@@ -607,6 +607,10 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
         </div>
         <FramePicker current={frameId} uid={uid} profile={profile} onPick={handlePickFrame}/>
 
+        {/* ── Drużyny (zarządzanie członkostwem) ── */}
+        <Divider/>
+        <TeamsSection/>
+
       </div>
     </div>
   )
@@ -891,8 +895,6 @@ export default function SettingsPanel({ open, onClose }) {
 
               {/* Sekcje */}
               <div style={{ padding: '0 18px', flex: 1 }}>
-
-                <TeamsSection/>
 
                 <SLabel>Konto</SLabel>
                 <CardGroup>
