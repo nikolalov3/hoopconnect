@@ -10,6 +10,8 @@ import { useUI } from '../context/UIContext'
 import StreakToast from '../components/ui/StreakToast'
 import { getCache, setCache, bustCache } from '../lib/queryCache'
 import { useNotifications } from '../context/NotificationsContext'
+import { useTodayTeamPractice } from '../hooks/useTodayTeamPractice'
+import TeamPracticeCard from '../components/training/TeamPracticeCard'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -470,6 +472,7 @@ export default function HomePage() {
   const [achievementToast, setAchievementToast] = useState(null) // { title, stage }
   const { setSettingsOpen, leagueOpen, setLeagueOpen, setFrameUnlockOpen, setFrameUnlockData, frameUnlockData, setNotificationsOpen } = useUI()
   const { unreadCount: notifUnreadCount } = useNotifications()
+  const { practices: teamPractices } = useTodayTeamPractice()
   const [showSettings, setShowSettings] = useState(false)
 
   function openSettings() { setShowSettings(true); setSettingsOpen(true) }
@@ -1145,6 +1148,15 @@ export default function HomePage() {
 
 
       <hr className="divider" style={{ margin: '12px 22px' }} />
+
+      {/* Team practice cards — pokazują się gdy trener zaplanował na dzisiaj */}
+      {teamPractices.length > 0 && (
+        <div style={{ padding: '4px 22px 0' }}>
+          {teamPractices.map(p => (
+            <TeamPracticeCard key={p.practice_id} practice={p} />
+          ))}
+        </div>
+      )}
 
       {/* Training sessions */}
       <div style={{ padding: '8px 22px 28px' }}>
