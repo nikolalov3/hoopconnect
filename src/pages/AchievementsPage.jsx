@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { fetchAchievementsCatalog, getCurrentStage, clearAchievementsCache, getTrainingCategoryIds } from '../lib/achievements'
-import { getCache, setCache } from '../lib/queryCache'
+import { fetchAchievementsCatalog, getCurrentStage, clearAchievementsCache, getTrainingCategoryIds, getCurrentAttendanceStreak, checkTeamPracticeStreak, revokeStaleAchievements } from '../lib/achievements'
+import { getCache, setCache, bustCache } from '../lib/queryCache'
 
 // ── STYLE MEDALI ──────────────────────────────────────────────────────────────
 const MEDAL_STYLE = {
@@ -257,6 +257,17 @@ export default function AchievementsPage() {
     let cancelled = false
 
     async function loadProgress() {
+      // Auto-unlock + revoke for team_practice_streak before loading display state
+      // (covers the case where coach just marked attendance — Realtime triggers
+      // this re-run too).
+      try {
+        await checkTeamPracticeStreak(userId, profile?.current_week_number)
+        await revokeStaleAchievements(userId)
+      } catch (e) {
+        console.warn('[achievements] streak check failed:', e)
+      }
+      if (cancelled) return
+
       // Globalne dane (catalog + recovery IDs) cachowane modułowo,
       // user-specific dane przez queryCache. Wcześniej: 5 zapytań co
       // wejście. Teraz: max 3 user-specific przy cold cache, 0 przy warm.
@@ -266,12 +277,14 @@ export default function AchievementsPage() {
         { data: logs },
         { data: unlockedAchievements },
         { data: shotSessions },
+        attendanceStreak,
       ] = await Promise.all([
         fetchAchievementsCatalog(),
         getTrainingCategoryIds(),
         supabase.from('activity_log').select('trainings_completed, all_done').eq('user_id', userId),
         supabase.from('user_achievements').select('achievement_id, base_id, seen_at').eq('user_id', userId),
         supabase.from('shooting_sessions').select('shot_type, made').eq('user_id', userId),
+        getCurrentAttendanceStreak(userId),
       ])
       if (cancelled) return
 
@@ -312,6 +325,7 @@ export default function AchievementsPage() {
       const progress = {
         regeneracja: recoveryCount,
         allday: allDayCount,
+        team_practice_streak: attendanceStreak,
         _unlockedIds: unlockedIds,
         _repeatableCounts: repeatableCounts,
         _shotTotals: shotTotals,
@@ -326,7 +340,24 @@ export default function AchievementsPage() {
     }
 
     loadProgress()
-    return () => { cancelled = true }
+
+    // Realtime: gdy trener zaznaczy/zmieni frekwencję dla tego gracza,
+    // bust cache i przelicz osiągnięcie 'team_practice_streak'.
+    let channel = null
+    try {
+      channel = supabase
+        .channel(`achievements-att-${userId}`)
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'practice_attendance',
+          filter: `player_id=eq.${userId}`,
+        }, () => { bustCache(cacheKey); loadProgress() })
+        .subscribe()
+    } catch {}
+
+    return () => {
+      cancelled = true
+      try { if (channel) supabase.removeChannel(channel) } catch {}
+    }
   }, [profile?.id])
 
   // Tylko osiągnięcia z odblokowanym co najmniej brązem

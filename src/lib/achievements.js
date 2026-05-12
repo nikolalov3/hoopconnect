@@ -55,6 +55,74 @@ export function clearAchievementsCache() {
   _trainingCategoryCache = null
 }
 
+// ── SERIA OBECNOŚCI NA TRENINGACH DRUŻYNOWYCH ─────────────────────────────────
+// Zwraca aktualną serię (consecutive) treningów drużynowych, gdzie zawodnik
+// był 'present' lub 'late'. 'absent' resetuje serię. Brak zaznaczenia
+// (status NULL) jest ignorowany — trener po prostu nie zaznaczył, nie wina gracza.
+
+export async function getCurrentAttendanceStreak(userId) {
+  if (!userId) return 0
+  // Player ma SELECT na practice_attendance (własne) + team_practice (członek).
+  // Embed pobiera scheduled_at z powiązanego treningu w jednej query.
+  const { data, error } = await supabase
+    .from('practice_attendance')
+    .select('status, team_practice(scheduled_at)')
+    .eq('player_id', userId)
+  if (error || !data) return 0
+
+  const sorted = data
+    .filter(a => a.status && a.team_practice?.scheduled_at)
+    .sort((a, b) => new Date(a.team_practice.scheduled_at) - new Date(b.team_practice.scheduled_at))
+
+  let streak = 0
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const s = sorted[i].status
+    if (s === 'present' || s === 'late') streak++
+    else if (s === 'absent') break
+  }
+  return streak
+}
+
+/**
+ * Sprawdza serię obecności gracza i odblokowuje nowo zdobyte progi.
+ * Wywoływane przy każdym wejściu na AchievementsPage oraz po zmianach
+ * frekwencji (przez Realtime).
+ */
+export async function checkTeamPracticeStreak(userId, weekNumber) {
+  const catalog = await fetchAchievementsCatalog()
+  const ach = catalog.find(a => a.id === 'team_practice_streak')
+  if (!ach) return []
+
+  const streak = await getCurrentAttendanceStreak(userId)
+  if (streak === 0) return []
+
+  const { data: existing } = await supabase
+    .from('user_achievements')
+    .select('achievement_id')
+    .eq('user_id', userId)
+    .eq('base_id', 'team_practice_streak')
+  const unlockedIds = new Set((existing || []).map(a => a.achievement_id))
+
+  const newlyUnlocked = []
+  for (const stage of (ach.stages || [])) {
+    const key = `${ach.id}_${stage.medal}`
+    if (streak >= stage.threshold && !unlockedIds.has(key)) {
+      const { error } = await supabase.from('user_achievements').insert({
+        user_id:        userId,
+        achievement_id: key,
+        base_id:        ach.id,
+      })
+      if (!error) {
+        unlockedIds.add(key)
+        newlyUnlocked.push({ title: ach.title, stage, total: streak })
+        await awardMedalPoints(userId, stage.medal, weekNumber, key)
+      }
+    }
+  }
+  return newlyUnlocked
+}
+
+
 // ── COFNIĘCIE OSIĄGNIĘĆ ───────────────────────────────────────────────────────
 // Sprawdza czy użytkownik nadal spełnia progi dla osiągnięć danego base_id.
 // Jeśli currentCount spadł poniżej progu — usuwa osiągnięcie z user_achievements.
@@ -112,10 +180,12 @@ export async function revokeStaleAchievements(userId) {
     { data: logs },
     trainingCats,
     { data: shotSessions },
+    attendanceStreak,
   ] = await Promise.all([
     supabase.from('activity_log').select('trainings_completed, all_done').eq('user_id', userId),
     getTrainingCategoryIds(),
     supabase.from('shooting_sessions').select('made, attempted, shot_type').eq('user_id', userId),
+    getCurrentAttendanceStreak(userId),
   ])
 
   const recoveryIds = trainingCats.recovery
@@ -145,6 +215,7 @@ export async function revokeStaleAchievements(userId) {
     allday: allDayCount,
     the_grind: totalTrainingsCount,
     shooting_sessions: shootingSessionsCount,
+    team_practice_streak: attendanceStreak,
   }
 
   // Dla shot achievements — dynamicznie z shot_type
