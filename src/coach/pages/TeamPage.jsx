@@ -8,6 +8,7 @@ export default function TeamPage() {
   const { currentTeam, user } = useCoachAuth()
   const [members, setMembers] = useState([])
   const [invites, setInvites] = useState([])
+  const [attendance, setAttendance] = useState([])  // [{ player_id, practice_id, scheduled_at, status }]
   const [loading, setLoading] = useState(true)
   const [showInvite, setShowInvite] = useState(false)
   const [loadError, setLoadError] = useState(null)
@@ -64,21 +65,24 @@ export default function TeamPage() {
     // get_team_roster joins team_members + auth.users.email server-side
     // so the UI can show the email-local-part as a label fallback when
     // first/last name haven't been typed yet.
-    const [rosterRes, invitesRes] = await Promise.all([
+    const [rosterRes, invitesRes, attRes] = await Promise.all([
       supabase.rpc('get_team_roster', { p_team_id: currentTeam.id }),
       supabase.from('team_invites').select('*').eq('team_id', currentTeam.id).eq('status', 'pending').order('created_at', { ascending: false }),
+      supabase.rpc('get_team_attendance_recent', { p_team_id: currentTeam.id, p_limit: 10 }),
     ])
 
     const errors = []
     if (rosterRes.error)  errors.push(`Roster RPC: ${rosterRes.error.message}`)
     if (invitesRes.error) errors.push(`Invites: ${invitesRes.error.message}`)
+    if (attRes.error)     errors.push(`Frekwencja: ${attRes.error.message}`)
     if (errors.length) {
-      console.error('[coach/team] load errors:', errors, { rosterRes, invitesRes })
+      console.error('[coach/team] load errors:', errors, { rosterRes, invitesRes, attRes })
       setLoadError(errors.join(' · '))
     }
 
     setMembers(rosterRes.data || [])
     setInvites(invitesRes.data || [])
+    setAttendance(attRes.data || [])
     setLoading(false)
   }
 
@@ -144,13 +148,19 @@ export default function TeamPage() {
               {members.map(m => {
                 const fullName  = [m.display_first_name, m.display_last_name].filter(Boolean).join(' ')
                 const emailLocal = m.player_email?.split('@')[0] || ''
-                // Fallback chain: typed name → email local part → '?'
                 const displayLabel = fullName || emailLocal || 'Zawodnik'
                 const nameInitials = (m.display_first_name?.charAt(0) || '') + (m.display_last_name?.charAt(0) || '')
                 const initials = nameInitials || emailLocal.charAt(0).toUpperCase() || '?'
                 const subLine = fullName
                   ? (m.jersey_number ? `#${m.jersey_number}` : 'bez numeru')
                   : 'uzupełnij imię'
+
+                // Attendance dots: pull this player's rows from the matrix
+                const myAtt = attendance
+                  .filter(a => a.player_id === m.player_id)
+                  // Ensure descending by date (RPC already orders DESC, ale tłem sortujemy)
+                  .sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at))
+
                 return (
                   <button
                     key={m.player_id}
@@ -178,6 +188,7 @@ export default function TeamPage() {
                         {subLine}
                       </div>
                     </div>
+                    <AttendanceDots items={myAtt}/>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A9AB0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="9 18 15 12 9 6"/>
                     </svg>
@@ -241,6 +252,42 @@ export default function TeamPage() {
           onInvited={() => { setShowInvite(false); loadRoster() }}
         />
       )}
+    </div>
+  )
+}
+
+/**
+ * Wiersz mini-kropek pokazujący frekwencję zawodnika na ostatnich N treningach.
+ * Najnowszy z prawej, najstarszy z lewej (czyli wchodzi z lewej w czasie).
+ */
+function AttendanceDots({ items }) {
+  if (!items || items.length === 0) return null
+  // Pokazujemy w kolejności od najstarszego do najnowszego (lewo→prawo)
+  const ordered = [...items].reverse()
+  return (
+    <div style={{ display: 'flex', gap: 3, flexShrink: 0, marginRight: 6 }}>
+      {ordered.map((a, i) => {
+        const color =
+          a.status === 'present' ? '#3FA86A' :
+          a.status === 'late'    ? '#E5A93C' :
+          a.status === 'absent'  ? '#D85546' :
+                                   '#D4DDE8'
+        const label =
+          a.status === 'present' ? 'Obecny' :
+          a.status === 'late'    ? 'Spóźniony' :
+          a.status === 'absent'  ? 'Nieobecny' :
+                                   'Niezaznaczony'
+        return (
+          <div key={i}
+            title={`${label} · ${new Date(a.scheduled_at).toLocaleDateString('pl-PL')}`}
+            style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: a.status ? color : 'transparent',
+              border: a.status ? 'none' : `1.5px solid ${color}`,
+            }}
+          />
+        )
+      })}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useCoachAuth } from '../context/CoachAuthContext'
 import { toLocalInput, fromLocalInput } from '../lib/dateUtil'
+import PracticeAttendanceModal from './PracticeAttendanceModal'
 
 const CATEGORIES = [
   { value: '',            label: '— Brak —' },
@@ -53,6 +54,7 @@ export default function PracticeFormModal({ teamId, defaultDate, practice, onClo
   const [deleting, setDeleting]       = useState(false)
   const [error, setError]             = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [attendanceOpen, setAttendanceOpen] = useState(false)
 
   const submit = async (e) => {
     e.preventDefault()
@@ -157,6 +159,14 @@ export default function PracticeFormModal({ teamId, defaultDate, practice, onClo
 
           {isEdit && (
             <div style={{ paddingTop: 14, marginTop: 6, borderTop: '1px solid #E6ECF3' }}>
+              <button
+                type="button"
+                onClick={() => setAttendanceOpen(true)}
+                className="coach-btn-secondary"
+                style={{ width: '100%', marginBottom: 10, padding: '11px 14px', fontSize: 14 }}
+              >
+                Zaznacz frekwencję
+              </button>
               {confirmDelete ? (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button type="button" onClick={() => setConfirmDelete(false)} disabled={deleting} className="coach-btn-secondary" style={{ flex: 1 }}>
@@ -183,6 +193,13 @@ export default function PracticeFormModal({ teamId, defaultDate, practice, onClo
           )}
         </form>
       </div>
+
+      {attendanceOpen && isEdit && (
+        <PracticeAttendanceModal
+          practice={practice}
+          onClose={() => setAttendanceOpen(false)}
+        />
+      )}
     </div>
   )
 }
