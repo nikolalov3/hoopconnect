@@ -93,9 +93,6 @@ export default function TeamPage() {
             {members.length} {members.length === 1 ? 'zawodnik' : members.length >= 2 && members.length <= 4 ? 'zawodników' : 'zawodników'}
             {invites.length > 0 && ` · ${invites.length} zaproszeń oczekuje`}
           </p>
-          <p style={{ fontSize: 10, color: '#8A9AB0', fontFamily: 'monospace', marginTop: 4 }}>
-            id: {currentTeam.id}
-          </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
