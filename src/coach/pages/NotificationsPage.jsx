@@ -9,6 +9,8 @@ export default function NotificationsPage() {
   const [loading, setLoading]       = useState(true)
   const [expandedId, setExpandedId] = useState(null)
   const [revoking, setRevoking]     = useState(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [deleting, setDeleting]     = useState(null)
 
   // Compose form
   const [title, setTitle] = useState('')
@@ -88,6 +90,16 @@ export default function NotificationsPage() {
     const { error } = await supabase.rpc('revoke_coach_broadcast', { p_broadcast_id: id })
     setRevoking(null)
     if (error) { setError(error.message); return }
+    load()
+  }
+
+  const removeFromHistory = async (id) => {
+    setDeleting(id)
+    const { error } = await supabase.rpc('delete_coach_broadcast', { p_broadcast_id: id })
+    setDeleting(null)
+    setConfirmDeleteId(null)
+    if (error) { setError(error.message); return }
+    if (expandedId === id) setExpandedId(null)
     load()
   }
 
@@ -262,22 +274,56 @@ export default function NotificationsPage() {
                           </div>
                         </div>
                       )}
-                      {!isRevoked && (
-                        <button onClick={() => revoke(b.id)} disabled={revoking === b.id}
-                          style={{
-                            padding: '8px 14px', borderRadius: 9,
-                            border: '1px solid #D85546', background: 'transparent',
-                            color: '#D85546', fontSize: 12, fontWeight: 600,
-                            cursor: 'pointer', opacity: revoking === b.id ? 0.5 : 1,
-                          }}>
-                          {revoking === b.id ? 'Cofanie...' : 'Cofnij powiadomienie'}
-                        </button>
-                      )}
-                      {isRevoked && (
-                        <div style={{ fontSize: 11, color: '#8A9AB0' }}>
-                          Cofnięte {new Date(b.revoked_at).toLocaleDateString('pl-PL', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                        {!isRevoked && confirmDeleteId !== b.id && (
+                          <button onClick={() => revoke(b.id)} disabled={revoking === b.id}
+                            style={{
+                              padding: '8px 14px', borderRadius: 9,
+                              border: '1px solid #D4DDE8', background: 'transparent',
+                              color: '#1A2233', fontSize: 12, fontWeight: 600,
+                              cursor: 'pointer', opacity: revoking === b.id ? 0.5 : 1,
+                            }}>
+                            {revoking === b.id ? 'Cofanie...' : 'Cofnij powiadomienie'}
+                          </button>
+                        )}
+
+                        {isRevoked && (
+                          <span style={{ fontSize: 11, color: '#8A9AB0' }}>
+                            Cofnięte {new Date(b.revoked_at).toLocaleDateString('pl-PL', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
+                          </span>
+                        )}
+
+                        <div style={{ flex: 1 }}/>
+
+                        {confirmDeleteId === b.id ? (
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button onClick={() => setConfirmDeleteId(null)} disabled={deleting === b.id}
+                              style={{
+                                padding: '8px 12px', borderRadius: 9,
+                                border: '1px solid #D4DDE8', background: 'transparent',
+                                color: '#4D5C73', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                              }}>Anuluj</button>
+                            <button onClick={() => removeFromHistory(b.id)} disabled={deleting === b.id}
+                              style={{
+                                padding: '8px 12px', borderRadius: 9,
+                                border: '1px solid #D85546', background: '#D85546',
+                                color: '#FFFFFF', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                                opacity: deleting === b.id ? 0.5 : 1,
+                              }}>
+                              {deleting === b.id ? 'Usuwanie...' : 'Tak, usuń'}
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirmDeleteId(b.id)}
+                            style={{
+                              padding: '8px 12px', borderRadius: 9,
+                              border: 'none', background: 'transparent',
+                              color: '#D85546', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                            }}>
+                            Usuń z historii
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
