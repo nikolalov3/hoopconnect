@@ -10,6 +10,7 @@ export default function TeamPage() {
   const [invites, setInvites] = useState([])
   const [loading, setLoading] = useState(true)
   const [showInvite, setShowInvite] = useState(false)
+  const [loadError, setLoadError] = useState(null)
 
   useEffect(() => {
     if (!currentTeam) return
@@ -59,15 +60,25 @@ export default function TeamPage() {
 
   async function loadRoster() {
     setLoading(true)
+    setLoadError(null)
     // get_team_roster joins team_members + auth.users.email server-side
     // so the UI can show the email-local-part as a label fallback when
     // first/last name haven't been typed yet.
-    const [{ data: m }, { data: inv }] = await Promise.all([
+    const [rosterRes, invitesRes] = await Promise.all([
       supabase.rpc('get_team_roster', { p_team_id: currentTeam.id }),
       supabase.from('team_invites').select('*').eq('team_id', currentTeam.id).eq('status', 'pending').order('created_at', { ascending: false }),
     ])
-    setMembers(m || [])
-    setInvites(inv || [])
+
+    const errors = []
+    if (rosterRes.error)  errors.push(`Roster RPC: ${rosterRes.error.message}`)
+    if (invitesRes.error) errors.push(`Invites: ${invitesRes.error.message}`)
+    if (errors.length) {
+      console.error('[coach/team] load errors:', errors, { rosterRes, invitesRes })
+      setLoadError(errors.join(' · '))
+    }
+
+    setMembers(rosterRes.data || [])
+    setInvites(invitesRes.data || [])
     setLoading(false)
   }
 
@@ -105,6 +116,16 @@ export default function TeamPage() {
         </div>
       </header>
 
+      {loadError && (
+        <div className="coach-card" style={{
+          marginBottom: 14,
+          background: '#FCE5E2', borderColor: '#F4B5AB',
+          color: '#A1372A', fontSize: 13,
+        }}>
+          <strong style={{ display: 'block', marginBottom: 4 }}>Błąd ładowania danych:</strong>
+          <code style={{ fontSize: 12, wordBreak: 'break-all' }}>{loadError}</code>
+        </div>
+      )}
       {loading ? (
         <div className="coach-card"><div className="coach-placeholder" style={{ minHeight: 200 }}><div className="spinner" /></div></div>
       ) : (
