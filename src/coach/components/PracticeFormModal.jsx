@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
+import { useCoachAuth } from '../context/CoachAuthContext'
 import { toLocalInput, fromLocalInput } from '../lib/dateUtil'
 
 const CATEGORIES = [
@@ -128,16 +129,7 @@ export default function PracticeFormModal({ teamId, defaultDate, practice, onClo
               </select>
             </div>
           </div>
-          <div>
-            <label className="coach-label">Lokalizacja</label>
-            <input
-              className="coach-input"
-              type="text"
-              value={location}
-              onChange={e => setLocation(e.target.value)}
-              placeholder="np. Hala Mokotów"
-            />
-          </div>
+          <LocationField value={location} onChange={setLocation} />
           <div>
             <label className="coach-label">Notatki dla drużyny</label>
             <textarea
@@ -196,3 +188,147 @@ export default function PracticeFormModal({ teamId, defaultDate, practice, onClo
 }
 
 export { CATEGORIES as PRACTICE_CATEGORIES }
+
+
+/**
+ * Pole "Lokalizacja" z autocomplete na zapisanych miejscach trenera
+ * + przycisk "Zapisz" pojawiający się gdy wpisana wartość nie pasuje
+ * do żadnego z zapisanych miejsc.
+ */
+function LocationField({ value, onChange }) {
+  const { user } = useCoachAuth()
+  const [saved, setSaved] = useState([])
+  const [focused, setFocused] = useState(false)
+  const [savingNow, setSavingNow] = useState(false)
+  const [deletingId, setDeletingId] = useState(null)
+  const wrapperRef = useRef(null)
+
+  useEffect(() => {
+    if (!user?.id) return
+    ;(async () => {
+      const { data } = await supabase
+        .from('coach_locations')
+        .select('id, name')
+        .order('name', { ascending: true })
+      setSaved(data || [])
+    })()
+  }, [user?.id])
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    if (!focused) return
+    const onClick = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setFocused(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [focused])
+
+  const trimmed = value.trim()
+  const exactMatch = saved.some(l => l.name.toLowerCase() === trimmed.toLowerCase())
+  const canSave = trimmed.length > 0 && !exactMatch
+  const filtered = trimmed.length === 0
+    ? saved
+    : saved.filter(l => l.name.toLowerCase().includes(trimmed.toLowerCase()))
+
+  const handleSave = async () => {
+    if (!canSave) return
+    setSavingNow(true)
+    const { data, error } = await supabase
+      .from('coach_locations')
+      .insert({ coach_id: user.id, name: trimmed })
+      .select()
+      .single()
+    setSavingNow(false)
+    if (!error && data) {
+      setSaved(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name, 'pl')))
+    }
+  }
+
+  const handleDelete = async (id) => {
+    setDeletingId(id)
+    await supabase.from('coach_locations').delete().eq('id', id)
+    setSaved(prev => prev.filter(l => l.id !== id))
+    setDeletingId(null)
+  }
+
+  const showDropdown = focused && filtered.length > 0
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative' }}>
+      <label className="coach-label">Lokalizacja</label>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input
+          className="coach-input"
+          type="text"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          placeholder="np. Hala Mokotów"
+          style={{ flex: 1 }}
+        />
+        {canSave && (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={savingNow}
+            className="coach-btn-secondary"
+            style={{ flexShrink: 0, padding: '0 14px', fontSize: 13, opacity: savingNow ? 0.6 : 1 }}
+          >
+            {savingNow ? '...' : 'Zapisz'}
+          </button>
+        )}
+      </div>
+
+      {showDropdown && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 4px)', left: 0, right: 0,
+          background: '#FFFFFF',
+          border: '1px solid #D4DDE8',
+          borderRadius: 10,
+          boxShadow: '0 8px 24px rgba(20,35,60,0.10)',
+          maxHeight: 220, overflowY: 'auto',
+          zIndex: 100,
+        }}>
+          <div style={{
+            padding: '6px 12px', fontSize: 10, fontWeight: 700,
+            textTransform: 'uppercase', letterSpacing: 0.6, color: '#8A9AB0',
+            background: '#FAFBFC',
+            borderBottom: '1px solid #E6ECF3',
+          }}>
+            Twoje zapisane miejsca
+          </div>
+          {filtered.map(l => (
+            <div key={l.id} style={{ display: 'flex', alignItems: 'center' }}>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => { onChange(l.name); setFocused(false) }}
+                style={{
+                  flex: 1, padding: '9px 12px', fontSize: 14,
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  textAlign: 'left', color: '#1A2233',
+                }}
+              >
+                {l.name}
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => handleDelete(l.id)}
+                disabled={deletingId === l.id}
+                title="Usuń z zapisanych"
+                style={{
+                  width: 32, padding: '8px 0', background: 'transparent', border: 'none',
+                  color: '#8A9AB0', cursor: 'pointer', fontSize: 16,
+                  opacity: deletingId === l.id ? 0.4 : 1,
+                }}
+              >×</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

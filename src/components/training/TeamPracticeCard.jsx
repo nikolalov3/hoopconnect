@@ -24,16 +24,18 @@ export default function TeamPracticeCard({ practice }) {
         marginBottom: 10,
       }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {/* Whistle icon */}
+        {/* Basketball icon */}
         <div style={{
           width: 38, height: 38, borderRadius: 10,
           background: `${color}22`, color, flexShrink: 0,
           display: 'grid', placeItems: 'center',
         }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="9" cy="12" r="6"/>
-            <path d="M15 12h7l-2-3-2 3"/>
-            <path d="M9 6V4"/>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M3 12h18"/>
+            <path d="M12 3v18"/>
+            <path d="M5.6 5.6c2.7 2.7 2.7 10.1 0 12.8"/>
+            <path d="M18.4 5.6c-2.7 2.7-2.7 10.1 0 12.8"/>
           </svg>
         </div>
 
