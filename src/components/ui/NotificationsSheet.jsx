@@ -236,6 +236,39 @@ function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMar
     )
   }
 
+  if (type === 'coach_message') {
+    return (
+      <div className="card" style={{ padding: 16 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: '#5BB8F5', marginBottom: 6 }}>
+          Wiadomość od trenera
+        </div>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+          {payload?.team_name || 'Drużyna'}
+        </div>
+        {payload?.title && (
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginTop: 10 }}>
+            {payload.title}
+          </div>
+        )}
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', marginTop: payload?.title ? 4 : 10, lineHeight: 1.55 }}>
+          {payload?.body}
+        </div>
+        {payload?.coach_name && (
+          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 10, fontStyle: 'italic' }}>
+            — {payload.coach_name}
+          </div>
+        )}
+        <button
+          className="btn-ghost"
+          onClick={async () => { await onMarkRead(notification.id) }}
+          style={{ marginTop: 14, padding: '8px 14px', fontSize: 12 }}
+        >
+          OK
+        </button>
+      </div>
+    )
+  }
+
   if (type === 'team_removed') {
     return (
       <div className="card" style={{ padding: 16 }}>

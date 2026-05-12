@@ -13,7 +13,7 @@ const DAYS_PL = ['Pn','Wt','Śr','Cz','Pt','Sb','Nd']
 const HEX_CLIP = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
 
 // ── Single hex day cell ───────────────────────────────────────────────────────
-function HexDay({ day, level, isToday, isEmpty }) {
+function HexDay({ day, level, isToday, isEmpty, hasPractice }) {
   if (isEmpty) {
     return <div style={{ width: 40, height: 46 }} />
   }
@@ -58,6 +58,18 @@ function HexDay({ day, level, isToday, isEmpty }) {
           inset: -1,
           clipPath: HEX_CLIP,
           background: 'rgba(91,184,245,0.22)',
+        }} />
+      )}
+
+      {/* Team-practice ring — thin baby-blue hex frame on days where the
+          coach scheduled a practice. Renders BEHIND silver/today highlights
+          so completed days still show their proper state. */}
+      {hasPractice && !silver && (
+        <div style={{
+          position: 'absolute',
+          inset: -1,
+          clipPath: HEX_CLIP,
+          background: 'rgba(91,184,245,0.85)',
         }} />
       )}
 
@@ -121,20 +133,40 @@ export default function CalendarPage() {
   const [year,  setYear]  = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())   // 0-based
   const [logs,  setLogs]  = useState(null)              // null = loading
+  const [practiceDays, setPracticeDays] = useState(new Set())
 
-  // Fetch logs for displayed month
+  // Fetch logs + team practices for displayed month
   useEffect(() => {
     if (!profile) return
     const firstDay = new Date(year, month, 1).toISOString().split('T')[0]
     const lastDay  = new Date(year, month + 1, 0).toISOString().split('T')[0]
+    const monthStart = new Date(year, month, 1)
+    const monthEndExcl = new Date(year, month + 1, 1)
+
     setLogs(null)
-    supabase
-      .from('activity_log')
-      .select('date, trainings_completed, all_done')
-      .eq('user_id', profile.id)
-      .gte('date', firstDay)
-      .lte('date', lastDay)
-      .then(({ data }) => setLogs(data || []))
+    setPracticeDays(new Set())
+
+    Promise.all([
+      supabase
+        .from('activity_log')
+        .select('date, trainings_completed, all_done')
+        .eq('user_id', profile.id)
+        .gte('date', firstDay)
+        .lte('date', lastDay),
+      supabase.rpc('get_my_practice', {
+        p_from: monthStart.toISOString(),
+        p_to:   monthEndExcl.toISOString(),
+      }),
+    ]).then(([logsRes, practiceRes]) => {
+      setLogs(logsRes.data || [])
+      const set = new Set()
+      for (const p of (practiceRes.data || [])) {
+        const d = new Date(p.scheduled_at)
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+        set.add(key)
+      }
+      setPracticeDays(set)
+    })
   }, [profile, year, month])
 
   const actMap = useMemo(() => {
@@ -315,6 +347,7 @@ export default function CalendarPage() {
                         level={cell?.level ?? -2}
                         isToday={cell?.isToday ?? false}
                         isEmpty={!cell}
+                        hasPractice={cell ? practiceDays.has(cell.dateStr) : false}
                       />
                     </div>
                   ))}
