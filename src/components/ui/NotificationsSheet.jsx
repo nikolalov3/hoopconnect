@@ -4,8 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useUI } from '../../context/UIContext'
 import { useNotifications } from '../../context/NotificationsContext'
-import { useAuth } from '../../context/AuthContext'
-import { supabase } from '../../lib/supabase'
 
 /**
  * Bottom-sheet drawer that lists the player's pending in-app notifications.
@@ -16,40 +14,16 @@ import { supabase } from '../../lib/supabase'
  */
 export default function NotificationsSheet() {
   const { notificationsOpen, setNotificationsOpen } = useUI()
-  const { items, acceptTeamInvite, markRead, reload } = useNotifications()
-  const { user } = useAuth()
+  const { items, acceptTeamInvite, declineTeamInvite, markRead, reload } = useNotifications()
   const navigate = useNavigate()
-  const [debug, setDebug] = useState(null)
 
   const close = () => setNotificationsOpen(false)
   const closeAndGoHome = () => { setNotificationsOpen(false); navigate('/') }
 
-  // When the sheet opens, force a fresh fetch — covers the case where the
-  // Realtime event was missed (websocket reconnect, tab backgrounded).
+  // Refresh on open — covers stale state after a missed Realtime event
   useEffect(() => {
     if (!notificationsOpen) return
-    console.log('[NotificationsSheet] open — current items:', items.length, items)
     reload?.()
-
-    // Visible diagnostic — does the client see the unread row directly?
-    ;(async () => {
-      try {
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('id, read, type, payload')
-          .eq('user_id', user?.id || '00000000-0000-0000-0000-000000000000')
-          .order('created_at', { ascending: false })
-          .limit(5)
-        setDebug({
-          userId: user?.id || '∅',
-          itemsLen: items.length,
-          query: error ? `ERR: ${error.message}` : `${data?.length || 0} rows`,
-          rows: data || [],
-        })
-      } catch (e) {
-        setDebug({ error: e?.message })
-      }
-    })()
   }, [notificationsOpen])  // eslint-disable-line react-hooks/exhaustive-deps
 
   return createPortal(
@@ -111,26 +85,6 @@ export default function NotificationsSheet() {
               <button onClick={close} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 22, cursor: 'pointer', padding: 4, lineHeight: 1 }}>×</button>
             </div>
 
-            {debug && (
-              <div style={{
-                marginBottom: 12,
-                padding: '8px 10px',
-                background: 'rgba(91,184,245,0.08)',
-                border: '1px solid rgba(91,184,245,0.22)',
-                borderRadius: 8,
-                fontSize: 10,
-                color: '#8AAEC8',
-                lineHeight: 1.45,
-                fontFamily: 'monospace',
-                wordBreak: 'break-all',
-              }}>
-                <div>user: <strong>{String(debug.userId).slice(0, 8)}…</strong> · items.length: <strong>{debug.itemsLen}</strong></div>
-                <div>direct query: <strong>{debug.query}</strong></div>
-                {debug.rows?.map(r => (
-                  <div key={r.id}>{r.id.slice(0,8)}… · read={String(r.read)} · {r.payload?.team_name}</div>
-                ))}
-              </div>
-            )}
             {items.length === 0 ? (
               <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>
                 Brak powiadomień
@@ -142,6 +96,7 @@ export default function NotificationsSheet() {
                     key={n.id}
                     notification={n}
                     onAcceptInvite={acceptTeamInvite}
+                    onDeclineInvite={declineTeamInvite}
                     onMarkRead={markRead}
                     onClose={close}
                     onAccepted={closeAndGoHome}
@@ -157,15 +112,31 @@ export default function NotificationsSheet() {
   )
 }
 
-function NotificationCard({ notification, onAcceptInvite, onMarkRead, onClose, onAccepted }) {
+function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMarkRead, onClose, onAccepted }) {
   const { type, payload } = notification
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
-  const [accepted, setAccepted] = useState(null)  // { team_name } if just accepted
+  const [result, setResult] = useState(null)  // accept/decline result for inline confirmation
 
   if (type === 'team_invite') {
     const coachLabel = payload?.coach_label
-    const orgLine = payload?.organization
+    const coachName  = payload?.coach_name
+    const orgLine    = payload?.organization
+
+    // Greeting line — different copy based on what info we have
+    const greeting = (() => {
+      if (coachName && coachLabel) {
+        return <>Trener <strong style={{ color: 'var(--text-primary)' }}>{coachName}</strong> chce dodać Cię do drużyny jako <strong style={{ color: 'var(--text-primary)' }}>{coachLabel}</strong>.</>
+      }
+      if (coachName) {
+        return <>Trener <strong style={{ color: 'var(--text-primary)' }}>{coachName}</strong> chce dodać Cię do swojej drużyny.</>
+      }
+      if (coachLabel) {
+        return <>Trener chce dodać Cię do drużyny jako <strong style={{ color: 'var(--text-primary)' }}>{coachLabel}</strong>.</>
+      }
+      return <>Trener chce dodać Cię do swojej drużyny.</>
+    })()
+
     return (
       <div className="card" style={{ padding: 16 }}>
         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: '#5BB8F5', marginBottom: 6 }}>
@@ -180,24 +151,29 @@ function NotificationCard({ notification, onAcceptInvite, onMarkRead, onClose, o
           </div>
         )}
         <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 10, marginBottom: 14 }}>
-          {coachLabel
-            ? <>Trener chce dodać Cię do drużyny jako <strong style={{ color: 'var(--text-primary)' }}>{coachLabel}</strong>.</>
-            : <>Trener chce dodać Cię do swojej drużyny.</>
-          }{' '}Po akceptacji będzie widział Twoje statystyki treningowe i wysyłał plan tygodnia.
+          {greeting}{' '}Po akceptacji będzie widział Twoje statystyki treningowe i wysyłał plan tygodnia.
         </div>
 
-        {accepted ? (
+        {result?.status === 'accepted' ? (
           <div style={{
-            padding: '12px 14px',
-            background: 'rgba(0,230,118,0.10)',
-            border: '1px solid rgba(0,230,118,0.30)',
-            borderRadius: 12,
-            color: '#00E676',
-            fontSize: 13,
-            fontWeight: 600,
-            textAlign: 'center',
+            padding: '12px 14px', borderRadius: 12, textAlign: 'center', fontSize: 13, fontWeight: 600,
+            background: 'rgba(0,230,118,0.10)', border: '1px solid rgba(0,230,118,0.30)', color: '#00E676',
           }}>
-            ✓ Dołączyłeś do drużyny {accepted.team_name}
+            ✓ Dołączyłeś do drużyny {result.team_name}
+          </div>
+        ) : result?.status === 'declined' ? (
+          <div style={{
+            padding: '12px 14px', borderRadius: 12, textAlign: 'center', fontSize: 13, fontWeight: 600,
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-secondary)',
+          }}>
+            Zaproszenie odrzucone
+          </div>
+        ) : result?.status === 'revoked' || result?.status === 'not_found' ? (
+          <div style={{
+            padding: '12px 14px', borderRadius: 12, textAlign: 'center', fontSize: 13, fontWeight: 600,
+            background: 'rgba(255,168,32,0.10)', border: '1px solid rgba(255,168,32,0.30)', color: '#FFA820',
+          }}>
+            To zaproszenie zostało wycofane przez trenera
           </div>
         ) : (
           <>
@@ -206,39 +182,76 @@ function NotificationCard({ notification, onAcceptInvite, onMarkRead, onClose, o
                 {error}
               </div>
             )}
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <button
                 className="btn-ghost"
                 onClick={onClose}
                 disabled={busy}
                 style={{ flex: 1, padding: '11px 14px', fontSize: 13 }}
               >
-                Odłóż na później
+                Odłóż
               </button>
               <button
                 className="btn-primary"
                 disabled={busy}
                 onClick={async () => {
-                  setError(null)
-                  setBusy(true)
+                  setError(null); setBusy(true)
                   try {
-                    const result = await onAcceptInvite(payload.invite_id)
-                    setAccepted(result)
-                    // Briefly show confirmation, then close sheet and bounce to home
-                    setTimeout(() => { onAccepted?.() }, 1200)
+                    const r = await onAcceptInvite(payload.invite_id)
+                    setResult(r)
+                    if (r?.status === 'accepted') setTimeout(() => onAccepted?.(), 1200)
                   } catch (e) {
                     setError(e?.message || 'Nie udało się zaakceptować.')
-                  } finally {
-                    setBusy(false)
-                  }
+                  } finally { setBusy(false) }
                 }}
                 style={{ flex: 1, padding: '11px 14px', fontSize: 13 }}
               >
                 {busy ? '...' : 'Akceptuj'}
               </button>
             </div>
+            <button
+              onClick={async () => {
+                setError(null); setBusy(true)
+                try {
+                  const r = await onDeclineInvite(payload.invite_id)
+                  setResult(r)
+                } catch (e) {
+                  setError(e?.message || 'Nie udało się odrzucić.')
+                } finally { setBusy(false) }
+              }}
+              disabled={busy}
+              style={{
+                width: '100%',
+                background: 'transparent', border: 'none',
+                color: '#FF6868', fontSize: 12, fontWeight: 600,
+                padding: '6px 0', cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              Odrzuć zaproszenie
+            </button>
           </>
         )}
+      </div>
+    )
+  }
+
+  if (type === 'team_removed') {
+    return (
+      <div className="card" style={{ padding: 16 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: '#FFA820', marginBottom: 6 }}>
+          Zmiana w drużynie
+        </div>
+        <div style={{ fontSize: 14, color: 'var(--text-primary)', marginBottom: 12, lineHeight: 1.5 }}>
+          Trener usunął Cię z drużyny <strong>{payload?.team_name || ''}</strong>.
+        </div>
+        <button
+          className="btn-ghost"
+          onClick={async () => { await onMarkRead(notification.id) }}
+          style={{ padding: '8px 14px', fontSize: 12 }}
+        >
+          OK, rozumiem
+        </button>
       </div>
     )
   }

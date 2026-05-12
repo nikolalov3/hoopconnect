@@ -85,14 +85,20 @@ export function NotificationsProvider({ children }) {
   }, [user?.id, load])
 
   const acceptTeamInvite = useCallback(async (inviteId) => {
-    // Optimistic: drop every notification referencing this invite right now
-    // so the bell + sheet update in the same render. The accept_team_invite
-    // RPC also sets read=TRUE server-side, so the load() below is a sync, not
-    // the primary action.
     setItems(prev => prev.filter(n => n.payload?.invite_id !== inviteId))
     const { data, error } = await supabase.rpc('accept_team_invite', { p_invite_id: inviteId })
     if (error) {
-      // Re-fetch to undo the optimistic removal if the RPC failed
+      await load()
+      throw error
+    }
+    await load()
+    return data
+  }, [load])
+
+  const declineTeamInvite = useCallback(async (inviteId) => {
+    setItems(prev => prev.filter(n => n.payload?.invite_id !== inviteId))
+    const { data, error } = await supabase.rpc('decline_team_invite', { p_invite_id: inviteId })
+    if (error) {
       await load()
       throw error
     }
@@ -113,6 +119,7 @@ export function NotificationsProvider({ children }) {
       loading,
       reload: load,
       acceptTeamInvite,
+      declineTeamInvite,
       markRead,
     }}>
       {children}

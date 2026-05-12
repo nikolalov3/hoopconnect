@@ -194,7 +194,9 @@ export default function TeamPage() {
                       </span>
                       <button
                         onClick={async () => {
-                          await supabase.from('team_invites').update({ status: 'revoked' }).eq('id', inv.id)
+                          // RPC also marks the player's notification as read
+                          // so the red dot disappears immediately.
+                          await supabase.rpc('revoke_team_invite', { p_invite_id: inv.id })
                           loadRoster()
                         }}
                         className="coach-btn-ghost"
