@@ -116,12 +116,20 @@ def send_email_smtp(to: str, subject: str, body: str, attachment_path: str):
             filename=os.path.basename(attachment_path),
         )
 
-    with smtplib.SMTP(host, port, timeout=30) as smtp:
-        smtp.ehlo()
-        smtp.starttls()
-        smtp.ehlo()
-        smtp.login(user, password)
-        smtp.send_message(msg)
+    # Port 465 = implicit SSL (Hostinger), port 587 = STARTTLS (Gmail).
+    # Wybór automatyczny po porcie.
+    if port == 465:
+        with smtplib.SMTP_SSL(host, port, timeout=30) as smtp:
+            smtp.ehlo()
+            smtp.login(user, password)
+            smtp.send_message(msg)
+    else:
+        with smtplib.SMTP(host, port, timeout=30) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+            smtp.login(user, password)
+            smtp.send_message(msg)
     return True
 
 
