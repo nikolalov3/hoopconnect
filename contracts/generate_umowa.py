@@ -18,7 +18,11 @@ from reportlab.pdfbase.ttfonts import TTFont
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-LOGO = os.path.join(HERE, '..', 'public', 'icon-512.png')
+# Główne logo aplikacji — niebieski gradient hex z /hoop.svg, zrasteryzowany
+# do 512px PNG przez `sips` (macOS) bo reportlab nie obsługuje SVG natywnie.
+# Komenda do regeneracji jeśli SVG się zmieni:
+#   sips -s format png -z 512 512 ../public/hoop.svg --out hoop_logo_512.png
+LOGO = os.path.join(HERE, 'hoop_logo_512.png')
 OUT  = os.path.join(HERE, 'umowa_szablon.pdf')
 
 # Try to register a Unicode font (DejaVu Sans is bundled on most macOS/Linux)
