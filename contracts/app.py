@@ -42,7 +42,7 @@ with col1:
         st.image(logo_path, width=58)
 with col2:
     st.markdown('### Generator umowy')
-    st.caption('HoopConnect · Not A Slop Mikołaj Krętowicz')
+    st.caption('HoopConnect · Not A Slop Mikołaj Kretowicz')
 
 st.divider()
 
@@ -133,7 +133,7 @@ if st.session_state.get('last_pdf') and os.path.exists(st.session_state['last_pd
                     f'W załączeniu umowa o świadczenie usług platformy HoopConnect dla {last_klub}.\n\n'
                     f'Daj znać jeśli coś wymaga doprecyzowania — zawsze możemy dopisać/zmienić.\n\n'
                     f'Pozdrawiam,\n'
-                    f'Mikołaj Krętowicz\n'
+                    f'Mikołaj Kretowicz\n'
                     f'Not A Slop · HoopConnect\n'
                     f'kontakt@hoopconnect.pl'
                 )

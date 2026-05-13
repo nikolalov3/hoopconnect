@@ -49,7 +49,7 @@ W załączeniu umowa o świadczenie usług platformy HoopConnect dla {klub}.
 Daj znać jeśli coś wymaga doprecyzowania — zawsze możemy dopisać/zmienić.
 
 Pozdrawiam,
-Mikołaj Krętowicz
+Mikołaj Kretowicz
 Not A Slop · HoopConnect
 kontakt@hoopconnect.pl
 ```

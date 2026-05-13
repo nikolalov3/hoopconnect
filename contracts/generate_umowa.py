@@ -120,7 +120,7 @@ def build_pdf(data=None, out_path=None):
         leftMargin=22*mm, rightMargin=22*mm,
         topMargin=16*mm, bottomMargin=18*mm,
         title='Umowa o świadczenie usług — HoopConnect',
-        author='Not A Slop Mikołaj Krętowicz',
+        author='Not A Slop Mikołaj Kretowicz',
     )
 
     story = []
@@ -148,8 +148,8 @@ def build_pdf(data=None, out_path=None):
     # ── Usługodawca (zawsze ten sam) ────────────────────────────────────
     uslugodawca = (
         '<b>Usługodawcą:</b><br/>'
-        'Mikołaj Krętowicz, prowadzący jednoosobową działalność gospodarczą<br/>'
-        'pod firmą <b>Not A Slop Mikołaj Krętowicz</b><br/>'
+        'Mikołaj Kretowicz, prowadzący jednoosobową działalność gospodarczą<br/>'
+        'pod firmą <b>Not A Slop Mikołaj Kretowicz</b><br/>'
         'NIP: <b>6662124313</b><br/>'
         'Adres: ul. Górnicza 3/9, 62-650 Kłodawa<br/>'
         'E-mail: <b>kontakt@hoopconnect.pl</b><br/>'
@@ -328,8 +328,8 @@ def build_pdf(data=None, out_path=None):
     sig_data = [
         ['_______________________________', '_______________________________'],
         ['Usługodawca', 'Klub'],
-        ['Mikołaj Krętowicz', '(imię i nazwisko, funkcja)'],
-        ['Not A Slop Mikołaj Krętowicz', ''],
+        ['Mikołaj Kretowicz', '(imię i nazwisko, funkcja)'],
+        ['Not A Slop Mikołaj Kretowicz', ''],
         ['data, podpis', 'data, podpis'],
     ]
     sig_table = Table(sig_data, colWidths=[75*mm, 75*mm])
@@ -350,7 +350,7 @@ def build_pdf(data=None, out_path=None):
         canvas.saveState()
         canvas.setFont(DEFAULT_FONT, 7.5)
         canvas.setFillColor(MUTED)
-        canvas.drawString(22*mm, 10*mm, 'HoopConnect · Not A Slop Mikołaj Krętowicz · NIP 6662124313')
+        canvas.drawString(22*mm, 10*mm, 'HoopConnect · Not A Slop Mikołaj Kretowicz · NIP 6662124313')
         canvas.drawRightString(A4[0] - 22*mm, 10*mm, f'Strona {doc.page}')
         canvas.restoreState()
 
