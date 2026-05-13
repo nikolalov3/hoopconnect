@@ -121,7 +121,7 @@ uslugodawca_block = (
     'Mikołaj Krętowicz, prowadzący jednoosobową działalność gospodarczą<br/>'
     'pod firmą <b>Not A Slop Mikołaj Krętowicz</b><br/>'
     'NIP: <b>6662124313</b><br/>'
-    'Adres: ul. Górnicza 3/9, Kłodawa<br/>'
+    'Adres: ul. Górnicza 3/9, 62-650 Kłodawa<br/>'
     'E-mail: <b>kontakt@hoopconnect.pl</b><br/>'
     'zwanym dalej <b>„Usługodawcą"</b>.'
 )
