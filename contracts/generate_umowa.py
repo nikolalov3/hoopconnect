@@ -121,8 +121,8 @@ uslugodawca_block = (
     'Mikołaj Krętowicz, prowadzący jednoosobową działalność gospodarczą<br/>'
     'pod firmą <b>Not A Slop Mikołaj Krętowicz</b><br/>'
     'NIP: <b>6662124313</b><br/>'
-    'Adres: ____________________________________________________<br/>'
-    'E-mail: ____________________________________________________<br/>'
+    'Adres: ul. Górnicza 3/9, Kłodawa<br/>'
+    'E-mail: <b>kontakt@hoopconnect.pl</b><br/>'
     'zwanym dalej <b>„Usługodawcą"</b>.'
 )
 story.append(Paragraph(uslugodawca_block, body_style))
@@ -150,16 +150,15 @@ story.append(Paragraph(
     '<b>trener.hoopconnect.pl</b> (panel trenera) oraz <b>hoopconnect.pl</b> (aplikacja zawodnika).',
     list_style))
 story.append(Paragraph(
-    '2. Zakres funkcjonalności obejmuje w szczególności:', list_style))
+    '2. Zakres funkcjonalności obejmuje:', list_style))
 story.append(Paragraph(
-    'a) zarządzanie składem drużyny (zaproszenia zawodników, edycja danych);<br/>'
-    'b) planowanie treningów drużynowych w widoku tygodniowym i miesięcznym;<br/>'
+    'a) zarządzanie składem drużyny;<br/>'
+    'b) planowanie treningów drużynowych w kalendarzu tygodniowym i miesięcznym;<br/>'
     'c) rejestrację frekwencji zawodników (obecny / spóźniony / nieobecny);<br/>'
-    'd) wewnątrzaplikacyjne powiadomienia trenera do drużyny lub wybranych zawodników, '
-    'wraz z historią i możliwością cofnięcia;<br/>'
-    'e) indywidualne statystyki treningowe zawodników (kategorie, seria treningowa, '
-    'osiągnięcia);<br/>'
-    'f) obsługę wielu drużyn w ramach jednego konta trenera.',
+    'd) powiadomienia trenera do drużyny lub wybranych zawodników;<br/>'
+    'e) statystyki treningowe i osiągnięcia zawodników;<br/>'
+    'f) obsługę kategorii wiekowych (U10, U12, U14, U16, U18, Senior) oraz '
+    'prowadzenie wielu drużyn w ramach jednego konta trenera.',
     ParagraphStyle('subitem', parent=list_style, leftIndent=28)))
 story.append(Paragraph(
     '3. Klub uzyskuje dostęp do platformy w trybie świadczenia usługi (SaaS) — bez '
@@ -169,23 +168,26 @@ story.append(Paragraph(
 story.append(Paragraph('§2 Wynagrodzenie', h_style))
 story.append(Paragraph(
     '1. Klub zobowiązuje się płacić Usługodawcy wynagrodzenie miesięczne w wysokości '
-    '<b>10,00 zł (dziesięć złotych) netto za każdego aktywnego zawodnika</b> '
-    'zapisanego do drużyn prowadzonych przez Klub w panelu trenera.', list_style))
+    '<b>10,00 zł (dziesięć złotych) netto za każdego zawodnika</b> należącego do drużyn '
+    'Klubu na platformie HoopConnect.', list_style))
 story.append(Paragraph(
-    '2. Do wynagrodzenia zostanie doliczony podatek VAT zgodnie z obowiązującymi przepisami '
+    '2. Liczba zawodników podlegająca rozliczeniu ustalana jest na podstawie <b>stanu '
+    'składu drużyn z pierwszego dnia danego miesiąca kalendarzowego</b>. Ilu zawodników '
+    'jest zapisanych do drużyn Klubu w pierwszym dniu miesiąca, taką liczbę pomnaża się '
+    'przez stawkę 10,00 zł netto — i to jest wynagrodzenie należne za ten miesiąc.', list_style))
+story.append(Paragraph(
+    '3. Zawodnicy dołączający do drużyn w trakcie miesiąca <b>nie wpływają</b> na wysokość '
+    'wynagrodzenia w bieżącym miesiącu — zostaną uwzględnieni w rozliczeniu kolejnego '
+    'miesiąca. Zawodnicy usunięci w trakcie miesiąca pozostają w rozliczeniu tego miesiąca '
+    'i znikają z rozliczenia od pierwszego dnia kolejnego miesiąca.', list_style))
+story.append(Paragraph(
+    '4. Do wynagrodzenia zostanie doliczony podatek VAT zgodnie z obowiązującymi przepisami '
     '(jeśli dotyczy).', list_style))
 story.append(Paragraph(
-    '3. <b>„Aktywny zawodnik"</b> oznacza zawodnika, który w okresie rozliczeniowym '
-    '(kalendarzowy miesiąc) figurował w składzie którejkolwiek z drużyn prowadzonych przez '
-    'Klub na platformie. Zawodnik, który dołączył lub został usunięty w trakcie miesiąca, '
-    'liczony jest proporcjonalnie do liczby dni członkostwa.', list_style))
-story.append(Paragraph(
-    '4. Płatność dokonywana jest na podstawie faktury VAT wystawionej przez Usługodawcę '
+    '5. Płatność dokonywana jest na podstawie faktury VAT wystawionej przez Usługodawcę '
     'w pierwszych 5 dniach roboczych miesiąca następującego po miesiącu rozliczeniowym, '
-    'z terminem płatności <b>14 dni od daty wystawienia</b>.', list_style))
-story.append(Paragraph(
-    '5. Płatność dokonywana jest przelewem na rachunek bankowy Usługodawcy wskazany na '
-    'fakturze.', list_style))
+    'z terminem płatności <b>14 dni od daty wystawienia</b>, przelewem na rachunek bankowy '
+    'Usługodawcy wskazany na fakturze.', list_style))
 story.append(Paragraph(
     '6. W przypadku opóźnienia w płatności przekraczającego 30 dni Usługodawca zastrzega '
     'sobie prawo do tymczasowego zawieszenia dostępu do platformy do czasu uregulowania '
@@ -204,9 +206,10 @@ story.append(Paragraph(
     '3. Wypowiedzenie nie powoduje natychmiastowej utraty dostępu — Klub może korzystać '
     'z platformy do końca opłaconego okresu rozliczeniowego.', list_style))
 story.append(Paragraph(
-    '4. Pierwszy miesiąc świadczenia usługi jest <b>bezpłatnym okresem testowym</b>. '
+    '4. <b>Pierwszy miesiąc świadczenia usługi jest bezpłatnym okresem testowym.</b> '
     'W tym czasie Klub może wypowiedzieć umowę ze skutkiem natychmiastowym bez ponoszenia '
-    'kosztów.', list_style))
+    'jakichkolwiek kosztów. Pierwsza faktura zostanie wystawiona za drugi pełny miesiąc '
+    'świadczenia usługi.', list_style))
 
 # ── §4 RODO ────────────────────────────────────────────────────────────────
 story.append(Paragraph('§4 Ochrona danych osobowych (RODO)', h_style))
