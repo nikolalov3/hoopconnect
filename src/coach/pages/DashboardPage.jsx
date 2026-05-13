@@ -39,7 +39,7 @@ export default function DashboardPage() {
     const fourWeeksAgo = addDays(startOfDay(now), -28)
     const fourWeeksFromNow = addDays(startOfDay(now), 28)
 
-    const [rosterRes, pastPracticesRes, upcomingPracticesRes, attendanceRes, invitesRes] = await Promise.all([
+    const [rosterRes, pastPracticesRes, upcomingPracticesRes, attendanceRes, invitesRes, broadcastsRes] = await Promise.all([
       supabase.rpc('get_team_roster', { p_team_id: teamId }),
       supabase.from('team_practice')
         .select('id, scheduled_at')
@@ -57,14 +57,17 @@ export default function DashboardPage() {
       supabase.rpc('get_team_attendance_recent', { p_team_id: teamId, p_limit: 50 }),
       supabase.from('team_invites')
         .select('id').eq('team_id', teamId).eq('status', 'pending'),
+      supabase.from('coach_broadcasts')
+        .select('id').eq('team_id', teamId).limit(1),
     ])
 
     setData({
-      roster:          rosterRes.data || [],
-      pastPractices:   pastPracticesRes.data || [],
+      roster:           rosterRes.data || [],
+      pastPractices:    pastPracticesRes.data || [],
       upcomingPractices: upcomingPracticesRes.data || [],
-      attendance:      attendanceRes.data || [],
-      pendingInvites:  invitesRes.data || [],
+      attendance:       attendanceRes.data || [],
+      pendingInvites:   invitesRes.data || [],
+      hasBroadcast:    (broadcastsRes.data || []).length > 0,
     })
     setLoading(false)
   }
@@ -139,6 +142,27 @@ export default function DashboardPage() {
     return out
   }, [data, navigate])
 
+  // Pierwsze kroki checklist — pokazujemy dopóki nie wszystko zrobione
+  const checklist = data ? [
+    { key: 'roster',     label: 'Dodaj pierwszego zawodnika',         done: data.roster.length > 0,            cta: '/team' },
+    { key: 'practice',   label: 'Zaplanuj pierwszy trening',          done: (data.pastPractices.length + data.upcomingPractices.length) > 0, cta: '/schedule' },
+    { key: 'attendance', label: 'Zaznacz frekwencję na treningu',     done: data.attendance.some(a => a.status), cta: '/schedule' },
+    { key: 'broadcast',  label: 'Wyślij pierwsze powiadomienie',      done: data.hasBroadcast,                  cta: '/notifications' },
+  ] : []
+  const checklistDone   = checklist.filter(c => c.done).length
+  const checklistTotal  = checklist.length
+  const checklistHidden = (() => {
+    try { return localStorage.getItem(`hc_coach_checklist_${currentTeam.id}_hidden`) === '1' } catch { return false }
+  })()
+  const showChecklist = !loading && checklistDone < checklistTotal && !checklistHidden
+
+  const hideChecklist = () => {
+    try { localStorage.setItem(`hc_coach_checklist_${currentTeam.id}_hidden`, '1') } catch {}
+    // Force re-render by toggling a local state — simplest: just navigate same page
+    // (no state for hidden flag; we read localStorage each render. Trigger via load().)
+    load()
+  }
+
   if (!currentTeam) return null
 
   return (
@@ -147,6 +171,55 @@ export default function DashboardPage() {
         <h1 className="coach-h1">Pulpit · {currentTeam.name}</h1>
         <p className="coach-subtitle">Przegląd Twojej drużyny.</p>
       </header>
+
+      {/* Pierwsze kroki — checklist dla nowych trenerów */}
+      {showChecklist && (
+        <div className="coach-card" style={{
+          marginBottom: 16, borderColor: '#5591CD',
+          background: 'linear-gradient(135deg, #FFFFFF 0%, #F2F8FD 100%)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+            <div>
+              <h2 className="coach-h2" style={{ marginBottom: 4 }}>Pierwsze kroki</h2>
+              <p className="coach-subtitle">
+                {checklistDone} z {checklistTotal} {checklistDone === 1 ? 'zrobione' : 'zrobionych'}
+              </p>
+            </div>
+            <button onClick={hideChecklist} title="Ukryj"
+              style={{ background: 'transparent', border: 'none', color: '#8A9AB0', fontSize: 18, cursor: 'pointer', padding: 4 }}>×</button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {checklist.map(c => (
+              <button key={c.key} onClick={() => navigate(c.cta)}
+                disabled={c.done}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 12px', borderRadius: 10,
+                  border: `1px solid ${c.done ? '#9CD9B7' : '#D4DDE8'}`,
+                  background: c.done ? '#E2F4EB' : '#FFFFFF',
+                  cursor: c.done ? 'default' : 'pointer',
+                  textAlign: 'left', fontFamily: 'inherit',
+                }}>
+                <div style={{
+                  width: 20, height: 20, borderRadius: '50%',
+                  background: c.done ? '#3FA86A' : 'transparent',
+                  border: c.done ? 'none' : '2px solid #D4DDE8',
+                  display: 'grid', placeItems: 'center', flexShrink: 0,
+                  color: '#FFFFFF', fontSize: 12, fontWeight: 700,
+                }}>{c.done ? '✓' : ''}</div>
+                <span style={{
+                  flex: 1, fontSize: 14, fontWeight: 500,
+                  color: c.done ? '#1E6B3D' : '#1A2233',
+                  textDecoration: c.done ? 'line-through' : 'none',
+                }}>{c.label}</span>
+                {!c.done && (
+                  <span style={{ fontSize: 12, color: '#5591CD', fontWeight: 600 }}>→</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div style={{

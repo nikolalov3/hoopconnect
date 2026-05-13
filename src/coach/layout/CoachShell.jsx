@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
+import FeedbackButton from '../components/FeedbackButton'
 
 export default function CoachShell() {
   return (
@@ -10,6 +11,7 @@ export default function CoachShell() {
           <Outlet />
         </div>
       </div>
+      <FeedbackButton />
     </div>
   )
 }
