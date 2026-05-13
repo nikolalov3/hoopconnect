@@ -11,10 +11,12 @@
   },
   "dependencies": {
     "@sentry/react": "^10.52.0",
-    "@supabase/supabase-js": "^2.102.1",
+    "@supabase/supabase-js": "^2.105.4",
     "@vercel/speed-insights": "^2.0.0",
     "framer-motion": "^12.38.0",
     "leaflet": "^1.9.4",
+    "nodemailer": "^8.0.7",
+    "pdfmake": "^0.3.8",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.14.0"

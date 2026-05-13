@@ -2,6 +2,6 @@
   "rewrites": [
     { "source": "/admpln",  "destination": "/admpln/index.html" },
     { "source": "/admpln/", "destination": "/admpln/index.html" },
-    { "source": "/(.*)",    "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
