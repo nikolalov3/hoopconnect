@@ -6,12 +6,6 @@ export default defineConfig({
   server: {
     port: parseInt(process.env.PORT || '3000'),
   },
-  // pdfmake VFS (virtual file system z fontami) jest ogromnym base64 blobem
-  // który Vite czasem mis-bundluje przy lazy-loaded chunkach. Wymuszamy
-  // pre-bundling żeby fonty zawsze były dostępne pod pdfMake.vfs.
-  optimizeDeps: {
-    include: ['pdfmake/build/pdfmake', 'pdfmake/build/vfs_fonts'],
-  },
   build: {
     outDir: 'dist',
     chunkSizeWarningLimit: 600,
@@ -23,7 +17,6 @@ export default defineConfig({
           if (id.includes('node_modules/framer-motion')) return 'motion'
           if (id.includes('node_modules/@supabase'))     return 'supabase'
           if (id.includes('node_modules/leaflet'))       return 'leaflet'
-          if (id.includes('node_modules/pdfmake'))       return 'pdfmake'
           if (
             id.includes('node_modules/react/') ||
             id.includes('node_modules/react-dom/') ||

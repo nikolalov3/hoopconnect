@@ -3,23 +3,45 @@
  * Treść/styl 1:1 z wersji Python (contracts/generate_umowa.py).
  * Zwraca Blob (do uploadu) i base64 (do wysyłki przez API).
  */
-import pdfMake from 'pdfmake/build/pdfmake'
-import pdfFonts from 'pdfmake/build/vfs_fonts'
+// pdfmake + vfs_fonts ładowane z CDN zamiast z npm.
+// Powód: pdfmake/build/vfs_fonts.js używa `this.pdfMake = this.pdfMake || {}`
+// w IIFE, który w trybie ESM (Vite) gubi globalny scope — pdfMake.vfs jest
+// undefined po `import`. CDN-loaded UMD bundle ustawia poprawnie window.pdfMake.
 
-// pdfmake przechowuje fonty w "virtual file system". Różne wersje/bundlery
-// exportują vfs w różnym miejscu — sprawdzamy wszystkie znane lokalizacje.
-const vfs =
-  pdfFonts?.vfs ||
-  pdfFonts?.pdfMake?.vfs ||
-  pdfFonts?.default?.vfs ||
-  pdfFonts?.default?.pdfMake?.vfs ||
-  pdfFonts?.default
+const PDFMAKE_VERSION = '0.2.10'
+const CDN_BASE = `https://cdnjs.cloudflare.com/ajax/libs/pdfmake/${PDFMAKE_VERSION}`
 
-if (vfs && typeof vfs === 'object') {
-  pdfMake.vfs = vfs
-  console.log('[generatePdf] vfs loaded, keys count:', Object.keys(vfs).length)
-} else {
-  console.error('[generatePdf] vfs_fonts not available — PDF generation will fail.', pdfFonts)
+let _pdfMakePromise = null
+
+function _loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`)
+    if (existing) { existing.addEventListener('load', resolve, { once: true }); return resolve() }
+    const s = document.createElement('script')
+    s.src = src
+    s.async = true
+    s.onload = () => resolve()
+    s.onerror = () => reject(new Error(`Failed to load ${src}`))
+    document.head.appendChild(s)
+  })
+}
+
+async function ensurePdfMake() {
+  if (typeof window !== 'undefined' && window.pdfMake?.vfs && Object.keys(window.pdfMake.vfs).length > 0) {
+    return window.pdfMake
+  }
+  if (_pdfMakePromise) return _pdfMakePromise
+  _pdfMakePromise = (async () => {
+    console.log('[generatePdf] loading pdfmake from CDN…')
+    await _loadScript(`${CDN_BASE}/pdfmake.min.js`)
+    await _loadScript(`${CDN_BASE}/vfs_fonts.js`)
+    if (!window.pdfMake || !window.pdfMake.vfs) {
+      throw new Error('pdfmake nie został poprawnie załadowany z CDN')
+    }
+    console.log('[generatePdf] pdfmake ready, vfs keys:', Object.keys(window.pdfMake.vfs).length)
+    return window.pdfMake
+  })()
+  return _pdfMakePromise
 }
 
 const NAVY  = '#1E3A5F'
@@ -286,16 +308,15 @@ async function fetchLogoDataUrl() {
 /** Główna funkcja — zwraca { blob, base64 }. */
 export async function generateContractPdf(data) {
   console.log('[generatePdf] start')
-  if (!pdfMake.vfs) {
-    throw new Error('pdfmake fonts (VFS) niezaładowane — sprawdź konsolę')
-  }
+  const pdfMake = await ensurePdfMake()
+
   const logo = await fetchLogoDataUrl()
   console.log('[generatePdf] logo:', logo ? 'loaded' : 'skipped')
 
   const docDef = buildDocDefinition(data, logo)
   console.log('[generatePdf] doc definition built, generating blob...')
 
-  // 30-sekundowy timeout żeby UI nie wisiał na zawsze przy uszkodzonym VFS.
+  // 30-sekundowy timeout żeby UI nie wisiał na zawsze.
   const blob = await Promise.race([
     new Promise((resolve, reject) => {
       try {
