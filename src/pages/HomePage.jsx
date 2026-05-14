@@ -583,13 +583,22 @@ export default function HomePage() {
       }
     }
 
-    // BIEŻĄCY wynik = suma punktów z aktualnego tygodnia (week_number = currentWeek)
+    // BIEŻĄCY wynik = suma punktów z aktualnego okna 7-dniowego.
+    // Filtrujemy po DACIE (nie week_number) — odporne na historyczne wpisy
+    // które mogły mieć złe week_number przez wcześniejsze bugi.
+    const weekStart = new Date(createdAt)
+    weekStart.setDate(weekStart.getDate() + (currentWeek - 1) * 7)
+    const weekStartISO = weekStart.toISOString().slice(0, 10)
     const { data: pointsData } = await supabase
       .from('points_log')
-      .select('points')
+      .select('points,date,week_number')
       .eq('user_id', profile.id)
-      .eq('week_number', currentWeek)
+      .gte('date', weekStartISO)
     const runningTotal = (pointsData || []).reduce((sum, r) => sum + (r.points || 0), 0)
+    if (typeof window !== 'undefined' && window.location?.hostname === 'localhost') {
+      // eslint-disable-next-line no-console
+      console.log('[weekly-report]', { currentWeek, weekStartISO, daysSinceJoin, rows: pointsData })
+    }
 
     setCache(`report:${profile.id}`, { score: runningTotal, daysLeft: remaining }, 60 * 1000)
     setReportScore(runningTotal)
