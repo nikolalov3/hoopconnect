@@ -539,43 +539,60 @@ export default function HomePage() {
       setQuote(quotes[Math.floor(Math.random() * quotes.length)])
     }
 
-    // ── 3. Weekly report ──
+    // ── 3. Weekly report (running total bieżącego tygodnia) ──
+    // Kontekst zmiany: poprzednia logika pokazywała score z POPRZEDNIEGO
+    // tygodnia (lagger). Powodowała że gracz widzi 0pkt na początku nowego
+    // tygodnia mimo że trenuje, oraz nie widzi dziś-poniedziałkowych
+    // efektów. Teraz pokazujemy NARASTAJĄCY wynik z bieżącego tygodnia —
+    // resetuje się do 0 w pierwszym dniu nowego tygodnia i rośnie wraz z
+    // każdym ćwiczeniem.
     const createdAt = profile.created_at ? new Date(profile.created_at) : new Date()
     const daysSinceJoin = Math.floor((new Date() - createdAt) / (1000 * 60 * 60 * 24))
-    const remaining = Math.max(0, 7 - daysSinceJoin)
+
+    // 1-indexed week (matches WRITE convention: floor(days/7) + 1)
+    const currentWeek    = Math.floor(daysSinceJoin / 7) + 1
+    const completedWeek  = currentWeek - 1
+    const daysIntoWeek   = daysSinceJoin % 7
+    const daysToWeekEnd  = 7 - daysIntoWeek         // dni do końca tygodnia (1-7)
+    // W pierwszym tygodniu komunikat brzmi „Twój pierwszy raport za N dni”
+    // — zostawiamy ten countdown żeby nie zburzyć first-time UX.
+    const remaining = completedWeek === 0 ? Math.max(0, 7 - daysSinceJoin) : 0
     setDaysUntilReport(remaining)
 
-    const visibleWeek = Math.floor(daysSinceJoin / 7)
-
-    if (visibleWeek >= 1) {
-      const { data: existingReport } = await supabase
+    // Archiwizacja zakończonego tygodnia (jeśli jeszcze nie zapisana)
+    if (completedWeek >= 1) {
+      const { data: archived } = await supabase
         .from('weekly_reports')
-        .select('*')
+        .select('total_points')
         .eq('user_id', profile.id)
-        .eq('week_number', visibleWeek)
-        .single()
-
-      if (!existingReport) {
-        const { data: pointsData } = await supabase
+        .eq('week_number', completedWeek)
+        .maybeSingle()
+      if (!archived) {
+        const { data: oldPoints } = await supabase
           .from('points_log')
           .select('points')
           .eq('user_id', profile.id)
-          .eq('week_number', visibleWeek)
-
-        const total = (pointsData || []).reduce((sum, r) => sum + r.points, 0)
-        await supabase.from('weekly_reports').upsert({
-          user_id: profile.id,
-          week_number: visibleWeek,
-          total_points: total,
-          revealed_at: new Date().toISOString(),
+          .eq('week_number', completedWeek)
+        const oldTotal = (oldPoints || []).reduce((s, r) => s + (r.points || 0), 0)
+        await supabase.from('weekly_reports').insert({
+          user_id:      profile.id,
+          week_number:  completedWeek,
+          total_points: oldTotal,
+          revealed_at:  new Date().toISOString(),
         })
-        setCache(`report:${profile.id}`, { score: total, daysLeft: remaining }, 10 * 60 * 1000)
-        setReportScore(total)
-      } else {
-        setCache(`report:${profile.id}`, { score: existingReport.total_points, daysLeft: remaining }, 10 * 60 * 1000)
-        setReportScore(existingReport.total_points)
       }
     }
+
+    // BIEŻĄCY wynik = suma punktów z aktualnego tygodnia (week_number = currentWeek)
+    const { data: pointsData } = await supabase
+      .from('points_log')
+      .select('points')
+      .eq('user_id', profile.id)
+      .eq('week_number', currentWeek)
+    const runningTotal = (pointsData || []).reduce((sum, r) => sum + (r.points || 0), 0)
+
+    setCache(`report:${profile.id}`, { score: runningTotal, daysLeft: remaining }, 60 * 1000)
+    setReportScore(runningTotal)
 
     setReportLoading(false)
   }
@@ -634,6 +651,9 @@ export default function HomePage() {
       user_id: profile.id, training_id: trainingId,
       points, week_number: weekNumber, date: TODAY, source: 'training',
     })
+    // Optimistic update — wynik rośnie natychmiast bez czekania na refresh
+    setReportScore(prev => prev + points)
+    bustCache(`report:${profile.id}`)
 
     if (allDone) setShowDayDoneModal(true)
     setTimeout(() => checkAchievements(trainingId, allDone), 0)
@@ -648,6 +668,12 @@ export default function HomePage() {
     // ── OPTIMISTIC: cofnij zaznaczenie natychmiast ──
     setActivityLog(prev => ({ ...prev, trainings_completed: newCompleted, all_done: false }))
     bustCache(`log:${profile.id}:${TODAY}`)
+
+    // Optimistic decrement reportScore — żeby cyfra spadała razem z odznaczeniem
+    const trainingForPoints = trainings.find(t => t.id === trainingId)
+    const undoPoints = (trainingForPoints?._pts || 1) * (trainingForPoints?._multiplier || 1)
+    setReportScore(prev => Math.max(0, prev - undoPoints))
+    bustCache(`report:${profile.id}`)
 
     // DB w tle równolegle
     await Promise.all([
