@@ -6,7 +6,21 @@
 import pdfMake from 'pdfmake/build/pdfmake'
 import pdfFonts from 'pdfmake/build/vfs_fonts'
 
-pdfMake.vfs = pdfFonts.vfs
+// pdfmake przechowuje fonty w "virtual file system". Różne wersje/bundlery
+// exportują vfs w różnym miejscu — sprawdzamy wszystkie znane lokalizacje.
+const vfs =
+  pdfFonts?.vfs ||
+  pdfFonts?.pdfMake?.vfs ||
+  pdfFonts?.default?.vfs ||
+  pdfFonts?.default?.pdfMake?.vfs ||
+  pdfFonts?.default
+
+if (vfs && typeof vfs === 'object') {
+  pdfMake.vfs = vfs
+  console.log('[generatePdf] vfs loaded, keys count:', Object.keys(vfs).length)
+} else {
+  console.error('[generatePdf] vfs_fonts not available — PDF generation will fail.', pdfFonts)
+}
 
 const NAVY  = '#1E3A5F'
 const TEXT  = '#1A2233'
@@ -271,15 +285,36 @@ async function fetchLogoDataUrl() {
 
 /** Główna funkcja — zwraca { blob, base64 }. */
 export async function generateContractPdf(data) {
+  console.log('[generatePdf] start')
+  if (!pdfMake.vfs) {
+    throw new Error('pdfmake fonts (VFS) niezaładowane — sprawdź konsolę')
+  }
   const logo = await fetchLogoDataUrl()
+  console.log('[generatePdf] logo:', logo ? 'loaded' : 'skipped')
+
   const docDef = buildDocDefinition(data, logo)
-  const blob = await new Promise((resolve, reject) => {
-    pdfMake.createPdf(docDef).getBlob(blob => {
-      if (!blob) return reject(new Error('PDF generation failed'))
-      resolve(blob)
-    })
-  })
+  console.log('[generatePdf] doc definition built, generating blob...')
+
+  // 30-sekundowy timeout żeby UI nie wisiał na zawsze przy uszkodzonym VFS.
+  const blob = await Promise.race([
+    new Promise((resolve, reject) => {
+      try {
+        pdfMake.createPdf(docDef).getBlob(b => {
+          if (!b) return reject(new Error('PDF generation returned empty'))
+          resolve(b)
+        })
+      } catch (err) {
+        reject(err)
+      }
+    }),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout — generowanie PDF zajęło >30s. Sprawdź konsolę.')), 30000)
+    ),
+  ])
+  console.log('[generatePdf] blob size:', blob.size, 'bytes')
+
   const base64 = await blobToBase64(blob)
+  console.log('[generatePdf] base64 length:', base64.length)
   return { blob, base64 }
 }
 

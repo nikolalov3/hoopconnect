@@ -58,9 +58,11 @@ export default function GeneratorPage() {
     return { subject, body }
   }
 
+  const [step, setStep] = useState('')   // diagnostyka: który krok aktualnie się wykonuje
+
   const generate = async (e) => {
     e.preventDefault()
-    setError(null); setResult(null); setSendStatus(null)
+    setError(null); setResult(null); setSendStatus(null); setStep('')
     if (!form.klub_nazwa.trim()) { setError('Nazwa Klubu jest wymagana.'); return }
     setWorking(true)
     try {
@@ -68,17 +70,24 @@ export default function GeneratorPage() {
         ...form,
         data_zawarcia: plDate(form.data_zawarcia),
       }
+
+      setStep('Generowanie PDF…'); console.log('[generate] step: PDF gen')
       const { blob, base64 } = await generateContractPdf(data)
       const filename = `umowa_${slugify(form.klub_nazwa)}_${form.data_zawarcia}.pdf`
+      console.log('[generate] PDF ready, size:', blob.size)
 
-      // Upload to Supabase Storage (path: <user_id>/<filename>)
+      setStep('Upload do Storage…'); console.log('[generate] step: storage upload')
       const storagePath = `${user.id}/${Date.now()}_${filename}`
       const { error: upErr } = await supabase.storage
         .from('admin_contracts')
         .upload(storagePath, blob, { contentType: 'application/pdf', upsert: false })
-      if (upErr) throw new Error('Upload: ' + upErr.message)
+      if (upErr) {
+        console.error('[generate] upload error:', upErr)
+        throw new Error('Upload do Storage: ' + (upErr.message || 'nieznany błąd'))
+      }
+      console.log('[generate] upload OK:', storagePath)
 
-      // Insert DB row
+      setStep('Zapis do bazy…'); console.log('[generate] step: DB insert')
       const { data: row, error: dbErr } = await supabase
         .from('admin_contracts')
         .insert({
@@ -94,7 +103,11 @@ export default function GeneratorPage() {
         })
         .select()
         .single()
-      if (dbErr) throw new Error('DB: ' + dbErr.message)
+      if (dbErr) {
+        console.error('[generate] DB error:', dbErr)
+        throw new Error('Zapis do bazy: ' + (dbErr.message || 'nieznany błąd'))
+      }
+      console.log('[generate] DB row created:', row?.id)
 
       // Browser-side blob URL for instant download
       const pdfUrl = URL.createObjectURL(blob)
@@ -105,7 +118,9 @@ export default function GeneratorPage() {
       setMailBody(body)
 
       setResult({ contractId: row.id, pdfUrl, filename, base64 })
+      setStep('')
     } catch (err) {
+      console.error('[generate] failed:', err)
       setError(err.message || String(err))
     } finally {
       setWorking(false)
@@ -222,7 +237,7 @@ export default function GeneratorPage() {
           )}
 
           <button type="submit" className="admin-btn-primary" disabled={working}>
-            {working ? 'Generowanie...' : '🏀 Wygeneruj PDF'}
+            {working ? (step || 'Generowanie...') : '🏀 Wygeneruj PDF'}
           </button>
         </form>
       </div>
