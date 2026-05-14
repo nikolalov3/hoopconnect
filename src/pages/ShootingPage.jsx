@@ -346,14 +346,17 @@ export default function ShootingPage() {
       const TODAY_DATE = new Date().toISOString().split('T')[0]
       const daysSinceJoin2 = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
       const weekNum2 = Math.floor(daysSinceJoin2 / 7) + 1
-      await supabase.from('points_log').insert({
-        user_id: profile.id,
-        training_id: id,
-        points: 30,
-        week_number: weekNum2,
-        date: TODAY_DATE,
-        source: 'shooting_session',
-      })
+      await supabase.from('points_log').upsert(
+        {
+          user_id: profile.id,
+          training_id: id,
+          points: 30,
+          week_number: weekNum2,
+          date: TODAY_DATE,
+          source: 'shooting_session',
+        },
+        { onConflict: 'user_id,training_id,date,source', ignoreDuplicates: true }
+      )
 
       // Odznacz trening w activity_log i zalicz serię
       await markDoneAndCreditStreak(id)
@@ -399,14 +402,17 @@ export default function ShootingPage() {
     const TODAY_DATE = new Date().toISOString().split('T')[0]
     const daysSinceJoin2 = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
     const weekNum2 = Math.floor(daysSinceJoin2 / 7) + 1
-    await supabase.from('points_log').insert({
-      user_id: profile.id,
-      training_id: id,
-      points: 30,
-      week_number: weekNum2,
-      date: TODAY_DATE,
-      source: 'shooting_session',
-    })
+    await supabase.from('points_log').upsert(
+      {
+        user_id: profile.id,
+        training_id: id,
+        points: 30,
+        week_number: weekNum2,
+        date: TODAY_DATE,
+        source: 'shooting_session',
+      },
+      { onConflict: 'user_id,training_id,date,source', ignoreDuplicates: true }
+    )
 
     // Odznacz trening w activity_log i zalicz serię
     await markDoneAndCreditStreak(id)

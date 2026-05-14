@@ -497,22 +497,44 @@ export default function HomePage() {
 
   useEffect(() => { loadData() }, [profile])
 
-  // Cross-device sync: refetch gdy użytkownik wraca do zakładki / fokusuje okno.
-  // Bez tego komputer trzymał stary stan po zaznaczeniu treningu na telefonie.
+  // Cross-device sync — dwa mechanizmy:
+  //
+  // (1) FOCUS/VISIBILITY: gdy użytkownik wraca do zakładki/okna — refetch.
+  //     Ratuje gdy Realtime padło (np. Safari w tle ubił socket).
+  //
+  // (2) SUPABASE REALTIME: live subskrypcja zmian w activity_log i
+  //     points_log dla bieżącego usera. Zaznaczenie na telefonie pojawia
+  //     się w przeglądarce w <1s bez przełączania okna.
   useEffect(() => {
     if (!profile) return
-    function onFocus() {
-      if (document.visibilityState !== 'visible') return
-      // Wymuś świeży fetch — pomijamy cache TTL bo dane mogły się zmienić na innym urządzeniu
+
+    function refresh() {
       bustCache(`log:${profile.id}:${TODAY}`)
       bustCache(`report:${profile.id}`)
       loadData()
     }
+    function onFocus() {
+      if (document.visibilityState !== 'visible') return
+      refresh()
+    }
     document.addEventListener('visibilitychange', onFocus)
     window.addEventListener('focus', onFocus)
+
+    // Realtime: dwa kanały — activity_log (zaznaczenia) i points_log (wynik)
+    const channel = supabase
+      .channel(`home-sync:${profile.id}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'activity_log', filter: `user_id=eq.${profile.id}` },
+        refresh)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'points_log', filter: `user_id=eq.${profile.id}` },
+        refresh)
+      .subscribe()
+
     return () => {
       document.removeEventListener('visibilitychange', onFocus)
       window.removeEventListener('focus', onFocus)
+      supabase.removeChannel(channel)
     }
   }, [profile])
 
@@ -676,12 +698,17 @@ export default function HomePage() {
     const points = (training?._pts || 1) * (training?._multiplier || 1)
     const weekNumber = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24 * 7)) + 1
     // Supabase queries są lazy — bez .then()/await request NIE LECI.
-    // Dlatego dotąd punkty nie zapisywały się do points_log.
-    supabase.from('points_log').insert({
-      user_id: profile.id, training_id: trainingId,
-      points, week_number: weekNumber, date: TODAY, source: 'training',
-    }).then(({ error }) => {
-      if (error) console.error('[points_log insert]', error)
+    // Upsert z ignoreDuplicates: idempotentne wobec UNIQUE (user_id,
+    // training_id, date, source) — kliknięcie dwa razy / na dwóch
+    // urządzeniach NIE podwaja punktów (DB odrzuca dublet).
+    supabase.from('points_log').upsert(
+      {
+        user_id: profile.id, training_id: trainingId,
+        points, week_number: weekNumber, date: TODAY, source: 'training',
+      },
+      { onConflict: 'user_id,training_id,date,source', ignoreDuplicates: true }
+    ).then(({ error }) => {
+      if (error) console.error('[points_log upsert]', error)
     })
     // Optimistic update — wynik rośnie natychmiast bez czekania na refresh
     setReportScore(prev => prev + points)
