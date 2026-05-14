@@ -656,9 +656,13 @@ export default function HomePage() {
     const training = trainings.find(t => t.id === trainingId)
     const points = (training?._pts || 1) * (training?._multiplier || 1)
     const weekNumber = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24 * 7)) + 1
-    supabase.from('points_log').insert({                  // fire-and-forget
+    // Supabase queries są lazy — bez .then()/await request NIE LECI.
+    // Dlatego dotąd punkty nie zapisywały się do points_log.
+    supabase.from('points_log').insert({
       user_id: profile.id, training_id: trainingId,
       points, week_number: weekNumber, date: TODAY, source: 'training',
+    }).then(({ error }) => {
+      if (error) console.error('[points_log insert]', error)
     })
     // Optimistic update — wynik rośnie natychmiast bez czekania na refresh
     setReportScore(prev => prev + points)
