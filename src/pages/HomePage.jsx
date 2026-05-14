@@ -497,6 +497,25 @@ export default function HomePage() {
 
   useEffect(() => { loadData() }, [profile])
 
+  // Cross-device sync: refetch gdy użytkownik wraca do zakładki / fokusuje okno.
+  // Bez tego komputer trzymał stary stan po zaznaczeniu treningu na telefonie.
+  useEffect(() => {
+    if (!profile) return
+    function onFocus() {
+      if (document.visibilityState !== 'visible') return
+      // Wymuś świeży fetch — pomijamy cache TTL bo dane mogły się zmienić na innym urządzeniu
+      bustCache(`log:${profile.id}:${TODAY}`)
+      bustCache(`report:${profile.id}`)
+      loadData()
+    }
+    document.addEventListener('visibilitychange', onFocus)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      document.removeEventListener('visibilitychange', onFocus)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [profile])
+
   async function loadData() {
     if (!profile) return
 
