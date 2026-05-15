@@ -411,11 +411,11 @@ export default function AchievementsPage() {
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
         background: `
-          radial-gradient(ellipse 90% 55% at 50% -5%,  rgba(91,184,245,0.45) 0%, transparent 60%),
-          radial-gradient(ellipse 65% 45% at -10% 65%, rgba(91,184,245,0.22) 0%, transparent 55%),
-          radial-gradient(ellipse 75% 45% at 110% 55%, rgba(91,184,245,0.18) 0%, transparent 55%),
-          radial-gradient(ellipse 100% 55% at 50% 110%,rgba(91,184,245,0.25) 0%, transparent 50%),
-          linear-gradient(170deg, rgba(4,10,20,0.72) 0%, rgba(2,6,12,0.78) 100%)
+          radial-gradient(ellipse 90% 55% at 50% -5%,  rgba(91,184,245,0.42) 0%, transparent 60%),
+          radial-gradient(ellipse 65% 45% at -10% 65%, rgba(91,184,245,0.20) 0%, transparent 55%),
+          radial-gradient(ellipse 75% 45% at 110% 55%, rgba(91,184,245,0.16) 0%, transparent 55%),
+          radial-gradient(ellipse 100% 55% at 50% 110%,rgba(91,184,245,0.22) 0%, transparent 50%),
+          linear-gradient(170deg, rgba(3,8,16,0.74) 0%, rgba(2,5,10,0.80) 100%)
         `,
       }} />
       <AnimatePresence>

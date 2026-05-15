@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
@@ -440,14 +441,15 @@ export default function ShootingPage() {
     </div>
   )
 
+  // Spójne ze stylem TrainingCard — steel-navy glass, radius 14
   const glassCard = {
-    background: 'rgba(12,8,4,0.60)',
-    backdropFilter: 'blur(28px)',
-    WebkitBackdropFilter: 'blur(28px)',
-    border: '1px solid rgba(255,255,255,0.10)',
-    borderTop: '1px solid rgba(255,255,255,0.17)',
-    borderRadius: 'var(--radius)',
-    boxShadow: '0 8px 28px rgba(0,0,0,0.40)',
+    background: 'linear-gradient(180deg, rgba(36,52,82,0.62) 0%, rgba(22,34,58,0.58) 100%)',
+    backdropFilter: 'blur(24px) saturate(1.7)',
+    WebkitBackdropFilter: 'blur(24px) saturate(1.7)',
+    border: '1px solid rgba(150,200,255,0.14)',
+    borderTop: '1px solid rgba(180,215,255,0.22)',
+    borderRadius: 14,
+    boxShadow: '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
   }
 
   return (
@@ -623,21 +625,29 @@ export default function ShootingPage() {
       )}
 
       {/* Header */}
-      <div style={{ padding: '16px 20px 10px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{
-          background: 'rgba(12,8,4,0.65)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,255,255,0.13)',
-          borderRadius: 12, width: 40, height: 40, cursor: 'pointer',
-          color: 'var(--text-secondary)', fontSize: 18, flexShrink: 0,
+      <div style={{ padding: '16px 20px 12px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={() => navigate(-1)} aria-label="Wstecz" style={{
+          background: 'transparent', border: 'none',
+          width: 36, height: 36, cursor: 'pointer',
+          color: 'var(--text-secondary)', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>←</button>
+          padding: 0,
+        }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+        </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: 10, letterSpacing: 2.5, color: 'var(--orange)', textTransform: 'uppercase', fontWeight: 600 }}>
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 10, letterSpacing: 2.5, color: 'var(--orange)', textTransform: 'uppercase', fontWeight: 600, marginBottom: 2 }}>
             {config.label}
           </p>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          <h2 style={{
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
+            lineHeight: 1.15, letterSpacing: 0.3, textTransform: 'uppercase',
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}>
             {training.title}
           </h2>
         </div>
@@ -649,21 +659,23 @@ export default function ShootingPage() {
         {saving && <div className="spinner" style={{ width: 20, height: 20, flexShrink: 0 }} />}
       </div>
 
-      {/* Progress bar */}
-      <div style={{ padding: '0 20px 10px', flexShrink: 0 }}>
-        <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 4, height: 4, overflow: 'hidden' }}>
+      {/* Progress — większy oddech, większa cyfra procentów */}
+      <div style={{ padding: '4px 20px 16px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+          <span style={{ color: 'var(--text-dim)', fontSize: 13, fontWeight: 500, letterSpacing: 0.3 }}>
+            {attempted} / {target}
+          </span>
+          <motion.span key={pct} initial={{ scale: 1.18 }} animate={{ scale: 1 }}
+            style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: 'var(--orange)', letterSpacing: 0.5, lineHeight: 1 }}>
+            {pct}%
+          </motion.span>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 4, height: 6, overflow: 'hidden' }}>
           <motion.div
-            style={{ height: '100%', background: 'linear-gradient(90deg, var(--orange), var(--orange-hot))', borderRadius: 4, originX: 0, boxShadow: '0 0 8px rgba(91,184,245,0.45)' }}
+            style={{ height: '100%', background: 'linear-gradient(90deg, var(--orange), var(--orange-hot))', borderRadius: 4, originX: 0 }}
             animate={{ width: `${progress * 100}%` }}
             transition={{ duration: 0.15 }}
           />
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-          <span style={{ color: 'var(--text-dim)', fontSize: 12, fontWeight: 500 }}>{attempted} / {target}</span>
-          <motion.span key={pct} initial={{ scale: 1.3 }} animate={{ scale: 1 }}
-            style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 18, color: 'var(--orange)', letterSpacing: 1 }}>
-            {pct}%
-          </motion.span>
         </div>
       </div>
 
@@ -684,23 +696,23 @@ export default function ShootingPage() {
         ))}
       </div>
 
-      {/* BIG SHOT BUTTONS */}
-      <div style={{ flex: 1, display: 'flex', gap: 10, padding: '0 20px 10px', minHeight: 0 }}>
+      {/* SHOT BUTTONS — kompakt, sportowy charakter */}
+      <div style={{ display: 'flex', gap: 10, padding: '6px 20px 14px', flexShrink: 0 }}>
         {/* MADE */}
         <motion.button
-          whileTap={{ scale: 0.94 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => handleShot(true)}
           style={{
-            flex: 1, position: 'relative', overflow: 'hidden',
-            background: 'rgba(0,230,118,0.06)',
-            border: '1px solid rgba(0,230,118,0.18)',
-            borderTop: '1px solid rgba(0,230,118,0.28)',
-            borderRadius: 22, cursor: 'pointer', outline: 'none',
+            flex: 1, height: 150, position: 'relative', overflow: 'hidden',
+            background: 'linear-gradient(180deg, rgba(0,230,118,0.14) 0%, rgba(0,120,60,0.06) 100%)',
+            border: '1px solid rgba(0,230,118,0.28)',
+            borderTop: '1px solid rgba(0,230,118,0.42)',
+            borderRadius: 14, cursor: 'pointer', outline: 'none',
             display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', gap: 10,
+            alignItems: 'center', justifyContent: 'center', gap: 8,
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            boxShadow: '0 8px 28px rgba(0,0,0,0.40)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.30), inset 0 1px 0 rgba(0,230,118,0.18)',
           }}
         >
           <AnimatePresence>
@@ -709,28 +721,30 @@ export default function ShootingPage() {
                 style={{ position: 'absolute', inset: 0, background: 'rgba(0,230,118,0.35)', pointerEvents: 'none', borderRadius: 'inherit' }} />
             )}
           </AnimatePresence>
-          <span style={{ fontSize: 44, filter: 'drop-shadow(0 0 12px rgba(0,230,118,0.45))' }}>✓</span>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 22, color: 'var(--green-shot)', letterSpacing: 2, textTransform: 'uppercase' }}>
+          <svg width="38" height="38" viewBox="0 0 24 24" fill="none"
+            stroke="var(--green-shot)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--green-shot)', letterSpacing: 2.2, textTransform: 'uppercase' }}>
             TRAFIONY
           </span>
-          <span style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600 }}>tapnij</span>
         </motion.button>
 
         {/* MISSED */}
         <motion.button
-          whileTap={{ scale: 0.94 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => handleShot(false)}
           style={{
-            flex: 1, position: 'relative', overflow: 'hidden',
-            background: 'rgba(255,61,61,0.06)',
-            border: '1px solid rgba(255,61,61,0.18)',
-            borderTop: '1px solid rgba(255,61,61,0.28)',
-            borderRadius: 22, cursor: 'pointer', outline: 'none',
+            flex: 1, height: 150, position: 'relative', overflow: 'hidden',
+            background: 'linear-gradient(180deg, rgba(255,61,61,0.13) 0%, rgba(140,30,30,0.06) 100%)',
+            border: '1px solid rgba(255,61,61,0.28)',
+            borderTop: '1px solid rgba(255,61,61,0.42)',
+            borderRadius: 14, cursor: 'pointer', outline: 'none',
             display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', gap: 10,
+            alignItems: 'center', justifyContent: 'center', gap: 8,
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            boxShadow: '0 8px 28px rgba(0,0,0,0.40)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,61,61,0.18)',
           }}
         >
           <AnimatePresence>
@@ -739,25 +753,27 @@ export default function ShootingPage() {
                 style={{ position: 'absolute', inset: 0, background: 'rgba(255,61,61,0.35)', pointerEvents: 'none', borderRadius: 'inherit' }} />
             )}
           </AnimatePresence>
-          <span style={{ fontSize: 44, filter: 'drop-shadow(0 0 12px rgba(255,61,61,0.45))' }}>✗</span>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 22, color: 'var(--red-shot)', letterSpacing: 2, textTransform: 'uppercase' }}>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+            stroke="var(--red-shot)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--red-shot)', letterSpacing: 2.2, textTransform: 'uppercase' }}>
             PUDŁO
           </span>
-          <span style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600 }}>tapnij</span>
         </motion.button>
       </div>
 
-      {/* Manual input + Undo */}
-      <div style={{ padding: '0 20px 20px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Manual input + Undo — wypchnięte do dołu okna */}
+      <div style={{ padding: '0 20px 20px', flexShrink: 0, marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <button
           className="btn-ghost"
           onClick={() => { setManualMade(''); setManualMissed(''); setShowManualInput(true) }}
-          style={{ width: '100%', padding: '11px', fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--font-display)', fontWeight: 600 }}
+          style={{ width: '100%', padding: '13px', fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--font-display)', fontWeight: 600, borderRadius: 14 }}
         >
           ✎ Wpisz ręcznie
         </button>
         <button className="btn-ghost" onClick={undoShot} disabled={history.length === 0}
-          style={{ width: '100%', padding: '11px', fontSize: 13, letterSpacing: 1, opacity: history.length === 0 ? 0.25 : 1, textTransform: 'uppercase', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+          style={{ width: '100%', padding: '13px', fontSize: 13, letterSpacing: 1, opacity: history.length === 0 ? 0.25 : 1, textTransform: 'uppercase', fontFamily: 'var(--font-display)', fontWeight: 600, borderRadius: 14 }}>
           ↩ Cofnij
           {history.length > 0 && (
             <span style={{ marginLeft: 8, opacity: 0.5, fontSize: 11 }}>

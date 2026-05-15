@@ -193,20 +193,12 @@ function ReportRatingRing({ score, daysLeft, loading }) {
         {loading ? (
           <div className="spinner" style={{ width: 24, height: 24 }} />
         ) : isLocked ? (
-          <>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-              stroke="var(--text-dim)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
-              style={{ marginBottom: 4, opacity: 0.5 }}>
-              <rect x="3" y="11" width="18" height="11" rx="3"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, lineHeight: 1, color: 'var(--text-dim)', letterSpacing: -1 }}>
-              {daysLeft}
-            </span>
-            <span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--text-dim)', marginTop: 2 }}>
-              DNI DO RAPORTU
-            </span>
-          </>
+          <img
+            src="/7days.png"
+            alt="Raport za 7 dni"
+            style={{ width: '78%', height: '78%', objectFit: 'contain', userSelect: 'none', pointerEvents: 'none' }}
+            draggable={false}
+          />
         ) : (
           <>
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 62, lineHeight: 1, color, letterSpacing: '-1px', textShadow: `0 0 22px ${color}73` }}>
@@ -1063,6 +1055,18 @@ export default function HomePage() {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      {/* Tło fokusowane na hexagonie raportu — 3 niebieskie światła:
+          góra-środek (nad hexem), lewo i prawo lekko poniżej środka hexa.
+          Daje wrażenie głębi za ringiem na górze strony. */}
+      <div style={{
+        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: -1,
+        background: `
+          radial-gradient(ellipse 80% 45% at 50% -5%,  rgba(91,184,245,0.22) 0%, transparent 62%),
+          radial-gradient(ellipse 55% 45% at -8% 36%, rgba(91,184,245,0.16) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 45% at 108% 36%,rgba(91,184,245,0.16) 0%, transparent 60%),
+          linear-gradient(170deg, #0C1F38 0%, #091828 42%, #060F1E 100%)
+        `,
+      }} />
       <SettingsPanel open={showSettings} onClose={closeSettings} />
       <LeagueInfoPanel open={leagueOpen} onClose={closeLeague} />
       <AnimatePresence>{showQuote && <QuotePanel quote={quote} onClose={() => setShowQuote(false)} />}</AnimatePresence>
@@ -1150,7 +1154,7 @@ export default function HomePage() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'rgba(200,210,230,0.55)',
             }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2 L13.5 10.5 L22 12 L13.5 13.5 L12 22 L10.5 13.5 L2 12 L10.5 10.5 Z"/>
               </svg>
             </motion.button>
@@ -1161,7 +1165,7 @@ export default function HomePage() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'rgba(200,210,230,0.55)',
             }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3"/>
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
               </svg>
@@ -1265,7 +1269,12 @@ export default function HomePage() {
       </div>
 
 
-      <hr className="divider" style={{ margin: '12px 22px' }} />
+      {/* Separator — horizontal fade gradient (zamiast twardej kreski 1px) */}
+      <div style={{
+        height: 1,
+        margin: '14px 22px',
+        background: 'linear-gradient(90deg, transparent 0%, rgba(180,210,255,0.18) 50%, transparent 100%)',
+      }} />
 
       {/* Team practice cards — pokazują się gdy trener zaplanował na dzisiaj */}
       {teamPractices.length > 0 && (

@@ -1,4 +1,4 @@
-import { useState, memo } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 
@@ -27,7 +27,7 @@ const DiffDots = ({ n }) => (
 )
 
 const ChevronIcon = ({ up }) => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d={up ? 'M18 15l-6-6-6 6' : 'M6 9l6 6 6-6'} />
   </svg>
 )
@@ -38,6 +38,16 @@ function TrainingCard({ training, done, onDone, onUndo }) {
   const isShooting = SHOOTING_TYPES.includes(training.type)
   const typeInfo = TYPE_LABELS[training.type] || { label: training.type, color: 'badge-gray' }
 
+  // Pulse animation on transition from not-done → done.
+  // Liczy się tylko PRZEJŚCIE, nie sam stan — inaczej animacja leciała by
+  // przy każdym remount/refresh karty.
+  const [pulseKey, setPulseKey] = useState(0)
+  const prevDone = useRef(done)
+  useEffect(() => {
+    if (!prevDone.current && done) setPulseKey(k => k + 1)
+    prevDone.current = done
+  }, [done])
+
   function handleAction(e) {
     e.stopPropagation()
     if (isShooting) navigate(`/shooting/${training.id}`, { state: { training } })
@@ -47,79 +57,97 @@ function TrainingCard({ training, done, onDone, onUndo }) {
   return (
     <motion.div
       layout
+      animate={pulseKey > 0 ? {
+        scale: [1, 1.025, 1],
+        boxShadow: [
+          '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
+          '0 6px 28px rgba(0,230,118,0.40), inset 0 1px 0 rgba(180,220,255,0.06)',
+          '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
+        ],
+      } : { scale: 1 }}
+      transition={{ duration: 0.55, ease: 'easeOut' }}
       style={{
         background: done
-          ? 'rgba(0,230,118,0.06)'
-          : 'rgba(6,14,30,0.52)',
+          ? 'linear-gradient(180deg, rgba(0,230,118,0.10) 0%, rgba(0,140,80,0.06) 100%)'
+          : 'linear-gradient(180deg, rgba(36,52,82,0.62) 0%, rgba(22,34,58,0.58) 100%)',
         backdropFilter: 'blur(24px) saturate(1.7)',
         WebkitBackdropFilter: 'blur(24px) saturate(1.7)',
         border: done
-          ? '1px solid rgba(0,230,118,0.18)'
-          : '1px solid rgba(120,190,255,0.09)',
+          ? '1px solid rgba(0,230,118,0.22)'
+          : '1px solid rgba(150,200,255,0.14)',
         borderTop: done
-          ? '1px solid rgba(0,230,118,0.28)'
-          : '1px solid rgba(160,210,255,0.16)',
-        borderRadius: 'var(--radius)',
+          ? '1px solid rgba(0,230,118,0.30)'
+          : '1px solid rgba(180,215,255,0.22)',
+        borderRadius: 14,
         overflow: 'hidden',
         cursor: 'pointer',
         boxShadow: '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
         transition: 'border-color 0.3s',
       }}
     >
-      {/* Header row */}
+      {/* Header */}
       <div onClick={() => setExpanded(e => !e)} style={{ padding: '16px 18px' }}>
+        {/* Główny wiersz: check + tytuł + chevron na jednej linii (perfekcyjne wycentrowanie) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
 
-          {/* Done circle */}
+          {/* Done check — 3D pusty (szary) kiedy nie zaliczone, zielony kiedy zaliczone */}
           <div style={{
-            width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-            border: done ? 'none' : '1.5px solid rgba(255,255,255,0.12)',
+            width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: done
               ? 'linear-gradient(135deg, #00E676, #00A854)'
-              : 'rgba(255,255,255,0.05)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: done ? '0 2px 12px rgba(0,230,118,0.40)' : 'none',
-            transition: 'all 0.3s',
+              : 'linear-gradient(145deg, rgba(70,82,100,0.55) 0%, rgba(30,38,52,0.55) 100%)',
+            border: done
+              ? '1px solid rgba(0,230,118,0.55)'
+              : '1px solid rgba(255,255,255,0.10)',
+            boxShadow: done
+              ? '0 2px 12px rgba(0,230,118,0.36), inset 0 1px 0 rgba(255,255,255,0.25)'
+              : 'inset 0 1px 1px rgba(255,255,255,0.12), inset 0 -1px 2px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.35)',
+            transition: 'background 0.3s, box-shadow 0.3s, border-color 0.3s',
           }}>
-            {done && (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M20 6L9 17l-5-5"/>
-              </svg>
-            )}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke={done ? '#fff' : 'rgba(255,255,255,0.32)'}
+              strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"
+              style={{ transition: 'stroke 0.3s' }}>
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
           </div>
 
-          {/* Content */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-              <span className={`badge ${training._pts != null ? (training._pts === 1 ? 'badge-gray' : 'badge-green') : typeInfo.color}`}>
-                {training._pts != null ? `${training._pts}PKT` : typeInfo.label}
-              </span>
-              {training._multiplier != null && (
-                <span style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>
-                  ×{training._multiplier}
-                </span>
-              )}
-            </div>
-            <h3 style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-              fontSize: 20,
-              lineHeight: 1.15,
-              color: done ? 'var(--text-dim)' : 'var(--text-primary)',
-              textDecoration: done ? 'line-through' : 'none',
-              textDecorationColor: 'rgba(255,255,255,0.20)',
-              letterSpacing: 0.3,
-              textTransform: 'uppercase',
-            }}>
-              {training.title}
-            </h3>
-            <div style={{ marginTop: 8 }}>
-              <DiffDots n={training.difficulty} />
-            </div>
-          </div>
+          <h3 style={{
+            flex: 1, minWidth: 0, margin: 0,
+            fontFamily: 'var(--font-display)',
+            fontWeight: 700,
+            fontSize: 19,
+            lineHeight: 1.2,
+            color: done ? 'var(--text-dim)' : 'var(--text-primary)',
+            textDecoration: done ? 'line-through' : 'none',
+            textDecorationColor: 'rgba(255,255,255,0.20)',
+            letterSpacing: 0.3,
+            textTransform: 'uppercase',
+          }}>
+            {training.title}
+          </h3>
 
-          <span style={{ color: 'var(--text-dim)', marginTop: 4, flexShrink: 0 }}>
+          <span style={{ color: 'var(--text-dim)', flexShrink: 0, display: 'flex' }}>
             <ChevronIcon up={expanded} />
+          </span>
+        </div>
+
+        {/* Meta — badge + multiplier + trudność, w jednej linii, lekko wcięta pod tytułem */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, paddingLeft: 44 }}>
+          <span
+            className={`badge ${training._pts != null ? (training._pts === 1 ? 'badge-gray' : 'badge-green') : typeInfo.color}`}
+            style={{ borderRadius: 6 }}
+          >
+            {training._pts != null ? `${training._pts}PKT` : typeInfo.label}
+          </span>
+          {training._multiplier != null && (
+            <span style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>
+              ×{training._multiplier}
+            </span>
+          )}
+          <span style={{ marginLeft: 'auto' }}>
+            <DiffDots n={training.difficulty} />
           </span>
         </div>
       </div>
