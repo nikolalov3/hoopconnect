@@ -221,13 +221,20 @@ export default function AchievementsPage() {
         }
       }
 
-      if (toInsert.length > 0) {
-        await supabase.from('user_achievements').insert(toInsert)
+      if (toInsert.length === 0) {
+        alert('[DEV] Wszystko już odblokowane — nic do dodania.')
+        return
       }
-      // Odśwież widok
+      const { error: insErr } = await supabase.from('user_achievements').insert(toInsert)
+      if (insErr) {
+        console.error('[DEV unlock-all] insert error:', insErr)
+        alert(`[DEV] Insert failed: ${insErr.message}\n(zobacz console)`)
+        return
+      }
       window.location.reload()
     } catch (e) {
-      console.error(e)
+      console.error('[DEV unlock-all]', e)
+      alert(`[DEV] Błąd: ${e?.message || e}\n(zobacz console)`)
     } finally {
       setUnlockingAll(false)
     }
