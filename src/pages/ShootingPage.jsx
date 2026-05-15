@@ -98,7 +98,7 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
         borderRadius: 20,
         padding: '20px 20px 16px',
         marginBottom: 10,
-        boxShadow: `0 8px 32px rgba(0,0,0,0.45), 0 0 40px ${pctColor}10`,
+        boxShadow: `0 8px 32px rgba(0,0,0,0.45), 0 0 40px ${pctColor}0E`,
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 14 }}>
           <div>
@@ -180,7 +180,7 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
                   WebkitBackdropFilter: 'blur(20px)',
                 }}>
                   {a.stage?.image
-                    ? <img src={a.stage.image} alt={a.stage.label} style={{ width: 44, height: 44, objectFit: 'contain', filter: `drop-shadow(0 0 8px ${color}80)` }} />
+                    ? <img src={a.stage.image} alt={a.stage.label} style={{ width: 44, height: 44, objectFit: 'contain', filter: `drop-shadow(0 0 8px ${color}73)` }} />
                     : <span style={{ fontSize: 22, lineHeight: 1 }}>{a.stage?.icon || '🏆'}</span>
                   }
                   <div style={{ flex: 1 }}>
@@ -653,7 +653,7 @@ export default function ShootingPage() {
       <div style={{ padding: '0 20px 10px', flexShrink: 0 }}>
         <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 4, height: 4, overflow: 'hidden' }}>
           <motion.div
-            style={{ height: '100%', background: 'linear-gradient(90deg, var(--orange), var(--orange-hot))', borderRadius: 4, originX: 0, boxShadow: '0 0 8px rgba(91,184,245,0.50)' }}
+            style={{ height: '100%', background: 'linear-gradient(90deg, var(--orange), var(--orange-hot))', borderRadius: 4, originX: 0, boxShadow: '0 0 8px rgba(91,184,245,0.45)' }}
             animate={{ width: `${progress * 100}%` }}
             transition={{ duration: 0.15 }}
           />
@@ -709,7 +709,7 @@ export default function ShootingPage() {
                 style={{ position: 'absolute', inset: 0, background: 'rgba(0,230,118,0.35)', pointerEvents: 'none', borderRadius: 'inherit' }} />
             )}
           </AnimatePresence>
-          <span style={{ fontSize: 44, filter: 'drop-shadow(0 0 12px rgba(0,230,118,0.50))' }}>✓</span>
+          <span style={{ fontSize: 44, filter: 'drop-shadow(0 0 12px rgba(0,230,118,0.45))' }}>✓</span>
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 22, color: 'var(--green-shot)', letterSpacing: 2, textTransform: 'uppercase' }}>
             TRAFIONY
           </span>
@@ -739,7 +739,7 @@ export default function ShootingPage() {
                 style={{ position: 'absolute', inset: 0, background: 'rgba(255,61,61,0.35)', pointerEvents: 'none', borderRadius: 'inherit' }} />
             )}
           </AnimatePresence>
-          <span style={{ fontSize: 44, filter: 'drop-shadow(0 0 12px rgba(255,61,61,0.50))' }}>✗</span>
+          <span style={{ fontSize: 44, filter: 'drop-shadow(0 0 12px rgba(255,61,61,0.45))' }}>✗</span>
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 22, color: 'var(--red-shot)', letterSpacing: 2, textTransform: 'uppercase' }}>
             PUDŁO
           </span>

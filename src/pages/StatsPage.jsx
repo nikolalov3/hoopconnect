@@ -60,7 +60,7 @@ function StatTile({ label, value, sub, accent }) {
       <p style={{
         fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 42,
         color: accent || 'var(--orange)', lineHeight: 1,
-        textShadow: `0 0 20px ${accent || 'rgba(91,184,245,0.40)'}`,
+        textShadow: `0 0 20px ${accent || 'rgba(91,184,245,0.28)'}`,
       }}>{value}</p>
       <p style={{
         fontFamily: 'var(--font-body)', fontSize: 9, fontWeight: 600,
@@ -84,7 +84,7 @@ function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, f
       minHeight: 148,
       border: `1px solid rgba(180,180,200,0.18)`,
       borderTop: `1px solid rgba(200,200,220,0.30)`,
-      boxShadow: `0 8px 28px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 0.5px rgba(160,160,180,0.10), 0 0 12px ${pctColor}15`,
+      boxShadow: `0 8px 28px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 0.5px rgba(160,160,180,0.10), 0 0 12px ${pctColor}0E`,
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
@@ -98,14 +98,14 @@ function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, f
         <p style={{
           fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 52,
           color: pctColor, lineHeight: 1, letterSpacing: -2,
-          textShadow: `0 0 24px ${pctColor}55`,
+          textShadow: `0 0 24px ${pctColor}3B`,
         }}>{pct}%</p>
       </div>
       <div>
         <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 3, height: 3, overflow: 'hidden', marginBottom: 8 }}>
           <motion.div
             initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: 'easeOut' }}
-            style={{ height: '100%', borderRadius: 3, background: pctColor, boxShadow: `0 0 6px ${pctColor}` }}
+            style={{ height: '100%', borderRadius: 3, background: pctColor, boxShadow: `0 0 4px ${pctColor}` }}
           />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

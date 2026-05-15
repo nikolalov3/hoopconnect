@@ -192,7 +192,7 @@ export default function BottomNav() {
                       position: 'absolute', top: 8, right: 10,
                       width: 8, height: 8, borderRadius: '50%',
                       background: '#FF3B30',
-                      boxShadow: '0 0 6px 2px rgba(255,59,48,0.70)',
+                      boxShadow: '0 0 6px 2px rgba(255,59,48,0.63)',
                       border: '1.5px solid rgba(10,6,3,0.85)',
                     }}
                   />
@@ -202,7 +202,7 @@ export default function BottomNav() {
                     style={{
                       position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)',
                       width: 4, height: 4, borderRadius: '50%',
-                      background: '#5BB8F5', boxShadow: '0 0 8px 2px rgba(91,184,245,0.60)',
+                      background: '#5BB8F5', boxShadow: '0 0 8px 2px rgba(91,184,245,0.54)',
                     }}
                   />
                 )}
@@ -236,7 +236,7 @@ export default function BottomNav() {
                     position: 'absolute', top: 8, right: 10,
                     width: 8, height: 8, borderRadius: '50%',
                     background: '#FF3B30',
-                    boxShadow: '0 0 6px 2px rgba(255,59,48,0.70)',
+                    boxShadow: '0 0 6px 2px rgba(255,59,48,0.63)',
                     border: '1.5px solid rgba(10,6,3,0.85)',
                   }}
                 />
@@ -246,7 +246,7 @@ export default function BottomNav() {
                   style={{
                     position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)',
                     width: 4, height: 4, borderRadius: '50%',
-                    background: '#5BB8F5', boxShadow: '0 0 8px 2px rgba(91,184,245,0.60)',
+                    background: '#5BB8F5', boxShadow: '0 0 8px 2px rgba(91,184,245,0.54)',
                   }}
                 />
               )}

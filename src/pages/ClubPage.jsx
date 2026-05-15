@@ -768,7 +768,7 @@ function EmptySlotSheet({ club, posKey, onClose }) {
         background: `${pos.hi}18`, border: `1px solid ${pos.hi}40`, marginBottom: 16,
       }}>
         <span style={{ width: 7, height: 7, borderRadius: '50%', background: pos.hi,
-          boxShadow: `0 0 6px ${pos.glow}` }}/>
+          boxShadow: `0 0 5px ${pos.glow}` }}/>
         <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 2,
           color: pos.hi, textTransform: 'uppercase' }}>{posKey}</span>
         <span style={{ fontSize: 10, fontWeight: 600, color: C.sub }}>{pos.label}</span>
@@ -853,7 +853,7 @@ function EmptySlotSheet({ club, posKey, onClose }) {
                   <p style={{
                     fontFamily: 'var(--font-display)', fontSize: 42, fontWeight: 900,
                     letterSpacing: 14, color: C.accent,
-                    textShadow: `0 0 28px ${C.accent}55`,
+                    textShadow: `0 0 28px ${C.accent}4D`,
                     margin: 0,
                   }}>
                     {code}
@@ -901,7 +901,7 @@ function PlayerSheet({ club, posKey, member, isOwner, isSelf, onClose, onRemove,
         background: `${pos.hi}18`, border: `1px solid ${pos.hi}40`, marginBottom: 16,
       }}>
         <span style={{ width: 7, height: 7, borderRadius: '50%', background: pos.hi,
-          boxShadow: `0 0 6px ${pos.glow}` }}/>
+          boxShadow: `0 0 5px ${pos.glow}` }}/>
         <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 2,
           color: pos.hi, textTransform: 'uppercase' }}>{posKey}</span>
         <span style={{ fontSize: 10, fontWeight: 600, color: C.sub }}>{pos.label}</span>
@@ -1217,7 +1217,7 @@ function ClubHeader({ club, isOwner, onEditPress }) {
                 width: 6, height: 6, borderRadius: '50%',
                 background: i < filled ? 'var(--orange)' : 'var(--text-dim)',
                 opacity: i < filled ? 1 : 0.35,
-                boxShadow: i < filled ? '0 0 5px rgba(91,184,245,0.70)' : 'none',
+                boxShadow: i < filled ? '0 0 5px rgba(91,184,245,0.63)' : 'none',
                 transition: 'all 0.3s',
               }}/>
             ))}
@@ -1302,7 +1302,7 @@ function MatchCard({ match, dist, uid, onPress }) {
                 color: C.accentHi, textTransform: 'uppercase', fontFamily: 'var(--font-display)',
                 display: 'flex', alignItems: 'center', gap: 4,
               }}>
-                <div style={{ width: 5, height: 5, borderRadius: '50%', background: C.accentHi, boxShadow: `0 0 6px ${C.accentHi}` }}/>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: C.accentHi, boxShadow: `0 0 5px ${C.accentHi}` }}/>
                 Grasz
               </div>
             )}
@@ -1314,7 +1314,7 @@ function MatchCard({ match, dist, uid, onPress }) {
                 color: C.accent, textTransform: 'uppercase', fontFamily: 'var(--font-display)',
                 display: 'flex', alignItems: 'center', gap: 4,
               }}>
-                <div style={{ width: 5, height: 5, borderRadius: '50%', background: C.accent, boxShadow: `0 0 5px ${C.accent}` }}/>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: C.accent, boxShadow: `0 0 4px ${C.accent}` }}/>
                 Twój team
               </div>
             )}
@@ -1382,7 +1382,7 @@ function MatchCard({ match, dist, uid, onPress }) {
                   <div key={i} style={{
                     width: 8, height: 8, borderRadius: '50%',
                     background: filled ? C.accent : C.dim,
-                    boxShadow: filled ? `0 0 5px ${C.accent}70` : 'none',
+                    boxShadow: filled ? `0 0 5px ${C.accent}65` : 'none',
                     transition: 'all 0.2s',
                   }}/>
                 )
@@ -1401,7 +1401,7 @@ function MatchCard({ match, dist, uid, onPress }) {
                   <div key={i} style={{
                     width: 8, height: 8, borderRadius: '50%',
                     background: filled ? C.hoop : C.dim,
-                    boxShadow: filled ? `0 0 5px ${C.hoop}70` : 'none',
+                    boxShadow: filled ? `0 0 5px ${C.hoop}65` : 'none',
                     transition: 'all 0.2s',
                   }}/>
                 )
@@ -1418,13 +1418,13 @@ function MatchCard({ match, dist, uid, onPress }) {
           <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14 }}>
             <span style={{ fontSize: 26, fontWeight: 900, lineHeight: 1, fontFamily: 'var(--font-display)',
               color: match.score_home > match.score_away ? C.win : C.text,
-              textShadow: match.score_home > match.score_away ? `0 0 16px ${C.win}50` : 'none' }}>
+              textShadow: match.score_home > match.score_away ? `0 0 16px ${C.win}48` : 'none' }}>
               {match.score_home}
             </span>
             <span style={{ fontSize: 13, fontWeight: 700, color: C.dim }}>:</span>
             <span style={{ fontSize: 26, fontWeight: 900, lineHeight: 1, fontFamily: 'var(--font-display)',
               color: match.score_away > match.score_home ? C.win : C.text,
-              textShadow: match.score_away > match.score_home ? `0 0 16px ${C.win}50` : 'none' }}>
+              textShadow: match.score_away > match.score_home ? `0 0 16px ${C.win}48` : 'none' }}>
               {match.score_away}
             </span>
           </div>
@@ -1854,7 +1854,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
             ? <span style={{
                 fontSize: 16, fontWeight: 900, fontFamily: 'var(--font-display)',
                 color: isMe ? '#000' : tColor, lineHeight: 1,
-                textShadow: isMe ? 'none' : `0 0 8px ${tColor}70`,
+                textShadow: isMe ? 'none' : `0 0 8px ${tColor}65`,
               }}>{initial}</span>
             : <span style={{ fontSize: 20, color: `${tColor}35`, lineHeight: 1 }}>+</span>
           }
@@ -1996,7 +1996,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                   color: `${C.accent}80`, margin: '0 0 4px' }}>Drużyna A</p>
                 <span style={{ fontSize: 38, fontWeight: 900, fontFamily: 'var(--font-display)', lineHeight: 1,
                   color: local.score_home > local.score_away ? C.win : C.text,
-                  textShadow: local.score_home > local.score_away ? `0 0 20px ${C.win}50` : 'none' }}>
+                  textShadow: local.score_home > local.score_away ? `0 0 20px ${C.win}48` : 'none' }}>
                   {local.score_home}
                 </span>
               </div>
@@ -2006,7 +2006,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                   color: `${C.hoop}80`, margin: '0 0 4px' }}>Drużyna B</p>
                 <span style={{ fontSize: 38, fontWeight: 900, fontFamily: 'var(--font-display)', lineHeight: 1,
                   color: local.score_away > local.score_home ? C.win : C.text,
-                  textShadow: local.score_away > local.score_home ? `0 0 20px ${C.win}50` : 'none' }}>
+                  textShadow: local.score_away > local.score_home ? `0 0 20px ${C.win}48` : 'none' }}>
                   {local.score_away}
                 </span>
               </div>
@@ -2272,7 +2272,7 @@ function ResultSheet({ match, role = 'home', onClose, onUpdate }) {
                 outline:`2px solid ${w ? col : C.dim}`, borderRadius:14,
                 color: w ? col : C.text, fontFamily:'var(--font-display)',
                 boxSizing:'border-box', colorScheme:'dark',
-                textShadow: w ? `0 0 24px ${col}60` : 'none', transition:'all 0.2s' }}/>
+                textShadow: w ? `0 0 24px ${col}56` : 'none', transition:'all 0.2s' }}/>
           </div>
         ))}
         <span style={{ fontSize:28, fontWeight:900, color:C.dim, paddingBottom:10 }}>:</span>
@@ -2565,7 +2565,7 @@ function JoinSuccessModal({ match, uid, clubName, playerName, onClose }) {
           width: '100%', maxWidth: 380,
           background: C.surface, borderRadius: 28, padding: '38px 24px 28px',
           border: `1.5px solid ${color}40`,
-          boxShadow: `0 28px 80px rgba(0,0,0,0.65), 0 0 0 1px ${color}20, 0 0 60px ${color}15`,
+          boxShadow: `0 28px 80px rgba(0,0,0,0.65), 0 0 0 1px ${color}20, 0 0 60px ${color}12`,
           textAlign: 'center', overflow: 'hidden',
         }}>
 
@@ -3277,7 +3277,7 @@ function StatsPanel({ club }) {
             background: C.surface, border: '1px solid rgba(255,255,255,0.05)',
           }}>
             <p style={{ fontSize: 34, fontWeight: 900, letterSpacing: -1, lineHeight: 1,
-              color: col, textShadow: `0 0 20px ${col}50`, margin: 0 }}>{val}</p>
+              color: col, textShadow: `0 0 20px ${col}48`, margin: 0 }}>{val}</p>
             <p style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 1.5,
               textTransform: 'uppercase', color: `${col}70`, marginTop: 5 }}>{lbl}</p>
           </div>
@@ -3371,7 +3371,7 @@ function StatsPanel({ club }) {
                 {m.walkover ? 'WO' : (sh != null ? `${sh}:${sa}` : '–:–')}
               </span>
               <span style={{ fontSize: 13, fontWeight: 900, color: resultColor,
-                textShadow: `0 0 12px ${resultColor}60`, minWidth: 16, textAlign: 'right',
+                textShadow: `0 0 12px ${resultColor}56`, minWidth: 16, textAlign: 'right',
                 fontFamily: 'var(--font-display)' }}>
                 {result}
               </span>
@@ -3872,7 +3872,7 @@ function NoClubScreen({ onCreated, profile }) {
             {/* Accent dot */}
             <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
               marginTop: 5, background: s.accent, opacity: 0.5,
-              boxShadow: `0 0 6px ${s.accent}` }}/>
+              boxShadow: `0 0 5px ${s.accent}` }}/>
           </motion.div>
         ))}
       </div>

@@ -7,11 +7,11 @@ import { getCache, setCache, bustCache } from '../lib/queryCache'
 
 // ── STYLE MEDALI ──────────────────────────────────────────────────────────────
 const MEDAL_STYLE = {
-  bronze:   { glow: 'rgba(205,127,50,0.22)'  },
-  silver:   { glow: 'rgba(168,168,168,0.22)' },
-  gold:     { glow: 'rgba(255,215,0,0.26)'   },
-  platinum: { glow: 'rgba(229,228,226,0.28)' },
-  diamond:  { glow: 'rgba(91,184,245,0.32)'  },  // highest tier
+  bronze:   { glow: 'rgba(205,127,50,0.20)'  },
+  silver:   { glow: 'rgba(168,168,168,0.20)' },
+  gold:     { glow: 'rgba(255,215,0,0.23)'   },
+  platinum: { glow: 'rgba(229,228,226,0.25)' },
+  diamond:  { glow: 'rgba(91,184,245,0.29)'  },  // highest tier
 }
 
 function titleFontSize(title) {
@@ -60,7 +60,7 @@ function AchievementModal({ achievement, onClose }) {
           borderTop: `1px solid ${color}55`,
           borderRadius: 28,
           padding: '32px 28px 28px',
-          boxShadow: `0 -4px 40px rgba(0,0,0,0.55), 0 0 20px ${color}0A`,
+          boxShadow: `0 -4px 40px rgba(0,0,0,0.55), 0 0 20px ${color}09`,
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0,
         }}
       >
@@ -155,7 +155,7 @@ function AchievementCell({ achievement, onPress, isNew }) {
             position: 'absolute', top: 4, right: 4,
             width: 10, height: 10, borderRadius: '50%',
             background: '#FF3B30',
-            boxShadow: '0 0 6px 2px rgba(255,59,48,0.75)',
+            boxShadow: '0 0 6px 2px rgba(255,59,48,0.68)',
             border: '1.5px solid rgba(10,6,3,0.85)',
           }} />
         )}
@@ -444,7 +444,7 @@ export default function AchievementsPage() {
           background: 'linear-gradient(90deg, var(--orange), var(--orange-hot))',
           width: `${total > 0 ? (totalUnlocked / total) * 100 : 0}%`,
           borderRadius: 4, transition: 'width 1s ease',
-          boxShadow: '0 0 10px rgba(91,184,245,0.55)',
+          boxShadow: '0 0 10px rgba(91,184,245,0.50)',
         }} />
       </div>
 

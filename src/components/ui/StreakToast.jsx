@@ -77,7 +77,7 @@ export default function StreakToast({ streak, visible, onHide }) {
               fontFamily: 'var(--font-display)', fontWeight: 900,
               fontSize: 40, lineHeight: 1,
               color: 'var(--orange)',
-              textShadow: '0 0 22px rgba(255,120,30,0.75)',
+              textShadow: '0 0 22px rgba(255,120,30,0.68)',
             }}>{streak}</p>
           </div>
         </motion.div>

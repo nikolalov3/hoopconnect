@@ -58,7 +58,7 @@ function WelcomeScreen({ userName, onComplete }) {
             width: 110, height: 110, borderRadius: '50%',
             background: `radial-gradient(circle at 35% 35%, ${BLUE}30, ${BLUE}08)`,
             border: `1.5px solid ${BLUE}55`,
-            boxShadow: `0 0 48px ${BLUE}40, 0 0 80px ${BLUE}18, inset 0 1px 0 ${BLUE}30`,
+            boxShadow: `0 0 48px ${BLUE}39, 0 0 80px ${BLUE}15, inset 0 1px 0 ${BLUE}30`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             marginBottom: 28,
             fontSize: 54,
@@ -88,7 +88,7 @@ function WelcomeScreen({ userName, onComplete }) {
             fontSize: 44, color: 'var(--text-primary)',
             textTransform: 'uppercase', letterSpacing: 1,
             lineHeight: 1.0, textAlign: 'center', marginBottom: 6,
-            textShadow: `0 0 40px ${BLUE}30`,
+            textShadow: `0 0 40px ${BLUE}2B`,
           }}
         >
           {userName ? `Cześć,\n${userName}!` : 'Jesteś\nw grze!'}
@@ -106,7 +106,7 @@ function WelcomeScreen({ userName, onComplete }) {
             borderTop: `1px solid ${BLUE}45`,
             borderRadius: 20,
             padding: '20px 22px',
-            boxShadow: `0 8px 32px rgba(0,0,0,0.50), 0 0 24px ${BLUE}10`,
+            boxShadow: `0 8px 32px rgba(0,0,0,0.50), 0 0 24px ${BLUE}0E`,
           }}
         >
           <p style={{
@@ -135,7 +135,7 @@ function WelcomeScreen({ userName, onComplete }) {
             borderTop: '1px solid rgba(88,101,242,0.50)',
             borderRadius: 20,
             padding: '18px 20px',
-            boxShadow: '0 8px 28px rgba(0,0,0,0.40), 0 0 20px rgba(88,101,242,0.10)',
+            boxShadow: '0 8px 28px rgba(0,0,0,0.40), 0 0 20px rgba(88,101,242,0.09)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
@@ -190,7 +190,7 @@ function WelcomeScreen({ userName, onComplete }) {
             width: '100%', fontSize: 16, padding: '18px',
             letterSpacing: 2,
             background: `linear-gradient(135deg, ${BLUE}CC, ${BLUE}99)`,
-            boxShadow: `0 4px 24px ${BLUE}40, 0 0 40px ${BLUE}20`,
+            boxShadow: `0 4px 24px ${BLUE}40, 0 0 40px ${BLUE}1D`,
             border: `1px solid ${BLUE}60`,
           }}
         >
@@ -309,7 +309,7 @@ export default function OnboardingPage() {
             borderRadius: 4,
             background: i <= step ? 'var(--orange)' : 'rgba(255,255,255,0.12)',
             transition: 'all 0.3s ease',
-            boxShadow: i === step ? '0 0 12px rgba(91,184,245,0.65)' : 'none',
+            boxShadow: i === step ? '0 0 12px rgba(91,184,245,0.59)' : 'none',
           }} />
         ))}
       </div>

@@ -19,7 +19,7 @@ const DiffDots = ({ n }) => (
       <span key={i} style={{
         width: 5, height: 5, borderRadius: '50%',
         background: i <= n ? 'var(--orange)' : 'rgba(255,255,255,0.10)',
-        boxShadow: i <= n ? '0 0 6px rgba(91,184,245,0.60)' : 'none',
+        boxShadow: i <= n ? '0 0 6px rgba(91,184,245,0.54)' : 'none',
         transition: 'background 0.2s',
       }} />
     ))}

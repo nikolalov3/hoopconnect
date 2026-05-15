@@ -167,7 +167,7 @@ function TierCarousel() {
               justifyContent:'space-between',marginBottom:12}}>
               <div style={{display:'flex',alignItems:'center',gap:9}}>
                 <div style={{width:10,height:10,background:t.color,flexShrink:0,
-                  boxShadow:`0 0 8px ${t.color}99`}}/>
+                  boxShadow:`0 0 7px ${t.color}8A`}}/>
                 <span style={{fontSize:19,fontWeight:900,color:t.color,
                   fontFamily:'var(--font-display)',letterSpacing:1}}>
                   {t.label.toUpperCase()}
@@ -406,7 +406,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
                     {isWaiting && (
                       <div style={{display:'flex',alignItems:'center',gap:10}}>
                         <div style={{width:7,height:7,flexShrink:0,background:ORANGE,
-                          boxShadow:`0 0 8px ${ORANGE}`}}/>
+                          boxShadow:`0 0 7px ${ORANGE}`}}/>
                         <div style={{flex:1}}>
                           <p style={{fontSize:9.5,fontWeight:800,letterSpacing:1.8,
                             textTransform:'uppercase',color:ORANGE,margin:'0 0 2px'}}>
@@ -453,7 +453,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
                 borderBottom:`2px solid ${ORANGE}`,
                 position:'relative',
                 overflow:'hidden',
-                boxShadow:`0 0 28px ${ORANGE}20, inset 0 0 28px ${ORANGE}06`,
+                boxShadow:`0 0 28px ${ORANGE}1D, inset 0 0 28px ${ORANGE}05`,
               }}>
                 <PrizePlaceholder color={ORANGE} height={120}/>
                 <div style={{
@@ -478,7 +478,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
                     </p>
                   </div>
                   <div style={{width:8,height:8,background:ORANGE,flexShrink:0,
-                    boxShadow:`0 0 10px ${ORANGE}, 0 0 20px ${ORANGE}88`}}/>
+                    boxShadow:`0 0 9px ${ORANGE}, 0 0 18px ${ORANGE}7A`}}/>
                 </div>
               </div>
 

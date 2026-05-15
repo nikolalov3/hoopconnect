@@ -81,7 +81,7 @@ function RecoveryTile({ activity, done, onToggle }) {
           width: 16, height: 16, borderRadius: '50%',
           background: activity.color,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: `0 0 8px ${activity.color}60`,
+          boxShadow: `0 0 8px ${activity.color}56`,
         }}>
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round">
             <path d="M20 6L9 17l-5-5"/>
@@ -243,7 +243,7 @@ export default function RecoveryPage() {
             <p style={{
               fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 52,
               color: scoreColor, lineHeight: 1,
-              textShadow: `0 0 20px ${scoreColor}40`,
+              textShadow: `0 0 20px ${scoreColor}39`,
             }}>{recoveryScore}<span style={{ fontSize: 22 }}>%</span></p>
           </div>
           <div style={{ textAlign: 'right' }}>
@@ -268,7 +268,7 @@ export default function RecoveryPage() {
                 : recoveryScore >= 50
                 ? 'linear-gradient(90deg, #D4800A, #F39C12)'
                 : 'linear-gradient(90deg, #4A8FC8, #5DADE2)',
-              boxShadow: `0 0 8px ${scoreColor}60`,
+              boxShadow: `0 0 8px ${scoreColor}56`,
             }}
           />
         </div>

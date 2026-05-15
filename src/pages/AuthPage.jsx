@@ -196,7 +196,7 @@ export default function AuthPage() {
           lineHeight: 0.95,
           color: 'var(--text-primary)',
         }}>
-          Hoop<span style={{ color: 'var(--orange)', textShadow: '0 0 24px rgba(91,184,245,0.55)' }}>Connect</span>
+          Hoop<span style={{ color: 'var(--orange)', textShadow: '0 0 24px rgba(91,184,245,0.50)' }}>Connect</span>
         </h1>
         <p style={{
           color: 'var(--text-dim)',

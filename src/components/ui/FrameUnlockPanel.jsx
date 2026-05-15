@@ -250,7 +250,7 @@ export default function FrameUnlockPanel({ open, onClose, frameData }) {
                 fontSize: 32, textTransform: 'uppercase', letterSpacing: 1,
                 color: '#fff', textAlign: 'center', lineHeight: 1.0,
                 marginBottom: 10,
-                textShadow: `0 0 36px ${GOLD}55`,
+                textShadow: `0 0 36px ${GOLD}4D`,
               }}
             >
               {frameData.label}

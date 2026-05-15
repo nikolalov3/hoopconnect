@@ -394,7 +394,7 @@ export default function CalendarPage() {
                 <p style={{
                   fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 30,
                   color, lineHeight: 1,
-                  textShadow: `0 0 16px ${color}55`,
+                  textShadow: `0 0 16px ${color}4D`,
                 }}>{v}</p>
                 <p style={{
                   fontSize: 9, color: 'var(--text-dim)', fontWeight: 600,

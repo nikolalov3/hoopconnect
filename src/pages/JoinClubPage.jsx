@@ -324,7 +324,7 @@ export default function JoinClubPage() {
                             <motion.div
                               initial={{ scale: 0 }} animate={{ scale: 1 }}
                               style={{ width: 8, height: 8, borderRadius: '50%',
-                                background: col, boxShadow: `0 0 8px ${col}` }} />
+                                background: col, boxShadow: `0 0 7px ${col}` }} />
                           )}
                         </motion.button>
                       )

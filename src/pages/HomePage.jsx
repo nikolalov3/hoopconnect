@@ -163,7 +163,7 @@ function ReportRatingRing({ score, daysLeft, loading }) {
             strokeDasharray={`${dash} 9999`}
             strokeLinejoin="round" strokeLinecap="round"
             style={{
-              filter: `drop-shadow(0 0 8px ${color}) drop-shadow(0 0 18px ${color}70)`,
+              filter: `drop-shadow(0 0 7px ${color}) drop-shadow(0 0 18px ${color}65)`,
               transition: 'stroke-dasharray 1.2s ease',
             }}
           />
@@ -177,7 +177,7 @@ function ReportRatingRing({ score, daysLeft, loading }) {
             strokeDasharray={`${dash} 9999`}
             strokeLinejoin="round" strokeLinecap="round"
             style={{
-              filter: `drop-shadow(0 0 8px ${color}) drop-shadow(0 0 18px ${color}70)`,
+              filter: `drop-shadow(0 0 7px ${color}) drop-shadow(0 0 18px ${color}65)`,
               transition: 'stroke-dasharray 1.2s ease',
             }}
           />
@@ -209,7 +209,7 @@ function ReportRatingRing({ score, daysLeft, loading }) {
           </>
         ) : (
           <>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 62, lineHeight: 1, color, letterSpacing: '-1px', textShadow: `0 0 22px ${color}80` }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 62, lineHeight: 1, color, letterSpacing: '-1px', textShadow: `0 0 22px ${color}73` }}>
               {score}
             </span>
             <span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--text-dim)', marginTop: 2 }}>
@@ -250,7 +250,7 @@ function QuotePanel({ quote, onClose }) {
           borderTop: '1px solid rgba(91,184,245,0.40)',
           borderRadius: 28,
           padding: '28px 28px 24px',
-          boxShadow: '0 -4px 60px rgba(0,0,0,0.60), 0 0 40px rgba(91,184,245,0.08)',
+          boxShadow: '0 -4px 60px rgba(0,0,0,0.60), 0 0 40px rgba(91,184,245,0.07)',
         }}
       >
         <div style={{ width: 36, height: 3, background: 'rgba(255,255,255,0.12)', borderRadius: 2, margin: '0 auto 24px' }} />
@@ -324,7 +324,7 @@ function AchievementToast({ data, onClose }) {
         borderRadius: 20,
         padding: '12px 18px 12px 12px',
         display: 'flex', alignItems: 'center', gap: 12,
-        boxShadow: `0 8px 40px rgba(0,0,0,0.65), 0 0 24px ${color}20`,
+        boxShadow: `0 8px 40px rgba(0,0,0,0.65), 0 0 24px ${color}1D`,
         minWidth: 260, maxWidth: 320,
         cursor: 'pointer',
       }}
@@ -333,7 +333,7 @@ function AchievementToast({ data, onClose }) {
       <img
         src={data.stage.image}
         alt={data.title}
-        style={{ width: 54, height: 54, objectFit: 'contain', flexShrink: 0, filter: `drop-shadow(0 0 8px ${color}60)` }}
+        style={{ width: 54, height: 54, objectFit: 'contain', flexShrink: 0, filter: `drop-shadow(0 0 8px ${color}56)` }}
       />
       <div style={{ minWidth: 0 }}>
         <p style={{ fontSize: 9, letterSpacing: 2.5, color: color, textTransform: 'uppercase', fontWeight: 700, marginBottom: 3 }}>
@@ -411,7 +411,7 @@ function DayDoneModal({ completedCount, onClose }) {
           borderRadius: 24,
           padding: '36px 28px 28px',
           textAlign: 'center',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.70), 0 0 32px rgba(0,230,118,0.12)',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.70), 0 0 32px rgba(0,230,118,0.11)',
         }}
       >
         <p style={{ fontSize: 9, letterSpacing: 3, color: 'var(--green-shot)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14 }}>
@@ -420,7 +420,7 @@ function DayDoneModal({ completedCount, onClose }) {
         <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 30, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-primary)', lineHeight: 1.1, marginBottom: 6 }}>
           DZIEŃ ZALICZONY
         </p>
-        <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 64, lineHeight: 1, color: 'var(--green-shot)', letterSpacing: '-3px', textShadow: '0 0 24px rgba(0,230,118,0.50)', marginBottom: 4 }}>
+        <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 64, lineHeight: 1, color: 'var(--green-shot)', letterSpacing: '-3px', textShadow: '0 0 24px rgba(0,230,118,0.45)', marginBottom: 4 }}>
           {completedCount}
         </p>
         <p style={{ fontSize: 10, letterSpacing: 2.5, color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 600, marginBottom: 28 }}>
@@ -430,7 +430,7 @@ function DayDoneModal({ completedCount, onClose }) {
         {/* Progress bar */}
         <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden', marginBottom: 28 }}>
           <motion.div
-            style={{ height: '100%', background: 'var(--green-shot)', borderRadius: 2, originX: 0, boxShadow: '0 0 10px rgba(0,230,118,0.60)' }}
+            style={{ height: '100%', background: 'var(--green-shot)', borderRadius: 2, originX: 0, boxShadow: '0 0 10px rgba(0,230,118,0.54)' }}
             initial={{ width: '0%' }}
             animate={{ width: `${width}%` }}
             transition={{ duration: 1.0, ease: 'easeOut', delay: 0.2 }}
@@ -1099,7 +1099,7 @@ export default function HomePage() {
                   style={{
                     width: 11, height: 11, borderRadius: '50%',
                     background: '#FF3B30',
-                    boxShadow: '0 0 8px 3px rgba(255,59,48,0.65)',
+                    boxShadow: '0 0 8px 3px rgba(255,59,48,0.59)',
                     border: '2px solid rgba(4,8,14,0.90)',
                     flexShrink: 0,
                   }}
@@ -1138,7 +1138,7 @@ export default function HomePage() {
                   top: 7, right: 7,
                   width: 10, height: 10, borderRadius: '50%',
                   background: '#FF3B30',
-                  boxShadow: '0 0 6px 2px rgba(255,59,48,0.55)',
+                  boxShadow: '0 0 6px 2px rgba(255,59,48,0.50)',
                   border: '2px solid rgba(4,8,14,0.9)',
                 }}/>
               )}
@@ -1199,7 +1199,7 @@ export default function HomePage() {
                 position: 'relative', width: 38, height: 38, flexShrink: 0 }}
             >
               <svg width="38" height="38" viewBox="0 0 90 90"
-                style={{ filter: 'drop-shadow(0 0 8px rgba(255,179,0,0.55))' }}>
+                style={{ filter: 'drop-shadow(0 0 8px rgba(255,179,0,0.50))' }}>
                 <defs>
                   <linearGradient id="lgBtn" x1="20%" y1="0%" x2="80%" y2="100%">
                     <stop offset="0%"   stopColor="#FFE066"/>
@@ -1223,7 +1223,7 @@ export default function HomePage() {
                     top:  19 + r * Math.sin(rad) - 4,
                     width: 7, height: 7, borderRadius: '50%',
                     background: 'radial-gradient(circle, #FFE066, #CC7A00)',
-                    boxShadow: '0 0 4px rgba(255,179,0,0.7)',
+                    boxShadow: '0 0 4px rgba(255,179,0,0.63)',
                     pointerEvents: 'none',
                   }}/>
                 )

@@ -115,7 +115,7 @@ const TierDot = memo(function TierDot({ color }) {
     <div style={{
       width: 9, height: 9, flexShrink: 0,
       background: color,
-      boxShadow: `0 0 5px ${color}77`,
+      boxShadow: `0 0 5px ${color}6B`,
     }}/>
   )
 })
