@@ -519,6 +519,10 @@ export default function HomePage() {
     }
     document.addEventListener('visibilitychange', onFocus)
     window.addEventListener('focus', onFocus)
+    // iOS Safari bfcache: gdy PWA wraca z tła, pageshow.persisted=true.
+    // Bez tego stan był „zamrożony" sprzed wejścia w tło.
+    function onPageShow(e) { if (e.persisted) refresh() }
+    window.addEventListener('pageshow', onPageShow)
 
     // Realtime: dwa kanały — activity_log (zaznaczenia) i points_log (wynik)
     const channel = supabase
@@ -534,6 +538,7 @@ export default function HomePage() {
     return () => {
       document.removeEventListener('visibilitychange', onFocus)
       window.removeEventListener('focus', onFocus)
+      window.removeEventListener('pageshow', onPageShow)
       supabase.removeChannel(channel)
     }
   }, [profile])
@@ -647,6 +652,28 @@ export default function HomePage() {
     setReportLoading(false)
   }
 
+  // Single source of truth: pobierz sumę punktów z bieżącego okna 7-dniowego
+  // bezpośrednio z DB. Wywoływane po każdym mark/unmark oraz przez Realtime,
+  // żeby UI ZAWSZE dopasował się do faktycznego stanu bazy.
+  async function reconcileReportScore() {
+    if (!profile) return
+    const createdAt = profile.created_at ? new Date(profile.created_at) : new Date()
+    const daysSinceJoin = Math.floor((new Date() - createdAt) / (1000 * 60 * 60 * 24))
+    const currentWeek   = Math.floor(daysSinceJoin / 7) + 1
+    const weekStart = new Date(createdAt)
+    weekStart.setDate(weekStart.getDate() + (currentWeek - 1) * 7)
+    const weekStartISO = weekStart.toISOString().slice(0, 10)
+    const { data } = await supabase
+      .from('points_log')
+      .select('points')
+      .eq('user_id', profile.id)
+      .gte('date', weekStartISO)
+    const trueTotal = (data || []).reduce((s, r) => s + (r.points || 0), 0)
+    setReportScore(trueTotal)
+    // Zachowujemy daysLeft z bieżącego stanu — nie nadpisujemy countdown'a
+    setCache(`report:${profile.id}`, { score: trueTotal, daysLeft: daysUntilReport ?? 0 }, 60 * 1000)
+  }
+
   async function markTrainingDone(trainingId) {
     if (!profile) return
 
@@ -709,6 +736,10 @@ export default function HomePage() {
       { onConflict: 'user_id,training_id,date,source', ignoreDuplicates: true }
     ).then(({ error }) => {
       if (error) console.error('[points_log upsert]', error)
+      // Reconciliation: po zapisie pobierz PRAWDZIWĄ sumę z DB. Single
+      // source of truth — uleczalne nawet jeśli optimistic math się rozjedzie
+      // (multiplier zmieniony, dublet na innym urządzeniu, drift cache).
+      reconcileReportScore()
     })
     // Optimistic update — wynik rośnie natychmiast bez czekania na refresh
     setReportScore(prev => prev + points)
@@ -750,6 +781,8 @@ export default function HomePage() {
         .eq('training_id', trainingId)
         .eq('session_date', TODAY),
     ])
+    // Reconciliation — patrz markTrainingDone.
+    reconcileReportScore()
 
     // ── Cofnij serię jeśli to był jedyny trening dziś i brak recovery ──
     const { data: freshProfile } = await supabase

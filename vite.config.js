@@ -3,6 +3,12 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    // __BUILD_ID__ jest unikalny dla każdego deployu. Klient porównuje go z
+    // tym co ma w localStorage; jeśli się różni — przeładowuje stronę.
+    // Cache-bust dla iOS Safari które agresywnie trzyma stare bundle.
+    __BUILD_ID__: JSON.stringify(String(Date.now())),
+  },
   server: {
     port: parseInt(process.env.PORT || '3000'),
   },

@@ -17,6 +17,29 @@ initSentry({
   app: isAdminSubdomain ? 'admin' : isCoachSubdomain ? 'coach' : 'player',
 })
 
+// Build-version cache bust:
+// iOS Safari (zwłaszcza w trybie „Add to Home Screen") agresywnie cache'uje
+// bundle. Bez tego użytkownik mógł chodzić po dniach na starym JS-ie i widzieć
+// niespójny stan z DB. __BUILD_ID__ jest wstrzykiwane przez Vite (define) na
+// build time — przy każdym deployu jest inne, więc client wykrywa zmianę,
+// czyści localStorage cache apki i przeładowuje stronę.
+try {
+  const BUILD_ID = typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev'
+  const stored = localStorage.getItem('hc_build_id')
+  if (stored && stored !== BUILD_ID) {
+    localStorage.setItem('hc_build_id', BUILD_ID)
+    // Soft reload — pobierze świeży index.html i nowe bundle'e.
+    // queryCache to in-memory Map (umiera z reload), nie potrzeba czyścić localStorage.
+    if (!sessionStorage.getItem('hc_build_reloaded')) {
+      sessionStorage.setItem('hc_build_reloaded', '1')
+      window.location.reload()
+    }
+  } else {
+    localStorage.setItem('hc_build_id', BUILD_ID)
+    sessionStorage.removeItem('hc_build_reloaded')
+  }
+} catch { /* localStorage może być zablokowany */ }
+
 const root = createRoot(document.getElementById('root'))
 
 const fallback = ({ error, resetError }) => (
