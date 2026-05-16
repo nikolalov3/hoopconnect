@@ -145,21 +145,19 @@ export default function BottomNav() {
       transition={{ duration: 0.16, ease: 'easeInOut' }}
     >
       <div style={{
-        position: 'absolute', inset: -1, borderRadius: 9999,
-        boxShadow: '0 0 0 1px rgba(255,255,255,0.07), 0 20px 60px rgba(0,0,0,0.70)',
-        pointerEvents: 'none',
-      }} />
-      <div style={{
         display: 'flex', alignItems: 'center', gap: 4,
-        background: 'rgba(10,6,3,0.65)',
-        backdropFilter: 'blur(40px) saturate(2.0) brightness(1.15)',
-        WebkitBackdropFilter: 'blur(40px) saturate(2.0) brightness(1.15)',
-        border: '1px solid rgba(255,255,255,0.13)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-        borderTop: '1px solid rgba(255,255,255,0.22)',
+        // Floating dock — bez outer ring, mocniejszy blur, lżejszy materiał.
+        background: 'rgba(18,24,38,0.42)',
+        backdropFilter: 'blur(48px) saturate(1.8) brightness(1.08)',
+        WebkitBackdropFilter: 'blur(48px) saturate(1.8) brightness(1.08)',
+        border: 'none',
         borderRadius: 9999,
-        padding: '6px 8px',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.30)',
+        padding: '4px 6px',
+        boxShadow: [
+          'inset 0 1px 0 rgba(200,225,255,0.10)',  // luminance top-edge
+          'inset 0 -1px 0 rgba(0,0,0,0.22)',       // subtle bottom shade
+          '0 8px 24px rgba(0,0,0,0.42)',           // float ambient
+        ].join(', '),
       }}>
         {TABS.map(({ path, Icon, label, center }) => {
           const active = pathname === path
