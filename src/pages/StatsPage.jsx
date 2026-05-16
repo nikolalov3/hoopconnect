@@ -10,33 +10,26 @@ const SHOT_LABELS = { '3pt': 'Trójki', '2pt': 'Dwójki', ft: 'Wolne' }
 
 const BLUE = '#5BB8F5'
 
+// Adekwatne ikony — czyste numery rzutowe w okręgu (3pt / 2pt / 1pt),
+// plus trending-up dla ogólnego. Apple-style: minimalne, czytelne, na temat.
+const NumIcon = ({ n }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="10" stroke={BLUE} strokeWidth="1.5" opacity="0.55"/>
+    <text x="12" y="16" textAnchor="middle"
+      fontFamily="var(--font-display)" fontSize="12" fontWeight="800" fill={BLUE}>
+      {n}
+    </text>
+  </svg>
+)
 const IconOverall = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 17l6-6 4 4 8-8"/>
+    <path d="M17 7h4v4"/>
   </svg>
 )
-const IconThree = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="9"/>
-    <path d="M12 3a9 9 0 0 1 6.36 15.36"/>
-    <path d="M3 12h18"/>
-    <path d="M12 3c2 2.5 3 5.5 3 9s-1 6.5-3 9"/>
-  </svg>
-)
-const IconMid = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3"/>
-    <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
-    <path d="M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M16.24 7.76l2.12-2.12M5.64 18.36l2.12-2.12"/>
-  </svg>
-)
-const IconFT = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BLUE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="5" r="2"/>
-    <path d="M12 7v8"/><path d="M8 21h8"/><path d="M10 21v-4"/><path d="M14 21v-4"/>
-    <path d="M8 12l-2 3"/><path d="M16 12l2 3"/>
-  </svg>
-)
+const IconThree = () => <NumIcon n="3" />
+const IconMid   = () => <NumIcon n="2" />
+const IconFT    = () => <NumIcon n="1" />
 
 const FILTERS = [
   { key: '7d',  label: '7 dni' },
@@ -44,14 +37,21 @@ const FILTERS = [
   { key: 'all', label: 'Wszystko' },
 ]
 
+// Liquid-glass material — Apple iOS-26 vibe.
+// Krawędzie powstają z luminancji (jasny top-edge + ciemniejszy dół) zamiast
+// twardych obrysów stroke. Daje wrażenie krawędzi "z światła", nie "z linii".
 const glassCard = {
-  background: 'rgba(6,14,30,0.52)',
-  backdropFilter: 'blur(24px) saturate(1.7)',
-  WebkitBackdropFilter: 'blur(24px) saturate(1.7)',
-  border: '1px solid rgba(120,190,255,0.09)',
-  borderTop: '1px solid rgba(160,210,255,0.16)',
-  borderRadius: 'var(--radius)',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
+  background: 'linear-gradient(180deg, rgba(40,55,85,0.40) 0%, rgba(22,32,52,0.34) 100%)',
+  backdropFilter: 'blur(30px) saturate(1.55)',
+  WebkitBackdropFilter: 'blur(30px) saturate(1.55)',
+  border: 'none',
+  borderRadius: 14,
+  boxShadow: [
+    'inset 0 1px 0 rgba(200,225,255,0.10)',     // luminance top-edge
+    'inset 0 -1px 0 rgba(0,0,0,0.18)',          // subtle bottom shade
+    'inset 0 0 0 0.5px rgba(150,200,255,0.04)', // micro hairline for definition
+    '0 1px 6px rgba(0,0,0,0.18)',               // ambient floor shadow
+  ].join(', '),
 }
 
 function StatTile({ label, value, sub, accent }) {
@@ -60,64 +60,84 @@ function StatTile({ label, value, sub, accent }) {
       <p style={{
         fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 42,
         color: accent || 'var(--orange)', lineHeight: 1,
-        textShadow: `0 0 20px ${accent || 'rgba(91,184,245,0.28)'}`,
+        // Glow przyciszony — z 20px/full-alpha do 8px/niska alpha
+        textShadow: `0 0 8px ${accent ? `${accent}33` : 'rgba(91,184,245,0.12)'}`,
       }}>{value}</p>
       <p style={{
-        fontFamily: 'var(--font-body)', fontSize: 9, fontWeight: 600,
-        letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', marginTop: 6,
+        fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600,
+        letterSpacing: 0.4, color: 'var(--text-secondary)', marginTop: 8,
       }}>{label}</p>
-      {sub && <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 3 }}>{sub}</p>}
+      {sub && (
+        <p style={{
+          fontSize: 12, color: 'rgba(180,195,220,0.55)', marginTop: 2,
+          fontWeight: 400, letterSpacing: 0.1,
+        }}>{sub}</p>
+      )}
     </div>
   )
 }
 
-function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, filterLabel, snapAlign }) {
+function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, filterLabel, snapAlign, hero, delay = 0 }) {
   const pctColor = accent || (pct >= 50 ? 'var(--green-shot)' : pct >= 35 ? 'var(--orange)' : pct === 0 ? 'var(--text-dim)' : 'var(--red-shot)')
   return (
-    <div style={{
-      flex: '0 0 78%',
-      scrollSnapAlign: snapAlign || 'center',
-      scrollSnapStop: 'always',
-      ...glassCard,
-      padding: '20px 18px 18px',
-      display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-      minHeight: 148,
-      border: `1px solid rgba(180,180,200,0.18)`,
-      borderTop: `1px solid rgba(200,200,220,0.30)`,
-      boxShadow: `0 8px 28px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 0.5px rgba(160,160,180,0.10), 0 0 12px ${pctColor}0E`,
-    }}>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 30, delay }}
+      style={{
+        ...(hero ? {
+          width: '100%',
+          marginBottom: 14,
+        } : {
+          flex: '0 0 64%',
+          scrollSnapAlign: snapAlign || 'center',
+          scrollSnapStop: 'always',
+        }),
+        ...glassCard,
+        padding: hero ? '22px 22px 20px' : '16px 16px 14px',
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        minHeight: hero ? 168 : 132,
+      }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ marginBottom: 6, opacity: 0.85 }}>{icon}</div>
+          <div style={{ marginBottom: 6, opacity: 0.7 }}>{icon}</div>
           <p style={{
-            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: hero ? 15 : 12,
             color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 1,
           }}>{label}</p>
-          <p style={{ color: 'var(--text-dim)', fontSize: 10, marginTop: 1 }}>{filterLabel}</p>
+          <p style={{
+            color: 'rgba(180,195,220,0.62)', fontSize: 12, marginTop: 2,
+            fontWeight: 400, letterSpacing: 0.1,
+          }}>{filterLabel}</p>
         </div>
-        <p style={{
-          fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 52,
-          color: pctColor, lineHeight: 1, letterSpacing: -2,
-          textShadow: `0 0 24px ${pctColor}3B`,
-        }}>{pct}%</p>
+        <motion.p
+          key={pct}
+          initial={{ opacity: 0.6 }} animate={{ opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+          style={{
+            fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: hero ? 64 : 42,
+            color: pctColor, lineHeight: 1, letterSpacing: -2,
+            textShadow: `0 0 8px ${pctColor}14`,
+          }}>{pct}%</motion.p>
       </div>
       <div>
-        <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 3, height: 3, overflow: 'hidden', marginBottom: 8 }}>
+        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 3, height: 3, overflow: 'hidden', marginBottom: 10 }}>
           <motion.div
-            initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: 'easeOut' }}
-            style={{ height: '100%', borderRadius: 3, background: pctColor, boxShadow: `0 0 4px ${pctColor}` }}
+            initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+            transition={{ type: 'spring', stiffness: 100, damping: 24, delay: delay + 0.15 }}
+            style={{ height: '100%', borderRadius: 3, background: pctColor }}
           />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <p style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 500 }}>
+          <p style={{ color: 'rgba(180,195,220,0.62)', fontSize: 12, fontWeight: 500 }}>
             {made} / {attempted} rzutów
           </p>
-          <p style={{ color: 'var(--text-dim)', fontSize: 11 }}>
+          <p style={{ color: 'rgba(180,195,220,0.55)', fontSize: 12 }}>
             {sessions} {sessions === 1 ? 'sesja' : sessions < 5 ? 'sesje' : 'sesji'}
           </p>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -185,12 +205,16 @@ export default function StatsPage() {
     }
   }
 
+  // OGÓLNIE wyciągnięte poza scroll — to jest hero metryka, dostaje
+  // dedykowaną pełnoszerokościową kartę. W scrollu zostają tylko typy rzutów.
+  const HERO_CARD = { key: 'all', icon: <IconOverall />, label: 'Ogólnie', type: null }
   const SCROLL_CARDS = [
-    { key: 'all', icon: <IconOverall />, label: 'Ogólnie',   type: null },
     { key: '3pt', icon: <IconThree />,   label: 'Trójki',    type: '3pt' },
     { key: '2pt', icon: <IconMid />,     label: 'Mid-Range', type: '2pt' },
     { key: 'ft',  icon: <IconFT />,      label: 'Wolne',     type: 'ft'  },
   ]
+  const heroData = { made: totalMade, attempted: totalAttempted, sessions: filtered.length }
+  const heroPct = heroData.attempted > 0 ? Math.round((heroData.made / heroData.attempted) * 100) : 0
 
   return (
     <div className="page-content" style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 22px' }}>
@@ -247,17 +271,16 @@ export default function StatsPage() {
         </div>
       </div>
 
-      {/* ── FILTRY ── */}
+      {/* ── FILTRY — quieter glass segmented control ── */}
       <div style={{
         display: 'flex', marginBottom: 20,
-        background: 'rgba(6,14,30,0.52)',
-        backdropFilter: 'blur(24px) saturate(1.7)',
-        WebkitBackdropFilter: 'blur(24px) saturate(1.7)',
-        border: '1px solid rgba(120,190,255,0.09)',
-        borderTop: '1px solid rgba(160,210,255,0.15)',
+        background: 'rgba(30,42,68,0.40)',
+        backdropFilter: 'blur(28px) saturate(1.6)',
+        WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+        border: '1px solid rgba(150,200,255,0.10)',
         borderRadius: 99,
         padding: 3,
-        boxShadow: '0 4px 18px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.05)',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.22)',
       }}>
         {FILTERS.map(({ key, label }) => {
           const active = filter === key
@@ -284,8 +307,8 @@ export default function StatsPage() {
                   transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                   style={{
                     position: 'absolute', inset: 0, borderRadius: 99, zIndex: -1,
-                    background: 'linear-gradient(145deg, rgba(40,130,220,0.90), rgba(16,90,180,0.95))',
-                    boxShadow: '0 2px 14px rgba(91,184,245,0.28), inset 0 1px 0 rgba(180,230,255,0.18)',
+                    background: 'linear-gradient(145deg, rgba(40,130,220,0.65), rgba(16,90,180,0.70))',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.20), inset 0 1px 0 rgba(180,230,255,0.10)',
                   }}
                 />
               )}
@@ -295,13 +318,25 @@ export default function StatsPage() {
         })}
       </div>
 
-      {/* ── SERIA (stały kafelek) ── */}
+      {/* ── HERO: OGÓLNIE (full-width, dominująca metryka) ── */}
+      <ScrollStatCard
+        hero
+        icon={HERO_CARD.icon}
+        label={HERO_CARD.label}
+        pct={heroPct}
+        made={heroData.made}
+        attempted={heroData.attempted}
+        sessions={heroData.sessions}
+        filterLabel={filterLabel}
+      />
+
+      {/* ── SERIA / SESJE (mini kafelki) ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
         <StatTile label="Seria"  value={profile?.streak || 0} sub="dni z rzędu" />
         <StatTile label="Sesje"  value={filtered.length}      sub={filterLabel} accent="var(--text-secondary)" />
       </div>
 
-      {/* ── SCROLL KART RZUTOWYCH ── */}
+      {/* ── SCROLL KART RZUTOWYCH (3pt / 2pt / ft) ── */}
       <div style={{
         display: 'flex', gap: 10, overflowX: 'auto', scrollSnapType: 'x mandatory',
         WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none',
@@ -329,6 +364,7 @@ export default function StatsPage() {
               sessions={sessions}
               filterLabel={filterLabel}
               snapAlign={snapAlign}
+              delay={0.08 + index * 0.07}
             />
           )
         })}
@@ -355,19 +391,24 @@ export default function StatsPage() {
             const good = pct >= 50
             return (
               <div key={s.id} style={{
-                background: 'rgba(10,6,3,0.55)',
-                backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.09)',
-                borderTop: '1px solid rgba(255,255,255,0.14)',
-                borderRadius: 'var(--radius-sm)',
+                background: 'linear-gradient(180deg, rgba(40,55,85,0.34) 0%, rgba(22,32,52,0.30) 100%)',
+                backdropFilter: 'blur(28px) saturate(1.5)', WebkitBackdropFilter: 'blur(28px) saturate(1.5)',
+                border: 'none',
+                borderRadius: 14,
                 padding: '12px 14px',
                 display: 'flex', alignItems: 'center', gap: 12,
-                boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+                boxShadow: [
+                  'inset 0 1px 0 rgba(200,225,255,0.08)',
+                  'inset 0 -1px 0 rgba(0,0,0,0.14)',
+                  '0 1px 4px rgba(0,0,0,0.14)',
+                ].join(', '),
               }}>
                 <div style={{
                   width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
-                  background: good ? 'rgba(0,230,118,0.10)' : 'rgba(255,61,61,0.10)',
-                  border: `1px solid ${good ? 'rgba(0,230,118,0.22)' : 'rgba(255,61,61,0.22)'}`,
+                  background: good
+                    ? 'radial-gradient(circle at 35% 30%, rgba(0,230,118,0.22), rgba(0,230,118,0.06) 70%)'
+                    : 'radial-gradient(circle at 35% 30%, rgba(255,61,61,0.20), rgba(255,61,61,0.05) 70%)',
+                  boxShadow: `inset 0 0 0 0.5px ${good ? 'rgba(0,230,118,0.18)' : 'rgba(255,61,61,0.18)'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 13,
                   color: good ? 'var(--green-shot)' : 'var(--red-shot)',

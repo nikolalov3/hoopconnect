@@ -52,36 +52,35 @@ const TIPS = [
 function RecoveryTile({ activity, done, onToggle }) {
   return (
     <motion.button
-      whileTap={{ scale: 0.94 }}
+      whileTap={{ scale: 0.96 }}
       onClick={onToggle}
       style={{
         padding: '14px 10px',
         background: done
-          ? `${activity.color}18`
-          : 'rgba(255,255,255,0.70)',
-        backdropFilter: done ? 'none' : 'blur(8px)',
-        WebkitBackdropFilter: done ? 'none' : 'blur(8px)',
-        border: done
-          ? `1.5px solid ${activity.color}60`
-          : '1.5px solid rgba(180,210,240,0.60)',
-        borderRadius: 16,
+          ? `${activity.color}1A`
+          : 'rgba(255,255,255,0.58)',
+        backdropFilter: 'blur(20px) saturate(1.4)',
+        WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+        border: 'none',
+        borderRadius: 14,
         cursor: 'pointer',
         textAlign: 'center',
+        // Krawędzie z luminancji (Apple-style) — top highlight + bottom shade
         boxShadow: done
-          ? `0 4px 16px ${activity.color}25, 0 2px 6px rgba(0,0,0,0.06)`
-          : '0 2px 12px rgba(100,160,210,0.15), 0 1px 4px rgba(0,0,0,0.06)',
-        transition: 'all 0.20s ease',
+          ? `inset 0 1px 0 ${activity.color}30, inset 0 -1px 0 rgba(0,0,0,0.06), inset 0 0 0 0.5px ${activity.color}38, 0 1px 4px ${activity.color}1A`
+          : 'inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(80,130,170,0.08), inset 0 0 0 0.5px rgba(180,210,240,0.30), 0 1px 4px rgba(100,160,210,0.10)',
+        transition: 'background 0.20s ease, box-shadow 0.20s ease',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
         position: 'relative', overflow: 'hidden',
       }}
     >
       {done && (
         <div style={{
-          position: 'absolute', top: 5, right: 5,
+          position: 'absolute', top: 6, right: 6,
           width: 16, height: 16, borderRadius: '50%',
-          background: activity.color,
+          background: `radial-gradient(circle at 35% 30%, ${activity.color}, ${activity.color}CC 80%)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: `0 0 8px ${activity.color}56`,
+          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.30)`,
         }}>
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round">
             <path d="M20 6L9 17l-5-5"/>
@@ -90,12 +89,12 @@ function RecoveryTile({ activity, done, onToggle }) {
       )}
       <span style={{ fontSize: 26, filter: done ? 'none' : 'saturate(0.7)' }}>{activity.emoji}</span>
       <p style={{
-        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
+        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
         color: done ? activity.color : '#4A6880',
-        textTransform: 'uppercase', letterSpacing: 0.6, lineHeight: 1.2,
+        letterSpacing: 0.2, lineHeight: 1.2,
         transition: 'color 0.2s',
       }}>{activity.label}</p>
-      <p style={{ color: '#8AAEC4', fontSize: 9, letterSpacing: 0.4 }}>
+      <p style={{ color: '#8AAEC4', fontSize: 10, letterSpacing: 0.1 }}>
         {activity.minutes >= 60
           ? `${Math.floor(activity.minutes/60)}h${activity.minutes%60>0 ? activity.minutes%60+'min' : ''}`
           : `${activity.minutes} min`}
@@ -212,55 +211,54 @@ export default function RecoveryPage() {
       background: 'linear-gradient(175deg, #C8E8FA 0%, #D9EEFA 35%, #BFD9F0 100%)',
     }}>
       {/* Header */}
-      <div style={{ marginBottom: 20 }}>
-        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2.5, textTransform: 'uppercase', color: '#6A96B8', marginBottom: 3 }}>
+      <div style={{ marginBottom: 22 }}>
+        <p style={{ fontSize: 13, fontWeight: 500, letterSpacing: 0.2, color: '#6A96B8', marginBottom: 4 }}>
           Dzisiaj
         </p>
         <h1 style={{
           fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 38,
           textTransform: 'uppercase', color: '#1A3D5C', lineHeight: 0.95, letterSpacing: 0,
         }}>Regeneracja</h1>
-        <p style={{ color: '#5A8AAA', fontSize: 12, fontWeight: 500, marginTop: 6 }}>
+        <p style={{ color: '#5A8AAA', fontSize: 13, fontWeight: 400, marginTop: 8, lineHeight: 1.45 }}>
           Jutrzejszy trening zaczyna się teraz. Bez regeneracji nie ma progresu.
         </p>
       </div>
 
-      {/* Recovery score card */}
-      <div style={{
-        padding: '18px 20px', marginBottom: 16,
-        background: 'rgba(255,255,255,0.72)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        border: '1.5px solid rgba(180,215,245,0.80)',
-        borderRadius: 20,
-        boxShadow: '0 4px 24px rgba(80,150,200,0.15), 0 1px 4px rgba(0,0,0,0.05)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <div>
-            <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: '#6A96B8', marginBottom: 4 }}>
-              Recovery score
-            </p>
-            <p style={{
-              fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 52,
-              color: scoreColor, lineHeight: 1,
-              textShadow: `0 0 20px ${scoreColor}39`,
-            }}>{recoveryScore}<span style={{ fontSize: 22 }}>%</span></p>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ color: '#8AAEC4', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600 }}>
-              Wykonano dziś
-            </p>
-            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30, color: '#1A3D5C' }}>
-              {doneCount}<span style={{ fontSize: 14, color: '#8AAEC4', fontWeight: 400 }}> / {QUICK_ACTIVITIES.length}</span>
-            </p>
-          </div>
+      {/* Recovery score card — Apple liquid-glass (light), brak twardych obrysów */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+        style={{
+          padding: '20px 22px', marginBottom: 14,
+          background: 'rgba(255,255,255,0.50)',
+          backdropFilter: 'blur(30px) saturate(1.5)',
+          WebkitBackdropFilter: 'blur(30px) saturate(1.5)',
+          border: 'none',
+          borderRadius: 18,
+          boxShadow: [
+            'inset 0 1px 0 rgba(255,255,255,0.65)',
+            'inset 0 -1px 0 rgba(80,130,170,0.08)',
+            'inset 0 0 0 0.5px rgba(180,215,245,0.40)',
+            '0 1px 6px rgba(80,150,200,0.10)',
+          ].join(', '),
+        }}>
+        <div style={{ marginBottom: 14 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.6, textTransform: 'uppercase', color: '#6A96B8', marginBottom: 4 }}>
+            Recovery score
+          </p>
+          <p style={{
+            fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 56,
+            color: scoreColor, lineHeight: 1,
+            // Glow przyciszony 70% (20px/39 → 8px/12)
+            textShadow: `0 0 8px ${scoreColor}1F`,
+          }}>{recoveryScore}<span style={{ fontSize: 22 }}>%</span></p>
         </div>
-        {/* Progress bar */}
-        <div style={{ background: 'rgba(150,200,235,0.30)', borderRadius: 4, height: 5, overflow: 'hidden' }}>
+        {/* Progress bar — bez neon glow */}
+        <div style={{ background: 'rgba(150,200,235,0.26)', borderRadius: 4, height: 5, overflow: 'hidden' }}>
           <motion.div
-            initial={{ width: `${Math.min(recoveryScore, 100)}%` }}
+            initial={{ width: 0 }}
             animate={{ width: `${Math.min(recoveryScore, 100)}%` }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
+            transition={{ type: 'spring', stiffness: 100, damping: 24, delay: 0.2 }}
             style={{
               height: '100%', borderRadius: 4,
               background: recoveryScore >= 80
@@ -268,30 +266,38 @@ export default function RecoveryPage() {
                 : recoveryScore >= 50
                 ? 'linear-gradient(90deg, #D4800A, #F39C12)'
                 : 'linear-gradient(90deg, #4A8FC8, #5DADE2)',
-              boxShadow: `0 0 8px ${scoreColor}56`,
             }}
           />
         </div>
-      </div>
+      </motion.div>
 
-      {/* Daily tip */}
-      <div style={{
-        padding: '14px 16px', marginBottom: 20,
-        background: 'rgba(255,255,255,0.65)',
-        border: '1.5px solid rgba(180,215,245,0.70)',
-        borderRadius: 16,
-        boxShadow: '0 2px 12px rgba(80,150,200,0.12)',
-        display: 'flex', gap: 12, alignItems: 'flex-start',
-      }}>
+      {/* Daily tip — quieter, no border */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 30, delay: 0.08 }}
+        style={{
+          padding: '14px 16px', marginBottom: 22,
+          background: 'rgba(255,255,255,0.42)',
+          backdropFilter: 'blur(28px) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(28px) saturate(1.4)',
+          border: 'none',
+          borderRadius: 14,
+          boxShadow: [
+            'inset 0 1px 0 rgba(255,255,255,0.50)',
+            'inset 0 -1px 0 rgba(80,130,170,0.06)',
+            '0 1px 4px rgba(80,150,200,0.08)',
+          ].join(', '),
+          display: 'flex', gap: 12, alignItems: 'flex-start',
+        }}>
         <span style={{ fontSize: 22, flexShrink: 0, marginTop: 1 }}>{tip.icon}</span>
-        <p style={{ color: '#4A6880', fontSize: 12, lineHeight: 1.6 }}>
+        <p style={{ color: '#4A6880', fontSize: 13, lineHeight: 1.55, letterSpacing: 0.1 }}>
           <span style={{ color: '#2471A3', fontWeight: 600 }}>Pro tip: </span>
           {tip.text}
         </p>
-      </div>
+      </motion.div>
 
       {/* Activities grid */}
-      <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2.5, textTransform: 'uppercase', color: '#6A96B8', marginBottom: 12 }}>
+      <p style={{ fontSize: 13, fontWeight: 500, letterSpacing: 0.2, color: '#6A96B8', marginBottom: 12 }}>
         Zaznacz co dziś zrobiłeś
       </p>
       {loading ? (
@@ -316,17 +322,25 @@ export default function RecoveryPage() {
         </div>
       )}
 
-      {/* Elite recovery badge */}
+      {/* Elite recovery badge — luminance edge zamiast border */}
       {doneCount >= 5 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 320, damping: 30 }}
           style={{
             padding: '18px 20px', marginBottom: 32,
-            background: 'rgba(39,174,96,0.12)',
-            border: '1.5px solid rgba(39,174,96,0.35)',
-            borderRadius: 20,
+            background: 'rgba(39,174,96,0.10)',
+            backdropFilter: 'blur(28px) saturate(1.5)',
+            WebkitBackdropFilter: 'blur(28px) saturate(1.5)',
+            border: 'none',
+            borderRadius: 18,
             textAlign: 'center',
-            boxShadow: '0 4px 20px rgba(39,174,96,0.15)',
+            boxShadow: [
+              'inset 0 1px 0 rgba(46,204,113,0.35)',
+              'inset 0 -1px 0 rgba(30,132,73,0.10)',
+              'inset 0 0 0 0.5px rgba(39,174,96,0.18)',
+              '0 1px 6px rgba(39,174,96,0.10)',
+            ].join(', '),
           }}
         >
           <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: '#1E8449', letterSpacing: 1, marginBottom: 4 }}>
