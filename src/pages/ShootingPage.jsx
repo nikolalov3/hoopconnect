@@ -42,8 +42,15 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
     }
   }
   const missed = attempted - made
-  const pctColor = pct >= 60 ? 'var(--green-shot)' : pct >= 40 ? 'var(--orange)' : 'var(--red-shot)'
-  const filledPct = Math.min(attempted / target, 1)
+  // Softer semantic colors — mint/emerald zamiast neon greenu
+  const pctColor = pct >= 60 ? '#34D399' : pct >= 40 ? '#FCD34D' : '#FB7185'
+  const support =
+    pct === 100 ? 'Perfekcyjna sesja' :
+    pct >= 80   ? 'Elite touch' :
+    pct >= 65   ? 'Świetna robota' :
+    pct >= 50   ? 'Solidnie' :
+    pct >= 30   ? 'Wracaj jutro mocniej' :
+                  'Każdy mistrz miał taki dzień'
 
   return (
     <motion.div
@@ -60,105 +67,119 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
         backdropFilter: 'blur(40px)',
         WebkitBackdropFilter: 'blur(40px)',
         display: 'flex', flexDirection: 'column',
-        padding: '0 20px',
+        padding: '0 24px',
         paddingTop: 'env(safe-area-inset-top, 0px)',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         overflowY: 'auto',
       }}
     >
-      {/* Glow */}
+      {/* Ambient halo — bardzo subtelne, kolor wyniku */}
       <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 220,
-        background: `radial-gradient(ellipse 90% 100% at 50% 0%, ${pctColor}20 0%, transparent 70%)`,
+        position: 'absolute', top: 0, left: 0, right: 0, height: 280,
+        background: `radial-gradient(ellipse 90% 100% at 50% 0%, ${pctColor}1A 0%, transparent 70%)`,
         pointerEvents: 'none',
       }} />
 
-      {/* Header */}
-      <div style={{ paddingTop: 48, paddingBottom: 20, position: 'relative', zIndex: 1 }}>
+      {/* Header — sentence case, ciszej */}
+      <div style={{ paddingTop: 52, paddingBottom: 28, position: 'relative', zIndex: 1 }}>
         <p style={{
-          fontFamily: 'var(--font-display)', fontSize: 10, letterSpacing: 3,
-          color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 600, marginBottom: 8,
+          fontFamily: 'var(--font-body)', fontSize: 13, letterSpacing: 0.1,
+          color: 'rgba(180,195,220,0.62)', fontWeight: 500, marginBottom: 6,
         }}>
           {TYPE_CONFIG[shotType]?.label ?? 'Sesja'} · zakończona
         </p>
         <h1 style={{
-          fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 44,
-          color: 'var(--text-primary)', letterSpacing: 1, lineHeight: 1.05,
-          textTransform: 'uppercase',
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 38,
+          color: 'var(--text-primary)', letterSpacing: 0.1, lineHeight: 1.05,
         }}>
-          TRENING<br />ZALICZONY
+          Trening<br/>zaliczony
         </h1>
       </div>
 
-      {/* Główna karta: % + rzuty */}
-      <div style={{
-        position: 'relative', zIndex: 1,
-        background: 'linear-gradient(180deg, rgba(40,55,85,0.36) 0%, rgba(22,32,52,0.30) 100%)',
-        backdropFilter: 'blur(28px) saturate(1.55)', WebkitBackdropFilter: 'blur(28px) saturate(1.55)',
-        border: 'none',
-        borderRadius: 14,
-        padding: '20px 20px 16px',
-        marginBottom: 10,
-        boxShadow: [
-          `inset 0 1px 0 ${pctColor}38`,
-          'inset 0 -1px 0 rgba(0,0,0,0.16)',
-          `inset 0 0 0 0.5px ${pctColor}24`,
-          '0 1px 6px rgba(0,0,0,0.22)',
-        ].join(', '),
-      }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div>
-            <p style={{ color: 'var(--text-dim)', fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Skuteczność</p>
-            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 56, color: pctColor, lineHeight: 1, letterSpacing: -2 }}>
-              {pct}%
-            </p>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ color: 'var(--text-dim)', fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Rzuty</p>
-            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: 'var(--text-primary)', lineHeight: 1 }}>
-              {made}/{attempted}
-            </p>
-          </div>
-        </div>
-        {/* Pasek postępu sesji */}
-        <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 4, height: 4, overflow: 'hidden' }}>
-          <div style={{
-            height: '100%', borderRadius: 4,
-            width: `${filledPct * 100}%`,
-            background: `linear-gradient(90deg, ${pctColor}, ${pctColor}aa)`,
-            transition: 'width 0.8s ease',
-          }} />
-        </div>
-        <p style={{ color: 'var(--text-dim)', fontSize: 10, marginTop: 6, fontWeight: 500 }}>
-          {attempted} z {target} rzutów
+      {/* HERO — gigantyczne % bez karty, editorialne */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 220, damping: 26, delay: 0.05 }}
+        style={{ position: 'relative', zIndex: 1, marginBottom: 28 }}>
+        <p style={{
+          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 116,
+          color: pctColor, lineHeight: 0.95, letterSpacing: -4,
+          textShadow: `0 0 24px ${pctColor}22`,
+        }}>
+          {pct}<span style={{ fontSize: 56, fontWeight: 700, marginLeft: -4 }}>%</span>
         </p>
-      </div>
+        <p style={{
+          fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500,
+          color: 'rgba(220,228,242,0.78)', marginTop: 8, letterSpacing: 0.1,
+        }}>
+          {support}
+        </p>
+      </motion.div>
 
-      {/* Trafione / Pudła */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, position: 'relative', zIndex: 1, marginBottom: 10 }}>
-        {[
-          { label: 'Trafione', val: made,   color: 'var(--green-shot)', emoji: '✓' },
-          { label: 'Pudła',    val: missed, color: 'var(--red-shot)',   emoji: '✗' },
-        ].map(({ label, val, color, emoji }) => (
-          <div key={label} style={{
-            background: 'linear-gradient(180deg, rgba(40,55,85,0.32) 0%, rgba(22,32,52,0.26) 100%)',
-            backdropFilter: 'blur(28px) saturate(1.55)', WebkitBackdropFilter: 'blur(28px) saturate(1.55)',
-            border: 'none',
-            borderRadius: 14,
-            padding: '14px 16px',
-            boxShadow: [
-              'inset 0 1px 0 rgba(200,225,255,0.10)',
-              'inset 0 -1px 0 rgba(0,0,0,0.16)',
-              'inset 0 0 0 0.5px rgba(150,200,255,0.05)',
-              '0 1px 6px rgba(0,0,0,0.20)',
-            ].join(', '),
-          }}>
-            <p style={{ fontSize: 22, marginBottom: 4, color }}>{emoji}</p>
-            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 36, color, lineHeight: 1 }}>{val}</p>
-            <p style={{ color: 'var(--text-dim)', fontSize: 9, letterSpacing: 1.5, marginTop: 5, textTransform: 'uppercase', fontWeight: 600 }}>{label}</p>
+      {/* Floating stats — bez kart, ikony + cyfry editorial */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 240, damping: 26, delay: 0.12 }}
+        style={{ position: 'relative', zIndex: 1, marginBottom: 26 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="#34D399" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: '#34D399', lineHeight: 1 }}>
+              {made}
+            </span>
+            <span style={{ color: 'rgba(180,195,220,0.55)', fontSize: 13, fontWeight: 500 }}>trafione</span>
           </div>
-        ))}
-      </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="#FB7185" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: '#FB7185', lineHeight: 1 }}>
+              {missed}
+            </span>
+            <span style={{ color: 'rgba(180,195,220,0.55)', fontSize: 13, fontWeight: 500 }}>{missed === 1 ? 'pudło' : 'pudła'}</span>
+          </div>
+        </div>
+        <p style={{
+          color: 'rgba(180,195,220,0.45)', fontSize: 12, fontWeight: 400,
+          marginTop: 12, letterSpacing: 0.1,
+        }}>
+          {attempted} {attempted === 1 ? 'rzut' : attempted < 5 ? 'rzuty' : 'rzutów'} łącznie
+        </p>
+
+        {/* Liquid progress line — alive, shimmer */}
+        <div style={{
+          marginTop: 16,
+          background: 'rgba(255,255,255,0.04)',
+          borderRadius: 3, height: 3, overflow: 'hidden',
+          position: 'relative',
+        }}>
+          <motion.div
+            initial={{ width: '0%' }}
+            animate={{ width: `${Math.min(attempted / target, 1) * 100}%` }}
+            transition={{ type: 'spring', stiffness: 60, damping: 18, delay: 0.25 }}
+            style={{
+              height: '100%', borderRadius: 3,
+              background: `linear-gradient(90deg, ${pctColor}88, ${pctColor})`,
+              boxShadow: `0 0 8px ${pctColor}40`,
+              position: 'relative', overflow: 'hidden',
+            }}
+          >
+            {/* Shimmer overlay — subtelny ruch światła wzdłuż linii */}
+            <motion.div
+              animate={{ x: ['-30%', '130%'] }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1.5 }}
+              style={{
+                position: 'absolute', top: 0, left: 0, height: '100%', width: '30%',
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent)',
+              }}
+            />
+          </motion.div>
+        </div>
+      </motion.div>
 
       {/* Nowe osiągnięcia */}
       {newAchievements.length > 0 && (
