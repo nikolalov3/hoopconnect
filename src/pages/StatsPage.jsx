@@ -251,34 +251,21 @@ export default function StatsPage() {
 
   return (
     <div className="page-content" style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 22px' }}>
-      <AddSessionModal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onSaveStrength={handleSaveStrength}
-        saving={savingStrength}
-      />
+      {/* WIP: AddSessionModal — czeka na /shooting/freestyle handling + tabelę
+          strength_sessions. Włączymy w kolejnej iteracji. */}
+      {false && (
+        <AddSessionModal
+          open={addOpen}
+          onClose={() => setAddOpen(false)}
+          onSaveStrength={handleSaveStrength}
+          saving={savingStrength}
+        />
+      )}
       <p className="section-label" style={{ marginBottom: 4 }}>Twoje wyniki</p>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <h1 className="display-title" style={{ fontSize: 38 }}>Statystyki</h1>
         {/* Icon row — bare icon buttons, no background */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          {/* + Add session */}
-          <motion.button
-            whileTap={{ scale: 0.82 }}
-            onClick={() => setAddOpen(true)}
-            aria-label="Dodaj sesję"
-            style={{
-              width: 40, height: 40,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'rgba(200,210,230,0.55)',
-            }}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-          </motion.button>
           {/* Calendar icon — bare, matches gear/sparkle style */}
           <motion.button
             whileTap={{ scale: 0.82 }}
