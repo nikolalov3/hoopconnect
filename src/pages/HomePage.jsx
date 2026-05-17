@@ -15,9 +15,22 @@ import TeamPracticeCard from '../components/training/TeamPracticeCard'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
-function getDailySeed() {
+// Seed = data + hash(user_id). Dzięki temu losowanie jest:
+// - deterministyczne dla danego usera w danym dniu (refresh = ten sam set)
+// - UNIKALNE per user (różni gracze dostają różne treningi tego samego dnia)
+// Przedtem seed był sam dzień → wszyscy widzieli identyczne 3 ćwiczenia.
+function hashStr(str) {
+  if (!str) return 0
+  let h = 5381
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h) ^ str.charCodeAt(i)
+  }
+  return h & 0x7fffffff
+}
+function getDailySeed(userId) {
   const d = new Date()
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()
+  const dateSeed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()
+  return (dateSeed ^ hashStr(userId || '')) >>> 0
 }
 function seededRandom(seed) {
   let s = seed
@@ -50,7 +63,7 @@ function getDayType(profile) {
 function pickDailyTrainings(allTrainings, profile) {
   const dayType = getDayType(profile)
   const age = profile?.age || 16
-  const rand = seededRandom(getDailySeed())
+  const rand = seededRandom(getDailySeed(profile?.id))
 
   if (dayType === 'O') return []
 

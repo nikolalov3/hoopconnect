@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { getCache, setCache } from '../lib/queryCache'
 import { shareStatsCard, doShare } from '../lib/shareCard'
+import AddSessionModal from '../components/ui/AddSessionModal'
 
 const SHOT_LABELS = { '3pt': 'Trójki', '2pt': 'Dwójki', ft: 'Wolne' }
 
@@ -155,6 +156,38 @@ export default function StatsPage() {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('7d')
+  const [addOpen, setAddOpen] = useState(false)
+  const [savingStrength, setSavingStrength] = useState(false)
+
+  // Limit dziennie: 3 strength sessions. Sprawdzane przed insert'em.
+  async function handleSaveStrength({ exercises, notes }) {
+    if (!profile) return
+    setSavingStrength(true)
+    try {
+      const today = new Date().toISOString().slice(0, 10)
+      const { count } = await supabase
+        .from('strength_sessions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', profile.id)
+        .eq('date', today)
+      if ((count || 0) >= 3) {
+        alert('Limit 3 sesji siłowych dziennie został osiągnięty.')
+        return
+      }
+      const { error } = await supabase.from('strength_sessions').insert({
+        user_id: profile.id, date: today, exercises, notes,
+      })
+      if (error) {
+        console.error('[strength insert]', error)
+        alert('Nie udało się zapisać sesji: ' + error.message)
+        return
+      }
+      setAddOpen(false)
+      // TODO: odświeżyć listę sesji strength gdy będzie sekcja w Stats
+    } finally {
+      setSavingStrength(false)
+    }
+  }
 
   useEffect(() => {
     if (!profile) return
@@ -218,11 +251,34 @@ export default function StatsPage() {
 
   return (
     <div className="page-content" style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 22px' }}>
+      <AddSessionModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSaveStrength={handleSaveStrength}
+        saving={savingStrength}
+      />
       <p className="section-label" style={{ marginBottom: 4 }}>Twoje wyniki</p>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <h1 className="display-title" style={{ fontSize: 38 }}>Statystyki</h1>
         {/* Icon row — bare icon buttons, no background */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {/* + Add session */}
+          <motion.button
+            whileTap={{ scale: 0.82 }}
+            onClick={() => setAddOpen(true)}
+            aria-label="Dodaj sesję"
+            style={{
+              width: 40, height: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'rgba(200,210,230,0.55)',
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </motion.button>
           {/* Calendar icon — bare, matches gear/sparkle style */}
           <motion.button
             whileTap={{ scale: 0.82 }}
