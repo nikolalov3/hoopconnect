@@ -609,19 +609,31 @@ export default function ShootingPage() {
                         border: `1.5px solid ${color}35`,
                         borderRadius: 14, overflow: 'hidden',
                       }}>
-                        {/* Label */}
+                        {/* Label + EDYTOWALNE pole liczbowe */}
                         <div style={{
-                          padding: '0 14px', flexShrink: 0,
+                          padding: '8px 14px', flexShrink: 0,
                           display: 'flex', flexDirection: 'column', gap: 2,
                         }}>
                           <span style={{
                             fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
                             color, fontWeight: 700,
                           }}>{label}</span>
-                          <span style={{
-                            fontFamily: 'var(--font-display)', fontWeight: 900,
-                            fontSize: 32, color, lineHeight: 1,
-                          }}>{val || '0'}</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="0"
+                            value={val}
+                            onChange={e => set(e.target.value.replace(/[^0-9]/g, ''))}
+                            onFocus={e => e.target.select()}
+                            style={{
+                              width: 90,
+                              fontFamily: 'var(--font-display)', fontWeight: 900,
+                              fontSize: 32, color, lineHeight: 1,
+                              background: 'transparent', border: 'none', outline: 'none',
+                              padding: 0, caretColor: color,
+                            }}
+                          />
                         </div>
                         {/* Stepper buttons */}
                         <div style={{ marginLeft: 'auto', display: 'flex',
@@ -631,8 +643,8 @@ export default function ShootingPage() {
                             { lbl: '+', delta:  1 },
                           ].map(({ lbl, delta }) => (
                             <button key={lbl}
-                              onPointerDown={e => { e.preventDefault()
-                                set(prev => String(Math.max(0, (parseInt(prev)||0) + delta))) }}
+                              type="button"
+                              onClick={() => set(prev => String(Math.max(0, (parseInt(prev)||0) + delta)))}
                               style={{
                                 width: 54, height: 56,
                                 background: 'transparent',
@@ -643,16 +655,6 @@ export default function ShootingPage() {
                               }}>{lbl}</button>
                           ))}
                         </div>
-                        {/* Hidden real input for direct keyboard entry */}
-                        <input
-                          type="number" inputMode="numeric" min="0" max={target}
-                          value={val}
-                          onChange={e => set(e.target.value.replace(/[^0-9]/g, ''))}
-                          style={{
-                            position: 'absolute', opacity: 0, pointerEvents: 'none',
-                            width: 1, height: 1,
-                          }}
-                        />
                       </div>
                     ))}
                   </div>
