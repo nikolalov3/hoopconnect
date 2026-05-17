@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useShootingSession } from '../hooks/useShootingSession'
+import { bustCache } from '../lib/queryCache'
 import { checkShotAchievements, checkPerfectSession } from '../lib/achievements'
 import { recalcFraud } from '../lib/anticheat'
 import { creditRestDayStreak } from '../lib/streak'
@@ -92,14 +93,18 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
       {/* Główna karta: % + rzuty */}
       <div style={{
         position: 'relative', zIndex: 1,
-        background: 'rgba(12,8,4,0.70)',
-        backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-        border: `1px solid ${pctColor}35`,
-        borderTop: `1px solid ${pctColor}55`,
-        borderRadius: 20,
+        background: 'linear-gradient(180deg, rgba(40,55,85,0.36) 0%, rgba(22,32,52,0.30) 100%)',
+        backdropFilter: 'blur(28px) saturate(1.55)', WebkitBackdropFilter: 'blur(28px) saturate(1.55)',
+        border: 'none',
+        borderRadius: 14,
         padding: '20px 20px 16px',
         marginBottom: 10,
-        boxShadow: `0 8px 32px rgba(0,0,0,0.45), 0 0 40px ${pctColor}0E`,
+        boxShadow: [
+          `inset 0 1px 0 ${pctColor}38`,
+          'inset 0 -1px 0 rgba(0,0,0,0.16)',
+          `inset 0 0 0 0.5px ${pctColor}24`,
+          '0 1px 6px rgba(0,0,0,0.22)',
+        ].join(', '),
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 14 }}>
           <div>
@@ -136,13 +141,17 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
           { label: 'Pudła',    val: missed, color: 'var(--red-shot)',   emoji: '✗' },
         ].map(({ label, val, color, emoji }) => (
           <div key={label} style={{
-            background: 'rgba(12,8,4,0.55)',
-            backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderTop: '1px solid rgba(255,255,255,0.14)',
-            borderRadius: 16,
+            background: 'linear-gradient(180deg, rgba(40,55,85,0.32) 0%, rgba(22,32,52,0.26) 100%)',
+            backdropFilter: 'blur(28px) saturate(1.55)', WebkitBackdropFilter: 'blur(28px) saturate(1.55)',
+            border: 'none',
+            borderRadius: 14,
             padding: '14px 16px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.30)',
+            boxShadow: [
+              'inset 0 1px 0 rgba(200,225,255,0.10)',
+              'inset 0 -1px 0 rgba(0,0,0,0.16)',
+              'inset 0 0 0 0.5px rgba(150,200,255,0.05)',
+              '0 1px 6px rgba(0,0,0,0.20)',
+            ].join(', '),
           }}>
             <p style={{ fontSize: 22, marginBottom: 4, color }}>{emoji}</p>
             <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 36, color, lineHeight: 1 }}>{val}</p>
@@ -173,12 +182,12 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   background: `${color}12`,
-                  border: `1px solid ${color}30`,
-                  borderTop: `1px solid ${color}50`,
-                  borderRadius: 12,
+                  border: 'none',
+                  borderRadius: 14,
                   padding: '10px 14px',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
+                  backdropFilter: 'blur(24px)',
+                  WebkitBackdropFilter: 'blur(24px)',
+                  boxShadow: `inset 0 1px 0 ${color}40, inset 0 -1px 0 rgba(0,0,0,0.14), inset 0 0 0 0.5px ${color}28`,
                 }}>
                   {a.stage?.image
                     ? <img src={a.stage.image} alt={a.stage.label} style={{ width: 44, height: 44, objectFit: 'contain', filter: `drop-shadow(0 0 8px ${color}73)` }} />
@@ -215,17 +224,17 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
           disabled={sharing}
           style={{
             width: '100%', padding: '14px',
-            background: 'rgba(6,14,30,0.52)',
+            background: 'linear-gradient(180deg, rgba(40,55,85,0.42) 0%, rgba(22,32,52,0.34) 100%)',
             backdropFilter: 'blur(24px)',
             WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(120,190,255,0.18)',
-            borderTop: '1px solid rgba(160,210,255,0.28)',
-            borderRadius: 'var(--radius-sm)',
+            border: 'none',
+            borderRadius: 14,
             color: 'var(--text-primary)',
             fontFamily: 'var(--font-display)',
-            fontSize: 15, fontWeight: 700, letterSpacing: 1.5,
-            textTransform: 'uppercase', cursor: sharing ? 'default' : 'pointer',
+            fontSize: 14, fontWeight: 600, letterSpacing: 0.1,
+            cursor: sharing ? 'default' : 'pointer',
             opacity: sharing ? 0.6 : 1,
+            boxShadow: 'inset 0 1px 0 rgba(200,225,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.16), inset 0 0 0 0.5px rgba(150,200,255,0.10), 0 1px 6px rgba(0,0,0,0.20)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             transition: 'opacity 0.15s',
           }}
@@ -252,7 +261,25 @@ export default function ShootingPage() {
   const { profile, refreshProfile } = useAuth()
   const [streakToast, setStreakToast] = useState(0)
 
-  const training = state?.training
+  // Freestyle mode = sesja dodana z Stats (+) zamiast z dziennego treningu.
+  // Brak training_id, brak points_log, brak activity_log credit.
+  const isFreestyle = id === 'freestyle'
+  const freestyleType = isFreestyle ? new URLSearchParams(window.location.search).get('type') : null
+  const freestyleConfigKey = ({
+    '3pt': 'shooting_3pt',
+    '2pt': 'shooting_2pt',
+    'ft':  'shooting_ft',
+  })[freestyleType] || 'shooting_3pt'
+
+  const training = isFreestyle
+    ? {
+        id: 'freestyle',
+        type: freestyleConfigKey,
+        title: `Sesja freestyle — ${TYPE_CONFIG[freestyleConfigKey].label}`,
+        target_reps: TYPE_CONFIG[freestyleConfigKey].target,
+      }
+    : state?.training
+
   const config = TYPE_CONFIG[training?.type] || TYPE_CONFIG.shooting_3pt
   const target = training?.target_reps || config.target
 
@@ -329,13 +356,14 @@ export default function ShootingPage() {
     addShot(isMade)
     triggerFlash(isMade ? 'made' : 'missed')
     const newAttempted = attempted + 1
-    if (newAttempted >= target) {
+    // W freestyle nie kończymy automatycznie — user sam wybiera kiedy zakończyć.
+    if (!isFreestyle && newAttempted >= target) {
       const finalMade = isMade ? made + 1 : made
       setSaving(true)
 
       await supabase.from('shooting_sessions').insert({
         user_id:      profile.id,
-        training_id:  id,
+        training_id:  isFreestyle ? null : id,
         shot_type:    config.shotType,
         made:         finalMade,
         attempted:    newAttempted,
@@ -343,24 +371,24 @@ export default function ShootingPage() {
         session_date: new Date().toISOString().split('T')[0],
       })
 
-      // Log verified shooting session points to league
-      const TODAY_DATE = new Date().toISOString().split('T')[0]
-      const daysSinceJoin2 = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
-      const weekNum2 = Math.floor(daysSinceJoin2 / 7) + 1
-      await supabase.from('points_log').upsert(
-        {
-          user_id: profile.id,
-          training_id: id,
-          points: 30,
-          week_number: weekNum2,
-          date: TODAY_DATE,
-          source: 'shooting_session',
-        },
-        { onConflict: 'user_id,training_id,date,source', ignoreDuplicates: true }
-      )
-
-      // Odznacz trening w activity_log i zalicz serię
-      await markDoneAndCreditStreak(id)
+      if (!isFreestyle) {
+        // Punkty + credit do streak — TYLKO dla dziennego treningu, nie freestyle.
+        const TODAY_DATE = new Date().toISOString().split('T')[0]
+        const daysSinceJoin2 = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
+        const weekNum2 = Math.floor(daysSinceJoin2 / 7) + 1
+        await supabase.from('points_log').upsert(
+          {
+            user_id: profile.id,
+            training_id: id,
+            points: 30,
+            week_number: weekNum2,
+            date: TODAY_DATE,
+            source: 'shooting_session',
+          },
+          { onConflict: 'user_id,training_id,date,source', ignoreDuplicates: true }
+        )
+        await markDoneAndCreditStreak(id)
+      }
 
       setFinalStats({ made: finalMade, attempted: newAttempted })
       clearSession()
@@ -376,9 +404,41 @@ export default function ShootingPage() {
       if (allNew.length > 0) setNewAchievements(allNew)
 
       recalcFraud(profile.id)   // fire-and-forget anti-cheat
+      bustCache(`sessions:${profile.id}`)  // żeby Stats pokazał świeży wpis bez czekania
       setSaving(false)
       setFinished(true)
     }
+  }
+
+  // Zakończenie freestyle ręcznie — przycisk "Zakończ sesję".
+  // Zapisuje shooting_session z bieżącymi liczbami, pomija punkty/streak,
+  // sprawdza achievementy i pokazuje SuccessScreen z share.
+  async function handleFinishFreestyle() {
+    if (finished || saving || attempted === 0) return
+    setSaving(true)
+    await supabase.from('shooting_sessions').insert({
+      user_id:      profile.id,
+      training_id:  null,
+      shot_type:    config.shotType,
+      made,
+      attempted,
+      started_at:   sessionStartRef.current,
+      session_date: new Date().toISOString().split('T')[0],
+    })
+    setFinalStats({ made, attempted })
+    clearSession()
+    const daysSinceJoin = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
+    const weekNumber = Math.floor(daysSinceJoin / 7) + 1
+    const [unlocked, perfect] = await Promise.all([
+      checkShotAchievements(profile.id, config.shotType, weekNumber),
+      checkPerfectSession(profile.id, config.shotType, made, attempted, weekNumber),
+    ])
+    const allNew = [...unlocked, ...perfect]
+    if (allNew.length > 0) setNewAchievements(allNew)
+    recalcFraud(profile.id)
+    bustCache(`sessions:${profile.id}`)
+    setSaving(false)
+    setFinished(true)
   }
 
   async function handleManualSubmit() {
@@ -391,7 +451,7 @@ export default function ShootingPage() {
 
     await supabase.from('shooting_sessions').insert({
       user_id:      profile.id,
-      training_id:  id,
+      training_id:  isFreestyle ? null : id,
       shot_type:    config.shotType,
       made:         m,
       attempted:    total,
@@ -399,24 +459,23 @@ export default function ShootingPage() {
       session_date: new Date().toISOString().split('T')[0],
     })
 
-    // Log verified shooting session points to league
-    const TODAY_DATE = new Date().toISOString().split('T')[0]
-    const daysSinceJoin2 = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
-    const weekNum2 = Math.floor(daysSinceJoin2 / 7) + 1
-    await supabase.from('points_log').upsert(
-      {
-        user_id: profile.id,
-        training_id: id,
-        points: 30,
-        week_number: weekNum2,
-        date: TODAY_DATE,
-        source: 'shooting_session',
-      },
-      { onConflict: 'user_id,training_id,date,source', ignoreDuplicates: true }
-    )
-
-    // Odznacz trening w activity_log i zalicz serię
-    await markDoneAndCreditStreak(id)
+    if (!isFreestyle) {
+      const TODAY_DATE = new Date().toISOString().split('T')[0]
+      const daysSinceJoin2 = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
+      const weekNum2 = Math.floor(daysSinceJoin2 / 7) + 1
+      await supabase.from('points_log').upsert(
+        {
+          user_id: profile.id,
+          training_id: id,
+          points: 30,
+          week_number: weekNum2,
+          date: TODAY_DATE,
+          source: 'shooting_session',
+        },
+        { onConflict: 'user_id,training_id,date,source', ignoreDuplicates: true }
+      )
+      await markDoneAndCreditStreak(id)
+    }
 
     setFinalStats({ made: m, attempted: total })
     clearSession()
@@ -441,15 +500,20 @@ export default function ShootingPage() {
     </div>
   )
 
-  // Spójne ze stylem TrainingCard — steel-navy glass, radius 14
+  // Liquid-glass — bez twardych obrysów, krawędzie z luminancji (top highlight
+  // + bottom shade), warstwa nad tłem zamiast „karty".
   const glassCard = {
-    background: 'linear-gradient(180deg, rgba(36,52,82,0.62) 0%, rgba(22,34,58,0.58) 100%)',
-    backdropFilter: 'blur(24px) saturate(1.7)',
-    WebkitBackdropFilter: 'blur(24px) saturate(1.7)',
-    border: '1px solid rgba(150,200,255,0.14)',
-    borderTop: '1px solid rgba(180,215,255,0.22)',
+    background: 'linear-gradient(180deg, rgba(40,55,85,0.32) 0%, rgba(22,32,52,0.26) 100%)',
+    backdropFilter: 'blur(28px) saturate(1.55)',
+    WebkitBackdropFilter: 'blur(28px) saturate(1.55)',
+    border: 'none',
     borderRadius: 14,
-    boxShadow: '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
+    boxShadow: [
+      'inset 0 1px 0 rgba(200,225,255,0.10)',
+      'inset 0 -1px 0 rgba(0,0,0,0.16)',
+      'inset 0 0 0 0.5px rgba(150,200,255,0.05)',
+      '0 1px 6px rgba(0,0,0,0.18)',
+    ].join(', '),
   }
 
   return (
@@ -624,7 +688,7 @@ export default function ShootingPage() {
         document.body
       )}
 
-      {/* Header */}
+      {/* Header — chłodny label, sentence-case tytuł */}
       <div style={{ padding: '16px 20px 12px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
         <button onClick={() => navigate(-1)} aria-label="Wstecz" style={{
           background: 'transparent', border: 'none',
@@ -639,12 +703,12 @@ export default function ShootingPage() {
           </svg>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: 10, letterSpacing: 2.5, color: 'var(--orange)', textTransform: 'uppercase', fontWeight: 600, marginBottom: 2 }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, letterSpacing: 0.2, color: 'rgba(180,195,220,0.65)', fontWeight: 500, marginBottom: 2 }}>
             {config.label}
           </p>
           <h2 style={{
-            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
-            lineHeight: 1.15, letterSpacing: 0.3, textTransform: 'uppercase',
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18,
+            lineHeight: 1.2, letterSpacing: 0.1,
             display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
           }}>
@@ -652,132 +716,247 @@ export default function ShootingPage() {
           </h2>
         </div>
         {attempted > 0 && !finished && (
-          <span style={{ background: 'rgba(91,184,245,0.15)', color: 'var(--orange)', fontSize: 10, padding: '4px 10px', borderRadius: 99, fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: 1, border: '1px solid rgba(91,184,245,0.25)' }}>
-            WZNOWIONO
+          <span style={{
+            background: 'rgba(91,184,245,0.10)', color: '#7ECBFF',
+            fontSize: 10, padding: '4px 9px', borderRadius: 99,
+            fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: 0.2,
+            boxShadow: 'inset 0 1px 0 rgba(180,220,255,0.10)',
+          }}>
+            wznowiono
           </span>
         )}
         {saving && <div className="spinner" style={{ width: 20, height: 20, flexShrink: 0 }} />}
       </div>
 
-      {/* Progress — większy oddech, większa cyfra procentów */}
-      <div style={{ padding: '4px 20px 16px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span style={{ color: 'var(--text-dim)', fontSize: 13, fontWeight: 500, letterSpacing: 0.3 }}>
-            {attempted} / {target}
+      {/* Progress — slimmer bar, mixed-case label */}
+      <div style={{ padding: '4px 20px 14px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: isFreestyle ? 0 : 8 }}>
+          <span style={{ color: 'rgba(180,195,220,0.62)', fontSize: 13, fontWeight: 500, letterSpacing: 0.1 }}>
+            {isFreestyle ? `Łącznie ${attempted}` : `${attempted} / ${target}`}
           </span>
-          <motion.span key={pct} initial={{ scale: 1.18 }} animate={{ scale: 1 }}
-            style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: 'var(--orange)', letterSpacing: 0.5, lineHeight: 1 }}>
-            {pct}%
+          <motion.span key={pct} initial={{ opacity: 0.7 }} animate={{ opacity: 1 }}
+            style={{ display: 'inline-flex', alignItems: 'baseline', gap: 7 }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24, color: 'var(--orange)', letterSpacing: 0.1, lineHeight: 1 }}>
+              {pct}%
+            </span>
+            <span style={{ color: 'rgba(180,195,220,0.55)', fontSize: 12, fontWeight: 400, letterSpacing: 0.1 }}>
+              skuteczność
+            </span>
           </motion.span>
         </div>
-        <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 4, height: 6, overflow: 'hidden' }}>
-          <motion.div
-            style={{ height: '100%', background: 'linear-gradient(90deg, var(--orange), var(--orange-hot))', borderRadius: 4, originX: 0 }}
-            animate={{ width: `${progress * 100}%` }}
-            transition={{ duration: 0.15 }}
-          />
-        </div>
+        {!isFreestyle && (
+          <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 3, height: 3, overflow: 'hidden' }}>
+            <motion.div
+              style={{ height: '100%', background: 'linear-gradient(90deg, var(--orange), var(--orange-hot))', borderRadius: 3, originX: 0 }}
+              animate={{ width: `${progress * 100}%` }}
+              transition={{ type: 'spring', stiffness: 140, damping: 22 }}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Stats row */}
+      {/* Stats row — softer colors, sentence-case labels, weight-driven hierarchy */}
       <div style={{ display: 'flex', gap: 8, padding: '0 20px 10px', flexShrink: 0 }}>
-        {[
-          { val: made,              label: 'TRAFIONE',  color: 'var(--green-shot)' },
-          { val: attempted - made,  label: 'PUDŁA',     color: 'var(--red-shot)'   },
-          { val: target - attempted,label: 'ZOSTAŁO',   color: 'var(--text-dim)'   },
-        ].map(({ val, label, color }) => (
-          <div key={label} style={{ flex: 1, ...glassCard, padding: '10px 6px', textAlign: 'center' }}>
-            <motion.p key={val} initial={{ y: -6, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-              style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 28, color, lineHeight: 1 }}>
+        {(isFreestyle
+          ? [
+              { val: made,             label: 'Trafione', color: '#34D399' },
+              { val: attempted - made, label: 'Pudła',    color: '#FB7185' },
+              { val: attempted,        label: 'Łącznie',  color: 'rgba(220,228,242,0.85)' },
+            ]
+          : [
+              { val: made,              label: 'Trafione', color: '#34D399' },
+              { val: attempted - made,  label: 'Pudła',    color: '#FB7185' },
+              { val: target - attempted,label: 'Zostało',  color: 'rgba(180,195,220,0.55)' },
+            ]
+        ).map(({ val, label, color }) => (
+          <div key={label} style={{ flex: 1, ...glassCard, padding: '12px 6px', textAlign: 'center' }}>
+            <motion.p key={val} initial={{ y: -4, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+              style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 26, color, lineHeight: 1, letterSpacing: -0.5 }}>
               {val}
             </motion.p>
-            <p style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4, fontWeight: 600 }}>{label}</p>
+            <p style={{ fontSize: 11, color: 'rgba(180,195,220,0.55)', letterSpacing: 0.1, marginTop: 5, fontWeight: 500 }}>{label}</p>
           </div>
         ))}
       </div>
 
-      {/* SHOT BUTTONS — kompakt, sportowy charakter */}
+      {/* SHOT BUTTONS — emerald/coral glass, mixed case, spring tap */}
       <div style={{ display: 'flex', gap: 10, padding: '6px 20px 14px', flexShrink: 0 }}>
         {/* MADE */}
         <motion.button
           whileTap={{ scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 22 }}
           onClick={() => handleShot(true)}
           style={{
-            flex: 1, height: 150, position: 'relative', overflow: 'hidden',
-            background: 'linear-gradient(180deg, rgba(0,230,118,0.14) 0%, rgba(0,120,60,0.06) 100%)',
-            border: '1px solid rgba(0,230,118,0.28)',
-            borderTop: '1px solid rgba(0,230,118,0.42)',
+            flex: 1, height: 138, position: 'relative', overflow: 'hidden',
+            // Emerald glass — wycieniowane i subtelnie warstwowe
+            background: 'linear-gradient(180deg, rgba(52,211,153,0.16) 0%, rgba(20,90,70,0.06) 100%)',
+            border: 'none',
             borderRadius: 14, cursor: 'pointer', outline: 'none',
             display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', gap: 8,
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.30), inset 0 1px 0 rgba(0,230,118,0.18)',
+            alignItems: 'center', justifyContent: 'center', gap: 10,
+            backdropFilter: 'blur(24px) saturate(1.5)',
+            WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
+            boxShadow: [
+              'inset 0 1px 0 rgba(150,255,210,0.18)',
+              'inset 0 -1px 0 rgba(0,0,0,0.18)',
+              'inset 0 0 0 0.5px rgba(52,211,153,0.18)',
+              '0 1px 6px rgba(0,0,0,0.22)',
+            ].join(', '),
           }}
         >
           <AnimatePresence>
             {flash === 'made' && (
-              <motion.div key={flashKey} initial={{ opacity: 0.7 }} animate={{ opacity: 0 }} transition={{ duration: 0.28 }}
-                style={{ position: 'absolute', inset: 0, background: 'rgba(0,230,118,0.35)', pointerEvents: 'none', borderRadius: 'inherit' }} />
+              <motion.div key={flashKey} initial={{ opacity: 0.55 }} animate={{ opacity: 0 }} transition={{ duration: 0.32 }}
+                style={{ position: 'absolute', inset: 0, background: 'rgba(52,211,153,0.30)', pointerEvents: 'none', borderRadius: 'inherit' }} />
             )}
           </AnimatePresence>
-          <svg width="38" height="38" viewBox="0 0 24 24" fill="none"
-            stroke="var(--green-shot)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none"
+            stroke="#34D399" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20 6L9 17l-5-5"/>
           </svg>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--green-shot)', letterSpacing: 2.2, textTransform: 'uppercase' }}>
-            TRAFIONY
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 17, color: '#34D399', letterSpacing: 0.1 }}>
+            Trafione
           </span>
         </motion.button>
 
         {/* MISSED */}
         <motion.button
           whileTap={{ scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 22 }}
           onClick={() => handleShot(false)}
           style={{
-            flex: 1, height: 150, position: 'relative', overflow: 'hidden',
-            background: 'linear-gradient(180deg, rgba(255,61,61,0.13) 0%, rgba(140,30,30,0.06) 100%)',
-            border: '1px solid rgba(255,61,61,0.28)',
-            borderTop: '1px solid rgba(255,61,61,0.42)',
+            flex: 1, height: 138, position: 'relative', overflow: 'hidden',
+            background: 'linear-gradient(180deg, rgba(251,113,133,0.14) 0%, rgba(120,40,55,0.06) 100%)',
+            border: 'none',
             borderRadius: 14, cursor: 'pointer', outline: 'none',
             display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', gap: 8,
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,61,61,0.18)',
+            alignItems: 'center', justifyContent: 'center', gap: 10,
+            backdropFilter: 'blur(24px) saturate(1.5)',
+            WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
+            boxShadow: [
+              'inset 0 1px 0 rgba(255,200,210,0.18)',
+              'inset 0 -1px 0 rgba(0,0,0,0.18)',
+              'inset 0 0 0 0.5px rgba(251,113,133,0.18)',
+              '0 1px 6px rgba(0,0,0,0.22)',
+            ].join(', '),
           }}
         >
           <AnimatePresence>
             {flash === 'missed' && (
-              <motion.div key={flashKey} initial={{ opacity: 0.7 }} animate={{ opacity: 0 }} transition={{ duration: 0.28 }}
-                style={{ position: 'absolute', inset: 0, background: 'rgba(255,61,61,0.35)', pointerEvents: 'none', borderRadius: 'inherit' }} />
+              <motion.div key={flashKey} initial={{ opacity: 0.55 }} animate={{ opacity: 0 }} transition={{ duration: 0.32 }}
+                style={{ position: 'absolute', inset: 0, background: 'rgba(251,113,133,0.28)', pointerEvents: 'none', borderRadius: 'inherit' }} />
             )}
           </AnimatePresence>
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
-            stroke="var(--red-shot)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+            stroke="#FB7185" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 6L6 18M6 6l12 12"/>
           </svg>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--red-shot)', letterSpacing: 2.2, textTransform: 'uppercase' }}>
-            PUDŁO
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 17, color: '#FB7185', letterSpacing: 0.1 }}>
+            Pudło
           </span>
         </motion.button>
       </div>
 
-      {/* Manual input + Undo — wypchnięte do dołu okna */}
+      {/* Recent shots — kropki ostatnich 12 strzałów, subtelny insight zamiast pustki */}
+      {history.length > 0 && (
+        <div style={{ padding: '0 20px 14px', flexShrink: 0 }}>
+          <p style={{ color: 'rgba(180,195,220,0.45)', fontSize: 11, fontWeight: 500, letterSpacing: 0.1, marginBottom: 8 }}>
+            Ostatnie rzuty
+          </p>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            {history.slice(-12).map((made, i, arr) => {
+              const fade = 0.35 + (i / arr.length) * 0.65  // starsze blakną
+              return (
+                <motion.div
+                  key={`${history.length}-${i}`}
+                  initial={{ scale: 0.4, opacity: 0 }}
+                  animate={{ scale: 1, opacity: fade }}
+                  transition={{ type: 'spring', stiffness: 340, damping: 24 }}
+                  style={{
+                    width: 10, height: 10, borderRadius: '50%',
+                    background: made
+                      ? `radial-gradient(circle at 35% 30%, rgba(52,211,153,0.95), rgba(52,211,153,0.50) 70%)`
+                      : `radial-gradient(circle at 35% 30%, rgba(251,113,133,0.95), rgba(251,113,133,0.45) 70%)`,
+                    boxShadow: `inset 0 0 0 0.5px ${made ? 'rgba(52,211,153,0.30)' : 'rgba(251,113,133,0.30)'}`,
+                  }}
+                />
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* CTA — Wpisz ręcznie primary pill, Cofnij subtelne, freestyle: Zakończ */}
       <div style={{ padding: '0 20px 20px', flexShrink: 0, marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <button
-          className="btn-ghost"
+        {isFreestyle && (
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 22 }}
+            onClick={handleFinishFreestyle}
+            disabled={attempted === 0 || saving}
+            style={{
+              width: '100%', padding: '14px',
+              background: attempted === 0
+                ? 'linear-gradient(180deg, rgba(40,55,85,0.30) 0%, rgba(22,32,52,0.24) 100%)'
+                : 'linear-gradient(180deg, rgba(91,184,245,0.22) 0%, rgba(40,120,200,0.10) 100%)',
+              border: 'none', borderRadius: 14,
+              cursor: attempted === 0 ? 'not-allowed' : 'pointer',
+              color: attempted === 0 ? 'rgba(180,200,230,0.35)' : '#7ECBFF',
+              fontFamily: 'var(--font-display)', fontWeight: 600,
+              fontSize: 15, letterSpacing: 0.1,
+              opacity: (attempted === 0 || saving) ? 0.5 : 1,
+              boxShadow: 'inset 0 1px 0 rgba(180,220,255,0.14), inset 0 0 0 0.5px rgba(91,184,245,0.18), 0 1px 6px rgba(0,0,0,0.20)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+            }}
+          >
+            Zakończ sesję
+          </motion.button>
+        )}
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 22 }}
           onClick={() => { setManualMade(''); setManualMissed(''); setShowManualInput(true) }}
-          style={{ width: '100%', padding: '13px', fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--font-display)', fontWeight: 600, borderRadius: 14 }}
+          style={{
+            width: '100%', padding: '14px',
+            background: 'linear-gradient(180deg, rgba(40,55,85,0.42) 0%, rgba(22,32,52,0.34) 100%)',
+            border: 'none', borderRadius: 14, cursor: 'pointer',
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-display)', fontWeight: 600,
+            fontSize: 14, letterSpacing: 0.1,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            boxShadow: 'inset 0 1px 0 rgba(200,225,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.16), 0 1px 6px rgba(0,0,0,0.20)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+          }}
         >
-          ✎ Wpisz ręcznie
-        </button>
-        <button className="btn-ghost" onClick={undoShot} disabled={history.length === 0}
-          style={{ width: '100%', padding: '13px', fontSize: 13, letterSpacing: 1, opacity: history.length === 0 ? 0.25 : 1, textTransform: 'uppercase', fontFamily: 'var(--font-display)', fontWeight: 600, borderRadius: 14 }}>
-          ↩ Cofnij
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+          Wpisz ręcznie
+        </motion.button>
+        <button onClick={undoShot} disabled={history.length === 0}
+          style={{
+            width: '100%', padding: '11px',
+            background: 'transparent', border: 'none',
+            color: history.length === 0 ? 'rgba(180,195,220,0.25)' : 'rgba(180,195,220,0.58)',
+            fontFamily: 'var(--font-body)', fontWeight: 500,
+            fontSize: 13, letterSpacing: 0.1,
+            cursor: history.length === 0 ? 'not-allowed' : 'pointer',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 7v6h6"/>
+            <path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>
+          </svg>
+          Cofnij ostatni
           {history.length > 0 && (
-            <span style={{ marginLeft: 8, opacity: 0.5, fontSize: 11 }}>
-              ({history[history.length - 1] ? 'trafiony' : 'pudło'})
+            <span style={{ opacity: 0.65, fontSize: 12 }}>
+              ({history[history.length - 1] ? 'trafione' : 'pudło'})
             </span>
           )}
         </button>

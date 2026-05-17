@@ -30,9 +30,13 @@ const PRESET_EXERCISES = [
 function HalfCourtPicker({ onPickZone }) {
   const [hoverZone, setHoverZone] = useState(null)
 
-  const tint = (z) => hoverZone === z ? 'rgba(91,184,245,0.18)' : 'rgba(91,184,245,0.06)'
-  const stroke = (z) => hoverZone === z ? 'rgba(91,184,245,0.80)' : 'rgba(91,184,245,0.25)'
+  // Color per zone: 3pt = red (najdalszy/najtrudniejszy), 2pt = orange (mid),
+  // ft = green (linia rzutów wolnych, "bezpieczna" strefa).
+  const ZONE_RGB = { '3pt': '255,80,80', '2pt': '255,160,40', 'ft': '0,210,118' }
+  const tint = (z) => `rgba(${ZONE_RGB[z]},${hoverZone === z ? 0.20 : 0.06})`
+  const ringColor = (z) => `rgba(${ZONE_RGB[z]},0.90)`
 
+  const LINE = 'rgba(0,210,255,0.40)'
   return (
     <div style={{ position: 'relative', width: '100%', aspectRatio: '343 / 410', borderRadius: 14, overflow: 'hidden' }}>
       <svg viewBox="0 0 343 410" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
@@ -47,66 +51,96 @@ function HalfCourtPicker({ onPickZone }) {
         {/* Floor */}
         <rect width="343" height="410" fill="url(#addCourtFloor)"/>
 
-        {/* 3pt zone — top portion (above arc), clickable */}
+        {/* 3pt zone — klikalne tło */}
         <path
           d="M 12 1 H 331 V 272 A 204 204 0 0 0 12 272 Z"
-          fill={tint('3pt')} stroke={stroke('3pt')} strokeWidth="1.5"
-          style={{ cursor: 'pointer', transition: 'fill 0.15s, stroke 0.15s' }}
+          fill={tint('3pt')}
+          style={{ cursor: 'pointer', transition: 'fill 0.15s' }}
           onMouseEnter={() => setHoverZone('3pt')}
           onMouseLeave={() => setHoverZone(null)}
           onClick={() => onPickZone('3pt')}
         />
-
-        {/* Mid-range zone — between arc and paint */}
+        {/* Mid-range zone — klikalne tło */}
         <path
           d="M 12 272 A 204 204 0 0 1 331 272 V 398 H 221 V 260 A 49 49 0 0 0 122 260 V 398 H 12 Z"
-          fill={tint('2pt')} stroke={stroke('2pt')} strokeWidth="1.5"
-          style={{ cursor: 'pointer', transition: 'fill 0.15s, stroke 0.15s' }}
+          fill={tint('2pt')}
+          style={{ cursor: 'pointer', transition: 'fill 0.15s' }}
           onMouseEnter={() => setHoverZone('2pt')}
           onMouseLeave={() => setHoverZone(null)}
           onClick={() => onPickZone('2pt')}
         />
-
-        {/* Paint / FT zone — trumna */}
+        {/* Paint / FT zone (trumna) — klikalne tło */}
         <path
           d="M 122 260 A 49 49 0 0 1 221 260 V 398 H 122 Z"
-          fill={tint('ft')} stroke={stroke('ft')} strokeWidth="1.5"
-          style={{ cursor: 'pointer', transition: 'fill 0.15s, stroke 0.15s' }}
+          fill={tint('ft')}
+          style={{ cursor: 'pointer', transition: 'fill 0.15s' }}
           onMouseEnter={() => setHoverZone('ft')}
           onMouseLeave={() => setHoverZone(null)}
           onClick={() => onPickZone('ft')}
         />
 
+        {/* ── Linie boiska (decorative, pointer-events off) ── */}
+        <g fill="none" strokeLinecap="round" stroke={LINE} strokeWidth="1.4" style={{ pointerEvents: 'none' }}>
+          {/* Court boundary */}
+          <line x1="12"  y1="1"   x2="12"  y2="398"/>
+          <line x1="331" y1="1"   x2="331" y2="398"/>
+          <line x1="12"  y1="398" x2="331" y2="398"/>
+          <line x1="12"  y1="1"   x2="331" y2="1"/>
+          {/* 3pt corner extensions + arc */}
+          <line x1="12"  y1="272" x2="12"  y2="398"/>
+          <line x1="331" y1="272" x2="331" y2="398"/>
+          <path d="M 12 272 A 204 204 0 0 1 331 272"/>
+          {/* Paint (key) */}
+          <rect x="122" y="260" width="99" height="138"/>
+          {/* Free throw circle (top half solid) */}
+          <path d="M 122 260 A 49 49 0 0 1 221 260"/>
+          {/* Hash marks */}
+          <line x1="110" y1="295" x2="122" y2="295" opacity="0.6"/>
+          <line x1="110" y1="327" x2="122" y2="327" opacity="0.6"/>
+          <line x1="221" y1="295" x2="233" y2="295" opacity="0.6"/>
+          <line x1="221" y1="327" x2="233" y2="327" opacity="0.6"/>
+          {/* Restricted area arc */}
+          <path d="M 146 398 A 25 25 0 0 0 197 398" opacity="0.6"/>
+          {/* Center circle (top of half-court) */}
+          <path d="M 137 1 A 36 36 0 0 0 206 1" opacity="0.55"/>
+        </g>
+
+        {/* Strefowe outlines highlight on hover — kolor matchujący strefę */}
+        {hoverZone === '3pt' && (
+          <path d="M 12 1 H 331 V 272 A 204 204 0 0 0 12 272 Z"
+            fill="none" stroke={ringColor('3pt')} strokeWidth="2" style={{ pointerEvents: 'none' }} />
+        )}
+        {hoverZone === '2pt' && (
+          <path d="M 12 272 A 204 204 0 0 1 331 272 V 398 H 221 V 260 A 49 49 0 0 0 122 260 V 398 H 12 Z"
+            fill="none" stroke={ringColor('2pt')} strokeWidth="2" style={{ pointerEvents: 'none' }} />
+        )}
+        {hoverZone === 'ft' && (
+          <path d="M 122 260 A 49 49 0 0 1 221 260 V 398 H 122 Z"
+            fill="none" stroke={ringColor('ft')} strokeWidth="2" style={{ pointerEvents: 'none' }} />
+        )}
+
         {/* Hoop */}
-        <circle cx="171.5" cy="377" r="13" fill="none" stroke="#FFA820" strokeWidth="2.5"/>
-        <circle cx="171.5" cy="377" r="5.5" fill="rgba(255,168,32,0.20)"/>
-        <rect x="150" y="393" width="43" height="4" rx="1.5" fill="#FFA820" opacity=".90"/>
+        <circle cx="171.5" cy="377" r="13" fill="none" stroke="#FFA820" strokeWidth="2.5" style={{ pointerEvents: 'none' }}/>
+        <circle cx="171.5" cy="377" r="5.5" fill="rgba(255,168,32,0.20)" style={{ pointerEvents: 'none' }}/>
+        <rect x="150" y="393" width="43" height="4" rx="1.5" fill="#FFA820" opacity=".90" style={{ pointerEvents: 'none' }}/>
 
         {/* Labels */}
-        <text x="171.5" y="120" textAnchor="middle"
-          fontFamily="var(--font-display)" fontSize="20" fontWeight="800"
-          fill={hoverZone === '3pt' ? '#7ECBFF' : 'rgba(255,255,255,0.85)'}
-          style={{ pointerEvents: 'none', letterSpacing: 2 }}>
-          TRÓJKI
-        </text>
-        <text x="56" y="340" textAnchor="middle"
+        <text x="171.5" y="145" textAnchor="middle"
+          fontFamily="var(--font-display)" fontSize="22" fontWeight="800"
+          fill={hoverZone === '3pt' ? ringColor('3pt') : 'rgba(255,255,255,0.88)'}
+          style={{ pointerEvents: 'none', letterSpacing: 2 }}>TRÓJKI</text>
+        <text x="62" y="340" textAnchor="middle"
           fontFamily="var(--font-display)" fontSize="13" fontWeight="700"
-          fill={hoverZone === '2pt' ? '#7ECBFF' : 'rgba(255,255,255,0.75)'}
-          style={{ pointerEvents: 'none', letterSpacing: 1.5 }}>
-          MID
-        </text>
-        <text x="287" y="340" textAnchor="middle"
+          fill={hoverZone === '2pt' ? ringColor('2pt') : 'rgba(255,255,255,0.78)'}
+          style={{ pointerEvents: 'none', letterSpacing: 1.5 }}>MID</text>
+        <text x="281" y="340" textAnchor="middle"
           fontFamily="var(--font-display)" fontSize="13" fontWeight="700"
-          fill={hoverZone === '2pt' ? '#7ECBFF' : 'rgba(255,255,255,0.75)'}
-          style={{ pointerEvents: 'none', letterSpacing: 1.5 }}>
-          MID
-        </text>
-        <text x="171.5" y="340" textAnchor="middle"
-          fontFamily="var(--font-display)" fontSize="14" fontWeight="800"
-          fill={hoverZone === 'ft' ? '#7ECBFF' : 'rgba(255,255,255,0.85)'}
-          style={{ pointerEvents: 'none', letterSpacing: 1.5 }}>
-          WOLNE
-        </text>
+          fill={hoverZone === '2pt' ? ringColor('2pt') : 'rgba(255,255,255,0.78)'}
+          style={{ pointerEvents: 'none', letterSpacing: 1.5 }}>MID</text>
+        <text x="171.5" y="335" textAnchor="middle"
+          fontFamily="var(--font-display)" fontSize="13" fontWeight="800"
+          fill={hoverZone === 'ft' ? ringColor('ft') : 'rgba(255,255,255,0.88)'}
+          style={{ pointerEvents: 'none', letterSpacing: 1.5 }}>WOLNE</text>
       </svg>
     </div>
   )

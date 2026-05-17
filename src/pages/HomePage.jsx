@@ -48,10 +48,17 @@ const SCHEDULES = {
 }
 
 function getDayType(profile) {
-  // Dzień rejestracji zawsze = trening
+  // Pierwsze 2 dni po rejestracji ZAWSZE = trening (onboarding engagement).
+  // Bez tego nowy user mógłby trafić na "off day" zaraz po rejestracji.
   if (profile?.created_at) {
-    const regDate = new Date(profile.created_at).toISOString().split('T')[0]
-    if (regDate === TODAY) return 'T'
+    const created = new Date(profile.created_at)
+    const now = new Date()
+    const daysSince = Math.floor(
+      (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+       Date.UTC(created.getUTCFullYear(), created.getUTCMonth(), created.getUTCDate())) /
+      (1000 * 60 * 60 * 24)
+    )
+    if (daysSince <= 1) return 'T'
   }
   const days = profile?.training_days || 4
   const schedule = SCHEDULES[days] || SCHEDULES[4]

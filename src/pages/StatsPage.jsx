@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { getCache, setCache } from '../lib/queryCache'
+import { getCache, setCache, bustCache } from '../lib/queryCache'
 import { shareStatsCard, doShare } from '../lib/shareCard'
 import AddSessionModal from '../components/ui/AddSessionModal'
 
@@ -59,7 +59,7 @@ function StatTile({ label, value, sub, accent }) {
   return (
     <div style={{ ...glassCard, padding: '18px 14px', textAlign: 'center' }}>
       <p style={{
-        fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 42,
+        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 38,
         color: accent || 'var(--orange)', lineHeight: 1,
         // Glow przyciszony — z 20px/full-alpha do 8px/niska alpha
         textShadow: `0 0 8px ${accent ? `${accent}33` : 'rgba(91,184,245,0.12)'}`,
@@ -116,8 +116,8 @@ function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, f
           initial={{ opacity: 0.6 }} animate={{ opacity: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 26 }}
           style={{
-            fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: hero ? 64 : 42,
-            color: pctColor, lineHeight: 1, letterSpacing: -2,
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: hero ? 54 : 36,
+            color: pctColor, lineHeight: 1, letterSpacing: -1.4,
             textShadow: `0 0 8px ${pctColor}14`,
           }}>{pct}%</motion.p>
       </div>
@@ -192,20 +192,48 @@ export default function StatsPage() {
   useEffect(() => {
     if (!profile) return
     const cacheKey = `sessions:${profile.id}`
+
+    async function fetchSessions() {
+      const { data } = await supabase
+        .from('shooting_sessions')
+        .select('*, trainings(title)')
+        .eq('user_id', profile.id)
+        .order('session_date', { ascending: false })
+        .limit(500)
+      if (data) { setCache(cacheKey, data, 2 * 60 * 1000); setSessions(data) }
+      setLoading(false)
+    }
+
     // Pokaż cache natychmiast — zero opóźnienia przy powrocie na kartę
     const cached = getCache(cacheKey)
     if (cached) { setSessions(cached); setLoading(false) }
-    // Odśwież w tle
-    supabase
-      .from('shooting_sessions')
-      .select('*, trainings(title)')
-      .eq('user_id', profile.id)
-      .order('session_date', { ascending: false })
-      .limit(500)  // power-users z 1000+ sesji nie potrzebują wszystkich naraz
-      .then(({ data }) => {
-        if (data) { setCache(cacheKey, data, 2 * 60 * 1000); setSessions(data) }
-        setLoading(false)
-      })
+    fetchSessions()
+
+    // Realtime: nowe sesje rzutowe wpadają od razu (insert z trackera).
+    const channel = supabase
+      .channel(`stats-sessions:${profile.id}`)
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'shooting_sessions', filter: `user_id=eq.${profile.id}` },
+        () => { bustCache(cacheKey); fetchSessions() })
+      .on('postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'shooting_sessions', filter: `user_id=eq.${profile.id}` },
+        () => { bustCache(cacheKey); fetchSessions() })
+      .subscribe()
+
+    // Powrót na zakładkę / fokus okna — refetch (gdy Realtime padł np. w Safari w tle)
+    function onFocus() {
+      if (document.visibilityState !== 'visible') return
+      bustCache(cacheKey)
+      fetchSessions()
+    }
+    document.addEventListener('visibilitychange', onFocus)
+    window.addEventListener('focus', onFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', onFocus)
+      window.removeEventListener('focus', onFocus)
+      supabase.removeChannel(channel)
+    }
   }, [profile])
 
   const filtered = useMemo(() => filterByDate(sessions, filter), [sessions, filter])
@@ -251,21 +279,38 @@ export default function StatsPage() {
 
   return (
     <div className="page-content" style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 22px' }}>
-      {/* WIP: AddSessionModal — czeka na /shooting/freestyle handling + tabelę
-          strength_sessions. Włączymy w kolejnej iteracji. */}
-      {false && (
-        <AddSessionModal
-          open={addOpen}
-          onClose={() => setAddOpen(false)}
-          onSaveStrength={handleSaveStrength}
-          saving={savingStrength}
-        />
-      )}
+      {/* WIP: AddSessionModal — widoczne tylko w dev do czasu pełnego flow.
+          Na produkcji ukryte, żeby userzy nie trafiali na niedokończone ścieżki. */}
+      <AddSessionModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSaveStrength={handleSaveStrength}
+        saving={savingStrength}
+      />
       <p className="section-label" style={{ marginBottom: 4 }}>Twoje wyniki</p>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <h1 className="display-title" style={{ fontSize: 38 }}>Statystyki</h1>
         {/* Icon row — bare icon buttons, no background */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {/* + Add session — tylko w dev */}
+          {import.meta.env.DEV && (
+            <motion.button
+              whileTap={{ scale: 0.82 }}
+              onClick={() => setAddOpen(true)}
+              aria-label="Dodaj sesję"
+              style={{
+                width: 40, height: 40,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'rgba(200,210,230,0.55)',
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </motion.button>
+          )}
           {/* Calendar icon — bare, matches gear/sparkle style */}
           <motion.button
             whileTap={{ scale: 0.82 }}
