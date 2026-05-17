@@ -475,8 +475,11 @@ export default function StatsPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 32 }}>
           {filtered.map(s => {
-            const pct  = s.attempted > 0 ? Math.round((s.made / s.attempted) * 100) : 0
-            const good = pct >= 50
+            const pct = s.attempted > 0 ? Math.round((s.made / s.attempted) * 100) : 0
+            // 3-stopniowa skala: ≥60 emerald, 30-59 amber, <30 warm orange (SF crystal vibe)
+            const tier = pct >= 60 ? 'good' : pct >= 30 ? 'mid' : 'low'
+            const tierColor = tier === 'good' ? '#34D399' : tier === 'mid' ? '#FCD34D' : '#FF8830'
+            const tierRgb   = tier === 'good' ? '52,211,153' : tier === 'mid' ? '252,211,77' : '255,136,48'
             return (
               <div key={s.id} style={{
                 background: 'linear-gradient(180deg, rgba(40,55,85,0.34) 0%, rgba(22,32,52,0.30) 100%)',
@@ -493,13 +496,11 @@ export default function StatsPage() {
               }}>
                 <div style={{
                   width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
-                  background: good
-                    ? 'radial-gradient(circle at 35% 30%, rgba(0,230,118,0.22), rgba(0,230,118,0.06) 70%)'
-                    : 'radial-gradient(circle at 35% 30%, rgba(255,61,61,0.20), rgba(255,61,61,0.05) 70%)',
-                  boxShadow: `inset 0 0 0 0.5px ${good ? 'rgba(0,230,118,0.18)' : 'rgba(255,61,61,0.18)'}`,
+                  background: `radial-gradient(circle at 35% 30%, rgba(${tierRgb},0.22), rgba(${tierRgb},0.06) 70%)`,
+                  boxShadow: `inset 0 0 0 0.5px rgba(${tierRgb},0.20)`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 13,
-                  color: good ? 'var(--green-shot)' : 'var(--red-shot)',
+                  fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
+                  color: tierColor,
                 }}>
                   {pct}%
                 </div>

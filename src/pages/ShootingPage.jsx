@@ -42,8 +42,9 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
     }
   }
   const missed = attempted - made
-  // Softer semantic colors — mint/emerald zamiast neon greenu
-  const pctColor = pct >= 60 ? '#34D399' : pct >= 40 ? '#FCD34D' : '#FB7185'
+  // Softer semantic colors — bez czerwonego, kończymy pomarańczem (warm not alarm).
+  // ≥60 emerald, 30-59 amber, <30 warm orange (jak SF crystal w Club).
+  const pctColor = pct >= 60 ? '#34D399' : pct >= 30 ? '#FCD34D' : '#FF8830'
   const support =
     pct === 100 ? 'Perfekcyjna sesja' :
     pct >= 80   ? 'Elite touch' :
@@ -124,14 +125,14 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
         style={{ position: 'relative', zIndex: 1, marginBottom: 26 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
               stroke="#34D399" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 6L9 17l-5-5"/>
             </svg>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: '#34D399', lineHeight: 1 }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 30, color: '#34D399', lineHeight: 1, letterSpacing: -0.5 }}>
               {made}
             </span>
-            <span style={{ color: 'rgba(180,195,220,0.55)', fontSize: 13, fontWeight: 500 }}>trafione</span>
+            <span style={{ color: 'rgba(180,195,220,0.62)', fontSize: 13, fontWeight: 500 }}>trafione</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
