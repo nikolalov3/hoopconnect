@@ -111,11 +111,12 @@ function pickDailyTrainings(allTrainings, profile) {
     }
   }
 
-  // 3) Cooldown po sesji głównej — zawsze, jeśli mamy maina i jest pula
+  // 3) Cooldown — część sesji głównej. Renderuje się pod tym samym nagłówkiem
+  //    co main, ale logicznie wie czym jest (przyda się przy punktach/UI).
+  //    Punkty 2pkt × niskim mnożnikiem — niższy reward ale wciąż "główny".
   if (cooldownPool.length > 0 && result.some(r => r._slot === 'main')) {
     const cd = cooldownPool[Math.floor(rand() * cooldownPool.length)]
-    const cdMultiplier = 11 + Math.floor(rand() * 10)
-    result.push({ ...cd, _slot: 'cooldown', _slotLabel: 'PO TRENINGU', _slotEmoji: '🧊', _pts: 1, _multiplier: cdMultiplier })
+    result.push({ ...cd, _slot: 'main', _slotLabel: 'GŁÓWNA', _slotEmoji: '🏀', _isCooldown: true, _pts: 2, _multiplier: 20 })
   }
 
   return result
