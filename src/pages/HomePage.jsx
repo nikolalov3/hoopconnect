@@ -76,37 +76,46 @@ function pickDailyTrainings(allTrainings, profile) {
     result.push({ ...morningPool[idx], _slot: 'morning', _slotLabel: 'PORANNA', _slotEmoji: '🌅', _pts: 1, _multiplier: morningMultiplier })
   }
 
-  // ── SESJA GŁÓWNA: 1-2 ćwiczenia, min. 66% z rzutami, 2PKT × 40/30 ──
-  const shootingPool = allTrainings.filter(t => t.category === 'shooting')
+  // ── SESJA GŁÓWNA ──
+  // Każdy dzień:  1 main + 1 recovery_post (cooldown)
+  // W 33% dni:    2 main + 1 recovery_post (3 karty)
+  // Main: 66% szans że pierwszy jest shooting. 2PKT × 40/30 wg difficulty.
+  // Recovery_post: 1PKT × 11-20 (lekka motywacja do cooldownu, nie main reward).
+  const shootingPool    = allTrainings.filter(t => t.category === 'shooting')
   const nonShootingPool = allTrainings.filter(t => mainCats.includes(t.category) && t.category !== 'shooting')
+  const mainPool        = allTrainings.filter(t => mainCats.includes(t.category))
+  const cooldownPool    = allTrainings.filter(t => t.category === 'recovery_post')
 
   const isShootingDay = rand() < 0.667
-  const hasTwoActivities = rand() < 0.5
+  const hasTwoMains   = rand() < 0.333         // ~33% dni dostaje 2 maina
 
   function mainPts(t) { return { _pts: 2, _multiplier: (t.difficulty || 1) >= 3 ? 40 : 30 } }
 
+  // 1) Pierwszy main
   if (isShootingDay && shootingPool.length > 0) {
-    const idx1 = Math.floor(rand() * shootingPool.length)
-    const t1 = shootingPool[idx1]
+    const t1 = shootingPool[Math.floor(rand() * shootingPool.length)]
     result.push({ ...t1, _slot: 'main', _slotLabel: 'GŁÓWNA', _slotEmoji: '🏀', ...mainPts(t1) })
-    if (hasTwoActivities && nonShootingPool.length > 0) {
-      const idx2 = Math.floor(rand() * nonShootingPool.length)
-      const t2 = nonShootingPool[idx2]
+    // 2) Opcjonalny drugi main (25% szans) — preferuj non-shooting dla różnorodności
+    if (hasTwoMains && nonShootingPool.length > 0) {
+      const t2 = nonShootingPool[Math.floor(rand() * nonShootingPool.length)]
       result.push({ ...t2, _slot: 'main', _slotLabel: 'GŁÓWNA', _slotEmoji: '🏀', ...mainPts(t2) })
     }
-  } else {
-    const mainPool = allTrainings.filter(t => mainCats.includes(t.category))
-    if (mainPool.length > 0) {
-      const idx1 = Math.floor(rand() * mainPool.length)
-      const t1 = mainPool[idx1]
-      result.push({ ...t1, _slot: 'main', _slotLabel: 'GŁÓWNA', _slotEmoji: '🏀', ...mainPts(t1) })
-      if (hasTwoActivities && mainPool.length > 1) {
-        const remaining = mainPool.filter((_, i) => i !== idx1)
-        const idx2 = Math.floor(rand() * remaining.length)
-        const t2 = remaining[idx2]
-        result.push({ ...t2, _slot: 'main', _slotLabel: 'GŁÓWNA', _slotEmoji: '🏀', ...mainPts(t2) })
-      }
+  } else if (mainPool.length > 0) {
+    const idx1 = Math.floor(rand() * mainPool.length)
+    const t1 = mainPool[idx1]
+    result.push({ ...t1, _slot: 'main', _slotLabel: 'GŁÓWNA', _slotEmoji: '🏀', ...mainPts(t1) })
+    if (hasTwoMains && mainPool.length > 1) {
+      const remaining = mainPool.filter((_, i) => i !== idx1)
+      const t2 = remaining[Math.floor(rand() * remaining.length)]
+      result.push({ ...t2, _slot: 'main', _slotLabel: 'GŁÓWNA', _slotEmoji: '🏀', ...mainPts(t2) })
     }
+  }
+
+  // 3) Cooldown po sesji głównej — zawsze, jeśli mamy maina i jest pula
+  if (cooldownPool.length > 0 && result.some(r => r._slot === 'main')) {
+    const cd = cooldownPool[Math.floor(rand() * cooldownPool.length)]
+    const cdMultiplier = 11 + Math.floor(rand() * 10)
+    result.push({ ...cd, _slot: 'cooldown', _slotLabel: 'PO TRENINGU', _slotEmoji: '🧊', _pts: 1, _multiplier: cdMultiplier })
   }
 
   return result
