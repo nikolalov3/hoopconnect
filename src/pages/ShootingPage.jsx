@@ -63,7 +63,8 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
         left: 'max(0px, calc((100vw - 430px) / 2))',
         width: 'min(100vw, 430px)',
         zIndex: 300,
-        background: 'rgba(6,4,2,0.97)',
+        // Lżejszy navy zamiast prawie-czarnego brązu (#06,04,02). Spójny z resztą apki.
+        background: 'linear-gradient(180deg, #0E1A2E 0%, #0A1422 60%, #07101C 100%)',
         backdropFilter: 'blur(40px)',
         WebkitBackdropFilter: 'blur(40px)',
         display: 'flex', flexDirection: 'column',
@@ -75,8 +76,8 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
     >
       {/* Ambient halo — bardzo subtelne, kolor wyniku */}
       <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 280,
-        background: `radial-gradient(ellipse 90% 100% at 50% 0%, ${pctColor}1A 0%, transparent 70%)`,
+        position: 'absolute', top: 0, left: 0, right: 0, height: 320,
+        background: `radial-gradient(ellipse 90% 100% at 50% 0%, ${pctColor}22 0%, transparent 72%)`,
         pointerEvents: 'none',
       }} />
 
