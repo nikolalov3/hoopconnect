@@ -463,6 +463,8 @@ function DayDoneModal({ completedCount, onClose }) {
 export default function HomePage() {
   const { profile, refreshProfile } = useAuth()
   const [trainings, setTrainings] = useState([])
+  // Trzymamy pełną listę aktywnych treningów (do swap-funkcji "nie mam sprzętu").
+  const allActiveTrainingsRef = useRef([])
   const [activityLog, setActivityLog] = useState(null)
   const [quote, setQuote] = useState(null)
   const [showQuote, setShowQuote] = useState(false)
@@ -572,9 +574,17 @@ export default function HomePage() {
 
     const { data: allTrainings } = await trainingsPromise
     if (allTrainings) {
+      allActiveTrainingsRef.current = allTrainings
       const picked = pickDailyTrainings(allTrainings, profile)
-      setCache(`trainings:${TODAY}`, picked, 30 * 60 * 1000)  // 30 min
-      setTrainings(picked)
+      // Aplikujemy zapamiętane na dziś swap-y (gdy user przeładuje stronę)
+      const withSwaps = picked.map(t => {
+        try {
+          const stored = localStorage.getItem(`hc:swap:${TODAY}:${t.id}`)
+          return stored ? JSON.parse(stored) : t
+        } catch { return t }
+      })
+      setCache(`trainings:${TODAY}`, withSwaps, 30 * 60 * 1000)  // 30 min
+      setTrainings(withSwaps)
     }
     setLoading(false)
 
@@ -674,6 +684,41 @@ export default function HomePage() {
     setReportScore(trueTotal)
     // Zachowujemy daysLeft z bieżącego stanu — nie nadpisujemy countdown'a
     setCache(`report:${profile.id}`, { score: trueTotal, daysLeft: daysUntilReport ?? 0 }, 60 * 1000)
+  }
+
+  function getSwapAlternatives(trainingId) {
+    const current = trainings.find(t => t.id === trainingId)
+    if (!current || !allActiveTrainingsRef.current) return []
+    const shownIds = new Set(trainings.map(t => t.id))
+    return allActiveTrainingsRef.current.filter(t =>
+      t.category === current.category &&
+      t.is_active &&
+      !t.requires_equipment &&
+      !shownIds.has(t.id)
+    )
+  }
+
+  function swapTraining(trainingId) {
+    const current = trainings.find(t => t.id === trainingId)
+    if (!current) return
+    const alternatives = getSwapAlternatives(trainingId)
+    if (alternatives.length === 0) return  // przycisk i tak ukryty gdy brak
+    const fresh = alternatives[Math.floor(Math.random() * alternatives.length)]
+    // Zachowujemy metadata sesji (slot, pkt, multiplier) — tylko treść się zmienia.
+    const merged = {
+      ...fresh,
+      _slot: current._slot,
+      _slotLabel: current._slotLabel,
+      _slotEmoji: current._slotEmoji,
+      _pts: current._pts,
+      _multiplier: current._multiplier,
+      _isCooldown: current._isCooldown,
+    }
+    setTrainings(prev => prev.map(t => t.id === trainingId ? merged : t))
+    try {
+      localStorage.setItem(`hc:swap:${TODAY}:${trainingId}`, JSON.stringify(merged))
+    } catch { /* localStorage może być pełne lub zablokowane */ }
+    bustCache(`trainings:${TODAY}`)
   }
 
   async function markTrainingDone(trainingId) {
@@ -1317,6 +1362,8 @@ export default function HomePage() {
                         done={completed.includes(t.id)}
                         onDone={() => markTrainingDone(t.id)}
                         onUndo={() => unmarkTrainingDone(t.id)}
+                        onSwap={() => swapTraining(t.id)}
+                        canSwap={getSwapAlternatives(t.id).length > 0}
                       />
                     ))}
                   </div>

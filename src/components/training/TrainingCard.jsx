@@ -32,21 +32,27 @@ const ChevronIcon = ({ up }) => (
   </svg>
 )
 
-function TrainingCard({ training, done, onDone, onUndo }) {
+function TrainingCard({ training, done, onDone, onUndo, onSwap, canSwap }) {
   const [expanded, setExpanded] = useState(false)
   const navigate = useNavigate()
   const isShooting = SHOOTING_TYPES.includes(training.type)
   const typeInfo = TYPE_LABELS[training.type] || { label: training.type, color: 'badge-gray' }
 
-  // Pulse animation on transition from not-done → done.
-  // Liczy się tylko PRZEJŚCIE, nie sam stan — inaczej animacja leciała by
-  // przy każdym remount/refresh karty.
-  const [pulseKey, setPulseKey] = useState(0)
+  // Pulse: zielony przy ukończeniu, niebieski przy swap-ie ćwiczenia.
+  // Triggerujemy tylko na faktyczne PRZEJŚCIE stanu (nie na każdy mount).
+  const [pulse, setPulse] = useState(null) // { key, type }
   const prevDone = useRef(done)
+  const prevId   = useRef(training.id)
   useEffect(() => {
-    if (!prevDone.current && done) setPulseKey(k => k + 1)
+    if (!prevDone.current && done) setPulse(p => ({ key: (p?.key || 0) + 1, type: 'done' }))
     prevDone.current = done
   }, [done])
+  useEffect(() => {
+    if (prevId.current && prevId.current !== training.id) {
+      setPulse(p => ({ key: (p?.key || 0) + 1, type: 'swap' }))
+    }
+    prevId.current = training.id
+  }, [training.id])
 
   function handleAction(e) {
     e.stopPropagation()
@@ -57,14 +63,26 @@ function TrainingCard({ training, done, onDone, onUndo }) {
   return (
     <motion.div
       layout
-      animate={pulseKey > 0 ? {
-        scale: [1, 1.025, 1],
-        boxShadow: [
-          '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
-          '0 6px 28px rgba(0,230,118,0.40), inset 0 1px 0 rgba(180,220,255,0.06)',
-          '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
-        ],
-      } : { scale: 1 }}
+      animate={pulse?.key
+        ? pulse.type === 'done'
+          ? {
+              scale: [1, 1.025, 1],
+              boxShadow: [
+                '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
+                '0 6px 28px rgba(0,230,118,0.40), inset 0 1px 0 rgba(180,220,255,0.06)',
+                '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
+              ],
+            }
+          : {
+              // Swap pulse — niebieski, neutralny. Płynne przejście na nowe ćwiczenie.
+              scale: [0.97, 1.02, 1],
+              boxShadow: [
+                '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
+                '0 6px 28px rgba(91,184,245,0.36), inset 0 1px 0 rgba(180,220,255,0.06)',
+                '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(180,220,255,0.06)',
+              ],
+            }
+        : { scale: 1 }}
       transition={{ duration: 0.55, ease: 'easeOut' }}
       style={{
         background: done
@@ -206,9 +224,27 @@ function TrainingCard({ training, done, onDone, onUndo }) {
               )}
 
               {!done ? (
-                <button className="btn-primary" onClick={handleAction} style={{ fontSize: 15, padding: '13px' }}>
-                  {isShooting ? 'Zacznij tracker rzutów' : 'Ukończ ćwiczenie'}
-                </button>
+                <>
+                  <button className="btn-primary" onClick={handleAction} style={{ fontSize: 15, padding: '13px' }}>
+                    {isShooting ? 'Zacznij tracker rzutów' : 'Ukończ ćwiczenie'}
+                  </button>
+                  {training.requires_equipment && onSwap && canSwap && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onSwap(training.id) }}
+                      style={{
+                        width: '100%', marginTop: 10, padding: '11px 8px',
+                        background: 'transparent', border: 'none',
+                        color: 'rgba(180,195,220,0.62)',
+                        fontSize: 12, fontWeight: 500, letterSpacing: 0.1,
+                        cursor: 'pointer', borderRadius: 14,
+                        fontFamily: 'var(--font-body)',
+                        textDecoration: 'underline', textUnderlineOffset: 3,
+                      }}
+                    >
+                      Nie mam {training.equipment_label ? `(${training.equipment_label})` : 'sprzętu'} — zmień ćwiczenie
+                    </button>
+                  )}
+                </>
               ) : (
                 <div style={{ textAlign: 'center' }}>
                   <p style={{
