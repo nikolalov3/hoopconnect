@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { bustAll } from '../lib/queryCache'
 import { setSentryUser } from '../lib/sentry'
+import { startRealtime, stopRealtime } from '../lib/realtimeManager'
 
 const AuthContext = createContext({})
 
@@ -18,6 +19,7 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
+        startRealtime(session.user.id)  // jeden globalny kanał na cały lifecycle
         fetchProfile(session.user.id)
       } else {
         // No session — mark ready immediately so AppShell doesn't wait forever
@@ -37,16 +39,21 @@ export function AuthProvider({ children }) {
         if (event === 'SIGNED_IN') {
           profileReadyRef.current = false
           setProfileReady(false)
+          startRealtime(session.user.id)
           fetchProfile(session.user.id)
         }
       } else {
+        stopRealtime()
         setProfile(null)
         setProfileReady(true)
         profileReadyRef.current = true
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+      stopRealtime()
+    }
   }, [])
 
   // Tag Sentry events with the current user — makes errors actionable

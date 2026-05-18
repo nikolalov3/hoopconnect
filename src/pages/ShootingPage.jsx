@@ -291,7 +291,13 @@ export default function ShootingPage() {
   // Freestyle mode = sesja dodana z Stats (+) zamiast z dziennego treningu.
   // Brak training_id, brak points_log, brak activity_log credit.
   const isFreestyle = id === 'freestyle'
-  const freestyleType = isFreestyle ? new URLSearchParams(window.location.search).get('type') : null
+  const fsParams = isFreestyle ? new URLSearchParams(window.location.search) : null
+  const freestyleType = fsParams?.get('type') || null
+  // Clamp do dozwolonego zakresu (20-150, krok 10) na wypadek manipulacji URL
+  const rawTarget = parseInt(fsParams?.get('target') || '', 10)
+  const freestyleTarget = Number.isFinite(rawTarget)
+    ? Math.min(150, Math.max(20, Math.round(rawTarget / 10) * 10))
+    : 20
   const freestyleConfigKey = ({
     '3pt': 'shooting_3pt',
     '2pt': 'shooting_2pt',
@@ -303,7 +309,7 @@ export default function ShootingPage() {
         id: 'freestyle',
         type: freestyleConfigKey,
         title: `Sesja freestyle — ${TYPE_CONFIG[freestyleConfigKey].label}`,
-        target_reps: TYPE_CONFIG[freestyleConfigKey].target,
+        target_reps: freestyleTarget,
       }
     : state?.training
 
@@ -383,8 +389,8 @@ export default function ShootingPage() {
     addShot(isMade)
     triggerFlash(isMade ? 'made' : 'missed')
     const newAttempted = attempted + 1
-    // W freestyle nie kończymy automatycznie — user sam wybiera kiedy zakończyć.
-    if (!isFreestyle && newAttempted >= target) {
+    // Auto-finish gdy user osiągnie ustawiony target (też w freestyle — target przyszedł z suwaka).
+    if (newAttempted >= target) {
       const finalMade = isMade ? made + 1 : made
       setSaving(true)
 
@@ -761,11 +767,11 @@ export default function ShootingPage() {
         {saving && <div className="spinner" style={{ width: 20, height: 20, flexShrink: 0 }} />}
       </div>
 
-      {/* Progress — slimmer bar, mixed-case label */}
+      {/* Progress — target z suwaka/daily zawsze widoczny */}
       <div style={{ padding: '4px 20px 14px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: isFreestyle ? 0 : 8 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
           <span style={{ color: 'rgba(180,195,220,0.62)', fontSize: 13, fontWeight: 500, letterSpacing: 0.1 }}>
-            {isFreestyle ? `Łącznie ${attempted}` : `${attempted} / ${target}`}
+            {attempted} / {target}
           </span>
           <motion.span key={pct} initial={{ opacity: 0.7 }} animate={{ opacity: 1 }}
             style={{ display: 'inline-flex', alignItems: 'baseline', gap: 7 }}>
@@ -777,30 +783,22 @@ export default function ShootingPage() {
             </span>
           </motion.span>
         </div>
-        {!isFreestyle && (
-          <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 3, height: 3, overflow: 'hidden' }}>
-            <motion.div
-              style={{ height: '100%', background: 'linear-gradient(90deg, var(--orange), var(--orange-hot))', borderRadius: 3, originX: 0 }}
-              animate={{ width: `${progress * 100}%` }}
-              transition={{ type: 'spring', stiffness: 140, damping: 22 }}
-            />
-          </div>
-        )}
+        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 3, height: 3, overflow: 'hidden' }}>
+          <motion.div
+            style={{ height: '100%', background: 'linear-gradient(90deg, var(--orange), var(--orange-hot))', borderRadius: 3, originX: 0 }}
+            animate={{ width: `${progress * 100}%` }}
+            transition={{ type: 'spring', stiffness: 140, damping: 22 }}
+          />
+        </div>
       </div>
 
-      {/* Stats row — softer colors, sentence-case labels, weight-driven hierarchy */}
+      {/* Stats row — trafione/pudła/zostało */}
       <div style={{ display: 'flex', gap: 8, padding: '0 20px 10px', flexShrink: 0 }}>
-        {(isFreestyle
-          ? [
-              { val: made,             label: 'Trafione', color: '#34D399' },
-              { val: attempted - made, label: 'Pudła',    color: '#FB7185' },
-              { val: attempted,        label: 'Łącznie',  color: 'rgba(220,228,242,0.85)' },
-            ]
-          : [
-              { val: made,              label: 'Trafione', color: '#34D399' },
-              { val: attempted - made,  label: 'Pudła',    color: '#FB7185' },
-              { val: target - attempted,label: 'Zostało',  color: 'rgba(180,195,220,0.55)' },
-            ]
+        {([
+          { val: made,              label: 'Trafione', color: '#34D399' },
+          { val: attempted - made,  label: 'Pudła',    color: '#FB7185' },
+          { val: target - attempted,label: 'Zostało',  color: 'rgba(180,195,220,0.55)' },
+        ]
         ).map(({ val, label, color }) => (
           <div key={label} style={{ flex: 1, ...glassCard, padding: '12px 6px', textAlign: 'center' }}>
             <motion.p key={val} initial={{ y: -4, opacity: 0 }} animate={{ y: 0, opacity: 1 }}

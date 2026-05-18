@@ -291,12 +291,13 @@ const inputStyle = {
 // ── Main modal ──────────────────────────────────────────────────────────────
 export default function AddSessionModal({ open, onClose, onSaveStrength, saving }) {
   const [tab, setTab] = useState('shooting')
+  const [shotTarget, setShotTarget] = useState(20)  // default 20, krok 10, max 150
   const navigate = useNavigate()
 
   function pickShootZone(type) {
     onClose()
-    // Freestyle tracker — bez training_id, bez points_log. Tracker pozna po param.
-    navigate(`/shooting/freestyle?type=${type}`)
+    // Freestyle tracker — bez training_id, bez points_log. Target = user-picked.
+    navigate(`/shooting/freestyle?type=${type}&target=${shotTarget}`)
   }
 
   return createPortal(
@@ -381,7 +382,35 @@ export default function AddSessionModal({ open, onClose, onSaveStrength, saving 
                   liczy się tylko do statystyk i osiągnięć (zero punktów do rankingu).
                 </p>
                 <HalfCourtPicker onPickZone={pickShootZone} />
-                <p style={{ color: 'rgba(180,195,220,0.55)', fontSize: 11, textAlign: 'center', marginTop: 10 }}>
+                {/* Suwak liczby rzutów — default 20, krok 10, max 150 */}
+                <div style={{ marginTop: 18, padding: '14px 16px',
+                  background: 'rgba(30,42,68,0.42)',
+                  borderRadius: 14,
+                  boxShadow: 'inset 0 1px 0 rgba(200,225,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.16)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: 0.3, color: 'rgba(220,228,242,0.70)' }}>
+                      Liczba rzutów
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: '#7ECBFF', lineHeight: 1 }}>
+                      {shotTarget}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={20} max={150} step={10}
+                    value={shotTarget}
+                    onChange={e => setShotTarget(parseInt(e.target.value))}
+                    style={{
+                      width: '100%', accentColor: '#5BB8F5',
+                      background: 'transparent', height: 24, cursor: 'pointer',
+                    }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'rgba(180,195,220,0.45)', marginTop: 2, fontWeight: 500 }}>
+                    <span>20</span><span>150</span>
+                  </div>
+                </div>
+                <p style={{ color: 'rgba(180,195,220,0.55)', fontSize: 11, textAlign: 'center', marginTop: 12 }}>
                   Tap w strefę = rozpocznij sesję rzutów
                 </p>
               </>

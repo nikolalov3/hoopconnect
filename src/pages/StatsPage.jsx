@@ -7,6 +7,7 @@ import { getCache, setCache, bustCache } from '../lib/queryCache'
 import { shareStatsCard, doShare } from '../lib/shareCard'
 import { pct as calcPct } from '../lib/pct'
 import AddSessionModal from '../components/ui/AddSessionModal'
+import { onTableChange } from '../lib/realtimeManager'
 
 const SHOT_LABELS = { '3pt': 'Trójki', '2pt': 'Dwójki', ft: 'Wolne' }
 
@@ -210,18 +211,16 @@ export default function StatsPage() {
     if (cached) { setSessions(cached); setLoading(false) }
     fetchSessions()
 
-    // Realtime: nowe sesje rzutowe wpadają od razu (insert z trackera).
-    const channel = supabase
-      .channel(`stats-sessions:${profile.id}`)
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'shooting_sessions', filter: `user_id=eq.${profile.id}` },
-        () => { bustCache(cacheKey); fetchSessions() })
-      .on('postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'shooting_sessions', filter: `user_id=eq.${profile.id}` },
-        () => { bustCache(cacheKey); fetchSessions() })
-      .subscribe()
+    // Realtime przez globalny channel z AuthContext — INSERT i DELETE
+    // shooting_sessions wpadają tu jako 'postgres_changes' eventy.
+    const handler = (payload) => {
+      if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
+        bustCache(cacheKey); fetchSessions()
+      }
+    }
+    const unsub = onTableChange('shooting_sessions', handler)
 
-    // Powrót na zakładkę / fokus okna — refetch (gdy Realtime padł np. w Safari w tle)
+    // Fokus / visibility fallback (Safari kill background socket)
     function onFocus() {
       if (document.visibilityState !== 'visible') return
       bustCache(cacheKey)
@@ -233,7 +232,7 @@ export default function StatsPage() {
     return () => {
       document.removeEventListener('visibilitychange', onFocus)
       window.removeEventListener('focus', onFocus)
-      supabase.removeChannel(channel)
+      unsub()
     }
   }, [profile])
 

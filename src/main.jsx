@@ -28,8 +28,11 @@ try {
   const stored = localStorage.getItem('hc_build_id')
   if (stored && stored !== BUILD_ID) {
     localStorage.setItem('hc_build_id', BUILD_ID)
-    // Soft reload — pobierze świeży index.html i nowe bundle'e.
-    // queryCache to in-memory Map (umiera z reload), nie potrzeba czyścić localStorage.
+    // Wyczyść persistent cache (trainings/quotes/catalog mogą się zmienić w deployu)
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('hc:pc:'))
+      .forEach(k => localStorage.removeItem(k))
+    // Soft reload — pobierze świeży index.html i nowe bundle'e
     if (!sessionStorage.getItem('hc_build_reloaded')) {
       sessionStorage.setItem('hc_build_reloaded', '1')
       window.location.reload()

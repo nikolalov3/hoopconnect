@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { onTableChange } from '../lib/realtimeManager'
 import TrainingCard from '../components/training/TrainingCard'
 import { fetchAchievementsCatalog, getNewlyUnlocked, awardMedalPoints, revokeStaleAchievements } from '../lib/achievements'
 import SettingsPanel from '../components/ui/SettingsPanel'
@@ -9,6 +10,7 @@ import LeagueInfoPanel from '../components/ui/LeagueInfoPanel'
 import { useUI } from '../context/UIContext'
 import StreakToast from '../components/ui/StreakToast'
 import { getCache, setCache, bustCache } from '../lib/queryCache'
+import { pGet, pSet } from '../lib/persistentCache'
 import { useNotifications } from '../context/NotificationsContext'
 import { useTodayTeamPractice } from '../hooks/useTodayTeamPractice'
 import TeamPracticeCard from '../components/training/TeamPracticeCard'
@@ -548,22 +550,17 @@ export default function HomePage() {
     function onPageShow(e) { if (e.persisted) refresh() }
     window.addEventListener('pageshow', onPageShow)
 
-    // Realtime: dwa kanały — activity_log (zaznaczenia) i points_log (wynik)
-    const channel = supabase
-      .channel(`home-sync:${profile.id}`)
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'activity_log', filter: `user_id=eq.${profile.id}` },
-        refresh)
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'points_log', filter: `user_id=eq.${profile.id}` },
-        refresh)
-      .subscribe()
+    // Realtime: subscribe to GLOBALNY channel zarządzany przez AuthContext.
+    // Listenery są lokalne (Set per tabela) — zero round-tripów przy mount/unmount.
+    const unsubActivity = onTableChange('activity_log', refresh)
+    const unsubPoints   = onTableChange('points_log',   refresh)
 
     return () => {
       document.removeEventListener('visibilitychange', onFocus)
       window.removeEventListener('focus', onFocus)
       window.removeEventListener('pageshow', onPageShow)
-      supabase.removeChannel(channel)
+      unsubActivity()
+      unsubPoints()
     }
   }, [profile])
 
@@ -587,33 +584,49 @@ export default function HomePage() {
     if (cachedQuotes)          setQuote(cachedQuotes[Math.floor(Math.random() * cachedQuotes.length)])
     if (cachedReport != null)  { setReportScore(cachedReport.score); setDaysUntilReport(cachedReport.daysLeft); setReportLoading(false) }
 
-    // ── 2. Odświeżenie w tle — wszystkie 3 startują równolegle ──
-    const trainingsPromise = supabase.from('trainings').select('*').eq('is_active', true)
-    const logPromise       = supabase.from('activity_log').select('*').eq('user_id', profile.id).eq('date', TODAY).maybeSingle()
-    const quotesPromise    = supabase.from('quotes').select('*').eq('is_active', true)
+    // ── 2. STATIC data z persistent cache (24h TTL) — eliminuje round-trip ──
+    // Trainings i quotes zmieniają się rzadko (tylko przy deployu). Cache między
+    // sesjami w localStorage → 0 zapytań do Supabase na "ciepłej" wizycie.
+    const pcTrainings = pGet('trainings:active')
+    const pcQuotes    = pGet('quotes:active')
 
-    const { data: allTrainings } = await trainingsPromise
-    if (allTrainings) {
+    // Trainings: jeśli mamy w persistent cache, użyj od razu (skip network).
+    let allTrainings = pcTrainings
+    if (!allTrainings) {
+      const res = await supabase.from('trainings').select('*').eq('is_active', true)
+      allTrainings = res.data || []
+      if (allTrainings.length) pSet('trainings:active', allTrainings, 24 * 60 * 60 * 1000)
+    }
+    if (allTrainings.length) {
       allActiveTrainingsRef.current = allTrainings
       const picked = pickDailyTrainings(allTrainings, profile)
-      // Aplikujemy zapamiętane na dziś swap-y (gdy user przeładuje stronę)
       const withSwaps = picked.map(t => {
         try {
           const stored = localStorage.getItem(`hc:swap:${TODAY}:${t.id}`)
           return stored ? JSON.parse(stored) : t
         } catch { return t }
       })
-      setCache(`trainings:${TODAY}`, withSwaps, 30 * 60 * 1000)  // 30 min
+      setCache(`trainings:${TODAY}`, withSwaps, 30 * 60 * 1000)
       setTrainings(withSwaps)
     }
     setLoading(false)
 
-    const [{ data: log }, { data: quotes }] = await Promise.all([logPromise, quotesPromise])
-    setActivityLog(log)
-    setCache(`log:${profile.id}:${TODAY}`, log, 15 * 1000)  // 15 s — zmienia się po zaznaczeniu
+    // log MUSI być fresh (user-state) — quotes mogą być z persistent cache
+    const logPromise   = supabase.from('activity_log').select('*').eq('user_id', profile.id).eq('date', TODAY).maybeSingle()
+    let quotes = pcQuotes
+    const quotesPromise = quotes
+      ? Promise.resolve({ data: quotes })
+      : supabase.from('quotes').select('*').eq('is_active', true)
 
+    const [{ data: log }, { data: freshQuotes }] = await Promise.all([logPromise, quotesPromise])
+    setActivityLog(log)
+    setCache(`log:${profile.id}:${TODAY}`, log, 15 * 1000)
+
+    if (!quotes && freshQuotes?.length) {
+      pSet('quotes:active', freshQuotes, 24 * 60 * 60 * 1000)
+      quotes = freshQuotes
+    }
     if (quotes?.length) {
-      setCache('quotes', quotes, 60 * 60 * 1000)  // 1 h
       setQuote(quotes[Math.floor(Math.random() * quotes.length)])
     }
 
