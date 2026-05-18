@@ -211,11 +211,11 @@ export default function StatsPage() {
     if (cached) { setSessions(cached); setLoading(false) }
     fetchSessions()
 
-    // Realtime przez globalny channel z AuthContext — INSERT i DELETE
-    // shooting_sessions wpadają tu jako 'postgres_changes' eventy.
+    // Realtime przez globalny channel — fetchSessions zaktualizuje cache nawet
+    // jeśli ShootingPage już wstrzelił prepend (DB > cache). Bez bustu = brak flashu.
     const handler = (payload) => {
       if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-        bustCache(cacheKey); fetchSessions()
+        fetchSessions()
       }
     }
     const unsub = onTableChange('shooting_sessions', handler)

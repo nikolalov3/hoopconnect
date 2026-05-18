@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useShootingSession } from '../hooks/useShootingSession'
-import { bustCache } from '../lib/queryCache'
+import { getCache, setCache, bustCache } from '../lib/queryCache'
 import { pct as calcPct } from '../lib/pct'
 import { checkShotAchievements, checkPerfectSession } from '../lib/achievements'
 import { recalcFraud } from '../lib/anticheat'
@@ -384,6 +384,17 @@ export default function ShootingPage() {
     }
   }
 
+  // Prepend nowo zapisanej sesji do cache `sessions:${userId}` — Stats pokaże
+  // ją od razu po wejściu, bez czekania na refetch z DB. Insert i tak idzie
+  // do DB; tu tylko przyspieszamy lokalny render.
+  function pushSessionToCache(row) {
+    if (!profile?.id || !row) return
+    const key = `sessions:${profile.id}`
+    const cached = getCache(key) || []
+    // 2 min TTL (jak w StatsPage). Najnowsza na górze (order DESC).
+    setCache(key, [row, ...cached], 2 * 60 * 1000)
+  }
+
   async function handleShot(isMade) {
     if (finished || saving || !loaded) return
     addShot(isMade)
@@ -394,7 +405,7 @@ export default function ShootingPage() {
       const finalMade = isMade ? made + 1 : made
       setSaving(true)
 
-      await supabase.from('shooting_sessions').insert({
+      const { data: insertedRow1 } = await supabase.from('shooting_sessions').insert({
         user_id:      profile.id,
         training_id:  isFreestyle ? null : id,
         shot_type:    config.shotType,
@@ -402,7 +413,8 @@ export default function ShootingPage() {
         attempted:    newAttempted,
         started_at:   sessionStartRef.current,
         session_date: new Date().toISOString().split('T')[0],
-      })
+      }).select('*, trainings(title)').single()
+      pushSessionToCache(insertedRow1)
 
       if (!isFreestyle) {
         // Punkty + credit do streak — TYLKO dla dziennego treningu, nie freestyle.
@@ -437,7 +449,6 @@ export default function ShootingPage() {
       if (allNew.length > 0) setNewAchievements(allNew)
 
       recalcFraud(profile.id)   // fire-and-forget anti-cheat
-      bustCache(`sessions:${profile.id}`)  // żeby Stats pokazał świeży wpis bez czekania
       setSaving(false)
       setFinished(true)
     }
@@ -449,7 +460,7 @@ export default function ShootingPage() {
   async function handleFinishFreestyle() {
     if (finished || saving || attempted === 0) return
     setSaving(true)
-    await supabase.from('shooting_sessions').insert({
+    const { data: insertedRow2 } = await supabase.from('shooting_sessions').insert({
       user_id:      profile.id,
       training_id:  null,
       shot_type:    config.shotType,
@@ -457,7 +468,8 @@ export default function ShootingPage() {
       attempted,
       started_at:   sessionStartRef.current,
       session_date: new Date().toISOString().split('T')[0],
-    })
+    }).select('*, trainings(title)').single()
+    pushSessionToCache(insertedRow2)
     setFinalStats({ made, attempted })
     clearSession()
     const daysSinceJoin = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
@@ -469,7 +481,6 @@ export default function ShootingPage() {
     const allNew = [...unlocked, ...perfect]
     if (allNew.length > 0) setNewAchievements(allNew)
     recalcFraud(profile.id)
-    bustCache(`sessions:${profile.id}`)
     setSaving(false)
     setFinished(true)
   }
@@ -482,7 +493,7 @@ export default function ShootingPage() {
     setSaving(true)
     setShowManualInput(false)
 
-    await supabase.from('shooting_sessions').insert({
+    const { data: insertedRow3 } = await supabase.from('shooting_sessions').insert({
       user_id:      profile.id,
       training_id:  isFreestyle ? null : id,
       shot_type:    config.shotType,
@@ -490,7 +501,8 @@ export default function ShootingPage() {
       attempted:    total,
       started_at:   sessionStartRef.current,
       session_date: new Date().toISOString().split('T')[0],
-    })
+    }).select('*, trainings(title)').single()
+    pushSessionToCache(insertedRow3)
 
     if (!isFreestyle) {
       const TODAY_DATE = new Date().toISOString().split('T')[0]
