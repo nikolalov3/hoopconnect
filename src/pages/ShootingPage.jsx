@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useShootingSession } from '../hooks/useShootingSession'
 import { bustCache } from '../lib/queryCache'
+import { pct as calcPct } from '../lib/pct'
 import { checkShotAchievements, checkPerfectSession } from '../lib/achievements'
 import { recalcFraud } from '../lib/anticheat'
 import { creditRestDayStreak } from '../lib/streak'
@@ -29,7 +30,7 @@ const MEDAL_COLORS = {
 }
 
 function SuccessScreen({ made, attempted, target, shotType, onBack, newAchievements = [], playerName }) {
-  const pct = attempted > 0 ? Math.round((made / attempted) * 100) : 0
+  const pct = calcPct(made, attempted)
   const [sharing, setSharing] = useState(false)
 
   async function handleShare() {
@@ -321,7 +322,7 @@ export default function ShootingPage() {
 
   const made = history.filter(Boolean).length
   const attempted = history.length
-  const pct = attempted > 0 ? Math.round((made / attempted) * 100) : 0
+  const pct = calcPct(made, attempted)
   const progress = Math.min(attempted / target, 1)
 
   function triggerFlash(type) {

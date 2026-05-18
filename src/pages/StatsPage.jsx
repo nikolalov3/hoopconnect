@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { getCache, setCache, bustCache } from '../lib/queryCache'
 import { shareStatsCard, doShare } from '../lib/shareCard'
+import { pct as calcPct } from '../lib/pct'
 import AddSessionModal from '../components/ui/AddSessionModal'
 
 const SHOT_LABELS = { '3pt': 'Trójki', '2pt': 'Dwójki', ft: 'Wolne' }
@@ -251,7 +252,7 @@ export default function StatsPage() {
 
   const totalMade      = filtered.reduce((a, s) => a + s.made, 0)
   const totalAttempted = filtered.reduce((a, s) => a + s.attempted, 0)
-  const totalPct       = totalAttempted > 0 ? Math.round((totalMade / totalAttempted) * 100) : 0
+  const totalPct       = calcPct(totalMade, totalAttempted)
 
   const filterLabel = filter === '7d' ? 'ostatnie 7 dni' : filter === '30d' ? 'ostatnie 30 dni' : 'wszystkie'
 
@@ -275,7 +276,7 @@ export default function StatsPage() {
     { key: 'ft',  icon: <IconFT />,      label: 'Wolne',     type: 'ft'  },
   ]
   const heroData = { made: totalMade, attempted: totalAttempted, sessions: filtered.length }
-  const heroPct = heroData.attempted > 0 ? Math.round((heroData.made / heroData.attempted) * 100) : 0
+  const heroPct = calcPct(heroData.made, heroData.attempted)
 
   return (
     <div className="page-content" style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 22px' }}>
@@ -440,7 +441,7 @@ export default function StatsPage() {
           const made      = d?.made      || 0
           const attempted = d?.attempted || 0
           const sessions  = d?.sessions  || 0
-          const pct = attempted > 0 ? Math.round((made / attempted) * 100) : 0
+          const pct = calcPct(made, attempted)
           return (
             <ScrollStatCard
               key={key}
@@ -475,7 +476,7 @@ export default function StatsPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 32 }}>
           {filtered.map(s => {
-            const pct = s.attempted > 0 ? Math.round((s.made / s.attempted) * 100) : 0
+            const pct = calcPct(s.made, s.attempted)
             // 3-stopniowa skala: ≥60 emerald, 30-59 amber, <30 warm orange (SF crystal vibe)
             const tier = pct >= 60 ? 'good' : pct >= 30 ? 'mid' : 'low'
             const tierColor = tier === 'good' ? '#34D399' : tier === 'mid' ? '#FCD34D' : '#FF8830'
