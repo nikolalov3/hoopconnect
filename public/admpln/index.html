@@ -371,6 +371,16 @@ html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
 .section-hd{display:flex;align-items:center;gap:10px;font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
 .section-hd::after{content:'';flex:1;height:1px;background:var(--border)}
 
+/* FILTER BAR */
+.filter-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-bottom:16px;margin-bottom:4px}
+.fchip{padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--surface2);color:var(--t2);transition:all .12s;font-family:var(--font-b);white-space:nowrap;display:inline-flex;align-items:center;gap:4px;line-height:1}
+.fchip:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.fchip.active{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+.fbar-sep{width:1px;height:18px;background:var(--border2);flex-shrink:0;margin:0 2px;align-self:center}
+.fsort{padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--surface2);color:var(--t3);transition:all .12s;font-family:var(--font-b);white-space:nowrap}
+.fsort:hover{border-color:var(--border3);color:var(--t1)}
+.fsort.active{border-color:var(--amber);background:var(--amber-bg);color:var(--amber)}
+
 /* DESKTOP MODAL CENTER */
 @media(min-width:600px){
   .overlay{align-items:center;padding:20px}
@@ -441,16 +451,6 @@ html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
     <div class="nav-item active" id="nav-board" onclick="showPage('board')"><span class="nav-icon">⊞</span>Tablica Kanban</div>
     <div class="nav-item" id="nav-list" onclick="showPage('list')"><span class="nav-icon">☰</span>Lista zadań</div>
     <div class="nav-item" id="nav-roadmap" onclick="showPage('roadmap')"><span class="nav-icon">◈</span>Roadmap</div>
-    <div class="nav-sec">Filtry</div>
-    <div class="nav-item" onclick="setFilter(null)"><span class="nav-icon" style="color:var(--t4)">○</span>Wszystkie</div>
-    <div class="nav-item" onclick="setFilter('bug')"><span class="nav-icon" style="color:var(--red)">●</span>Błąd</div>
-    <div class="nav-item" onclick="setFilter('feature')"><span class="nav-icon" style="color:var(--blue)">●</span>Funkcja</div>
-    <div class="nav-item" onclick="setFilter('growth')"><span class="nav-icon" style="color:var(--teal)">●</span>Growth</div>
-    <div class="nav-item" onclick="setFilter('legal')"><span class="nav-icon" style="color:var(--purple)">●</span>Prawne</div>
-    <div class="nav-item" onclick="setFilter('idea')"><span class="nav-icon" style="color:var(--accent)">●</span>Pomysł</div>
-    <div class="nav-item" onclick="setFilter('ai')"><span class="nav-icon" style="color:var(--purple)">●</span>AI</div>
-    <div class="nav-item" onclick="setFilter('perf')"><span class="nav-icon" style="color:var(--amber)">●</span>Wydajność</div>
-    <div class="nav-item" onclick="setFilter('plan')"><span class="nav-icon" style="color:var(--green)">●</span>Planowanie</div>
     <div class="nav-sec">Zasoby</div>
     <div class="folder-grid">
       <div class="folder-item" onclick="window.open('https://gu.hoopconnect.pl','_blank')">
@@ -504,9 +504,11 @@ html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
   <div class="content">
     <div class="page active" id="page-board">
       <div class="stats-grid" id="statsGrid"></div>
+      <div class="filter-bar" id="filterBar"></div>
       <div class="board-grid" id="boardGrid"></div>
     </div>
     <div class="page" id="page-list">
+      <div class="filter-bar" id="filterBarList"></div>
       <div class="list-wrap" id="listWrap"></div>
     </div>
     <div class="page" id="page-roadmap">
@@ -823,7 +825,7 @@ const SEED = [
   {title:'Współprace z klubami i sponsorami',task_desc:'Sponsorowane osiągnięcia — model Strava x Brooks.',status:'idea',priority:'medium',tag:'growth',date:''},
 ];
 
-let tasks = [], editId = null, delId = null, filter = null;
+let tasks = [], editId = null, delId = null, filter = null, sort = null;
 let dragId = null, isDragging = false;
 let taskImgPath = '';
 
@@ -895,13 +897,45 @@ function setColorPicker(val) {
 
 function getF() {
   const q = (document.getElementById('searchInput') || {}).value?.toLowerCase() || '';
-  return tasks.filter(t =>
+  let arr = tasks.filter(t =>
+    t.status !== 'done' &&
     (!filter || t.tag === filter) &&
     (!q || t.title.toLowerCase().includes(q) || (t.task_desc || '').toLowerCase().includes(q))
   );
+  if (sort === 'deadline_asc' || sort === 'deadline_desc') {
+    arr = [...arr].sort((a, b) => {
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      const d = new Date(a.date) - new Date(b.date);
+      return sort === 'deadline_asc' ? d : -d;
+    });
+  }
+  return arr;
 }
 
-function renderAll() { rStats(); rBoard(); rList(); rRoadmap(); }
+const TAG_COLORS = {bug:'var(--red)',feature:'var(--blue)',growth:'var(--teal)',legal:'var(--purple)',idea:'var(--accent)',ai:'var(--purple)',perf:'var(--amber)',plan:'var(--green)'};
+
+function rFilterBar() {
+  const chips = `
+    <button class="fchip${!filter?' active':''}" onclick="setFilter(null)">Wszystkie</button>
+    ${Object.entries(TL).map(([k,v]) =>
+      `<button class="fchip${filter===k?' active':''}" onclick="setFilter('${k}')"><span style="color:${TAG_COLORS[k]};font-size:7px;line-height:1">●</span>${v}</button>`
+    ).join('')}
+    <div class="fbar-sep"></div>
+    <button class="fsort${sort==='deadline_asc'?' active':''}" onclick="setSort('deadline_asc')">⏰ Deadline ↑</button>
+    <button class="fsort${sort==='deadline_desc'?' active':''}" onclick="setSort('deadline_desc')">Deadline ↓</button>
+    ${sort ? `<button class="fsort" onclick="setSort(null)" style="padding:5px 8px;color:var(--t4)">✕</button>` : ''}
+  `;
+  ['filterBar','filterBarList'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = chips;
+  });
+}
+
+function setSort(s) { sort = s; renderAll(); }
+
+function renderAll() { rStats(); rFilterBar(); rBoard(); rList(); rRoadmap(); }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fd(d)  { if(!d) return ''; const [y,m,day] = d.split('-'); return `${day}.${m}.${y}`; }
 
@@ -945,16 +979,31 @@ function rBoard() {
 }
 
 function rList() {
-  const f = getF();
+  const f = [...getF()].sort((a, b) => {
+    if (!a.date && !b.date) return 0;
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return new Date(a.date) - new Date(b.date);
+  });
+  const today = new Date(); today.setHours(0,0,0,0);
   document.getElementById('listWrap').innerHTML = f.length
     ? f.map(t => {
         const c = COLS.find(c => c.id === t.status);
+        let dateLbl = '—', dateStyle = '';
+        if (t.date) {
+          const d = new Date(t.date); d.setHours(0,0,0,0);
+          const diff = Math.round((d - today) / 86400000);
+          dateLbl = fd(t.date);
+          if (diff < 0)       dateStyle = 'color:var(--red);font-weight:700';
+          else if (diff <= 3) dateStyle = 'color:var(--amber);font-weight:700';
+          else if (diff <= 7) dateStyle = 'color:var(--green)';
+        }
         return `<div class="list-item" onclick="openDetail('${t.id}')">
           <div class="prio-dot prio-${t.priority}"></div>
           <div class="list-title">${esc(t.title)}</div>
           <span class="tag ${TAGS[t.tag]||'tag-plan'}">${TL[t.tag]||t.tag}</span>
           <div class="list-col">${c ? c.label : ''}</div>
-          <div class="list-date">${t.date ? fd(t.date) : '—'}</div>
+          <div class="list-date" style="${dateStyle}">${dateLbl}</div>
         </div>`;
       }).join('')
     : '<div style="color:var(--t3);padding:32px;text-align:center;font-size:14px">Brak zadań</div>';
