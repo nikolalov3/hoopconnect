@@ -718,7 +718,11 @@ export default function ShootingPage() {
       )}
 
       {/* Header — chłodny label, sentence-case tytuł */}
-      <div style={{ padding: '16px 20px 12px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{
+        // iPhone notch/island safe area + minimum 14px top padding
+        padding: 'max(14px, calc(env(safe-area-inset-top, 0px) + 8px)) 20px 12px',
+        flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12,
+      }}>
         <button onClick={() => navigate(-1)} aria-label="Wstecz" style={{
           background: 'transparent', border: 'none',
           width: 36, height: 36, cursor: 'pointer',
