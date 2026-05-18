@@ -79,11 +79,12 @@ export default function BottomNav() {
     return () => { cancelled = true; clearInterval(interval) }
   }, [profile?.id])
 
-  // /club tab visit → mark matches as seen (writes only, cheap)
+  // /club tab visit → mark wszystko jako "seen" (matches + members)
   useEffect(() => {
     if (!profile || pathname !== '/club') return
     setHasNewMatch(false)
     localStorage.removeItem(`hcNewTeamMatch_${profile.id}`)
+    localStorage.setItem(`hcClubMembersSeen_${profile.id}`, new Date().toISOString())
     supabase.from('profiles')
       .update({ last_matches_seen_at: new Date().toISOString() })
       .eq('id', profile.id)
@@ -109,22 +110,33 @@ export default function BottomNav() {
 
       const [{ data: prof }, { data: members }] = await Promise.all([
         supabase.from('profiles').select('last_matches_seen_at').eq('id', profile.id).single(),
-        supabase.from('club_members').select('user_id')
+        supabase.from('club_members').select('user_id, joined_at')
           .eq('club_id', membership.club_id).neq('user_id', profile.id),
       ])
       if (cancelled) return
 
       const lastSeen = prof?.last_matches_seen_at || '2020-01-01T00:00:00Z'
       const memberIds = (members || []).map(m => m.user_id)
-      if (!memberIds.length) return
 
-      const { count } = await supabase
-        .from('match_players').select('*', { count: 'exact', head: true })
-        .in('user_id', memberIds)
-        .gt('joined_at', lastSeen)
-      if (cancelled) return
+      // 1) Czy ktoś NOWY dołączył do klubu od ostatniej wizyty?
+      const lastMembersSeen = localStorage.getItem(`hcClubMembersSeen_${profile.id}`)
+        || '2020-01-01T00:00:00Z'
+      const hasNewMembers = (members || []).some(m =>
+        m.joined_at && m.joined_at > lastMembersSeen
+      )
 
-      const hasNew = (count ?? 0) > 0
+      // 2) Czy ktoś z mojej drużyny dołączył do nowego meczu?
+      let hasNewClubMatch = false
+      if (memberIds.length) {
+        const { count } = await supabase
+          .from('match_players').select('*', { count: 'exact', head: true })
+          .in('user_id', memberIds)
+          .gt('joined_at', lastSeen)
+        if (cancelled) return
+        hasNewClubMatch = (count ?? 0) > 0
+      }
+
+      const hasNew = hasNewMembers || hasNewClubMatch
       setHasNewMatch(hasNew)
       if (hasNew) localStorage.setItem(`hcNewTeamMatch_${profile.id}`, '1')
     }
