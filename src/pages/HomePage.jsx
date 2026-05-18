@@ -593,9 +593,14 @@ export default function HomePage() {
     // Trainings: jeśli mamy w persistent cache, użyj od razu (skip network).
     let allTrainings = pcTrainings
     if (!allTrainings) {
-      const res = await supabase.from('trainings').select('*').eq('is_active', true)
+      // ORDER BY id — DETERMINISTYCZNA kolejność, kluczowa dla seeded picker'a.
+      // Bez tego dwa urządzenia tego samego usera mogły dostać różne treningi.
+      const res = await supabase.from('trainings').select('*').eq('is_active', true).order('id')
       allTrainings = res.data || []
       if (allTrainings.length) pSet('trainings:active', allTrainings, 24 * 60 * 60 * 1000)
+    } else {
+      // Stary cache mógł nie mieć stabilnej kolejności — wymuszamy sort tutaj
+      allTrainings = [...allTrainings].sort((a, b) => a.id.localeCompare(b.id))
     }
     if (allTrainings.length) {
       allActiveTrainingsRef.current = allTrainings
