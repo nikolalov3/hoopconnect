@@ -29,6 +29,7 @@ function buildChannel() {
   if (channel) supabase.removeChannel(channel)
   channel = null
   if (!userId) return
+  console.log('[RT] build', { userId, clubId })
   channel = supabase.channel(`user:${userId}`)
   for (const table of USER_TABLES) {
     channel.on('postgres_changes',
@@ -44,11 +45,14 @@ function buildChannel() {
       )
     }
   }
-  channel.subscribe()
+  channel.subscribe((status) => {
+    console.log('[RT] status:', status)
+  })
 }
 
 function dispatch(table, payload) {
   const fns = listeners.get(table)
+  console.log(`[RT] ${table} ${payload.eventType}`, 'listeners:', fns?.size || 0, payload.new || payload.old)
   if (fns) fns.forEach((fn) => {
     try { fn(payload) } catch (e) { console.warn('[realtime listener]', e) }
   })
