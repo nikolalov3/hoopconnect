@@ -264,26 +264,26 @@ function drawFloatingGlass(ctx, x, y, w, h, opts = {}) {
   const accent = opts.accent ?? '#FFFFFF'
 
   ctx.save()
-  // 1) Ambient drop shadow (soft, low)
-  ctx.shadowColor = 'rgba(0,0,0,0.50)'
-  ctx.shadowBlur = 42
-  ctx.shadowOffsetY = 16
+  // 1) Soft ambient drop — minimal
+  ctx.shadowColor = 'rgba(0,0,0,0.40)'
+  ctx.shadowBlur = 28
+  ctx.shadowOffsetY = 10
 
-  // 2) Layer A — frosted bg, bardziej napowietrzone
+  // 2) Layer A — ciemniejsze frosted glass, mniej kolorowe
   const bgA = ctx.createLinearGradient(x, y, x, y + h)
-  bgA.addColorStop(0,    'rgba(150,180,220,0.18)')
-  bgA.addColorStop(0.5,  'rgba(90,120,170,0.12)')
-  bgA.addColorStop(1,    'rgba(45,70,115,0.09)')
+  bgA.addColorStop(0,    'rgba(60,80,110,0.16)')
+  bgA.addColorStop(0.5,  'rgba(30,42,60,0.12)')
+  bgA.addColorStop(1,    'rgba(15,22,35,0.10)')
   ctx.fillStyle = bgA
   roundRect(ctx, x, y, w, h, r); ctx.fill()
   ctx.shadowBlur = 0; ctx.shadowOffsetY = 0
 
-  // 2b) Layer A2 — radial highlight z top-left (kropla światła, jak na szkle)
+  // 2b) Layer A2 — subtelniejszy radial highlight z top-left
   ctx.save()
   ctx.globalCompositeOperation = 'lighter'
-  const tlg = ctx.createRadialGradient(x + r * 1.8, y + r * 0.8, 0, x + r * 1.8, y + r * 0.8, w * 0.7)
-  tlg.addColorStop(0,   'rgba(255,255,255,0.10)')
-  tlg.addColorStop(0.5, 'rgba(255,255,255,0.02)')
+  const tlg = ctx.createRadialGradient(x + r * 1.8, y + r * 0.8, 0, x + r * 1.8, y + r * 0.8, w * 0.55)
+  tlg.addColorStop(0,   'rgba(255,255,255,0.05)')
+  tlg.addColorStop(0.5, 'rgba(255,255,255,0.01)')
   tlg.addColorStop(1,   'transparent')
   ctx.fillStyle = tlg
   roundRect(ctx, x, y, w, h, r); ctx.fill()
@@ -670,8 +670,8 @@ export async function shareSessionCard({ made, attempted, target, shotType, play
   // ── 5. Hero %: dominantny, monumentalny ──
   drawHeroPercent(ctx, W / 2, 440, pct, heroColor)
 
-  // ── 6. „SKUTECZNOŚĆ" — BLISKO % (tight rhythm) ──
-  drawLetterSpaced(ctx, 'SKUTECZNOŚĆ', W / 2, 580, {
+  // ── 6. „SKUTECZNOŚĆ" — +15px padding od % ──
+  drawLetterSpaced(ctx, 'SKUTECZNOŚĆ', W / 2, 595, {
     font: '500 22px Barlow, sans-serif',
     color: 'rgba(220,228,242,0.70)',
     letterSpacing: 14,
@@ -726,59 +726,54 @@ export async function shareSessionCard({ made, attempted, target, shotType, play
 
   // ── 7. Floating stat row: TRAFIONE / PUDŁA — większe, premium ──
   const SIDE = FRAME_PAD + 28
-  const statY = 740
-  const statH = 160
+  const statY = 800
+  const statH = 170
   const statGap = 22
   const statW = (W - SIDE * 2 - statGap) / 2
 
   drawFloatingGlass(ctx, SIDE, statY, statW, statH, { accent: greenStat, radius: 22 })
   drawFloatingGlass(ctx, SIDE + statW + statGap, statY, statW, statH, { accent: redStat, radius: 22 })
 
-  function drawStatContent(x, y, color, icon, value, label) {
-    const icx = x + 76, icy = y + 70
-    // Subtle bloom
+  function drawStatContent(x, y, color, icon, value) {
+    // Ikona wycentrowana wertykalnie do całego panelu
+    const icx = x + 70, icy = y + statH / 2
+    // Glass-style bloom za ikoną — mniej intensywny
     ctx.save()
-    ctx.fillStyle = `${color}16`
-    ctx.shadowColor = color; ctx.shadowBlur = 10
-    ctx.beginPath(); ctx.arc(icx, icy, 44, 0, Math.PI * 2); ctx.fill()
+    ctx.fillStyle = `${color}10`
+    ctx.shadowColor = color; ctx.shadowBlur = 6
+    ctx.beginPath(); ctx.arc(icx, icy, 40, 0, Math.PI * 2); ctx.fill()
     ctx.restore()
     ctx.save()
-    ctx.strokeStyle = `${color}88`
-    ctx.lineWidth = 2
-    ctx.beginPath(); ctx.arc(icx, icy, 44, 0, Math.PI * 2); ctx.stroke()
+    ctx.strokeStyle = `${color}70`
+    ctx.lineWidth = 1.8
+    ctx.beginPath(); ctx.arc(icx, icy, 40, 0, Math.PI * 2); ctx.stroke()
     ctx.restore()
-    // Glyph
+    // Glyph — czyste, bez glow
     ctx.save()
     ctx.strokeStyle = color
-    ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'
+    ctx.lineWidth = 5.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'
     ctx.beginPath()
     if (icon === 'check') {
-      ctx.moveTo(icx - 18, icy + 3)
-      ctx.lineTo(icx - 4,  icy + 17)
-      ctx.lineTo(icx + 20, icy - 14)
+      ctx.moveTo(icx - 17, icy + 3)
+      ctx.lineTo(icx - 4,  icy + 16)
+      ctx.lineTo(icx + 18, icy - 13)
     } else {
-      ctx.moveTo(icx - 14, icy - 14); ctx.lineTo(icx + 14, icy + 14)
-      ctx.moveTo(icx + 14, icy - 14); ctx.lineTo(icx - 14, icy + 14)
+      ctx.moveTo(icx - 13, icy - 13); ctx.lineTo(icx + 13, icy + 13)
+      ctx.moveTo(icx + 13, icy - 13); ctx.lineTo(icx - 13, icy + 13)
     }
     ctx.stroke()
     ctx.restore()
-    // Value
+    // Value — czysta typografia, wycentrowana wertykalnie do panelu (bez labela)
     ctx.save()
     ctx.fillStyle = color
-    ctx.font = '600 106px "Barlow Condensed", sans-serif'
+    ctx.font = '600 108px "Barlow Condensed", sans-serif'
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
-    ctx.fillText(String(value), icx + 76, icy)
+    ctx.fillText(String(value), icx + 70, y + statH / 2)
     ctx.restore()
-    // Label
-    drawLetterSpacedLeft(ctx, label, x + 30, y + statH - 26, {
-      font: '700 18px Barlow, sans-serif',
-      color: `${color}BB`,
-      letterSpacing: 2.5,
-    })
   }
 
-  drawStatContent(SIDE, statY, greenStat, 'check', made, 'TRAFIONE')
-  drawStatContent(SIDE + statW + statGap, statY, redStat, 'x', missed, 'PUDŁA')
+  drawStatContent(SIDE, statY, greenStat, 'check', made)
+  drawStatContent(SIDE + statW + statGap, statY, redStat, 'x', missed)
 
   // ── Silver divider — oddziela najnizszą sekcję (footer) ──
   const FOOTER_TOP_Y = H - FRAME_PAD - 100
@@ -810,45 +805,7 @@ export async function shareSessionCard({ made, attempted, target, shotType, play
     ctx.drawImage(graffiti, gx, gy, gw, gh)
   }
 
-  // ── 8. Footer — wyrównane kolumny, BEZ glow, więcej oddechu od stats ──
-  const footerY = H - FRAME_PAD - 50
-  const colInnerPad = FRAME_PAD + 32
-  const LEFT_X = colInnerPad
-  const RIGHT_X = W / 2 + 12
-
-  // LEFT — HC hex w mini-boxie + 2-line text (jak we wzorze)
-  const hcBoxS = 50
-  const boxTopY = footerY - 4
-  ctx.save()
-  ctx.fillStyle = 'rgba(28,36,52,0.70)'
-  roundRect(ctx, LEFT_X, boxTopY, hcBoxS, hcBoxS, 11); ctx.fill()
-  ctx.strokeStyle = 'rgba(200,210,225,0.30)'
-  ctx.lineWidth = 1
-  roundRect(ctx, LEFT_X + 0.5, boxTopY + 0.5, hcBoxS - 1, hcBoxS - 1, 11); ctx.stroke()
-  drawHexLogo(ctx, LEFT_X + hcBoxS / 2, boxTopY + hcBoxS / 2, 17, '#FFFFFF')
-  ctx.restore()
-  ctx.save()
-  ctx.fillStyle = '#FFFFFF'
-  ctx.font = '800 26px "Barlow Condensed", sans-serif'
-  ctx.textAlign = 'left'; ctx.textBaseline = 'top'
-  ctx.fillText('HOOP CONNECT', LEFT_X + hcBoxS + 16, footerY)
-  ctx.fillStyle = 'rgba(220,228,242,0.62)'
-  ctx.font = '500 13px Barlow, sans-serif'
-  ctx.fillText('TWOJA DROGA. TWÓJ PROGRES.', LEFT_X + hcBoxS + 16, footerY + 30)
-  ctx.restore()
-
-  // RIGHT — trending icon + 2-line text
-  drawTrendingIcon(ctx, RIGHT_X + 24, footerY + 22, 26, greenStat)
-  ctx.save()
-  ctx.fillStyle = greenStat
-  ctx.font = '800 22px "Barlow Condensed", sans-serif'
-  ctx.textAlign = 'left'; ctx.textBaseline = 'top'
-  ctx.fillText('WZROST MA ZNACZENIE.', RIGHT_X + 60, footerY)
-  ctx.fillStyle = 'rgba(220,228,242,0.62)'
-  ctx.font = '500 13px Barlow, sans-serif'
-  ctx.fillText('KAŻDY TRENING PRZYBLIŻA.', RIGHT_X + 60, footerY + 30)
-  ctx.restore()
-  ctx.textBaseline = 'alphabetic'
+  // ── 8. Footer USUNIĘTY — czysty dolny obszar ramki ──
 
   return canvasToBlob(canvas)
 }
@@ -1178,19 +1135,29 @@ export async function shareMatchCard({ match, clubName, playerName }) {
 
 // ── WEB SHARE / DOWNLOAD ─────────────────────────────────────────────────────
 
-export async function doShare(blob, filename = 'hoopconnect.png') {
-  const file = new File([blob], filename, { type: 'image/png' })
+// Otwiera systemowy share sheet (iOS / Android / desktop). User wybiera np. IG
+// → Stories, Messages, AirDrop, Photos albo Save. Pełna integracja Web Share L2.
+// meta = { title, text } — opcjonalny kontekst dla aplikacji odbierającej.
+export async function doShare(blob, filename = 'hoopconnect.png', meta = {}) {
+  const file = new File([blob], filename, { type: 'image/png', lastModified: Date.now() })
+  const shareData = {
+    files: [file],
+    title: meta.title || 'HoopConnect',
+    text:  meta.text  || 'Sprawdź mój wynik na HoopConnect 🏀',
+  }
   try {
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'HoopConnect' })
-      return
+      await navigator.share(shareData)
+      return { ok: true, method: 'system' }
     }
   } catch (e) {
-    if (e.name === 'AbortError') return  // user cancelled
+    if (e?.name === 'AbortError') return { ok: false, method: 'cancelled' }
+    console.warn('[share] navigator.share failed', e)
   }
-  // Fallback: download
+  // Fallback: pobierz plik PNG (Firefox desktop, niektóre desktop browsers)
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url; a.download = filename; a.click()
   setTimeout(() => URL.revokeObjectURL(url), 1500)
+  return { ok: true, method: 'download' }
 }

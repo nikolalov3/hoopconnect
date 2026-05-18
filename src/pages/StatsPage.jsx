@@ -261,7 +261,10 @@ export default function StatsPage() {
     setSharing(true)
     try {
       const blob = await shareStatsCard({ sessions: filtered, profile, filter })
-      await doShare(blob, 'hoopconnect-statystyki.png')
+      await doShare(blob, 'hoopconnect-statystyki.png', {
+        title: 'HoopConnect — moje statystyki',
+        text:  'Mój postęp na HoopConnect 🏀 hoopconnect.pl',
+      })
     } finally {
       setSharing(false)
     }

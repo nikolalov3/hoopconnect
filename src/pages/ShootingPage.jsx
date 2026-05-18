@@ -37,7 +37,10 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
     setSharing(true)
     try {
       const blob = await shareSessionCard({ made, attempted, target, shotType, playerName })
-      await doShare(blob, 'hoopconnect-sesja.png')
+      await doShare(blob, 'hoopconnect-sesja.png', {
+        title: `HoopConnect — ${pct}% skuteczność`,
+        text:  `Skuteczność ${pct}% (${made}/${attempted}) 🏀 hoopconnect.pl`,
+      })
     } finally {
       setSharing(false)
     }
