@@ -220,9 +220,15 @@ export default function StatsPage() {
     }
     const unsub = onTableChange('shooting_sessions', handler)
 
-    // Fokus / visibility fallback (Safari kill background socket)
+    // Fokus / visibility fallback — throttled 60s. Realtime łapie real-time
+    // zmiany; focus to safety net dla padniętych WS, nie ma sensu odpalać
+    // przy każdym alt-tabie.
+    let lastFocusRefresh = 0
     function onFocus() {
       if (document.visibilityState !== 'visible') return
+      const now = Date.now()
+      if (now - lastFocusRefresh < 60_000) return
+      lastFocusRefresh = now
       bustCache(cacheKey)
       fetchSessions()
     }

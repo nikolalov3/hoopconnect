@@ -355,10 +355,17 @@ export default function ShootingPage() {
     if (!prevCompleted.includes(trainingId)) {
       const newCompleted = [...prevCompleted, trainingId]
 
-      await supabase.from('activity_log').upsert(
+      const { data: savedLog } = await supabase.from('activity_log').upsert(
         { user_id: profile.id, date: TODAY, trainings_completed: newCompleted, all_done: true },
         { onConflict: 'user_id,date' }
-      )
+      ).select().single()
+
+      // Bust + refill cache na HomePage żeby po powrocie pokazał ukończony
+      // trening bez czekania na refetch. 15s TTL by pokazywał stale data inaczej.
+      try {
+        bustCache(`log:${profile.id}:${TODAY}`)
+        if (savedLog) setCache(`log:${profile.id}:${TODAY}`, savedLog, 15 * 1000)
+      } catch {}
     }
 
     // 3. Pobierz świeży profil z DB (bez stale closure!)

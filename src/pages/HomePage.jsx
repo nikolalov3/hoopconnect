@@ -539,14 +539,20 @@ export default function HomePage() {
       bustCache(`report:${profile.id}`)
       loadData()
     }
+    // Throttle focus refetch — refetchuj max raz na 60s. Bez tego każde
+    // przełączenie tabu/PWA triggerowało flash loader. Realtime i tak łapie
+    // zmiany na bieżąco; focus refetch to safety net dla padniętych WS.
+    let lastFocusRefresh = 0
     function onFocus() {
       if (document.visibilityState !== 'visible') return
+      const now = Date.now()
+      if (now - lastFocusRefresh < 60_000) return
+      lastFocusRefresh = now
       refresh()
     }
     document.addEventListener('visibilitychange', onFocus)
     window.addEventListener('focus', onFocus)
-    // iOS Safari bfcache: gdy PWA wraca z tła, pageshow.persisted=true.
-    // Bez tego stan był „zamrożony" sprzed wejścia w tło.
+    // iOS Safari bfcache — pageshow z persisted=true znaczy realny powrót z tła
     function onPageShow(e) { if (e.persisted) refresh() }
     window.addEventListener('pageshow', onPageShow)
 
