@@ -142,8 +142,32 @@ export default function BottomNav() {
     }
 
     checkDB()
-    const interval = setInterval(checkDB, 120000) // 2 min
-    return () => { cancelled = true; clearInterval(interval) }
+    const interval = setInterval(checkDB, 120000) // 2 min fallback
+
+    // INSTANT: nasłuch na Realtime — gdy nowy członek dołączy do mojego klubu
+    // lub powstanie nowy mecz z udziałem mojej drużyny, kropka pojawia się
+    // od razu zamiast po 2-minutowym pollu. Korzysta z istniejącego
+    // user-channel'a w realtimeManager (zero nowych channeli).
+    let unsubMembers = null
+    let unsubMatches = null
+    import('../../lib/realtimeManager').then(({ onTableChange }) => {
+      if (cancelled) return
+      unsubMembers = onTableChange('club_members', (payload) => {
+        if (payload.eventType === 'INSERT' && payload.new?.user_id !== profile.id) {
+          checkDB()  // dociąg fresh state + zapisanie do localStorage
+        }
+      })
+      unsubMatches = onTableChange('club_matches', () => {
+        checkDB()
+      })
+    })
+
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+      if (unsubMembers) unsubMembers()
+      if (unsubMatches) unsubMatches()
+    }
   }, [profile?.id])
 
   return (

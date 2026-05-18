@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { bustAll } from '../lib/queryCache'
 import { setSentryUser } from '../lib/sentry'
-import { startRealtime, stopRealtime } from '../lib/realtimeManager'
+import { startRealtime, stopRealtime, setClubScope } from '../lib/realtimeManager'
 
 const AuthContext = createContext({})
 
@@ -82,6 +82,14 @@ export function AuthProvider({ children }) {
       } else {
         setProfile(data)
       }
+
+      // Pobierz club_id i ustaw realtime scope (1 dodatkowy .on() na tym samym
+      // channelu, bez nowych channeli). Dzięki temu eventy club_members /
+      // club_matches lecą instant zamiast czekać na 2-min poll.
+      const { data: mb } = await supabase
+        .from('club_members').select('club_id')
+        .eq('user_id', userId).maybeSingle()
+      setClubScope(mb?.club_id || null)
     } catch {
       setProfile(null)
     } finally {

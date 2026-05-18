@@ -15,31 +15,56 @@
 
 import { supabase } from './supabase'
 
-const TABLES = ['activity_log', 'points_log', 'shooting_sessions', 'strength_sessions']
+// Tabele filtrowane po user_id (sesje gracza)
+const USER_TABLES = ['activity_log', 'points_log', 'shooting_sessions', 'strength_sessions']
+// Tabele filtrowane po club_id (eventy klubowe — wymagają setClubScope)
+const CLUB_TABLES = ['club_members', 'club_matches']
 
 let channel  = null
 let userId   = null
+let clubId   = null
 const listeners = new Map()   // table → Set<callback>
+
+function buildChannel() {
+  if (channel) supabase.removeChannel(channel)
+  channel = null
+  if (!userId) return
+  channel = supabase.channel(`user:${userId}`)
+  for (const table of USER_TABLES) {
+    channel.on('postgres_changes',
+      { event: '*', schema: 'public', table, filter: `user_id=eq.${userId}` },
+      (payload) => dispatch(table, payload)
+    )
+  }
+  if (clubId) {
+    for (const table of CLUB_TABLES) {
+      channel.on('postgres_changes',
+        { event: '*', schema: 'public', table, filter: `club_id=eq.${clubId}` },
+        (payload) => dispatch(table, payload)
+      )
+    }
+  }
+  channel.subscribe()
+}
+
+function dispatch(table, payload) {
+  const fns = listeners.get(table)
+  if (fns) fns.forEach((fn) => {
+    try { fn(payload) } catch (e) { console.warn('[realtime listener]', e) }
+  })
+}
 
 export function startRealtime(uid) {
   if (!uid) return
-  if (channel && userId === uid) return  // już aktywny dla tego usera
-  if (channel) stopRealtime()
+  if (channel && userId === uid) return
   userId = uid
-  channel = supabase.channel(`user:${uid}`)
-  for (const table of TABLES) {
-    channel.on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table, filter: `user_id=eq.${uid}` },
-      (payload) => {
-        const fns = listeners.get(table)
-        if (fns) fns.forEach((fn) => {
-          try { fn(payload) } catch (e) { console.warn('[realtime listener]', e) }
-        })
-      }
-    )
-  }
-  channel.subscribe()
+  buildChannel()
+}
+
+export function setClubScope(cid) {
+  if (clubId === cid) return
+  clubId = cid || null
+  if (userId) buildChannel()
 }
 
 export function stopRealtime() {
@@ -48,11 +73,12 @@ export function stopRealtime() {
     channel = null
   }
   userId = null
+  clubId = null
   listeners.clear()
 }
 
 export function onTableChange(table, callback) {
-  if (!TABLES.includes(table)) {
+  if (!USER_TABLES.includes(table) && !CLUB_TABLES.includes(table)) {
     console.warn(`[realtimeManager] nieznana tabela: ${table}`)
     return () => {}
   }
