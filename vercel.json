@@ -2,6 +2,8 @@
   "rewrites": [
     { "source": "/admpln",  "destination": "/admpln/index.html" },
     { "source": "/admpln/", "destination": "/admpln/index.html" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/qrhc",    "destination": "/qrhc/index.html" },
+    { "source": "/qrhc/",   "destination": "/qrhc/index.html" },
+    { "source": "/((?!api/|admpln/|qrhc/).*)", "destination": "/index.html" }
   ]
 }
