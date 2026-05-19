@@ -146,9 +146,36 @@ function HalfCourtPicker({ onPickZone }) {
   )
 }
 
+// ── Stepper — +/− przycisk jak w trackerze rzutów ───────────────────────────
+function Stepper({ label, value, onChange, min = 1, max = 99 }) {
+  const btnStyle = {
+    width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+    background: 'rgba(91,184,245,0.12)', border: '1px solid rgba(91,184,245,0.22)',
+    color: '#7ECBFF', fontSize: 22, lineHeight: 1, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontWeight: 300, userSelect: 'none',
+  }
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+      <p style={{
+        fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
+        color: 'rgba(145,190,230,0.55)', fontWeight: 700, fontFamily: 'var(--font-body)',
+      }}>{label}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button type="button" onClick={() => onChange(Math.max(min, value - 1))} style={btnStyle}>−</button>
+        <span style={{
+          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 34,
+          color: 'var(--text-primary)', lineHeight: 1, minWidth: 44, textAlign: 'center',
+        }}>{value}</span>
+        <button type="button" onClick={() => onChange(Math.min(max, value + 1))} style={btnStyle}>+</button>
+      </div>
+    </div>
+  )
+}
+
 // ── Strength session builder ────────────────────────────────────────────────
 function StrengthBuilder({ onSave, saving }) {
-  const [exercises, setExercises] = useState([{ name: '', custom: '', sets: '', reps: '', weight_kg: '' }])
+  const [exercises, setExercises] = useState([{ name: '', custom: '', sets: 3, reps: 10, weight_kg: '' }])
   const [notes, setNotes] = useState('')
 
   function update(idx, field, value) {
@@ -156,7 +183,7 @@ function StrengthBuilder({ onSave, saving }) {
   }
   function add() {
     if (exercises.length >= 12) return
-    setExercises(prev => [...prev, { name: '', custom: '', sets: '', reps: '', weight_kg: '' }])
+    setExercises(prev => [...prev, { name: '', custom: '', sets: 3, reps: 10, weight_kg: '' }])
   }
   function remove(idx) {
     setExercises(prev => prev.filter((_, i) => i !== idx))
@@ -164,120 +191,127 @@ function StrengthBuilder({ onSave, saving }) {
 
   const valid = exercises.every(e => {
     const name = e.name === '__custom__' ? e.custom.trim() : e.name
-    return name && parseInt(e.sets) > 0 && parseInt(e.reps) > 0
+    return name && e.sets > 0 && e.reps > 0
   }) && exercises.length > 0
 
   function handleSave() {
     const cleaned = exercises.map(e => ({
       name: e.name === '__custom__' ? e.custom.trim() : e.name,
-      sets: parseInt(e.sets),
-      reps: parseInt(e.reps),
+      sets: e.sets,
+      reps: e.reps,
       weight_kg: e.weight_kg ? parseFloat(e.weight_kg) : null,
     }))
     onSave({ exercises: cleaned, notes: notes.trim() || null })
   }
 
+  const fieldStyle = {
+    width: '100%', boxSizing: 'border-box',
+    padding: '11px 14px', borderRadius: 12,
+    background: 'rgba(8,16,30,0.55)', border: '1px solid rgba(150,200,255,0.12)',
+    color: 'var(--text-primary)', fontSize: 14, fontFamily: 'var(--font-body)',
+    outline: 'none',
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {exercises.map((e, idx) => (
         <div key={idx} style={{
-          padding: 12,
-          background: 'rgba(40,55,85,0.35)',
-          borderRadius: 12,
-          display: 'flex', flexDirection: 'column', gap: 8,
-          boxShadow: 'inset 0 1px 0 rgba(200,225,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.14)',
+          background: 'rgba(22,34,58,0.60)',
+          backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+          borderRadius: 18,
+          border: '1px solid rgba(150,200,255,0.10)',
+          boxShadow: 'inset 0 1px 0 rgba(200,225,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.18), 0 2px 12px rgba(0,0,0,0.18)',
+          overflow: 'hidden',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Card header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '12px 16px 0',
+          }}>
             <span style={{
-              fontSize: 10, fontWeight: 700, letterSpacing: 1.5,
-              color: 'var(--text-dim)', textTransform: 'uppercase',
+              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11,
+              letterSpacing: 2.5, textTransform: 'uppercase', color: '#5BB8F5',
             }}>Ćwiczenie {idx + 1}</span>
             {exercises.length > 1 && (
-              <button onClick={() => remove(idx)} style={{
-                marginLeft: 'auto', background: 'none', border: 'none',
-                color: 'rgba(255,80,80,0.70)', fontSize: 11, cursor: 'pointer',
-                textDecoration: 'underline', textUnderlineOffset: 3, padding: '2px 4px',
+              <button type="button" onClick={() => remove(idx)} style={{
+                background: 'none', border: 'none', color: 'rgba(255,80,80,0.60)',
+                fontSize: 11, cursor: 'pointer', fontFamily: 'var(--font-body)',
+                fontWeight: 500, padding: 0,
               }}>Usuń</button>
             )}
           </div>
-          <select
-            value={e.name}
-            onChange={ev => update(idx, 'name', ev.target.value)}
-            style={{
-              width: '100%', boxSizing: 'border-box',
-              padding: '10px 12px', borderRadius: 10,
-              background: 'rgba(8,16,30,0.6)', border: '1px solid rgba(150,200,255,0.14)',
-              color: 'var(--text-primary)', fontSize: 14,
-              fontFamily: 'var(--font-body)',
-            }}>
-            <option value="">— wybierz ćwiczenie —</option>
-            {PRESET_EXERCISES.map(p => <option key={p} value={p}>{p}</option>)}
-            <option value="__custom__">Inne (wpisz)</option>
-          </select>
-          {e.name === '__custom__' && (
+
+          {/* Exercise select */}
+          <div style={{ padding: '10px 16px 0' }}>
+            <select
+              value={e.name}
+              onChange={ev => update(idx, 'name', ev.target.value)}
+              style={fieldStyle}>
+              <option value="">— wybierz ćwiczenie —</option>
+              {PRESET_EXERCISES.map(p => <option key={p} value={p}>{p}</option>)}
+              <option value="__custom__">Inne (wpisz własne)</option>
+            </select>
+            {e.name === '__custom__' && (
+              <input
+                type="text" placeholder="Nazwa ćwiczenia"
+                value={e.custom}
+                onChange={ev => update(idx, 'custom', ev.target.value)}
+                style={{ ...fieldStyle, marginTop: 8 }}
+              />
+            )}
+          </div>
+
+          {/* Stepper row */}
+          <div style={{
+            display: 'flex', gap: 8,
+            padding: '18px 16px',
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+            marginTop: 14,
+          }}>
+            <Stepper label="Serie" value={e.sets} onChange={v => update(idx, 'sets', v)} />
+            <div style={{ width: 1, background: 'rgba(255,255,255,0.06)', alignSelf: 'stretch' }} />
+            <Stepper label="Powtórzenia" value={e.reps} onChange={v => update(idx, 'reps', v)} />
+          </div>
+
+          {/* Weight — optional, pełna szerokość */}
+          <div style={{ padding: '0 16px 16px' }}>
             <input
-              type="text" placeholder="Nazwa ćwiczenia"
-              value={e.custom}
-              onChange={ev => update(idx, 'custom', ev.target.value)}
-              style={{
-                width: '100%', boxSizing: 'border-box',
-                padding: '10px 12px', borderRadius: 10,
-                background: 'rgba(8,16,30,0.6)', border: '1px solid rgba(150,200,255,0.14)',
-                color: 'var(--text-primary)', fontSize: 14,
-                fontFamily: 'var(--font-body)',
-              }}
-            />
-          )}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <input
-              type="number" inputMode="numeric" min="1" placeholder="Serie"
-              value={e.sets}
-              onChange={ev => update(idx, 'sets', ev.target.value.replace(/[^0-9]/g, ''))}
-              style={inputStyle}
-            />
-            <input
-              type="number" inputMode="numeric" min="1" placeholder="Powtórzenia"
-              value={e.reps}
-              onChange={ev => update(idx, 'reps', ev.target.value.replace(/[^0-9]/g, ''))}
-              style={inputStyle}
+              type="number" inputMode="decimal" min="0"
+              placeholder="Ciężar (kg) — opcjonalny"
+              value={e.weight_kg}
+              onChange={ev => update(idx, 'weight_kg', ev.target.value.replace(/[^0-9.]/g, ''))}
+              style={fieldStyle}
             />
           </div>
-          <input
-            type="number" inputMode="decimal" min="0" placeholder="Ciężar (kg) — opcjonalny"
-            value={e.weight_kg}
-            onChange={ev => update(idx, 'weight_kg', ev.target.value.replace(/[^0-9.]/g, ''))}
-            style={{ ...inputStyle, textAlign: 'left', paddingLeft: 14 }}
-          />
         </div>
       ))}
 
-      <button onClick={add} disabled={exercises.length >= 12} style={{
-        padding: '11px', borderRadius: 12,
-        background: 'rgba(91,184,245,0.10)',
-        border: '1px dashed rgba(91,184,245,0.35)',
-        color: '#7ECBFF', fontSize: 13, fontWeight: 600,
-        letterSpacing: 0.5, cursor: exercises.length >= 12 ? 'not-allowed' : 'pointer',
-        opacity: exercises.length >= 12 ? 0.4 : 1,
-        fontFamily: 'var(--font-body)',
+      <button type="button" onClick={add} disabled={exercises.length >= 12} style={{
+        padding: '13px', borderRadius: 14,
+        background: 'rgba(91,184,245,0.08)',
+        border: '1px dashed rgba(91,184,245,0.30)',
+        color: '#7ECBFF', fontSize: 13, fontWeight: 600, letterSpacing: 0.5,
+        cursor: exercises.length >= 12 ? 'not-allowed' : 'pointer',
+        opacity: exercises.length >= 12 ? 0.35 : 1,
+        fontFamily: 'var(--font-display)', textTransform: 'uppercase',
       }}>
-        + Dodaj ćwiczenie {exercises.length >= 12 ? '(max 12)' : ''}
+        + Dodaj ćwiczenie
       </button>
 
       <textarea
-        placeholder="Notatka (opcjonalna, max 200 znaków)"
+        placeholder="Notatka (opcjonalna)"
         maxLength={200}
         value={notes}
         onChange={ev => setNotes(ev.target.value)}
         style={{
-          padding: '10px 12px', borderRadius: 10, minHeight: 60, resize: 'vertical',
-          background: 'rgba(8,16,30,0.6)', border: '1px solid rgba(150,200,255,0.14)',
-          color: 'var(--text-primary)', fontSize: 13, fontFamily: 'var(--font-body)',
+          ...fieldStyle, minHeight: 64, resize: 'none',
+          lineHeight: 1.55,
         }}
       />
 
-      <button onClick={handleSave} disabled={!valid || saving} className="btn-primary"
-        style={{ padding: 13, opacity: (!valid || saving) ? 0.4 : 1, marginTop: 4 }}>
-        {saving ? 'Zapisuję...' : 'Zapisz trening'}
+      <button type="button" onClick={handleSave} disabled={!valid || saving} className="btn-primary"
+        style={{ padding: '15px', opacity: (!valid || saving) ? 0.35 : 1, marginTop: 4 }}>
+        {saving ? 'Zapisuję...' : 'Zapisz sesję'}
       </button>
     </div>
   )
