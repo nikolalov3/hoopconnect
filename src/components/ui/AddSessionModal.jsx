@@ -204,6 +204,7 @@ function StrengthBuilder({ onSave, saving }) {
             value={e.name}
             onChange={ev => update(idx, 'name', ev.target.value)}
             style={{
+              width: '100%', boxSizing: 'border-box',
               padding: '10px 12px', borderRadius: 10,
               background: 'rgba(8,16,30,0.6)', border: '1px solid rgba(150,200,255,0.14)',
               color: 'var(--text-primary)', fontSize: 14,
@@ -219,6 +220,7 @@ function StrengthBuilder({ onSave, saving }) {
               value={e.custom}
               onChange={ev => update(idx, 'custom', ev.target.value)}
               style={{
+                width: '100%', boxSizing: 'border-box',
                 padding: '10px 12px', borderRadius: 10,
                 background: 'rgba(8,16,30,0.6)', border: '1px solid rgba(150,200,255,0.14)',
                 color: 'var(--text-primary)', fontSize: 14,
@@ -226,7 +228,7 @@ function StrengthBuilder({ onSave, saving }) {
               }}
             />
           )}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <input
               type="number" inputMode="numeric" min="1" placeholder="Serie"
               value={e.sets}
@@ -234,18 +236,18 @@ function StrengthBuilder({ onSave, saving }) {
               style={inputStyle}
             />
             <input
-              type="number" inputMode="numeric" min="1" placeholder="Powtórz."
+              type="number" inputMode="numeric" min="1" placeholder="Powtórzenia"
               value={e.reps}
               onChange={ev => update(idx, 'reps', ev.target.value.replace(/[^0-9]/g, ''))}
               style={inputStyle}
             />
-            <input
-              type="number" inputMode="decimal" min="0" placeholder="Ciężar (kg) — opt."
-              value={e.weight_kg}
-              onChange={ev => update(idx, 'weight_kg', ev.target.value.replace(/[^0-9.]/g, ''))}
-              style={inputStyle}
-            />
           </div>
+          <input
+            type="number" inputMode="decimal" min="0" placeholder="Ciężar (kg) — opcjonalny"
+            value={e.weight_kg}
+            onChange={ev => update(idx, 'weight_kg', ev.target.value.replace(/[^0-9.]/g, ''))}
+            style={{ ...inputStyle, textAlign: 'left', paddingLeft: 14 }}
+          />
         </div>
       ))}
 
@@ -282,6 +284,7 @@ function StrengthBuilder({ onSave, saving }) {
 }
 
 const inputStyle = {
+  width: '100%', boxSizing: 'border-box',
   padding: '10px 12px', borderRadius: 10,
   background: 'rgba(8,16,30,0.6)', border: '1px solid rgba(150,200,255,0.14)',
   color: 'var(--text-primary)', fontSize: 14, fontFamily: 'var(--font-body)',
