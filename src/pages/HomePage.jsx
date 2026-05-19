@@ -539,15 +539,10 @@ export default function HomePage() {
       bustCache(`report:${profile.id}`)
       loadData()
     }
-    // Throttle focus refetch — refetchuj max raz na 60s. Bez tego każde
-    // przełączenie tabu/PWA triggerowało flash loader. Realtime i tak łapie
-    // zmiany na bieżąco; focus refetch to safety net dla padniętych WS.
-    let lastFocusRefresh = 0
+    // Focus refetch BEZ throttle — wczoraj działało live właśnie dzięki temu.
+    // Przy każdym powrocie do tabu pobieramy świeży stan z DB.
     function onFocus() {
       if (document.visibilityState !== 'visible') return
-      const now = Date.now()
-      if (now - lastFocusRefresh < 60_000) return
-      lastFocusRefresh = now
       refresh()
     }
     document.addEventListener('visibilitychange', onFocus)

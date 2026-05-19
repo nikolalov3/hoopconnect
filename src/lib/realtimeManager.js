@@ -1,35 +1,29 @@
 /**
  * Globalny singleton dla Supabase Realtime — JEDEN kanał per user przez cały
- * lifecycle sesji zamiast osobnego kanału per page.
- *
- * Korzyść: 3× headroom na Supabase concurrent-channels limit (Free: 200 → ~600
- * efektywnie, bo każdy user trzymał poprzednio 2-3 kanały, teraz 1).
+ * lifecycle sesji. Po starcie kanału nie przebudowujemy go (eliminuje race
+ * conditions gdzie events gubiły się w trakcie rebuild'a). Auto-reconnect gdy WS padnie.
  *
  * API:
- *   startRealtime(userId)      — wywołaj raz po loginie (idempotent)
- *   stopRealtime()             — wywołaj na logout / app close
- *   onTableChange(table, cb)   — subskrybuj zmiany w danej tabeli; zwraca unsub
- *
- * Listenery są lokalne (Set per table) — odpięcie/przepięcie kosztuje 0 round-tripów.
+ *   startRealtime(userId, clubId?)  — wywołaj RAZ po loginie z pełnym scope
+ *   stopRealtime()                  — logout / app close
+ *   onTableChange(table, cb)        — subskrybuj zmiany; zwraca unsub
  */
 
 import { supabase } from './supabase'
 
-// Tabele filtrowane po user_id (sesje gracza)
 const USER_TABLES = ['activity_log', 'points_log', 'shooting_sessions', 'strength_sessions']
-// Tabele filtrowane po club_id (eventy klubowe — wymagają setClubScope)
 const CLUB_TABLES = ['club_members', 'club_matches']
 
-let channel  = null
-let userId   = null
-let clubId   = null
-const listeners = new Map()   // table → Set<callback>
+let channel    = null
+let userId     = null
+let clubId     = null
+let retryTimer = null
+const listeners = new Map()
 
 function buildChannel() {
   if (channel) supabase.removeChannel(channel)
   channel = null
   if (!userId) return
-  console.log('[RT] build', { userId, clubId })
   channel = supabase.channel(`user:${userId}`)
   for (const table of USER_TABLES) {
     channel.on('postgres_changes',
@@ -45,33 +39,42 @@ function buildChannel() {
       )
     }
   }
-  channel.subscribe((status) => {
-    console.log('[RT] status:', status)
+  channel.subscribe((status, err) => {
+    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+      // Auto-reconnect z exponential backoff (1s start). Ratuje cross-device
+      // sync gdy Safari zabije WS w tle albo Supabase zrestartuje połączenie.
+      if (retryTimer) clearTimeout(retryTimer)
+      retryTimer = setTimeout(() => { if (userId) buildChannel() }, 1500)
+    }
   })
 }
 
 function dispatch(table, payload) {
   const fns = listeners.get(table)
-  console.log(`[RT] ${table} ${payload.eventType}`, 'listeners:', fns?.size || 0, payload.new || payload.old)
   if (fns) fns.forEach((fn) => {
     try { fn(payload) } catch (e) { console.warn('[realtime listener]', e) }
   })
 }
 
-export function startRealtime(uid) {
+// Atomowy start — userId i clubId podawane razem, BEZ rebuild'ów per scope.
+export function startRealtime(uid, cid = null) {
   if (!uid) return
-  if (channel && userId === uid) return
+  if (channel && userId === uid && clubId === (cid || null)) return
   userId = uid
+  clubId = cid || null
   buildChannel()
 }
 
+// Compat: jeśli ktoś woła setClubScope osobno (np. gdy clubId zmienił się po
+// dołączeniu do klubu w runtime), rebuild jest jednorazowy, nie cykliczny.
 export function setClubScope(cid) {
-  if (clubId === cid) return
+  if (clubId === (cid || null)) return
   clubId = cid || null
   if (userId) buildChannel()
 }
 
 export function stopRealtime() {
+  if (retryTimer) { clearTimeout(retryTimer); retryTimer = null }
   if (channel) {
     supabase.removeChannel(channel)
     channel = null

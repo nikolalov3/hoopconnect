@@ -220,15 +220,10 @@ export default function StatsPage() {
     }
     const unsub = onTableChange('shooting_sessions', handler)
 
-    // Fokus / visibility fallback — throttled 60s. Realtime łapie real-time
-    // zmiany; focus to safety net dla padniętych WS, nie ma sensu odpalać
-    // przy każdym alt-tabie.
-    let lastFocusRefresh = 0
+    // Fokus / visibility — refetch przy każdym powrocie do tabu. Realtime ma
+    // auto-reconnect, ale focus to dodatkowa pewność że dane są zawsze świeże.
     function onFocus() {
       if (document.visibilityState !== 'visible') return
-      const now = Date.now()
-      if (now - lastFocusRefresh < 60_000) return
-      lastFocusRefresh = now
       bustCache(cacheKey)
       fetchSessions()
     }

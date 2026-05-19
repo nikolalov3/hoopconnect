@@ -19,10 +19,11 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        startRealtime(session.user.id)  // jeden globalny kanał na cały lifecycle
+        // Start realtime od razu (z user_id filterami). Gdy fetchProfile
+        // ustali club_id, ewentualnie dorzuca CLUB_TABLES — rebuild raz.
+        startRealtime(session.user.id)
         fetchProfile(session.user.id)
       } else {
-        // No session — mark ready immediately so AppShell doesn't wait forever
         setProfileReady(true)
         profileReadyRef.current = true
       }
@@ -32,10 +33,6 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        // SIGNED_IN = fresh login after being logged out → fetch profile.
-        // TOKEN_REFRESHED fires every ~50min for every active user; we already
-        // have the profile in state, so refetching it = N queries/hour for N users
-        // (huge waste at scale). Skip it.
         if (event === 'SIGNED_IN') {
           profileReadyRef.current = false
           setProfileReady(false)
