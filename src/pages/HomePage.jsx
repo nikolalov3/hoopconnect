@@ -196,7 +196,6 @@ function ReportRatingRing({ score, daysLeft, loading }) {
             strokeLinejoin="round" strokeLinecap="round"
             style={{
               filter: `drop-shadow(0 0 7px ${color}) drop-shadow(0 0 18px ${color}65)`,
-              transition: 'stroke-dasharray 1.2s ease',
             }}
           />
         )}
@@ -210,7 +209,6 @@ function ReportRatingRing({ score, daysLeft, loading }) {
             strokeLinejoin="round" strokeLinecap="round"
             style={{
               filter: `drop-shadow(0 0 7px ${color}) drop-shadow(0 0 18px ${color}65)`,
-              transition: 'stroke-dasharray 1.2s ease',
             }}
           />
         )}
@@ -1374,8 +1372,7 @@ export default function HomePage() {
           ) : (
             <>
               <div style={{ width: '70%', margin: '0 auto 10px', height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-                <motion.div style={{ height: '100%', background: scoreColor, borderRadius: 2, originX: 0 }}
-                  animate={{ width: `${progress}%` }} transition={{ duration: 0.8, ease: 'easeOut' }} />
+                <div style={{ height: '100%', background: scoreColor, borderRadius: 2, width: `${progress}%` }} />
               </div>
               <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500 }}>
                 {completed.length} / {trainings.length} SESJI UKOŃCZONYCH DZIŚ
