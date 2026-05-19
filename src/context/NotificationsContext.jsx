@@ -48,13 +48,6 @@ export function NotificationsProvider({ children }) {
 
   useEffect(() => { load() }, [load])
 
-  // Refetch on tab focus (covers Realtime gaps when the websocket drops)
-  useEffect(() => {
-    const onVisible = () => { if (document.visibilityState === 'visible') load() }
-    document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [load])
-
   // Realtime: instant updates from coach panel inserts / cross-device reads.
   // Wrapped defensively — failures here must never crash the host page.
   useEffect(() => {

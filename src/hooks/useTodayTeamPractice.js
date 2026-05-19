@@ -27,13 +27,6 @@ export function useTodayTeamPractice() {
 
   useEffect(() => { load() }, [load])
 
-  // Refetch when tab becomes visible
-  useEffect(() => {
-    const onVis = () => { if (document.visibilityState === 'visible') load() }
-    document.addEventListener('visibilitychange', onVis)
-    return () => document.removeEventListener('visibilitychange', onVis)
-  }, [load])
-
   // Realtime: dowolna zmiana w team_practice → odśwież.
   // (Realtime nie da się filtrować po JOIN z team_members, więc słuchamy
   // wszystkich zmian na tabeli i robimy refetch — get_my_practice po stronie
