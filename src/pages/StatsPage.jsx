@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { getCache, setCache, bustCache } from '../lib/queryCache'
+import { getCache, setCache } from '../lib/queryCache'
 import { shareStatsCard, doShare } from '../lib/shareCard'
 import { pct as calcPct } from '../lib/pct'
 import AddSessionModal from '../components/ui/AddSessionModal'
@@ -126,8 +126,8 @@ function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, f
       <div>
         <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 3, height: 3, overflow: 'hidden', marginBottom: 10 }}>
           <motion.div
-            initial={{ width: 0 }} animate={{ width: `${pct}%` }}
-            transition={{ type: 'spring', stiffness: 100, damping: 24, delay: delay + 0.15 }}
+            initial={false} animate={{ width: `${pct}%` }}
+            transition={{ type: 'spring', stiffness: 100, damping: 24 }}
             style={{ height: '100%', borderRadius: 3, background: pctColor }}
           />
         </div>
@@ -220,21 +220,7 @@ export default function StatsPage() {
     }
     const unsub = onTableChange('shooting_sessions', handler)
 
-    // Fokus / visibility — refetch przy każdym powrocie do tabu. Realtime ma
-    // auto-reconnect, ale focus to dodatkowa pewność że dane są zawsze świeże.
-    function onFocus() {
-      if (document.visibilityState !== 'visible') return
-      bustCache(cacheKey)
-      fetchSessions()
-    }
-    document.addEventListener('visibilitychange', onFocus)
-    window.addEventListener('focus', onFocus)
-
-    return () => {
-      document.removeEventListener('visibilitychange', onFocus)
-      window.removeEventListener('focus', onFocus)
-      unsub()
-    }
+    return () => { unsub() }
   }, [profile])
 
   const filtered = useMemo(() => filterByDate(sessions, filter), [sessions, filter])
