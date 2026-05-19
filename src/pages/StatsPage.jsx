@@ -84,9 +84,7 @@ function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, f
   const pctColor = accent || (pct >= 50 ? 'var(--green-shot)' : pct >= 35 ? 'var(--orange)' : pct === 0 ? 'var(--text-dim)' : 'var(--red-shot)')
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 320, damping: 30, delay }}
+      initial={false}
       style={{
         ...(hero ? {
           width: '100%',
