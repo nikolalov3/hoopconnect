@@ -552,14 +552,28 @@ export default function HomePage() {
     window.addEventListener('pageshow', onPageShow)
 
     // Realtime: subscribe to GLOBALNY channel zarządzany przez AuthContext.
-    // Listenery są lokalne (Set per tabela) — zero round-tripów przy mount/unmount.
     const unsubActivity = onTableChange('activity_log', refresh)
     const unsubPoints   = onTableChange('points_log',   refresh)
+
+    // Bulletproof same-device sync — HomePage jest keep-alive w App.jsx, więc
+    // useEffect[profile] nie fire'uje przy nawigacji /shooting → /. Custom event
+    // od ShootingPage gwarantuje że activityLog odświeży się synchronicznie
+    // zanim user zdąży kliknąć trening drugi raz.
+    function onActivityLogUpdated(e) {
+      if (e.detail) {
+        setActivityLog(e.detail)
+        setCache(`log:${profile.id}:${TODAY}`, e.detail, 15 * 1000)
+      } else {
+        refresh()
+      }
+    }
+    window.addEventListener('hc:activity-log-updated', onActivityLogUpdated)
 
     return () => {
       document.removeEventListener('visibilitychange', onFocus)
       window.removeEventListener('focus', onFocus)
       window.removeEventListener('pageshow', onPageShow)
+      window.removeEventListener('hc:activity-log-updated', onActivityLogUpdated)
       unsubActivity()
       unsubPoints()
     }

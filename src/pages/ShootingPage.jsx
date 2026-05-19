@@ -360,11 +360,16 @@ export default function ShootingPage() {
         { onConflict: 'user_id,date' }
       ).select().single()
 
-      // Bust + refill cache na HomePage żeby po powrocie pokazał ukończony
-      // trening bez czekania na refetch. 15s TTL by pokazywał stale data inaczej.
+      // Bust cache + refill + DISPATCH event dla HomePage (która jest keep-alive
+      // w App.jsx — useEffect[profile] nie fire'uje przy powrocie, więc Realtime
+      // czasem zdąży, czasem nie. Event jest gwarancją że state odświeży się
+      // synchronicznie zanim user zdąży kliknąć w trening po raz drugi).
       try {
         bustCache(`log:${profile.id}:${TODAY}`)
-        if (savedLog) setCache(`log:${profile.id}:${TODAY}`, savedLog, 15 * 1000)
+        if (savedLog) {
+          setCache(`log:${profile.id}:${TODAY}`, savedLog, 15 * 1000)
+          window.dispatchEvent(new CustomEvent('hc:activity-log-updated', { detail: savedLog }))
+        }
       } catch {}
     }
 
