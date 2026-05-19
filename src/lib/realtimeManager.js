@@ -94,3 +94,9 @@ export function onTableChange(table, callback) {
   set.add(callback)
   return () => set.delete(callback)
 }
+
+// Supabase Realtime nie echuje zmian do tego samego połączenia — wywołaj lokalnie
+// po każdym INSERT/UPDATE/DELETE zrobionym na tym samym urządzeniu.
+export function dispatchLocal(table, eventType, newRow) {
+  dispatch(table, { eventType, new: newRow, old: {} })
+}

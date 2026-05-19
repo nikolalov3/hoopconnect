@@ -12,6 +12,7 @@ import { recalcFraud } from '../lib/anticheat'
 import { creditRestDayStreak } from '../lib/streak'
 import StreakToast from '../components/ui/StreakToast'
 import { shareSessionCard, doShare } from '../lib/shareCard'
+import { dispatchLocal } from '../lib/realtimeManager'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -427,6 +428,7 @@ export default function ShootingPage() {
         session_date: new Date().toISOString().split('T')[0],
       }).select('*, trainings(title)').single()
       pushSessionToCache(insertedRow1)
+      if (insertedRow1) dispatchLocal('shooting_sessions', 'INSERT', insertedRow1)
 
       if (!isFreestyle) {
         // Punkty + credit do streak — TYLKO dla dziennego treningu, nie freestyle.
@@ -482,6 +484,7 @@ export default function ShootingPage() {
       session_date: new Date().toISOString().split('T')[0],
     }).select('*, trainings(title)').single()
     pushSessionToCache(insertedRow2)
+    if (insertedRow2) dispatchLocal('shooting_sessions', 'INSERT', insertedRow2)
     setFinalStats({ made, attempted })
     clearSession()
     const daysSinceJoin = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
@@ -515,6 +518,7 @@ export default function ShootingPage() {
       session_date: new Date().toISOString().split('T')[0],
     }).select('*, trainings(title)').single()
     pushSessionToCache(insertedRow3)
+    if (insertedRow3) dispatchLocal('shooting_sessions', 'INSERT', insertedRow3)
 
     if (!isFreestyle) {
       const TODAY_DATE = new Date().toISOString().split('T')[0]
