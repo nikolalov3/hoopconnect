@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
@@ -133,6 +133,59 @@ function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, f
   )
 }
 
+const sessionCardStyle = {
+  background: 'linear-gradient(180deg, rgba(40,55,85,0.34) 0%, rgba(22,32,52,0.30) 100%)',
+  backdropFilter: 'blur(28px) saturate(1.5)', WebkitBackdropFilter: 'blur(28px) saturate(1.5)',
+  borderRadius: 14,
+  padding: '12px 14px',
+  boxShadow: 'inset 0 1px 0 rgba(200,225,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.14)',
+}
+
+function StrengthCard({ session }) {
+  const exList = session.exercises || []
+  const summary = exList
+    .map(e => `${e.sets}×${e.reps}${e.weight_kg ? ` @${e.weight_kg}kg` : ''}`)
+    .join(' · ')
+  return (
+    <div style={sessionCardStyle}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+          background: 'radial-gradient(circle at 35% 30%, rgba(91,184,245,0.18), rgba(91,184,245,0.05) 70%)',
+          boxShadow: 'inset 0 0 0 0.5px rgba(91,184,245,0.18)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 20,
+        }}>
+          💪
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{
+            fontWeight: 600, fontSize: 14, color: 'var(--text-primary)',
+            fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: 0.5,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {exList.length} {exList.length === 1 ? 'ćwiczenie' : exList.length < 5 ? 'ćwiczenia' : 'ćwiczeń'}
+          </p>
+          <p style={{ color: 'var(--text-dim)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {exList.map(e => e.name).join(' · ')}
+          </p>
+          {summary && (
+            <p style={{ color: 'rgba(145,190,230,0.50)', fontSize: 11, marginTop: 1 }}>{summary}</p>
+          )}
+        </div>
+        <p style={{ color: 'var(--text-dim)', fontSize: 12, flexShrink: 0 }}>
+          {new Date(session.date).toLocaleDateString('pl-PL')}
+        </p>
+      </div>
+      {session.notes && (
+        <p style={{ color: 'var(--text-secondary)', fontSize: 12, marginTop: 10, lineHeight: 1.5, paddingLeft: 56 }}>
+          {session.notes}
+        </p>
+      )}
+    </div>
+  )
+}
+
 function filterByDate(sessions, range) {
   if (range === 'all') return sessions
   const now = new Date()
@@ -149,6 +202,24 @@ export default function StatsPage() {
   const [filter, setFilter] = useState('7d')
   const [addOpen, setAddOpen] = useState(false)
   const [savingStrength, setSavingStrength] = useState(false)
+  const [strengthSessions, setStrengthSessions] = useState([])
+
+  const fetchStrength = useCallback(async () => {
+    if (!profile) return
+    const { data } = await supabase
+      .from('strength_sessions')
+      .select('*')
+      .eq('user_id', profile.id)
+      .order('date', { ascending: false })
+      .limit(200)
+    if (data) setStrengthSessions(data)
+  }, [profile])
+
+  useEffect(() => {
+    fetchStrength()
+    const unsub = onTableChange('strength_sessions', fetchStrength)
+    return () => { unsub() }
+  }, [fetchStrength])
 
   // Limit dziennie: 3 strength sessions. Sprawdzane przed insert'em.
   async function handleSaveStrength({ exercises, notes }) {
@@ -174,7 +245,7 @@ export default function StatsPage() {
         return
       }
       setAddOpen(false)
-      // TODO: odświeżyć listę sesji strength gdy będzie sekcja w Stats
+      fetchStrength()
     } finally {
       setSavingStrength(false)
     }
@@ -213,6 +284,10 @@ export default function StatsPage() {
   }, [profile])
 
   const filtered = useMemo(() => filterByDate(sessions, filter), [sessions, filter])
+  const filteredStrength = useMemo(() => filterByDate(
+    strengthSessions.map(s => ({ ...s, session_date: s.date })),
+    filter
+  ), [strengthSessions, filter])
 
   const byType = useMemo(() => {
     const acc = {}
@@ -271,25 +346,23 @@ export default function StatsPage() {
         <h1 className="display-title" style={{ fontSize: 38 }}>Statystyki</h1>
         {/* Icon row — bare icon buttons, no background */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          {/* + Add session — tylko w dev */}
-          {import.meta.env.DEV && (
-            <motion.button
-              whileTap={{ scale: 0.82 }}
-              onClick={() => setAddOpen(true)}
-              aria-label="Dodaj sesję"
-              style={{
-                width: 40, height: 40,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'rgba(200,210,230,0.55)',
-              }}
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-            </motion.button>
-          )}
+          {/* + Add session */}
+          <motion.button
+            whileTap={{ scale: 0.82 }}
+            onClick={() => setAddOpen(true)}
+            aria-label="Dodaj sesję"
+            style={{
+              width: 40, height: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'rgba(200,210,230,0.55)',
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </motion.button>
           {/* Calendar icon — bare, matches gear/sparkle style */}
           <motion.button
             whileTap={{ scale: 0.82 }}
@@ -504,6 +577,17 @@ export default function StatsPage() {
         </div>
       )}
 
+      {/* ── SESJE SIŁOWE ── */}
+      {filteredStrength.length > 0 && (
+        <>
+          <p className="section-label" style={{ marginBottom: 14, marginTop: 24 }}>
+            Siłownia ({filteredStrength.length})
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 32 }}>
+            {filteredStrength.map(s => <StrengthCard key={s.id} session={s} />)}
+          </div>
+        </>
+      )}
 
     </div>
   )
