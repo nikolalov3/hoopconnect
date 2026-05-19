@@ -487,6 +487,7 @@ export default function HomePage() {
   const [trainings, setTrainings] = useState([])
   // Trzymamy pełną listę aktywnych treningów (do swap-funkcji "nie mam sprzętu").
   const allActiveTrainingsRef = useRef([])
+  const activityLogRef        = useRef(null)
   const [activityLog, setActivityLog] = useState(null)
   const [quote, setQuote] = useState(null)
   const [showQuote, setShowQuote] = useState(false)
@@ -522,11 +523,16 @@ export default function HomePage() {
   const [streakToast,     setStreakToast]     = useState(0)   // >0 = visible, value = new streak
 
   useEffect(() => { loadData() }, [profile])
+  // Ref mirror — pozwala silentSyncLog czytać bieżący activityLog bez
+  // stale-closure (useEffect[profile] nie reruns przy każdym setState).
+  useEffect(() => { activityLogRef.current = activityLog }, [activityLog])
 
   // Cross-device sync — dwa mechanizmy:
   //
-  // (1) FOCUS/VISIBILITY: gdy użytkownik wraca do zakładki/okna — refetch.
-  //     Ratuje gdy Realtime padło (np. Safari w tle ubił socket).
+  // (1) FOCUS/VISIBILITY: gdy użytkownik wraca do zakładki/okna — cichy
+  //     fetch activity_log w tle. Stan aktualizuje się TYLKO gdy coś faktycznie
+  //     zmieniło się na innym urządzeniu (porównanie trainings_completed).
+  //     Brak zmiany = brak re-renderu = brak widocznego "przeładowania".
   //
   // (2) SUPABASE REALTIME: live subskrypcja zmian w activity_log i
   //     points_log dla bieżącego usera. Zaznaczenie na telefonie pojawia
@@ -534,25 +540,42 @@ export default function HomePage() {
   useEffect(() => {
     if (!profile) return
 
+    // Cichy background-fetch: pobiera activity_log i aktualizuje stan
+    // TYLKO gdy trainings_completed lub all_done faktycznie się zmieniło.
+    // Nie dotyka trainings, quote, report — zero widocznego flash-u.
+    async function silentSyncLog() {
+      try {
+        const { data: log } = await supabase
+          .from('activity_log').select('*')
+          .eq('user_id', profile.id).eq('date', TODAY).maybeSingle()
+        const prev = activityLogRef.current
+        const prevDone = JSON.stringify((prev?.trainings_completed || []).slice().sort())
+        const nextDone = JSON.stringify((log?.trainings_completed  || []).slice().sort())
+        if (prevDone !== nextDone || prev?.all_done !== log?.all_done) {
+          setActivityLog(log)
+          setCache(`log:${profile.id}:${TODAY}`, log, 15 * 1000)
+        }
+      } catch { /* sieć niedostępna — ignoruj, stan zostaje bez zmian */ }
+    }
+
     function refresh() {
       bustCache(`log:${profile.id}:${TODAY}`)
       bustCache(`report:${profile.id}`)
       loadData()
     }
-    // Focus refetch BEZ throttle — wczoraj działało live właśnie dzięki temu.
-    // Przy każdym powrocie do tabu pobieramy świeży stan z DB.
+
     function onFocus() {
       if (document.visibilityState !== 'visible') return
-      refresh()
+      silentSyncLog()
     }
     document.addEventListener('visibilitychange', onFocus)
     window.addEventListener('focus', onFocus)
     // iOS Safari bfcache — pageshow z persisted=true znaczy realny powrót z tła
-    function onPageShow(e) { if (e.persisted) refresh() }
+    function onPageShow(e) { if (e.persisted) silentSyncLog() }
     window.addEventListener('pageshow', onPageShow)
 
     // Realtime: subscribe to GLOBALNY channel zarządzany przez AuthContext.
-    const unsubActivity = onTableChange('activity_log', refresh)
+    const unsubActivity = onTableChange('activity_log', silentSyncLog)
     const unsubPoints   = onTableChange('points_log',   refresh)
 
     // Bulletproof same-device sync — HomePage jest keep-alive w App.jsx, więc
