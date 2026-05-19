@@ -62,7 +62,6 @@ function TrainingCard({ training, done, onDone, onUndo, onSwap, canSwap }) {
 
   return (
     <motion.div
-      layout
       animate={pulse?.key
         ? pulse.type === 'done'
           ? {
