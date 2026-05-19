@@ -4,6 +4,6 @@
     { "source": "/admpln/", "destination": "/admpln/index.html" },
     { "source": "/qrhc",    "destination": "/qrhc/index.html" },
     { "source": "/qrhc/",   "destination": "/qrhc/index.html" },
-    { "source": "/((?!api/|admpln/|qrhc/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|admpln/|qrhc/|terms|privacy).*)", "destination": "/index.html" }
   ]
 }

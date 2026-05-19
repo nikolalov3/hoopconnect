@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polityka prywatności – HoopConnect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0A0D13;
+      color: #D8E6F4;
+      font-family: 'Barlow', sans-serif;
+      min-height: 100dvh;
+    }
+    .wrap { max-width: 680px; margin: 0 auto; padding: 32px 20px 64px; }
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 32px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .brand-logo { height: 28px; width: 28px; border-radius: 6px; }
+    .brand-name {
+      font-size: 13px; font-weight: 700; letter-spacing: 1.2px;
+      text-transform: uppercase; color: #00CCFF;
+    }
+    .lang-switcher {
+      display: flex; gap: 4px; background: #161C28; border-radius: 8px;
+      padding: 3px; border: 1px solid rgba(85,145,205,0.13);
+    }
+    .lang-btn {
+      padding: 4px 12px; border-radius: 6px; border: none; cursor: pointer;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; transition: all 0.15s;
+      background: transparent; color: rgba(145,190,230,0.50);
+    }
+    .lang-btn.active { background: #00CCFF; color: #0A0D13; }
+    h1 { font-size: 26px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.5px; }
+    .accent-bar { height: 3px; width: 36px; background: #00CCFF; border-radius: 2px; margin-bottom: 24px; }
+    .meta { font-size: 11px; color: rgba(85,140,195,0.55); margin-bottom: 28px; }
+    h2 { font-size: 15px; font-weight: 700; color: #D8E6F4; margin: 28px 0 8px; letter-spacing: 0.2px; }
+    p { font-size: 13px; line-height: 1.7; color: rgba(145,190,230,0.80); margin-bottom: 10px; }
+    ul { margin: 4px 0 10px; padding-left: 20px; }
+    li { font-size: 13px; line-height: 1.7; color: rgba(145,190,230,0.80); margin-bottom: 4px; }
+    strong { color: #D8E6F4; font-weight: 600; }
+    a { color: #00CCFF; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    [data-lang] { display: none; }
+    [data-lang].visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <a href="/" class="brand">
+        <img src="/logo.png" alt="HoopConnect" class="brand-logo" onerror="this.style.display='none'" />
+        <span class="brand-name">HoopConnect</span>
+      </a>
+      <div class="lang-switcher">
+        <button class="lang-btn active" onclick="setLang('pl')">PL</button>
+        <button class="lang-btn" onclick="setLang('en')">EN</button>
+      </div>
+    </div>
+
+    <h1 id="title">Polityka prywatności</h1>
+    <div class="accent-bar"></div>
+
+    <!-- POLSKI -->
+    <div data-lang="pl" class="visible">
+      <p class="meta">Ostatnia aktualizacja: 19 maja 2026</p>
+
+      <h2>1. Administrator danych osobowych</h2>
+      <p>Administratorem Twoich danych osobowych jest operator aplikacji HoopConnect. W sprawach dotyczących przetwarzania danych możesz skontaktować się z nami pod adresem: <a href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a>.</p>
+
+      <h2>2. Jakie dane zbieramy</h2>
+      <p>W ramach korzystania z Aplikacji przetwarzamy następujące dane:</p>
+      <ul>
+        <li><strong>Dane konta:</strong> adres e-mail, nazwa użytkownika (nick), hasło (przechowywane w postaci skrótu).</li>
+        <li><strong>Dane treningowe:</strong> ukończone treningi, sesje rzutowe, wyniki, seria (streak), punkty, tygodniowe raporty.</li>
+        <li><strong>Dane aktywności:</strong> daty logowania, aktywność w Aplikacji.</li>
+        <li><strong>Dane techniczne:</strong> adres IP, typ urządzenia i przeglądarki (zbierane automatycznie przez infrastrukturę hostingową).</li>
+      </ul>
+      <p>Nie zbieramy danych wrażliwych (np. danych zdrowotnych w rozumieniu RODO) ani danych płatniczych.</p>
+
+      <h2>3. Cel i podstawa prawna przetwarzania</h2>
+      <ul>
+        <li><strong>Świadczenie usługi</strong> – wykonanie umowy (art. 6 ust. 1 lit. b RODO): prowadzenie konta, wyświetlanie planów treningowych, śledzenie postępów.</li>
+        <li><strong>Powiadomienia i komunikacja</strong> – prawnie uzasadniony interes Administratora (art. 6 ust. 1 lit. f RODO): informowanie o zmianach w Aplikacji i Regulaminie.</li>
+        <li><strong>Bezpieczeństwo i zapobieganie nadużyciom</strong> – prawnie uzasadniony interes Administratora (art. 6 ust. 1 lit. f RODO).</li>
+        <li><strong>Obowiązki prawne</strong> – wypełnienie obowiązków wynikających z przepisów prawa (art. 6 ust. 1 lit. c RODO).</li>
+      </ul>
+
+      <h2>4. Okres przechowywania danych</h2>
+      <p>Dane przechowujemy przez czas aktywności konta. Po usunięciu konta dane są kasowane w ciągu 30 dni, z wyjątkiem danych, które musimy zachować ze względu na wymogi prawne (np. dokumentacja księgowa).</p>
+
+      <h2>5. Twoje prawa</h2>
+      <p>Przysługują Ci następujące prawa w związku z przetwarzaniem Twoich danych:</p>
+      <ul>
+        <li><strong>Dostęp</strong> – prawo do uzyskania kopii swoich danych.</li>
+        <li><strong>Sprostowanie</strong> – prawo do poprawienia nieprawidłowych lub uzupełnienia niekompletnych danych.</li>
+        <li><strong>Usunięcie</strong> – prawo do żądania usunięcia danych („prawo do bycia zapomnianym").</li>
+        <li><strong>Ograniczenie przetwarzania</strong> – prawo do ograniczenia przetwarzania w przypadkach określonych w RODO.</li>
+        <li><strong>Przeniesienie danych</strong> – prawo do otrzymania danych w formacie strukturyzowanym.</li>
+        <li><strong>Sprzeciw</strong> – prawo do sprzeciwu wobec przetwarzania opartego na uzasadnionym interesie.</li>
+      </ul>
+      <p>Aby skorzystać z powyższych praw, skontaktuj się z nami: <a href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a>. Masz również prawo wniesienia skargi do Prezesa Urzędu Ochrony Danych Osobowych (UODO).</p>
+
+      <h2>6. Odbiorcy danych</h2>
+      <p>Twoje dane mogą być przekazywane następującym podmiotom:</p>
+      <ul>
+        <li><strong>Supabase Inc.</strong> – dostawca bazy danych i uwierzytelniania (serwery w UE lub z odpowiednimi zabezpieczeniami transferu).</li>
+        <li><strong>Vercel Inc.</strong> – platforma hostingowa aplikacji.</li>
+      </ul>
+      <p>Nie sprzedajemy Twoich danych osobom trzecim. Podmioty te przetwarzają dane wyłącznie na nasze zlecenie i na podstawie umów powierzenia przetwarzania danych.</p>
+
+      <h2>7. Pliki cookie i localStorage</h2>
+      <p>Aplikacja używa:</p>
+      <ul>
+        <li><strong>localStorage / sessionStorage</strong> – do przechowywania sesji, cache danych treningowych i ustawień interfejsu. Dane te nie opuszczają Twojego urządzenia.</li>
+        <li><strong>Cookies sesyjne</strong> – niezbędne do utrzymania sesji logowania (wymagane do działania Aplikacji).</li>
+      </ul>
+      <p>Nie używamy cookies marketingowych ani śledzących.</p>
+
+      <h2>8. Bezpieczeństwo</h2>
+      <p>Stosujemy odpowiednie środki techniczne i organizacyjne w celu ochrony Twoich danych, w tym szyfrowanie połączeń (HTTPS/TLS), kontrolę dostępu oraz reguły bezpieczeństwa na poziomie bazy danych (Row Level Security).</p>
+
+      <h2>9. Zmiany Polityki prywatności</h2>
+      <p>O istotnych zmianach niniejszej Polityki poinformujemy Cię co najmniej 14 dni przed ich wejściem w życie. Data ostatniej aktualizacji widnieje na górze dokumentu.</p>
+
+      <h2>10. Kontakt</h2>
+      <p>W sprawach dotyczących ochrony danych osobowych skontaktuj się z nami: <a href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a></p>
+    </div>
+
+    <!-- ENGLISH -->
+    <div data-lang="en">
+      <p class="meta">Last updated: May 19, 2026</p>
+
+      <h2>1. Data controller</h2>
+      <p>The data controller for your personal data is the operator of the HoopConnect application. For data-related enquiries, contact us at: <a href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a>.</p>
+
+      <h2>2. Data we collect</h2>
+      <p>When you use the App, we process the following data:</p>
+      <ul>
+        <li><strong>Account data:</strong> email address, username (nickname), password (stored as a hash).</li>
+        <li><strong>Training data:</strong> completed workouts, shooting sessions, scores, streaks, points, weekly reports.</li>
+        <li><strong>Activity data:</strong> login dates, App activity.</li>
+        <li><strong>Technical data:</strong> IP address, device and browser type (collected automatically by hosting infrastructure).</li>
+      </ul>
+      <p>We do not collect sensitive data (e.g. health data as defined by GDPR) or payment data.</p>
+
+      <h2>3. Purpose and legal basis for processing</h2>
+      <ul>
+        <li><strong>Providing the service</strong> – performance of a contract (Art. 6(1)(b) GDPR): maintaining your account, displaying training plans, tracking progress.</li>
+        <li><strong>Notifications and communication</strong> – legitimate interest of the Controller (Art. 6(1)(f) GDPR): informing you about changes to the App and Terms.</li>
+        <li><strong>Security and fraud prevention</strong> – legitimate interest of the Controller (Art. 6(1)(f) GDPR).</li>
+        <li><strong>Legal obligations</strong> – compliance with applicable law (Art. 6(1)(c) GDPR).</li>
+      </ul>
+
+      <h2>4. Retention period</h2>
+      <p>We retain your data for as long as your account is active. Upon account deletion, data is erased within 30 days, except where we are required to retain it by law (e.g. accounting records).</p>
+
+      <h2>5. Your rights</h2>
+      <p>You have the following rights regarding the processing of your personal data:</p>
+      <ul>
+        <li><strong>Access</strong> – the right to obtain a copy of your data.</li>
+        <li><strong>Rectification</strong> – the right to correct inaccurate or incomplete data.</li>
+        <li><strong>Erasure</strong> – the right to request deletion of your data ("right to be forgotten").</li>
+        <li><strong>Restriction</strong> – the right to restrict processing in cases defined by GDPR.</li>
+        <li><strong>Portability</strong> – the right to receive your data in a structured, machine-readable format.</li>
+        <li><strong>Objection</strong> – the right to object to processing based on legitimate interest.</li>
+      </ul>
+      <p>To exercise any of these rights, contact us at: <a href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a>. You also have the right to lodge a complaint with the relevant data protection supervisory authority.</p>
+
+      <h2>6. Recipients of data</h2>
+      <p>Your data may be shared with the following parties:</p>
+      <ul>
+        <li><strong>Supabase Inc.</strong> – database and authentication provider (servers in the EU or with appropriate transfer safeguards).</li>
+        <li><strong>Vercel Inc.</strong> – application hosting platform.</li>
+      </ul>
+      <p>We do not sell your personal data to third parties. These processors handle data solely on our behalf and under data processing agreements.</p>
+
+      <h2>7. Cookies and localStorage</h2>
+      <p>The App uses:</p>
+      <ul>
+        <li><strong>localStorage / sessionStorage</strong> – for storing session data, training data cache, and UI preferences. This data does not leave your device.</li>
+        <li><strong>Session cookies</strong> – required to maintain your login session (essential for the App to function).</li>
+      </ul>
+      <p>We do not use marketing or tracking cookies.</p>
+
+      <h2>8. Security</h2>
+      <p>We apply appropriate technical and organisational measures to protect your data, including connection encryption (HTTPS/TLS), access controls, and database-level security rules (Row Level Security).</p>
+
+      <h2>9. Changes to this Policy</h2>
+      <p>We will notify you of material changes to this Policy at least 14 days before they take effect. The date of the last update is shown at the top of this document.</p>
+
+      <h2>10. Contact</h2>
+      <p>For data protection enquiries, contact us at: <a href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a></p>
+    </div>
+  </div>
+
+  <script>
+    function setLang(lang) {
+      document.querySelectorAll('[data-lang]').forEach(el => {
+        el.classList.toggle('visible', el.dataset.lang === lang)
+      })
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase() === lang)
+      })
+      document.getElementById('title').textContent = lang === 'pl' ? 'Polityka prywatności' : 'Privacy Policy'
+      document.documentElement.lang = lang
+    }
+  </script>
+</body>
+</html>

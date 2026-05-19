@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Regulamin – HoopConnect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0A0D13;
+      color: #D8E6F4;
+      font-family: 'Barlow', sans-serif;
+      min-height: 100dvh;
+    }
+    .wrap { max-width: 680px; margin: 0 auto; padding: 32px 20px 64px; }
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 32px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .brand-logo { height: 28px; width: 28px; border-radius: 6px; }
+    .brand-name {
+      font-size: 13px; font-weight: 700; letter-spacing: 1.2px;
+      text-transform: uppercase; color: #00CCFF;
+    }
+    .lang-switcher {
+      display: flex; gap: 4px; background: #161C28; border-radius: 8px;
+      padding: 3px; border: 1px solid rgba(85,145,205,0.13);
+    }
+    .lang-btn {
+      padding: 4px 12px; border-radius: 6px; border: none; cursor: pointer;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; transition: all 0.15s;
+      background: transparent; color: rgba(145,190,230,0.50);
+    }
+    .lang-btn.active { background: #00CCFF; color: #0A0D13; }
+    h1 {
+      font-size: 26px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.5px;
+    }
+    .accent-bar { height: 3px; width: 36px; background: #00CCFF; border-radius: 2px; margin-bottom: 24px; }
+    .meta { font-size: 11px; color: rgba(85,140,195,0.55); margin-bottom: 28px; }
+    h2 { font-size: 15px; font-weight: 700; color: #D8E6F4; margin: 28px 0 8px; letter-spacing: 0.2px; }
+    p { font-size: 13px; line-height: 1.7; color: rgba(145,190,230,0.80); margin-bottom: 10px; }
+    ul { margin: 4px 0 10px; padding-left: 20px; }
+    li { font-size: 13px; line-height: 1.7; color: rgba(145,190,230,0.80); margin-bottom: 4px; }
+    a { color: #00CCFF; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    [data-lang] { display: none; }
+    [data-lang].visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <a href="/" class="brand">
+        <img src="/logo.png" alt="HoopConnect" class="brand-logo" onerror="this.style.display='none'" />
+        <span class="brand-name">HoopConnect</span>
+      </a>
+      <div class="lang-switcher">
+        <button class="lang-btn active" onclick="setLang('pl')">PL</button>
+        <button class="lang-btn" onclick="setLang('en')">EN</button>
+      </div>
+    </div>
+
+    <h1 id="title">Regulamin</h1>
+    <div class="accent-bar"></div>
+
+    <!-- POLSKI -->
+    <div data-lang="pl" class="visible">
+      <p class="meta">Ostatnia aktualizacja: 19 maja 2026</p>
+
+      <h2>1. Postanowienia ogólne</h2>
+      <p>HoopConnect (dalej: „Aplikacja") to platforma do planowania i śledzenia treningów koszykarskich, dostępna jako aplikacja webowa oraz mobilna. Operatorem Aplikacji jest HoopConnect (dalej: „Operator"). Korzystanie z Aplikacji oznacza akceptację niniejszego Regulaminu.</p>
+      <p>Z Aplikacji mogą korzystać osoby, które ukończyły 16 lat. Osoby poniżej 18. roku życia powinny uzyskać zgodę rodzica lub opiekuna prawnego.</p>
+
+      <h2>2. Rejestracja i konto</h2>
+      <p>Korzystanie z pełnej funkcjonalności Aplikacji wymaga założenia konta. Użytkownik zobowiązuje się podać prawdziwe i aktualne dane podczas rejestracji.</p>
+      <p>Użytkownik jest odpowiedzialny za zachowanie poufności danych dostępowych do konta i za wszelkie działania wykonywane z jego użyciem. O podejrzeniu nieuprawnionego dostępu należy niezwłocznie poinformować Operatora.</p>
+      <p>Operator zastrzega sobie prawo do zawieszenia lub usunięcia konta, które narusza niniejszy Regulamin.</p>
+
+      <h2>3. Zasady korzystania</h2>
+      <p>Użytkownik zobowiązuje się korzystać z Aplikacji wyłącznie w celach zgodnych z jej przeznaczeniem – planowanie, realizacja i śledzenie treningów koszykarskich. Zabronione jest:</p>
+      <ul>
+        <li>działanie na szkodę innych użytkowników lub Operatora,</li>
+        <li>próby nieautoryzowanego dostępu do systemów Aplikacji,</li>
+        <li>manipulowanie wynikami, punktami lub statystykami w sposób nieuczciwy,</li>
+        <li>umieszczanie treści sprzecznych z prawem lub dobrymi obyczajami.</li>
+      </ul>
+
+      <h2>4. Własność intelektualna</h2>
+      <p>Wszelkie treści dostępne w Aplikacji – plany treningowe, grafiki, kod, znaki towarowe – stanowią własność Operatora lub podmiotów, które udzieliły licencji. Zabronione jest ich kopiowanie, modyfikowanie lub rozpowszechnianie bez pisemnej zgody Operatora.</p>
+      <p>Użytkownik zachowuje prawa do danych treningowych, które sam wprowadza do Aplikacji.</p>
+
+      <h2>5. Ograniczenie odpowiedzialności</h2>
+      <p>Aplikacja udostępniana jest w stanie „tak jak jest" (as-is). Operator dokłada starań, aby działała sprawnie i bezpiecznie, lecz nie gwarantuje nieprzerwanego dostępu ani braku błędów.</p>
+      <p>Treści treningowe w Aplikacji mają charakter wyłącznie informacyjny i nie zastępują porady trenera, lekarza ani fizjoterapeuty. Użytkownik korzysta z planów treningowych na własną odpowiedzialność.</p>
+      <p>Operator nie ponosi odpowiedzialności za szkody wynikłe z niemożności korzystania z Aplikacji ani za decyzje podjęte na podstawie jej treści.</p>
+
+      <h2>6. Zmiany Regulaminu</h2>
+      <p>Operator zastrzega sobie prawo do zmiany niniejszego Regulaminu. O istotnych zmianach Użytkownicy zostaną poinformowani co najmniej 14 dni przed ich wejściem w życie – za pośrednictwem powiadomienia w Aplikacji lub wiadomości e-mail. Dalsze korzystanie z Aplikacji po tym terminie oznacza akceptację nowego brzmienia Regulaminu.</p>
+
+      <h2>7. Prawo właściwe i rozstrzyganie sporów</h2>
+      <p>Niniejszy Regulamin podlega prawu polskiemu. Wszelkie spory wynikłe z korzystania z Aplikacji strony będą starały się rozwiązać polubownie. W przypadku braku porozumienia właściwy będzie sąd powszechny według siedziby Operatora.</p>
+      <p>Użytkownicy będący konsumentami mogą skorzystać z platformy ODR Komisji Europejskiej do pozasądowego rozstrzygania sporów.</p>
+
+      <h2>8. Kontakt</h2>
+      <p>W sprawach dotyczących Regulaminu prosimy o kontakt: <a href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a></p>
+    </div>
+
+    <!-- ENGLISH -->
+    <div data-lang="en">
+      <p class="meta">Last updated: May 19, 2026</p>
+
+      <h2>1. General provisions</h2>
+      <p>HoopConnect (the "App") is a platform for planning and tracking basketball training sessions, available as a web and mobile application. The App is operated by HoopConnect (the "Operator"). By using the App you agree to these Terms of Service.</p>
+      <p>The App is intended for users aged 16 and over. Users under 18 should obtain consent from a parent or legal guardian.</p>
+
+      <h2>2. Registration and account</h2>
+      <p>Full use of the App requires creating an account. You agree to provide accurate and up-to-date information during registration.</p>
+      <p>You are responsible for keeping your login credentials confidential and for all activity conducted through your account. Report any suspected unauthorised access to the Operator immediately.</p>
+      <p>The Operator reserves the right to suspend or delete any account that violates these Terms.</p>
+
+      <h2>3. Acceptable use</h2>
+      <p>You agree to use the App only for its intended purpose — planning, completing, and tracking basketball workouts. The following are prohibited:</p>
+      <ul>
+        <li>acting to the detriment of other users or the Operator,</li>
+        <li>attempting unauthorised access to the App's systems,</li>
+        <li>manipulating scores, points, or statistics in a dishonest manner,</li>
+        <li>posting content that is unlawful or contrary to good morals.</li>
+      </ul>
+
+      <h2>4. Intellectual property</h2>
+      <p>All content in the App — training plans, graphics, code, trademarks — is the property of the Operator or entities that have granted licences. Copying, modifying, or distributing this content without the Operator's written consent is prohibited.</p>
+      <p>You retain ownership of the training data you personally enter into the App.</p>
+
+      <h2>5. Limitation of liability</h2>
+      <p>The App is provided on an "as-is" basis. While the Operator strives to keep it reliable and secure, it does not guarantee uninterrupted availability or freedom from errors.</p>
+      <p>Training content within the App is for informational purposes only and does not replace advice from a coach, doctor, or physiotherapist. You use training plans at your own risk.</p>
+      <p>The Operator is not liable for damages resulting from inability to use the App or decisions made based on its content.</p>
+
+      <h2>6. Changes to these Terms</h2>
+      <p>The Operator reserves the right to amend these Terms. Users will be notified of material changes at least 14 days before they take effect — via an in-app notification or email. Continued use of the App after that date constitutes acceptance of the updated Terms.</p>
+
+      <h2>7. Governing law and disputes</h2>
+      <p>These Terms are governed by Polish law. The parties will seek to resolve any disputes amicably. If no agreement is reached, the competent court shall be the court having jurisdiction over the Operator's registered address.</p>
+      <p>Users who are consumers may use the European Commission's ODR platform for out-of-court dispute resolution.</p>
+
+      <h2>8. Contact</h2>
+      <p>For questions about these Terms, contact us at: <a href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a></p>
+    </div>
+  </div>
+
+  <script>
+    function setLang(lang) {
+      document.querySelectorAll('[data-lang]').forEach(el => {
+        el.classList.toggle('visible', el.dataset.lang === lang)
+      })
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase() === lang)
+      })
+      document.getElementById('title').textContent = lang === 'pl' ? 'Regulamin' : 'Terms of Service'
+      document.documentElement.lang = lang
+    }
+  </script>
+</body>
+</html>
