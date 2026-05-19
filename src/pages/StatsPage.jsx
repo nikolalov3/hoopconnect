@@ -80,11 +80,10 @@ function StatTile({ label, value, sub, accent }) {
   )
 }
 
-function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, filterLabel, snapAlign, hero, delay = 0 }) {
+function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, filterLabel, snapAlign, hero }) {
   const pctColor = accent || (pct >= 50 ? 'var(--green-shot)' : pct >= 35 ? 'var(--orange)' : pct === 0 ? 'var(--text-dim)' : 'var(--red-shot)')
   return (
-    <motion.div
-      initial={false}
+    <div
       style={{
         ...(hero ? {
           width: '100%',
@@ -111,23 +110,15 @@ function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, f
             fontWeight: 400, letterSpacing: 0.1,
           }}>{filterLabel}</p>
         </div>
-        <motion.p
-          key={pct}
-          initial={{ opacity: 0.6 }} animate={{ opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-          style={{
-            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: hero ? 54 : 36,
-            color: pctColor, lineHeight: 1, letterSpacing: -1.4,
-            textShadow: `0 0 8px ${pctColor}14`,
-          }}>{pct}%</motion.p>
+        <p style={{
+          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: hero ? 54 : 36,
+          color: pctColor, lineHeight: 1, letterSpacing: -1.4,
+          textShadow: `0 0 8px ${pctColor}14`,
+        }}>{pct}%</p>
       </div>
       <div>
         <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 3, height: 3, overflow: 'hidden', marginBottom: 10 }}>
-          <motion.div
-            initial={false} animate={{ width: `${pct}%` }}
-            transition={{ type: 'spring', stiffness: 100, damping: 24 }}
-            style={{ height: '100%', borderRadius: 3, background: pctColor }}
-          />
+          <div style={{ height: '100%', borderRadius: 3, background: pctColor, width: `${pct}%` }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <p style={{ color: 'rgba(180,195,220,0.62)', fontSize: 12, fontWeight: 500 }}>
@@ -138,7 +129,7 @@ function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, f
           </p>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -440,7 +431,6 @@ export default function StatsPage() {
               sessions={sessions}
               filterLabel={filterLabel}
               snapAlign={snapAlign}
-              delay={0.08 + index * 0.07}
             />
           )
         })}
