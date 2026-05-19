@@ -529,21 +529,23 @@ export default function HomePage() {
 
   // Cross-device sync — dwa mechanizmy:
   //
-  // (1) FOCUS/VISIBILITY: gdy użytkownik wraca do zakładki/okna — cichy
-  //     fetch activity_log w tle. Stan aktualizuje się TYLKO gdy coś faktycznie
-  //     zmieniło się na innym urządzeniu (porównanie trainings_completed).
+  // (1) FOCUS/VISIBILITY: cichy fetch activity_log w tle. Stan aktualizuje się
+  //     TYLKO gdy trainings_completed/all_done faktycznie się zmieniło.
   //     Brak zmiany = brak re-renderu = brak widocznego "przeładowania".
+  //     Debounce 2s zapobiega podwójnemu wołaniu (visibilitychange + focus).
   //
-  // (2) SUPABASE REALTIME: live subskrypcja zmian w activity_log i
-  //     points_log dla bieżącego usera. Zaznaczenie na telefonie pojawia
-  //     się w przeglądarce w <1s bez przełączania okna.
+  // (2) SUPABASE REALTIME:
+  //     activity_log → silentSyncLog (płynna aktualizacja checkboxów)
+  //     points_log   → reconcileReportScore (tylko wynik, bez loadData)
+  //     Nigdzie nie wołamy loadData() — quote i trainings nie migają.
   useEffect(() => {
     if (!profile) return
 
-    // Cichy background-fetch: pobiera activity_log i aktualizuje stan
-    // TYLKO gdy trainings_completed lub all_done faktycznie się zmieniło.
-    // Nie dotyka trainings, quote, report — zero widocznego flash-u.
+    let lastSyncTs = 0
     async function silentSyncLog() {
+      const now = Date.now()
+      if (now - lastSyncTs < 2000) return   // debounce: visibilitychange + focus często wołają razem
+      lastSyncTs = now
       try {
         const { data: log } = await supabase
           .from('activity_log').select('*')
@@ -555,13 +557,7 @@ export default function HomePage() {
           setActivityLog(log)
           setCache(`log:${profile.id}:${TODAY}`, log, 15 * 1000)
         }
-      } catch { /* sieć niedostępna — ignoruj, stan zostaje bez zmian */ }
-    }
-
-    function refresh() {
-      bustCache(`log:${profile.id}:${TODAY}`)
-      bustCache(`report:${profile.id}`)
-      loadData()
+      } catch { /* sieć niedostępna — stan zostaje bez zmian */ }
     }
 
     function onFocus() {
@@ -570,24 +566,18 @@ export default function HomePage() {
     }
     document.addEventListener('visibilitychange', onFocus)
     window.addEventListener('focus', onFocus)
-    // iOS Safari bfcache — pageshow z persisted=true znaczy realny powrót z tła
     function onPageShow(e) { if (e.persisted) silentSyncLog() }
     window.addEventListener('pageshow', onPageShow)
 
-    // Realtime: subscribe to GLOBALNY channel zarządzany przez AuthContext.
     const unsubActivity = onTableChange('activity_log', silentSyncLog)
-    const unsubPoints   = onTableChange('points_log',   refresh)
+    const unsubPoints   = onTableChange('points_log',   reconcileReportScore)
 
-    // Bulletproof same-device sync — HomePage jest keep-alive w App.jsx, więc
-    // useEffect[profile] nie fire'uje przy nawigacji /shooting → /. Custom event
-    // od ShootingPage gwarantuje że activityLog odświeży się synchronicznie
-    // zanim user zdąży kliknąć trening drugi raz.
     function onActivityLogUpdated(e) {
       if (e.detail) {
         setActivityLog(e.detail)
         setCache(`log:${profile.id}:${TODAY}`, e.detail, 15 * 1000)
       } else {
-        refresh()
+        silentSyncLog()
       }
     }
     window.addEventListener('hc:activity-log-updated', onActivityLogUpdated)
