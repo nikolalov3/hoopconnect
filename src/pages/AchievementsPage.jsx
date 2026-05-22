@@ -180,6 +180,46 @@ export default function AchievementsPage() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
   const [unseenBaseIds, setUnseenBaseIds] = useState(new Set())
+  const [devBusy, setDevBusy] = useState(false)
+  const isDev = profile?.username === 'nikolaalovexo'
+
+  async function devUnlockAll() {
+    if (!profile) return
+    setDevBusy(true)
+    try {
+      const allCatalog = await fetchAchievementsCatalog()
+      const TODAY = new Date().toISOString().split('T')[0]
+      const { data: existing } = await supabase.from('user_achievements').select('achievement_id').eq('user_id', profile.id)
+      const existingIds = new Set((existing || []).map(a => a.achievement_id))
+      const toInsert = []
+      for (const ach of allCatalog) {
+        if (ach.type === 'staged') {
+          for (const stage of (ach.stages || [])) {
+            const key = `${ach.id}_${stage.medal}`
+            if (!existingIds.has(key)) toInsert.push({ user_id: profile.id, achievement_id: key, base_id: ach.id })
+          }
+        } else if (ach.type === 'repeatable') {
+          const key = `${ach.id}_${TODAY}`
+          if (!existingIds.has(key)) toInsert.push({ user_id: profile.id, achievement_id: key, base_id: ach.id })
+        }
+      }
+      if (toInsert.length > 0) await supabase.from('user_achievements').insert(toInsert)
+      window.location.reload()
+    } finally { setDevBusy(false) }
+  }
+
+  async function devClearAll() {
+    if (!profile || !window.confirm('Wyczyścić wszystkie osiągnięcia i logi aktywności?')) return
+    setDevBusy(true)
+    try {
+      await Promise.all([
+        supabase.from('user_achievements').delete().eq('user_id', profile.id),
+        supabase.from('activity_log').delete().eq('user_id', profile.id),
+        supabase.from('points_log').delete().eq('user_id', profile.id),
+      ])
+      window.location.reload()
+    } finally { setDevBusy(false) }
+  }
 
   async function handlePress(a) {
     setSelected(a)
@@ -382,6 +422,27 @@ export default function AchievementsPage() {
         {totalUnlocked} z {total} odblokowanych
       </p>
 
+
+      {isDev && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <button onClick={devUnlockAll} disabled={devBusy} style={{
+            flex: 1, padding: '9px 6px',
+            background: 'rgba(255,80,0,0.12)', border: '1px dashed rgba(255,80,0,0.45)',
+            borderRadius: 10, color: 'var(--orange)', fontSize: 11, fontWeight: 700,
+            letterSpacing: 0.8, textTransform: 'uppercase', cursor: 'pointer',
+          }}>
+            {devBusy ? '...' : '🛠 Odblokuj wszystkie'}
+          </button>
+          <button onClick={devClearAll} disabled={devBusy} style={{
+            flex: 1, padding: '9px 6px',
+            background: 'rgba(255,40,40,0.10)', border: '1px dashed rgba(255,60,60,0.40)',
+            borderRadius: 10, color: 'rgba(255,90,90,0.85)', fontSize: 11, fontWeight: 700,
+            letterSpacing: 0.8, textTransform: 'uppercase', cursor: 'pointer',
+          }}>
+            {devBusy ? '...' : '🗑 Wyczyść konto'}
+          </button>
+        </div>
+      )}
 
       {/* Pasek postępu */}
       <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 4, height: 3, overflow: 'hidden', marginBottom: 28 }}>

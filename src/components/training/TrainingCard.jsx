@@ -256,7 +256,7 @@ function TrainingCard({ training, done, onDone, onUndo, onSwap, canSwap }) {
                   }}>
                     ✓ Ukończono
                   </p>
-                  {onUndo && (
+                  {onUndo && !isShooting && (
                     <button
                       onClick={e => { e.stopPropagation(); onUndo() }}
                       style={{
