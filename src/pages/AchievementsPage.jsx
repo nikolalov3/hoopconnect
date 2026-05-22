@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { fetchAchievementsCatalog, getCurrentStage, clearAchievementsCache, getTrainingCategoryIds, getCurrentAttendanceStreak, checkTeamPracticeStreak, revokeStaleAchievements } from '../lib/achievements'
+import { fetchAchievementsCatalog, getCurrentStage, getTrainingCategoryIds, getCurrentAttendanceStreak, checkTeamPracticeStreak, revokeStaleAchievements } from '../lib/achievements'
 import { getCache, setCache, bustCache } from '../lib/queryCache'
 
 // ── STYLE MEDALI ──────────────────────────────────────────────────────────────
@@ -179,7 +179,6 @@ export default function AchievementsPage() {
   const [userProgress, setUserProgress] = useState({})
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
-  const [unlockingAll, setUnlockingAll] = useState(false)
   const [unseenBaseIds, setUnseenBaseIds] = useState(new Set())
 
   async function handlePress(a) {
@@ -192,51 +191,6 @@ export default function AchievementsPage() {
         .eq('user_id', profile.id)
         .eq('base_id', a.id)
         .is('seen_at', null)
-    }
-  }
-
-  async function unlockAllAchievements() {
-    if (!profile) return
-    setUnlockingAll(true)
-    try {
-      clearAchievementsCache()
-      const allCatalog = await fetchAchievementsCatalog()
-      const TODAY = new Date().toISOString().split('T')[0]
-      const { data: existing } = await supabase
-        .from('user_achievements')
-        .select('achievement_id')
-        .eq('user_id', profile.id)
-      const existingIds = new Set((existing || []).map(a => a.achievement_id))
-
-      const toInsert = []
-      for (const ach of allCatalog) {
-        if (ach.type === 'staged') {
-          for (const stage of (ach.stages || [])) {
-            const key = `${ach.id}_${stage.medal}`
-            if (!existingIds.has(key)) toInsert.push({ user_id: profile.id, achievement_id: key, base_id: ach.id })
-          }
-        } else if (ach.type === 'repeatable') {
-          const key = `${ach.id}_${TODAY}`
-          if (!existingIds.has(key)) toInsert.push({ user_id: profile.id, achievement_id: key, base_id: ach.id })
-        }
-      }
-
-      if (toInsert.length === 0) {
-        alert('[DEV] Wszystko już odblokowane — nic do dodania.')
-        return
-      }
-      const { error: insErr } = await supabase.from('user_achievements').insert(toInsert)
-      if (insErr) {
-        console.error('[DEV unlock-all] insert error:', insErr)
-        alert(`[DEV] Insert failed: ${insErr.message}\n(zobacz console)`)
-        return
-      }
-      window.location.reload()
-    } catch (e) {
-      console.error('[DEV unlock-all]', e)
-      alert(`[DEV] Błąd: ${e?.message || e}\n(zobacz console)`)
-    } finally {
-      setUnlockingAll(false)
     }
   }
 
@@ -428,21 +382,6 @@ export default function AchievementsPage() {
         {totalUnlocked} z {total} odblokowanych
       </p>
 
-      {/* ── DEV: odblokuj wszystko ── */}
-      {import.meta.env.DEV && (
-        <button
-          onClick={unlockAllAchievements}
-          disabled={unlockingAll}
-          style={{
-            marginBottom: 16, width: '100%', padding: '10px',
-            background: 'rgba(255,80,0,0.15)', border: '1px dashed rgba(255,80,0,0.5)',
-            borderRadius: 10, color: 'var(--orange)', fontSize: 12, fontWeight: 700,
-            letterSpacing: 1, textTransform: 'uppercase', cursor: 'pointer',
-          }}
-        >
-          {unlockingAll ? 'Odblokowuję...' : '🛠 [DEV] Odblokuj wszystkie osiągnięcia'}
-        </button>
-      )}
 
       {/* Pasek postępu */}
       <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 4, height: 3, overflow: 'hidden', marginBottom: 28 }}>
