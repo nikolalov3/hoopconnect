@@ -181,7 +181,7 @@ export default function AchievementsPage() {
   const [selected, setSelected] = useState(null)
   const [unseenBaseIds, setUnseenBaseIds] = useState(new Set())
   const [devBusy, setDevBusy] = useState(false)
-  const isDev = profile?.username === 'nikolaalovexo'
+  const isDev = profile?.username === 'nikolalovexo@gmail.com'
 
   async function devUnlockAll() {
     if (!profile) return
