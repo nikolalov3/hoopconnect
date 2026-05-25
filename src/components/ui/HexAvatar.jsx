@@ -39,11 +39,9 @@ const FRAME_PATHS = {
   saltearth:    '/saltearth.png',
 }
 
-// Ramki zaprojektowane w orientacji "flat-top" (płaska góra/dół) wymagają
-// obrotu o -30°, żeby dopasować się do hexów "pointy-top" (wierzchołki góra/dół)
-// używanych w całej aplikacji. Środek obrotu: (45,45) w przestrzeni SVG.
+// Ramki które wymagają obrotu SVG (gdy PNG nie jest w orientacji pointy-top).
+// saltearth.png jest już obrócony fizycznie (PIL -30° CCW) — nie potrzebuje rotacji SVG.
 const FRAME_ROTATIONS = {
-  saltearth: 30,
 }
 
 // ── Shared frame SVG ─────────────────────────────────────────────────────────
