@@ -39,7 +39,7 @@ const ALL_FRAMES = [
   { id: 'none',         label: 'Brak'         },
   { id: 'early_access', label: 'Early Access' },
   { id: 'diamond_s1',   label: 'Diament S1'   },
-  { id: 'saltearth',    label: 'Salt Earth'   },
+  { id: 'saltearth',    label: 'Salt of the Earth' },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

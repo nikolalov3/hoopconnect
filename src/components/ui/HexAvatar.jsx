@@ -117,13 +117,15 @@ function FrameSVG({ id, variant, avatarContent, size, clip = false, noAnim = fal
 export function HexFrameOnly({ size = 78, variant = 'default' }) {
   const raw = useId()
   const id  = raw.replace(/[^a-zA-Z0-9]/g, 'x')
+  // Rotated frames need overflow: visible so the rotated corners aren't clipped
+  const hasRotation = !!FRAME_ROTATIONS[variant]
 
   return (
     <div style={{
       position: 'absolute', inset: 0,
       pointerEvents: 'none', zIndex: 10,
     }}>
-      <FrameSVG id={id} variant={variant} avatarContent={null} size={size} clip />
+      <FrameSVG id={id} variant={variant} avatarContent={null} size={size} clip={!hasRotation} />
     </div>
   )
 }
