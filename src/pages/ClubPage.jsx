@@ -1834,9 +1834,13 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
     })
   }
 
-  const HEX = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
+  // HEX clipPath calibrated to HexFrameOnly's SVG coordinate system:
+  // viewBox "-16 -16 122 122", AVATAR polygon "45,6 82,32 82,58 45,84 8,58 8,32" in 90×90 space.
+  // Each point: (coord + 16) / 122 → percent of rendered size.
+  // Top 18%, right 80%, bottom 82%, left 20% — matches frame PNG exactly.
+  const HEX = 'polygon(50% 18%, 80% 39%, 80% 61%, 50% 82%, 20% 61%, 20% 39%)'
 
-  function PlayerSlot({ team, player }) {
+  function PlayerSlot({ team, player, canJoin }) {
     const SZ = n >= 5 ? 44 : 50
     const tColor = team === 'home' ? C.accent : C.hoop
     const filled = !!player
@@ -1844,53 +1848,51 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
     const initial = player?.profile?.name?.[0]?.toUpperCase() || '?'
     return (
       <div style={{ position: 'relative', width: SZ, height: SZ, flexShrink: 0 }}>
-        {/* Pulsing ring on empty slots */}
-        {!filled && (
+        {/* Pulse ring — only for users who can actually join this team */}
+        {!filled && canJoin && (
           <motion.div
-            animate={{ scale: [1, 1.22, 1], opacity: [0, 0.4, 0] }}
-            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: Math.random() * 1.5 }}
+            animate={{ scale: [1, 1.28, 1], opacity: [0, 0.38, 0] }}
+            transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut', delay: Math.random() * 1.2 }}
             style={{
-              position: 'absolute', inset: -4,
+              position: 'absolute', inset: -5,
               clipPath: HEX,
-              background: `${tColor}22`,
+              background: `${tColor}20`,
               pointerEvents: 'none',
             }}
           />
         )}
-        {/* Subtle glow for my slot only */}
+        {/* Me — gentle glow behind hex */}
         {isMe && (
           <div style={{
-            position: 'absolute', inset: -3,
+            position: 'absolute', inset: -2,
             clipPath: HEX,
-            background: `linear-gradient(135deg, ${tColor}45, ${tColor}20)`,
+            background: `linear-gradient(135deg, ${tColor}38, ${tColor}18)`,
           }}/>
         )}
-        {/* Hex body */}
+        {/* Hex body — inset: 0 so it aligns perfectly with HexFrameOnly */}
         <div style={{
-          position: 'absolute',
-          inset: filled ? 2 : 0,
+          position: 'absolute', inset: 0,
           clipPath: HEX,
           background: filled
             ? isMe
-              ? `linear-gradient(145deg, ${tColor}F0, ${tColor}A0)`
-              : `linear-gradient(145deg, ${tColor}28, ${tColor}14)`
-            : `linear-gradient(145deg, rgba(14,24,44,0.80), rgba(6,12,24,0.90))`,
-          border: 'none',
+              ? `linear-gradient(145deg, ${tColor}E8, ${tColor}90)`
+              : `linear-gradient(145deg, ${tColor}26, ${tColor}10)`
+            : `linear-gradient(145deg, rgba(12,22,40,0.85), rgba(5,10,22,0.92))`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {filled
             ? <span style={{
-                fontSize: n >= 5 ? 13 : 15, fontWeight: 900,
+                fontSize: n >= 5 ? 12 : 14, fontWeight: 900,
                 fontFamily: 'var(--font-display)',
                 color: isMe ? '#000' : tColor, lineHeight: 1,
               }}>{initial}</span>
             : <span style={{
-                fontSize: 15, lineHeight: 1, fontWeight: 300,
-                color: `${tColor}28`,
+                fontSize: 14, lineHeight: 1, fontWeight: 300,
+                color: `${tColor}25`,
               }}>+</span>
           }
         </div>
-        {/* Frame overlay */}
+        {/* Frame overlay — sits at inset:0, same reference box as hex body */}
         {filled && <HexFrameOnly size={SZ} variant={(isMe ? profile?.equipped_frame : player?.profile?.equipped_frame) || 'none'} />}
       </div>
     )
@@ -2123,11 +2125,18 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                     </div>
 
                     {/* Right: player slots horizontal */}
+                    {(() => {
+                      const teamFull = slots.filter(s => s.player).length >= n
+                      const locked = (team === 'home' && !isHomeClubMember) || (team === 'away' && isAwayLocked)
+                      const canJoinTeam = !myPlayer && !isFull && !isPast && !!userClubId && !teamFull && !locked
+                      return (
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: n >= 5 ? 'wrap' : 'nowrap', justifyContent: 'flex-end', maxWidth: n >= 5 ? 148 : 'none' }}>
                       {slots.map(({ slot, player }) => (
-                        <PlayerSlot key={slot} team={team} player={player} />
+                        <PlayerSlot key={slot} team={team} player={player} canJoin={canJoinTeam} />
                       ))}
                     </div>
+                      )
+                    })()}
                   </div>
                 </div>
               )
