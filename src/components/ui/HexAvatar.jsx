@@ -43,7 +43,7 @@ const FRAME_PATHS = {
 // obrotu o -30°, żeby dopasować się do hexów "pointy-top" (wierzchołki góra/dół)
 // używanych w całej aplikacji. Środek obrotu: (45,45) w przestrzeni SVG.
 const FRAME_ROTATIONS = {
-  saltearth: -30,
+  saltearth: 30,
 }
 
 // ── Shared frame SVG ─────────────────────────────────────────────────────────
