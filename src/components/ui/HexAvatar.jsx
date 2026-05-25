@@ -39,6 +39,13 @@ const FRAME_PATHS = {
   saltearth:    '/saltearth.png',
 }
 
+// Ramki zaprojektowane w orientacji "flat-top" (płaska góra/dół) wymagają
+// obrotu o -30°, żeby dopasować się do hexów "pointy-top" (wierzchołki góra/dół)
+// używanych w całej aplikacji. Środek obrotu: (45,45) w przestrzeni SVG.
+const FRAME_ROTATIONS = {
+  saltearth: -30,
+}
+
 // ── Shared frame SVG ─────────────────────────────────────────────────────────
 // viewBox "-16 -16 122 122" so the PNG (which fills the whole 122×122 space)
 // is placed at x=-16 y=-16 width=122 height=122 and perfectly covers the hex.
@@ -87,14 +94,21 @@ function FrameSVG({ id, variant, avatarContent, size, clip = false, noAnim = fal
       {avatarContent}
 
       {/* ── PNG frame overlay (skipped when src is null) ── */}
-      {src && (
-        <image
-          href={src}
-          x="-16" y="-16"
-          width="122" height="122"
-          preserveAspectRatio="xMidYMid meet"
-        />
-      )}
+      {src && (() => {
+        const rot = FRAME_ROTATIONS[variant]
+        const img = (
+          <image
+            href={src}
+            x="-16" y="-16"
+            width="122" height="122"
+            preserveAspectRatio="xMidYMid meet"
+          />
+        )
+        // Centre of viewBox is (45,45) in SVG coordinate space
+        return rot
+          ? <g transform={`rotate(${rot}, 45, 45)`}>{img}</g>
+          : img
+      })()}
     </svg>
   )
 }

@@ -39,6 +39,7 @@ const ALL_FRAMES = [
   { id: 'none',         label: 'Brak'         },
   { id: 'early_access', label: 'Early Access' },
   { id: 'diamond_s1',   label: 'Diament S1'   },
+  { id: 'saltearth',    label: 'Salt Earth'   },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -365,8 +366,10 @@ function FramePicker({ current, uid, profile, onPick }) {
     const frames = new Set(['none'])
     if (uid && localStorage.getItem(`hc_frame_seen_early_access_${uid}`)) frames.add('early_access')
     if (uid && localStorage.getItem(`hc_frame_seen_diamond_s1_${uid}`))   frames.add('diamond_s1')
+    // Ramka właściciela — widoczna tylko dla konta deweloperskiego
+    if (profile?.username === 'nikolalovexo@gmail.com') frames.add('saltearth')
     return frames
-  }, [uid])
+  }, [uid, profile?.username])
 
   return (
     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
