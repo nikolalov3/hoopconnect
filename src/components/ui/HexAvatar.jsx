@@ -36,6 +36,7 @@ const FRAME_PATHS = {
   gold:         '/earlyaccess.png',
   early_access: '/earlyaccess.png',
   diamond_s1:   '/ramkas1diax.png',
+  saltearth:    '/saltearth.png',
 }
 
 // ── Shared frame SVG ─────────────────────────────────────────────────────────
