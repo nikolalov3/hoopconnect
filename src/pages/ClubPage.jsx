@@ -1393,7 +1393,7 @@ function MatchCard({ match, dist, uid, onPress }) {
           {/* Away team */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
             <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase',
-              color: `${C.hoop}90` }}>{match._awayClub?.abbr || match._awayClub?.name || 'Rywale'}</span>
+              color: `${C.hoop}90` }}>{match._awayClub?.abbr || match._awayClub?.name || (match.away_club_id ? 'Rywale' : 'Dołącz')}</span>
             <div style={{ display: 'flex', gap: 4 }}>
               {Array.from({ length: slots }).map((_, i) => {
                 const filled = awayPlayers.some(p => p.slot === i + 1)
@@ -1769,11 +1769,11 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
   // Away team is locked for 3rd clubs: once a club claims it, only their members can join
   const isAwayLocked = !!(local.away_club_id && local.away_club_id !== userClubId)
   const homeTeamName = local._club?.name || 'Drużyna A'
-  // If away is claimed by our club → show our name; if by another → show their name; if free → generic
+  // If away is claimed by our club → show our name; if by another → show their name; if free → invite
+  const awayIsFree = !local.away_club_id
   const awayDisplayName = local._awayClub?.name
     || (local.away_club_id === userClubId ? userClubName : null)
-    || userClubName
-    || 'Rywale'
+    || (awayIsFree ? 'Dołącz' : 'Rywale')
   const awayTeamName = awayDisplayName
   const isCreator = local.created_by === uid
   const awayHasPlayers = local.players.some(p => p.team === 'away')
@@ -1933,10 +1933,15 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
       <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 32 }}
         style={{ marginTop: 'auto', width: '100%', maxWidth: 430,
-          background: C.bg, borderRadius: '24px 24px 0 0',
-          border: `1px solid ${C.line}`, borderBottom: 'none',
+          background: 'rgba(4,10,22,0.92)',
+          backdropFilter: 'blur(48px) saturate(1.9)',
+          WebkitBackdropFilter: 'blur(48px) saturate(1.9)',
+          borderRadius: '28px 28px 0 0',
+          borderTop: '0.5px solid rgba(0,210,255,0.30)',
+          borderLeft: '0.5px solid rgba(0,210,255,0.12)',
+          borderRight: '0.5px solid rgba(0,210,255,0.12)',
           maxHeight: '82vh', overflowY: 'auto',
-          boxShadow: `0 -14px 52px rgba(0,200,255,0.09)` }}>
+          boxShadow: '0 -24px 80px rgba(0,160,255,0.14), inset 0 1px 0 rgba(0,210,255,0.18)' }}>
 
         {/* Handle */}
         <div style={{ paddingTop: 12, display: 'flex', justifyContent: 'center' }}>
@@ -2014,15 +2019,35 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
           )}
 
           {/* Teams grid */}
-          <div style={{ display: 'flex', gap: 14, marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
             {['home', 'away'].map(team => {
               const tColor = team === 'home' ? C.accent : C.hoop
+              const isFreeAway = team === 'away' && awayIsFree
               return (
-                <div key={team} style={{ flex: 1 }}>
-                  <p style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase',
-                    color: tColor, margin: '0 0 12px', textAlign: 'center' }}>
+                <div key={team} style={{
+                  flex: 1,
+                  background: isFreeAway
+                    ? `rgba(255,168,32,0.05)`
+                    : `${tColor}07`,
+                  border: isFreeAway
+                    ? `0.5px dashed rgba(255,168,32,0.32)`
+                    : `0.5px solid ${tColor}18`,
+                  borderRadius: 20,
+                  padding: '14px 10px 16px',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  boxShadow: `inset 0 1px 0 ${tColor}0A`,
+                }}>
+                  {/* Team name */}
+                  <p style={{
+                    fontSize: 9, fontWeight: 800, letterSpacing: 1.8,
+                    textTransform: 'uppercase',
+                    color: isFreeAway ? `${C.hoop}90` : tColor,
+                    margin: '0 0 14px', textAlign: 'center',
+                    opacity: isFreeAway ? 0.7 : 1,
+                  }}>
                     {team === 'home' ? homeTeamName : awayTeamName}
                   </p>
+                  {/* Slots */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
                     {getTeamSlots(team).map(({ slot, player }) => (
                       <SlotHex key={slot} team={team} player={player}/>
@@ -2041,25 +2066,51 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
               {['home', 'away'].map(team => {
                 const tColor = team === 'home' ? C.accent : C.hoop
                 const teamFull = local.players.filter(p => p.team === team).length >= n
-                // Drużyna A (home) — tylko dla członków klubu tworzącego mecz
                 const locked = (team === 'home' && !isHomeClubMember) || (team === 'away' && isAwayLocked)
                 const disabled = joining || teamFull || locked
                 const lockedLabel = team === 'home'
-                  ? '🔒 Tylko twój klub'
+                  ? '🔒 Tylko Twój klub'
                   : `🔒 ${local._awayClub?.abbr || local._awayClub?.name || 'Inny klub'}`
+                const isOpenAway = team === 'away' && awayIsFree && !teamFull && !locked
+
                 return (
-                  <motion.button key={team} whileTap={!disabled ? { scale: 0.96 } : {}}
+                  <motion.button key={team}
+                    whileTap={!disabled ? { scale: 0.97 } : {}}
                     onClick={() => !disabled && handleJoin(team)}
                     disabled={disabled}
-                    style={{ flex: 1, padding: '13px', border: 'none', borderRadius: 14,
+                    style={{
+                      flex: 1, padding: '15px 10px', border: 'none', borderRadius: 18,
                       cursor: disabled ? 'default' : 'pointer',
-                      background: locked ? `${C.dim}20` : teamFull ? `${C.dim}30` : `${tColor}18`,
-                      outline: `1.5px solid ${locked || teamFull ? C.dim : tColor}`,
-                      color: locked ? C.dim : teamFull ? C.sub : tColor,
-                      fontSize: 11, fontWeight: 800, letterSpacing: 1,
-                      fontFamily: 'var(--font-display)', transition: 'all 0.18s',
-                      opacity: joining ? 0.7 : 1 }}>
-                    {locked ? lockedLabel : teamFull ? 'Pełna' : joining ? '…' : `Dołącz — ${team === 'home' ? homeTeamName : awayTeamName}`}
+                      fontFamily: 'var(--font-display)',
+                      fontSize: 11, fontWeight: 800, letterSpacing: 0.8,
+                      textTransform: 'uppercase',
+                      transition: 'all 0.18s',
+                      opacity: joining ? 0.65 : 1,
+                      ...(locked ? {
+                        background: 'rgba(23,40,64,0.55)',
+                        border: '0.5px solid rgba(255,255,255,0.06)',
+                        color: 'rgba(90,120,150,0.70)',
+                      } : teamFull ? {
+                        background: 'rgba(23,40,64,0.55)',
+                        border: '0.5px solid rgba(255,255,255,0.06)',
+                        color: 'rgba(90,120,150,0.70)',
+                      } : isOpenAway ? {
+                        // Away slot free — inviting CTA
+                        background: `linear-gradient(145deg, rgba(255,168,32,0.22) 0%, rgba(255,120,0,0.14) 100%)`,
+                        border: `0.5px solid rgba(255,168,32,0.40)`,
+                        boxShadow: `0 4px 20px rgba(255,168,32,0.18), inset 0 1px 0 rgba(255,200,80,0.22)`,
+                        color: C.hoop,
+                      } : {
+                        background: `linear-gradient(145deg, ${tColor}22 0%, ${tColor}12 100%)`,
+                        border: `0.5px solid ${tColor}45`,
+                        boxShadow: `0 4px 20px ${tColor}14, inset 0 1px 0 ${tColor}18`,
+                        color: tColor,
+                      }),
+                    }}>
+                    {locked ? lockedLabel
+                      : teamFull ? 'Pełna'
+                      : joining ? '…'
+                      : `Dołącz — ${team === 'home' ? homeTeamName : awayTeamName}`}
                   </motion.button>
                 )
               })}
