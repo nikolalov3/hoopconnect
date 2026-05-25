@@ -392,7 +392,7 @@ async function apiJoinMatch(matchId, userId, team, mode) {
 
   const { error } = await supabase.from('match_players').insert({ match_id: matchId, user_id: userId, team, slot })
   if (error) {
-    if (error.code === '23505') throw new Error('Już jesteś w tym meczu')
+    if (error.code === '23505') throw new Error('Ten slot właśnie zajął ktoś inny — odśwież i spróbuj ponownie')
     throw error
   }
   const { count } = await supabase.from('match_players').select('*', { count: 'exact', head: true }).eq('match_id', matchId)
@@ -437,19 +437,35 @@ async function apiSubmitHomeScore(matchId, scoreHome, scoreAway, autoComplete = 
 async function awardMatchPoints(matchId) {
   const { data: players } = await supabase
     .from('match_players')
-    .select('user_id')
+    .select('user_id, profiles(created_at)')
     .eq('match_id', matchId)
   if (!players || players.length === 0) return
   const today = new Date().toISOString().split('T')[0]
-  const rows = players.map(p => ({
-    user_id:  p.user_id,
-    points:   20,
-    source:   'match',
-    date:     today,
-    match_id: matchId,
-  }))
+  const now = Date.now()
+  const rows = players.map(p => {
+    const createdAt = p.profiles?.created_at
+    const daysSince = createdAt
+      ? Math.floor((now - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24))
+      : 0
+    const weekNumber = Math.floor(daysSince / 7) + 1
+    return {
+      user_id:     p.user_id,
+      points:      20,
+      source:      'match',
+      date:        today,
+      match_id:    matchId,
+      week_number: weekNumber,
+    }
+  })
   await supabase.from('points_log').insert(rows)
-  Promise.all(players.map(p => checkTeamWinAchievements(p.user_id, null))).catch(() => {})
+  Promise.all(players.map(p => {
+    const createdAt = p.profiles?.created_at
+    const daysSince = createdAt
+      ? Math.floor((now - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24))
+      : 0
+    const weekNumber = Math.floor(daysSince / 7) + 1
+    return checkTeamWinAchievements(p.user_id, weekNumber)
+  })).catch(() => {})
 }
 
 // Away captain confirms home's submitted score
@@ -2060,8 +2076,19 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
 
           {err && <p style={{ fontSize: 11, color: C.loss, textAlign: 'center', marginBottom: 12 }}>{err}</p>}
 
+          {/* No club warning */}
+          {!myPlayer && !isFull && !isPast && !userClubId && (
+            <div style={{ padding: '13px 16px', borderRadius: 14, marginBottom: 10,
+              background: 'rgba(255,168,32,0.08)', border: '0.5px solid rgba(255,168,32,0.28)',
+              textAlign: 'center' }}>
+              <p style={{ margin: 0, fontSize: 12, color: C.hoop, fontWeight: 600, lineHeight: 1.5 }}>
+                Dołącz do klubu, żeby zagrać w meczu
+              </p>
+            </div>
+          )}
+
           {/* Join buttons */}
-          {!myPlayer && !isFull && !isPast && (
+          {!myPlayer && !isFull && !isPast && userClubId && (
             <div style={{ display: 'flex', gap: 10 }}>
               {['home', 'away'].map(team => {
                 const tColor = team === 'home' ? C.accent : C.hoop
