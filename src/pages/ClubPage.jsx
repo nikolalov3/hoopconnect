@@ -1836,22 +1836,33 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
 
   const HEX = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
 
-  function SlotHex({ team, player }) {
-    const SZ = 52  // square size so PNG frame aligns perfectly
+  function PlayerSlot({ team, player }) {
+    const SZ = n >= 5 ? 44 : 50
     const tColor = team === 'home' ? C.accent : C.hoop
     const filled = !!player
     const isMe = player?.user_id === uid
     const initial = player?.profile?.name?.[0]?.toUpperCase() || '?'
     return (
       <div style={{ position: 'relative', width: SZ, height: SZ, flexShrink: 0 }}>
-        {/* Outer glow ring */}
-        {filled && (
+        {/* Pulsing ring on empty slots */}
+        {!filled && (
+          <motion.div
+            animate={{ scale: [1, 1.22, 1], opacity: [0, 0.4, 0] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: Math.random() * 1.5 }}
+            style={{
+              position: 'absolute', inset: -4,
+              clipPath: HEX,
+              background: `${tColor}22`,
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+        {/* Subtle glow for my slot only */}
+        {isMe && (
           <div style={{
-            position: 'absolute', inset: -2,
+            position: 'absolute', inset: -3,
             clipPath: HEX,
-            background: isMe
-              ? `linear-gradient(135deg, ${tColor}90, ${tColor}50)`
-              : `${tColor}30`,
+            background: `linear-gradient(135deg, ${tColor}45, ${tColor}20)`,
           }}/>
         )}
         {/* Hex body */}
@@ -1861,21 +1872,25 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
           clipPath: HEX,
           background: filled
             ? isMe
-              ? `linear-gradient(135deg, ${tColor}, ${tColor}CC)`
-              : `${tColor}20`
-            : `${C.dim}45`,
+              ? `linear-gradient(145deg, ${tColor}F0, ${tColor}A0)`
+              : `linear-gradient(145deg, ${tColor}28, ${tColor}14)`
+            : `linear-gradient(145deg, rgba(14,24,44,0.80), rgba(6,12,24,0.90))`,
+          border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {filled
             ? <span style={{
-                fontSize: 16, fontWeight: 900, fontFamily: 'var(--font-display)',
+                fontSize: n >= 5 ? 13 : 15, fontWeight: 900,
+                fontFamily: 'var(--font-display)',
                 color: isMe ? '#000' : tColor, lineHeight: 1,
-                textShadow: isMe ? 'none' : `0 0 8px ${tColor}65`,
               }}>{initial}</span>
-            : <span style={{ fontSize: 20, color: `${tColor}35`, lineHeight: 1 }}>+</span>
+            : <span style={{
+                fontSize: 15, lineHeight: 1, fontWeight: 300,
+                color: `${tColor}28`,
+              }}>+</span>
           }
         </div>
-        {/* Frame overlay — only on filled slots */}
+        {/* Frame overlay */}
         {filled && <HexFrameOnly size={SZ} variant={(isMe ? profile?.equipped_frame : player?.profile?.equipped_frame) || 'none'} />}
       </div>
     )
@@ -1956,12 +1971,12 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
           borderTop: '0.5px solid rgba(0,210,255,0.30)',
           borderLeft: '0.5px solid rgba(0,210,255,0.12)',
           borderRight: '0.5px solid rgba(0,210,255,0.12)',
-          maxHeight: '82vh', overflowY: 'auto',
+          maxHeight: '91vh', overflowY: 'auto',
           boxShadow: '0 -24px 80px rgba(0,160,255,0.14), inset 0 1px 0 rgba(0,210,255,0.18)' }}>
 
         {/* Handle */}
-        <div style={{ paddingTop: 12, display: 'flex', justifyContent: 'center' }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: C.dim }}/>
+        <div style={{ paddingTop: 14, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(0,210,255,0.18)' }}/>
         </div>
 
         <div style={{ padding: '14px 20px 36px' }}>
@@ -2034,40 +2049,85 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
             </div>
           )}
 
-          {/* Teams grid */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-            {['home', 'away'].map(team => {
+          {/* Teams — stacked rows, players horizontal */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 20 }}>
+            {['home', 'away'].map((team, ti) => {
               const tColor = team === 'home' ? C.accent : C.hoop
               const isFreeAway = team === 'away' && awayIsFree
+              const teamName = team === 'home' ? homeTeamName : awayTeamName
+              const slots = getTeamSlots(team)
+              const filledCount = slots.filter(s => s.player).length
               return (
-                <div key={team} style={{
-                  flex: 1,
-                  background: isFreeAway
-                    ? `rgba(255,168,32,0.05)`
-                    : `${tColor}07`,
-                  border: isFreeAway
-                    ? `0.5px dashed rgba(255,168,32,0.32)`
-                    : `0.5px solid ${tColor}18`,
-                  borderRadius: 20,
-                  padding: '14px 10px 16px',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  boxShadow: `inset 0 1px 0 ${tColor}0A`,
-                }}>
-                  {/* Team name */}
-                  <p style={{
-                    fontSize: 9, fontWeight: 800, letterSpacing: 1.8,
-                    textTransform: 'uppercase',
-                    color: isFreeAway ? `${C.hoop}90` : tColor,
-                    margin: '0 0 14px', textAlign: 'center',
-                    opacity: isFreeAway ? 0.7 : 1,
+                <div key={team}>
+                  {/* VS divider between teams */}
+                  {ti === 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '10px 0' }}>
+                      <div style={{ flex: 1, height: '0.5px', background: `linear-gradient(to right, transparent, ${C.accent}30)` }}/>
+                      <motion.div
+                        animate={{ opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                        style={{
+                          fontSize: 9, fontWeight: 900, letterSpacing: 3,
+                          fontFamily: 'var(--font-display)',
+                          color: 'rgba(80,130,180,0.65)',
+                          padding: '3px 10px',
+                          background: 'rgba(0,180,255,0.06)',
+                          borderRadius: 6,
+                          border: '0.5px solid rgba(0,180,255,0.12)',
+                        }}>VS</motion.div>
+                      <div style={{ flex: 1, height: '0.5px', background: `linear-gradient(to left, transparent, ${C.hoop}30)` }}/>
+                    </div>
+                  )}
+
+                  {/* Team card — full width, horizontal players */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '16px 18px',
+                    background: isFreeAway
+                      ? 'linear-gradient(135deg, rgba(255,140,0,0.06) 0%, rgba(255,100,0,0.03) 100%)'
+                      : team === 'home'
+                        ? 'linear-gradient(135deg, rgba(0,204,255,0.07) 0%, rgba(0,120,200,0.03) 100%)'
+                        : 'rgba(255,168,32,0.04)',
+                    border: isFreeAway
+                      ? '0.5px dashed rgba(255,168,32,0.30)'
+                      : `0.5px solid ${tColor}20`,
+                    borderRadius: 20,
+                    boxShadow: `inset 0 1px 0 ${tColor}0C, 0 2px 12px rgba(0,0,0,0.18)`,
                   }}>
-                    {team === 'home' ? homeTeamName : awayTeamName}
-                  </p>
-                  {/* Slots */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                    {getTeamSlots(team).map(({ slot, player }) => (
-                      <SlotHex key={slot} team={team} player={player}/>
-                    ))}
+                    {/* Left: team info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        fontFamily: 'var(--font-display)', fontWeight: 800,
+                        fontSize: 13, letterSpacing: 0.4,
+                        textTransform: 'uppercase',
+                        color: isFreeAway ? `rgba(255,168,32,0.55)` : tColor,
+                        margin: '0 0 4px',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        {teamName}
+                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {/* Fill dots */}
+                        {Array.from({ length: n }).map((_, i) => (
+                          <div key={i} style={{
+                            width: 5, height: 5, borderRadius: '50%',
+                            background: i < filledCount ? tColor : 'rgba(255,255,255,0.08)',
+                            boxShadow: i < filledCount ? `0 0 5px ${tColor}60` : 'none',
+                            transition: 'all 0.3s',
+                          }}/>
+                        ))}
+                        <span style={{ fontSize: 9, color: 'rgba(100,140,180,0.60)', fontWeight: 600, marginLeft: 2 }}>
+                          {filledCount}/{n}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Right: player slots horizontal */}
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: n >= 5 ? 'wrap' : 'nowrap', justifyContent: 'flex-end', maxWidth: n >= 5 ? 148 : 'none' }}>
+                      {slots.map(({ slot, player }) => (
+                        <PlayerSlot key={slot} team={team} player={player} />
+                      ))}
+                    </div>
                   </div>
                 </div>
               )
@@ -2088,61 +2148,71 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
           )}
 
           {/* Join buttons */}
-          {!myPlayer && !isFull && !isPast && userClubId && (
-            <div style={{ display: 'flex', gap: 10 }}>
-              {['home', 'away'].map(team => {
-                const tColor = team === 'home' ? C.accent : C.hoop
-                const teamFull = local.players.filter(p => p.team === team).length >= n
-                const locked = (team === 'home' && !isHomeClubMember) || (team === 'away' && isAwayLocked)
-                const disabled = joining || teamFull || locked
-                const lockedLabel = team === 'home'
-                  ? '🔒 Tylko Twój klub'
-                  : `🔒 ${local._awayClub?.abbr || local._awayClub?.name || 'Inny klub'}`
-                const isOpenAway = team === 'away' && awayIsFree && !teamFull && !locked
+          {!myPlayer && !isFull && !isPast && userClubId && (() => {
+            // Which teams can I still join?
+            const joinable = ['home', 'away'].filter(team => {
+              const teamFull = local.players.filter(p => p.team === team).length >= n
+              const locked = (team === 'home' && !isHomeClubMember) || (team === 'away' && isAwayLocked)
+              return !teamFull && !locked
+            })
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {['home', 'away'].map(team => {
+                  const tColor = team === 'home' ? C.accent : C.hoop
+                  const teamFull = local.players.filter(p => p.team === team).length >= n
+                  const locked = (team === 'home' && !isHomeClubMember) || (team === 'away' && isAwayLocked)
+                  const disabled = joining || teamFull || locked
+                  const isOpenAway = team === 'away' && awayIsFree && !teamFull && !locked
+                  const isActive = !disabled
+                  const lockedLabel = team === 'home'
+                    ? '🔒 Tylko Twój klub'
+                    : `🔒 ${local._awayClub?.abbr || local._awayClub?.name || 'Inny klub'}`
 
-                return (
-                  <motion.button key={team}
-                    whileTap={!disabled ? { scale: 0.97 } : {}}
-                    onClick={() => !disabled && handleJoin(team)}
-                    disabled={disabled}
-                    style={{
-                      flex: 1, padding: '15px 10px', border: 'none', borderRadius: 18,
-                      cursor: disabled ? 'default' : 'pointer',
-                      fontFamily: 'var(--font-display)',
-                      fontSize: 11, fontWeight: 800, letterSpacing: 0.8,
-                      textTransform: 'uppercase',
-                      transition: 'all 0.18s',
-                      opacity: joining ? 0.65 : 1,
-                      ...(locked ? {
-                        background: 'rgba(23,40,64,0.55)',
-                        border: '0.5px solid rgba(255,255,255,0.06)',
-                        color: 'rgba(90,120,150,0.70)',
-                      } : teamFull ? {
-                        background: 'rgba(23,40,64,0.55)',
-                        border: '0.5px solid rgba(255,255,255,0.06)',
-                        color: 'rgba(90,120,150,0.70)',
-                      } : isOpenAway ? {
-                        // Away slot free — inviting CTA
-                        background: `linear-gradient(145deg, rgba(255,168,32,0.22) 0%, rgba(255,120,0,0.14) 100%)`,
-                        border: `0.5px solid rgba(255,168,32,0.40)`,
-                        boxShadow: `0 4px 20px rgba(255,168,32,0.18), inset 0 1px 0 rgba(255,200,80,0.22)`,
-                        color: C.hoop,
-                      } : {
-                        background: `linear-gradient(145deg, ${tColor}22 0%, ${tColor}12 100%)`,
-                        border: `0.5px solid ${tColor}45`,
-                        boxShadow: `0 4px 20px ${tColor}14, inset 0 1px 0 ${tColor}18`,
-                        color: tColor,
-                      }),
-                    }}>
-                    {locked ? lockedLabel
-                      : teamFull ? 'Pełna'
-                      : joining ? '…'
-                      : `Dołącz — ${team === 'home' ? homeTeamName : awayTeamName}`}
-                  </motion.button>
-                )
-              })}
-            </div>
-          )}
+                  // Hide fully locked teams if there's at least one joinable
+                  if (locked && joinable.length > 0) return null
+
+                  return (
+                    <motion.button key={team}
+                      whileTap={isActive ? { scale: 0.98 } : {}}
+                      onClick={() => isActive && handleJoin(team)}
+                      disabled={disabled}
+                      style={{
+                        width: '100%', padding: '16px', border: 'none',
+                        borderRadius: 18, cursor: disabled ? 'default' : 'pointer',
+                        fontFamily: 'var(--font-display)',
+                        fontSize: 13, fontWeight: 800, letterSpacing: 1,
+                        textTransform: 'uppercase',
+                        transition: 'all 0.2s',
+                        opacity: joining ? 0.65 : 1,
+                        ...(teamFull ? {
+                          background: 'rgba(14,24,42,0.60)',
+                          border: '0.5px solid rgba(255,255,255,0.06)',
+                          color: 'rgba(80,110,140,0.55)',
+                        } : isOpenAway ? {
+                          background: 'linear-gradient(145deg, rgba(255,150,20,0.28) 0%, rgba(255,100,0,0.16) 100%)',
+                          border: '0.5px solid rgba(255,168,32,0.50)',
+                          boxShadow: '0 6px 28px rgba(255,140,0,0.22), inset 0 1px 0 rgba(255,200,80,0.25)',
+                          color: C.hoop,
+                        } : isActive ? {
+                          background: `linear-gradient(145deg, ${tColor}28 0%, ${tColor}14 100%)`,
+                          border: `0.5px solid ${tColor}50`,
+                          boxShadow: `0 6px 28px ${tColor}18, inset 0 1px 0 ${tColor}22`,
+                          color: tColor,
+                        } : {
+                          background: 'rgba(14,24,42,0.60)',
+                          border: '0.5px solid rgba(255,255,255,0.06)',
+                          color: 'rgba(80,110,140,0.55)',
+                        }),
+                      }}>
+                      {joining ? '…'
+                        : teamFull ? `${team === 'home' ? homeTeamName : awayTeamName} — Pełna`
+                        : `Dołącz — ${team === 'home' ? homeTeamName : awayTeamName}`}
+                    </motion.button>
+                  )
+                })}
+              </div>
+            )
+          })()}
 
           {/* Confirm leave + delete */}
           <AnimatePresence>
