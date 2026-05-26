@@ -36,20 +36,13 @@ const FRAME_PATHS = {
   gold:         '/earlyaccess.png',
   early_access: '/earlyaccess.png',
   diamond_s1:   '/ramkas1diax.png',
-  saltearth:    '/saltearth.png',
 }
 
-// Ramki zaprojektowane w orientacji "flat-top" wymagają obrotu 30° w SVG
-// żeby wierzchołek trafił na górę/dół hexa (pointy-top).
-const FRAME_ROTATIONS = {
-  saltearth: 30,
-}
+// Ramki które wymagają obrotu SVG (gdy PNG nie jest w orientacji pointy-top).
+const FRAME_ROTATIONS = {}
 
 // Nadpisanie wymiarów obrazka per-wariant (domyślnie: x=-16 y=-16 w=122 h=122).
-// saltearth jest nieco mniejszy wewnątrz PNGa — powiększamy żeby szczelnie opasał hex.
-const FRAME_IMAGE_PROPS = {
-  saltearth: { x: -28, y: -28, w: 146, h: 146 },
-}
+const FRAME_IMAGE_PROPS = {}
 
 // ── Shared frame SVG ─────────────────────────────────────────────────────────
 // viewBox "-16 -16 122 122" so the PNG (which fills the whole 122×122 space)
