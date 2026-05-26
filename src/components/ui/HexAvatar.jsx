@@ -39,9 +39,16 @@ const FRAME_PATHS = {
   saltearth:    '/saltearth.png',
 }
 
-// Ramki które wymagają obrotu SVG (gdy PNG nie jest w orientacji pointy-top).
-// saltearth.png jest już obrócony fizycznie (PIL -30° CCW) — nie potrzebuje rotacji SVG.
+// Ramki zaprojektowane w orientacji "flat-top" wymagają obrotu 30° w SVG
+// żeby wierzchołek trafił na górę/dół hexa (pointy-top).
 const FRAME_ROTATIONS = {
+  saltearth: 30,
+}
+
+// Nadpisanie wymiarów obrazka per-wariant (domyślnie: x=-16 y=-16 w=122 h=122).
+// saltearth jest nieco mniejszy wewnątrz PNGa — powiększamy żeby szczelnie opasał hex.
+const FRAME_IMAGE_PROPS = {
+  saltearth: { x: -28, y: -28, w: 146, h: 146 },
 }
 
 // ── Shared frame SVG ─────────────────────────────────────────────────────────
@@ -93,12 +100,13 @@ function FrameSVG({ id, variant, avatarContent, size, clip = false, noAnim = fal
 
       {/* ── PNG frame overlay (skipped when src is null) ── */}
       {src && (() => {
-        const rot = FRAME_ROTATIONS[variant]
+        const rot   = FRAME_ROTATIONS[variant]
+        const props = FRAME_IMAGE_PROPS[variant] || { x: -16, y: -16, w: 122, h: 122 }
         const img = (
           <image
             href={src}
-            x="-16" y="-16"
-            width="122" height="122"
+            x={props.x} y={props.y}
+            width={props.w} height={props.h}
             preserveAspectRatio="xMidYMid meet"
           />
         )
