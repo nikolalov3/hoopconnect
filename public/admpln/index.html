@@ -537,6 +537,42 @@ html[data-theme="light"] .fi,.html[data-theme="light"] .fs,.html[data-theme="lig
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .board-col{min-width:88vw;max-width:88vw}
 }
+/* ─── WINTER ARC ─────────────────────────────────────────────────────────────── */
+.wa-screen{position:fixed;inset:0;z-index:800;display:none;flex-direction:column;background:#08080e;overflow-y:auto}
+.wa-screen.open{display:flex}
+.wa-bg{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 80% 60% at 15% 0%,rgba(125,211,252,0.13) 0%,transparent 55%),radial-gradient(ellipse 60% 50% at 85% 100%,rgba(167,139,250,0.10) 0%,transparent 55%)}
+.wa-inner{position:relative;z-index:1;max-width:480px;width:100%;margin:0 auto;padding:40px 24px 80px}
+.wa-close{position:fixed;top:20px;right:20px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);cursor:pointer;font-size:15px;color:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;font-family:var(--font-b);transition:all .15s;z-index:2}
+.wa-close:hover{background:rgba(255,255,255,0.12);color:#fff}
+.wa-hero{text-align:center;margin-bottom:32px}
+.wa-ice{font-size:52px;margin-bottom:10px;display:block;filter:drop-shadow(0 0 20px rgba(125,211,252,0.5))}
+.wa-title{font-family:var(--font-d);font-size:30px;font-weight:700;color:#fff;letter-spacing:-.5px;margin-bottom:4px}
+.wa-subtitle{font-size:12px;color:rgba(255,255,255,0.35);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px}
+.wa-date-lbl{font-size:13px;color:rgba(125,211,252,0.7);font-weight:500}
+.wa-streak-box{display:flex;align-items:center;justify-content:center;gap:20px;background:rgba(125,211,252,0.06);border:1px solid rgba(125,211,252,0.16);border-radius:16px;padding:18px 28px;margin-bottom:28px}
+.wa-streak-num{font-family:var(--font-d);font-size:54px;font-weight:700;color:#7dd3fc;line-height:1}
+.wa-streak-info{text-align:left}
+.wa-streak-lbl{font-size:14px;font-weight:600;color:#7dd3fc;margin-bottom:3px}
+.wa-streak-sub{font-size:11px;color:rgba(125,211,252,0.45);letter-spacing:.3px}
+.wa-slbl{font-size:10px;font-weight:700;color:rgba(255,255,255,0.28);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:10px}
+.wa-habits{display:flex;flex-direction:column;gap:8px;margin-bottom:28px}
+.wa-habit{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:15px 16px;cursor:pointer;transition:all .22s;user-select:none;-webkit-tap-highlight-color:transparent}
+.wa-habit.done{border-color:rgba(255,255,255,0.14)}
+.wa-check{width:26px;height:26px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;transition:all .22s;background:transparent}
+.wa-habit-ico{font-size:24px;flex-shrink:0;transition:transform .22s}
+.wa-habit.done .wa-habit-ico{transform:scale(1.12)}
+.wa-habit-body{flex:1;min-width:0}
+.wa-habit-name{font-size:14px;font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:2px;transition:color .2s}
+.wa-habit-desc{font-size:11.5px;color:rgba(255,255,255,0.30);line-height:1.4}
+.wa-week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:28px}
+.wa-day{display:flex;flex-direction:column;align-items:center;gap:5px}
+.wa-dlbl{font-size:9px;color:rgba(255,255,255,0.28);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.wa-dot{width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.20);transition:all .2s}
+.wa-dot.full{background:rgba(125,211,252,0.20);border-color:#7dd3fc;color:#7dd3fc}
+.wa-dot.partial{background:rgba(251,191,36,0.12);border-color:rgba(251,191,36,0.45);color:rgba(251,191,36,0.75)}
+.wa-dot.today{box-shadow:0 0 0 2px rgba(125,211,252,0.35)}
+.wa-quote{text-align:center;font-family:var(--font-d);font-size:15px;font-style:italic;color:rgba(255,255,255,0.32);line-height:1.75;padding:0 8px}
+.wa-done-banner{text-align:center;padding:14px 20px;background:rgba(125,211,252,0.07);border:1px solid rgba(125,211,252,0.18);border-radius:12px;color:#7dd3fc;font-size:13px;font-weight:600;margin-bottom:20px;display:none}
 </style>
 </head>
 <body>
@@ -604,7 +640,10 @@ html[data-theme="light"] .fi,.html[data-theme="light"] .fs,.html[data-theme="lig
         <div class="folder-lbl">Użytkownicy</div>
       </div>
       <!-- ROW 3 — zasoby -->
-      <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
+      <div class="folder-item" id="waSlot" onclick="openWinterArc()" style="display:none">
+        <div class="folder-ico">🧊</div>
+        <div class="folder-lbl">Winter Arc</div>
+      </div>
       <div class="folder-item" onclick="openFiles()">
         <div class="folder-ico">📁</div>
         <div class="folder-lbl">Pliki</div>
@@ -935,6 +974,33 @@ html[data-theme="light"] .fi,.html[data-theme="light"] .fs,.html[data-theme="lig
 
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 
+<!-- WINTER ARC SCREEN -->
+<div class="wa-screen" id="waScreen">
+  <div class="wa-bg"></div>
+  <button class="wa-close" onclick="closeWinterArc()">✕</button>
+  <div class="wa-inner">
+    <div class="wa-hero">
+      <span class="wa-ice">🧊</span>
+      <div class="wa-title">Winter Arc</div>
+      <div class="wa-subtitle">Moje życie · Moja odpowiedzialność</div>
+      <div class="wa-date-lbl" id="waDateLbl"></div>
+    </div>
+    <div class="wa-streak-box">
+      <div class="wa-streak-num" id="waStreakNum">0</div>
+      <div class="wa-streak-info">
+        <div class="wa-streak-lbl">dni z rzędu 🔥</div>
+        <div class="wa-streak-sub">pełnych dni z wszystkimi nawykami</div>
+      </div>
+    </div>
+    <div class="wa-done-banner" id="waDoneBanner">✦ Pełny dzień zaliczony — jesteś na właściwej drodze ✦</div>
+    <div class="wa-slbl">Nawyki dnia</div>
+    <div class="wa-habits" id="waHabits"></div>
+    <div class="wa-slbl">Ostatnie 7 dni</div>
+    <div class="wa-week" id="waWeek"></div>
+    <div class="wa-quote" id="waQuote"></div>
+  </div>
+</div>
+
 <script>
 // ── KONFIGURACJA — uzupełnij przed deploymentem ──────────────────────────────
 const SUPABASE_URL      = 'https://dnngwqlubleexulkgqbf.supabase.co';
@@ -1040,6 +1106,9 @@ async function init() {
   await load();
   document.getElementById('loader').style.display = 'none';
   document.getElementById('appRoot').style.display = 'flex';
+  // Winter Arc — tylko dla Nikoli
+  const waSlot = document.getElementById('waSlot');
+  if (waSlot) waSlot.style.display = currentProfile.name === 'Nikola' ? '' : 'none';
   renderAll();
 }
 
@@ -1697,6 +1766,108 @@ function showPage(p) {
 }
 
 function setFilter(f)    { filter = f; renderAll(); closeSidebar(); }
+
+// ── WINTER ARC ────────────────────────────────────────────────────────────────
+const WA_HABITS = [
+  { id:'noPMO',       ico:'🧊', name:'Miłość do siebie',   desc:'Zero autodestrukcji · budujesz zaufanie do siebie', color:'#7dd3fc' },
+  { id:'meditation',  ico:'🧘', name:'Medytacja 15 min',   desc:'Cisza i skupienie · twój umysł jest narzędziem',     color:'#a78bfa' },
+  { id:'supplements', ico:'💊', name:'Suplementacja',      desc:'Witaminy i minerały · ciało to fundament',           color:'#34d399' },
+  { id:'app',         ico:'📲', name:'Aplikacja',           desc:'Minimum 1 commit lub feature · to twoja przyszłość', color:'#fbbf24' },
+  { id:'exercise',    ico:'🏃', name:'Aktywność',           desc:'Ruch każdego dnia · energia i dopamina z wysiłku',  color:'#f87171' },
+];
+
+const WA_QUOTES = [
+  "Budujesz coś ważnego. Każdy dzień to cegiełka, której nie można cofnąć.",
+  "Pewność siebie rośnie z działania, nie z myślenia o działaniu.",
+  "Miłość do siebie zaczyna się od dotrzymywania słowa sobie samemu.",
+  "Każdy zaliczony checkbox to dowód, że możesz na sobie polegać.",
+  "Cisza i skupienie to supermoc, którą ma niewielu.",
+  "Twoja aplikacja zmieni komuś życie. Pracuj na to każdego dnia.",
+  "Winter Arc: czas kiedy inni śpią, ty budujesz fundament.",
+];
+
+const WA_DAYS = ['Nd','Pn','Wt','Śr','Cz','Pt','Sb'];
+
+function waKey(d) { return 'wa_' + d; }
+function waToday() { return new Date().toISOString().slice(0,10); }
+function waLoad(date) { try { return JSON.parse(localStorage.getItem(waKey(date)) || '{}'); } catch(e) { return {}; } }
+function waSave(date, data) { localStorage.setItem(waKey(date), JSON.stringify(data)); }
+
+function waIsFull(data) { return WA_HABITS.every(h => data[h.id]); }
+
+function waStreak() {
+  let streak = 0;
+  const today = waToday();
+  for (let i = 0; i <= 365; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    if (key === today && !waIsFull(waLoad(key))) { if(i===0) break; else break; }
+    if (waIsFull(waLoad(key))) streak++;
+    else if (i > 0) break;
+  }
+  return streak;
+}
+
+function openWinterArc() {
+  document.getElementById('waScreen').classList.add('open');
+  closeSidebar();
+  rWinterArc();
+}
+function closeWinterArc() { document.getElementById('waScreen').classList.remove('open'); }
+
+function rWinterArc() {
+  const today = waToday();
+  const data = waLoad(today);
+  const d = new Date();
+  const monthPL = ['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia'];
+  document.getElementById('waDateLbl').textContent = `${WA_DAYS[d.getDay()]}, ${d.getDate()} ${monthPL[d.getMonth()]} ${d.getFullYear()}`;
+  document.getElementById('waStreakNum').textContent = waStreak();
+
+  // Habits
+  document.getElementById('waHabits').innerHTML = WA_HABITS.map(h => {
+    const done = !!data[h.id];
+    return `<div class="wa-habit${done?' done':''}" onclick="waToggle('${h.id}')" style="${done?`border-color:${h.color}33;background:${h.color}0a`:''}" >
+      <div class="wa-check" style="${done?`background:${h.color};border-color:${h.color}`:''}">
+        ${done ? '<span style="color:#000;font-size:14px">✓</span>' : ''}
+      </div>
+      <div class="wa-habit-ico">${h.ico}</div>
+      <div class="wa-habit-body">
+        <div class="wa-habit-name" style="${done?`color:${h.color}`:''}">${h.name}</div>
+        <div class="wa-habit-desc">${h.desc}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Done banner
+  const allDone = waIsFull(data);
+  document.getElementById('waDoneBanner').style.display = allDone ? 'block' : 'none';
+
+  // Week grid
+  document.getElementById('waWeek').innerHTML = Array.from({length:7}, (_,i) => {
+    const dd = new Date(); dd.setDate(dd.getDate() - 6 + i);
+    const key = dd.toISOString().slice(0,10);
+    const dayData = waLoad(key);
+    const done = WA_HABITS.filter(h => dayData[h.id]).length;
+    const isToday = key === today;
+    const cls = done === WA_HABITS.length ? 'full' : done > 0 ? 'partial' : '';
+    return `<div class="wa-day">
+      <div class="wa-dlbl">${WA_DAYS[dd.getDay()]}</div>
+      <div class="wa-dot ${cls}${isToday?' today':''}">${done > 0 ? done : ''}</div>
+    </div>`;
+  }).join('');
+
+  // Quote
+  const qi = d.getDate() % WA_QUOTES.length;
+  document.getElementById('waQuote').textContent = `"${WA_QUOTES[qi]}"`;
+}
+
+function waToggle(habitId) {
+  const today = waToday();
+  const data = waLoad(today);
+  data[habitId] = !data[habitId];
+  waSave(today, data);
+  rWinterArc();
+}
 function toggleSidebar() { const s = document.getElementById('sidebar'), o = document.getElementById('navOverlay'); const open = s.classList.toggle('open'); o.classList.toggle('open', open); }
 function closeSidebar()  { document.getElementById('sidebar').classList.remove('open'); document.getElementById('navOverlay').classList.remove('open'); }
 
