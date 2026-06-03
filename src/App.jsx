@@ -43,6 +43,7 @@ const AchievementsPage = lazy(() => import('./pages/AchievementsPage'))
 const RecoveryPage    = lazy(() => import('./pages/RecoveryPage'))
 const ClubPage        = lazy(() => import('./pages/ClubPage'))
 const JoinClubPage    = lazy(() => import('./pages/JoinClubPage'))
+const QrLandingPage   = lazy(() => import('./pages/QrLandingPage'))
 
 // All main tab routes — rendered always (keep-alive), just CSS show/hide
 const TAB_ROUTES = [
@@ -221,6 +222,11 @@ export default function App() {
           <NotificationsProvider>
           <Routes>
             <Route path="/auth"            element={<AuthRoute />} />
+            <Route path="/qrhc"            element={
+              <Suspense fallback={<PageLoader />}>
+                <QrLandingPage />
+              </Suspense>
+            } />
             <Route path="/dolacz/:clubId"  element={
               <Suspense fallback={<PageLoader />}>
                 <JoinClubPage />
