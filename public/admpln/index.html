@@ -1304,7 +1304,6 @@ function rBoard() {
         <div class="board-row-head">
           <div class="col-dot" style="background:${c.dot}"></div>
           <div class="col-title">${c.label}</div>
-          <div class="col-cnt">${ct.length}</div>
           <button class="add-row-btn" onclick="openAdd('${c.id}')">+ Dodaj</button>
         </div>
         <div class="board-row-body"
@@ -1331,7 +1330,6 @@ function rBoard() {
         <div class="col-head">
           <div class="col-dot" style="background:${c.dot}"></div>
           <div class="col-title">${c.label}</div>
-          <div class="col-cnt">${ct.length}</div>
         </div>
         <div class="col-body"
              ondragover="event.preventDefault();this.classList.add('drag-over')"
