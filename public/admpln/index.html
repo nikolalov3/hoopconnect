@@ -372,6 +372,33 @@ html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
 .section-hd{display:flex;align-items:center;gap:10px;font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
 .section-hd::after{content:'';flex:1;height:1px;background:var(--border)}
 
+/* ANALYTICS PAGE */
+.an-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.an-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--sh-sm)}
+.an-lbl{font-size:10px;color:var(--t4);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.an-lbl::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.an-online .an-lbl::before{background:var(--green)} .an-today .an-lbl::before{background:var(--blue)}
+.an-week .an-lbl::before{background:var(--accent)} .an-total .an-lbl::before{background:var(--t3)}
+.an-val{font-family:var(--font-d);font-size:34px;font-weight:700;line-height:1;color:var(--t1)}
+.an-sub{font-size:11px;color:var(--t4);margin-top:4px}
+.chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;box-shadow:var(--sh-sm)}
+.chart-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px}
+.chart-ttl{font-size:13px;font-weight:700;color:var(--t1)}
+.chart-filters{display:flex;gap:6px}
+.cf{padding:4px 12px;border-radius:999px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--surface2);color:var(--t3);transition:all .12s;font-family:var(--font-b)}
+.cf.active{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.chart-area{display:flex;align-items:flex-end;gap:3px;height:140px;position:relative;overflow-x:auto;padding-bottom:28px}
+.bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;min-width:18px;max-width:40px;position:relative}
+.bar{border-radius:4px 4px 0 0;width:100%;min-height:3px;transition:height .3s ease;background:var(--accent);opacity:.7;cursor:default}
+.bar:hover{opacity:1}
+.bar.is-today{background:var(--green);opacity:1}
+.bar.is-zero{background:var(--surface3);opacity:1;min-height:3px}
+.bar-lbl{position:absolute;bottom:-22px;font-size:8.5px;color:var(--t4);white-space:nowrap;text-align:center}
+.bar-tip{position:absolute;top:-22px;background:var(--surface3);color:var(--t1);font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s}
+.bar-wrap:hover .bar-tip{opacity:1}
+.chart-empty{color:var(--t3);text-align:center;padding:40px 16px;font-size:13px}
+.an-loading{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--t3);font-size:13px;padding:32px}
+
 /* FILTER BAR */
 .filter-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-bottom:16px;margin-bottom:4px}
 .fchip{padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--surface2);color:var(--t2);transition:all .12s;font-family:var(--font-b);white-space:nowrap;display:inline-flex;align-items:center;gap:4px;line-height:1}
@@ -398,8 +425,8 @@ html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
   .bottom-nav{display:block}
   .content{padding:16px 14px 90px}
   .search-wrap{display:none}
-  .stats-grid{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px}
-  .stat-card{padding:14px 15px;border-radius:var(--r)}
+  .stats-grid,.an-cards{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px}
+  .stat-card,.an-card{padding:14px 15px;border-radius:var(--r)}
   .stat-val{font-size:30px}
   .board-grid{grid-template-columns:1fr;gap:10px}
   .board-col{border-radius:var(--r)}
@@ -462,7 +489,10 @@ html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
         <div class="folder-ico">📊</div>
         <div class="folder-lbl">Analityka</div>
       </div>
-      <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
+      <div class="folder-item" onclick="showPage('analytics')">
+        <div class="folder-ico">👥</div>
+        <div class="folder-lbl">Użytkownicy</div>
+      </div>
       <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
       <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
       <div class="folder-item empty"><div class="folder-ico" style="font-size:14px;color:var(--t4)">+</div><div class="folder-lbl">Slot</div></div>
@@ -514,6 +544,41 @@ html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
     </div>
     <div class="page" id="page-roadmap">
       <div id="roadmapWrap"></div>
+    </div>
+    <div class="page" id="page-analytics">
+      <div class="an-cards">
+        <div class="an-card an-online">
+          <div class="an-lbl">Online teraz</div>
+          <div class="an-val" id="anOnline">—</div>
+          <div class="an-sub">ostatnie 5 min</div>
+        </div>
+        <div class="an-card an-today">
+          <div class="an-lbl">Aktywnych dziś</div>
+          <div class="an-val" id="anToday">—</div>
+          <div class="an-sub">od północy</div>
+        </div>
+        <div class="an-card an-week">
+          <div class="an-lbl">Aktywnych w tygodniu</div>
+          <div class="an-val" id="anWeek">—</div>
+          <div class="an-sub">od poniedziałku</div>
+        </div>
+        <div class="an-card an-total">
+          <div class="an-lbl">Łącznie profili</div>
+          <div class="an-val" id="anTotal">—</div>
+          <div class="an-sub">wszystkich</div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-hd">
+          <div class="chart-ttl">Aktywność dzienna (unikalni użytkownicy)</div>
+          <div class="chart-filters">
+            <button class="cf active" onclick="setAnRange(7,this)">7 dni</button>
+            <button class="cf" onclick="setAnRange(30,this)">30 dni</button>
+            <button class="cf" onclick="setAnRange(90,this)">90 dni</button>
+          </div>
+        </div>
+        <div id="chartArea" class="chart-area"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -936,6 +1001,88 @@ function rFilterBar() {
 
 function setSort(s) { sort = s; renderAll(); }
 
+// ── USER ANALYTICS ────────────────────────────────────────────────────────────
+const USERS_TABLE = 'profiles';
+let anRange = 7;
+
+async function rAnalytics() {
+  const ids = ['anOnline','anToday','anWeek','anTotal'];
+  ids.forEach(id => { const el = document.getElementById(id); if(el) el.textContent = '…'; });
+  document.getElementById('chartArea').innerHTML = '<div class="an-loading">⏳ Pobieranie danych…</div>';
+
+  try {
+    const now = new Date();
+    const fiveMinAgo  = new Date(now - 5 * 60 * 1000).toISOString();
+    const todayStart  = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const dow = now.getDay(); // 0=sun
+    const diffMon = (dow === 0 ? -6 : 1 - dow);
+    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffMon).toISOString();
+    const rangeStart = new Date(now - anRange * 86400000).toISOString();
+
+    // Fetch all profiles with last_seen_at in range (+ earlier for counts)
+    const { data: all, error } = await sb
+      .from(USERS_TABLE)
+      .select('last_seen_at')
+      .not('last_seen_at', 'is', null);
+
+    if (error) throw error;
+
+    const online = all.filter(u => u.last_seen_at >= fiveMinAgo).length;
+    const today  = all.filter(u => u.last_seen_at >= todayStart).length;
+    const week   = all.filter(u => u.last_seen_at >= weekStart).length;
+
+    // Total profiles (including those never seen)
+    const { count } = await sb.from(USERS_TABLE).select('id', { count: 'exact', head: true });
+
+    document.getElementById('anOnline').textContent = online;
+    document.getElementById('anToday').textContent  = today;
+    document.getElementById('anWeek').textContent   = week;
+    document.getElementById('anTotal').textContent  = count ?? all.length;
+
+    // Build daily chart
+    const inRange = all.filter(u => u.last_seen_at >= rangeStart);
+    const byDate = {};
+    for (let i = anRange - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      byDate[d.toISOString().slice(0,10)] = 0;
+    }
+    inRange.forEach(u => {
+      const key = u.last_seen_at.slice(0,10);
+      if (key in byDate) byDate[key]++;
+    });
+
+    const days = Object.entries(byDate);
+    const maxVal = Math.max(...days.map(([,v]) => v), 1);
+    const todayKey = now.toISOString().slice(0,10);
+    const DAY = ['nd','pn','wt','śr','cz','pt','sb'];
+
+    document.getElementById('chartArea').innerHTML = days.map(([date, cnt]) => {
+      const pct = Math.max(Math.round((cnt / maxVal) * 100), cnt > 0 ? 4 : 2);
+      const isToday = date === todayKey;
+      const d = new Date(date + 'T12:00:00');
+      const lbl = anRange <= 14
+        ? `${DAY[d.getDay()]}<br>${d.getDate()}`
+        : d.getDate() + '.' + (d.getMonth()+1);
+      return `<div class="bar-wrap">
+        <div class="bar-tip">${cnt} aktywnych</div>
+        <div class="bar${isToday?' is-today':cnt===0?' is-zero':''}" style="height:${pct}%"></div>
+        <div class="bar-lbl">${lbl}</div>
+      </div>`;
+    }).join('');
+
+  } catch(e) {
+    document.getElementById('chartArea').innerHTML =
+      `<div class="chart-empty">Błąd pobierania danych<br><small style="color:var(--t4)">${e.message||''}</small></div>`;
+  }
+}
+
+function setAnRange(r, btn) {
+  anRange = r;
+  document.querySelectorAll('.cf').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  rAnalytics();
+}
+
 function renderAll() { rStats(); rFilterBar(); rBoard(); rList(); rRoadmap(); }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fd(d)  { if(!d) return ''; const [y,m,day] = d.split('-'); return `${day}.${m}.${y}`; }
@@ -1289,14 +1436,16 @@ document.querySelectorAll('.overlay').forEach(el => el.addEventListener('click',
 
 function showPage(p) {
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
-  document.getElementById('page-' + p).classList.add('active');
+  document.getElementById('page-' + p)?.classList.add('active');
   ['board','list','roadmap'].forEach(n => {
     document.getElementById('nav-' + n)?.classList.toggle('active', n === p);
     document.getElementById('bn-' + n)?.classList.toggle('active', n === p);
   });
-  document.getElementById('pageTitle').textContent = {board:'Tablica Kanban',list:'Lista zadań',roadmap:'Mapa drogowa'}[p] || p;
+  document.getElementById('pageTitle').textContent = {board:'Tablica Kanban',list:'Lista zadań',roadmap:'Mapa drogowa',analytics:'Użytkownicy'}[p] || p;
   document.getElementById('infoBtnTopbar').style.display = p === 'board' ? 'inline-flex' : 'none';
-  closeSidebar(); renderAll();
+  closeSidebar();
+  if (p === 'analytics') rAnalytics();
+  else renderAll();
 }
 
 function setFilter(f)    { filter = f; renderAll(); closeSidebar(); }
