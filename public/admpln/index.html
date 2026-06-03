@@ -381,20 +381,21 @@ html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
 .an-week .an-lbl::before{background:var(--accent)} .an-total .an-lbl::before{background:var(--t3)}
 .an-val{font-family:var(--font-d);font-size:34px;font-weight:700;line-height:1;color:var(--t1)}
 .an-sub{font-size:11px;color:var(--t4);margin-top:4px}
-.chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;box-shadow:var(--sh-sm)}
-.chart-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px}
+.chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;box-shadow:var(--sh-sm);min-width:0}
+.chart-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
 .chart-ttl{font-size:13px;font-weight:700;color:var(--t1)}
-.chart-filters{display:flex;gap:6px}
+.chart-filters{display:flex;gap:6px;flex-wrap:wrap}
 .cf{padding:4px 12px;border-radius:999px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--surface2);color:var(--t3);transition:all .12s;font-family:var(--font-b)}
 .cf.active{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
-.chart-area{display:flex;align-items:flex-end;gap:3px;height:140px;position:relative;overflow-x:auto;padding-bottom:28px}
-.bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;min-width:18px;max-width:40px;position:relative}
-.bar{border-radius:4px 4px 0 0;width:100%;min-height:3px;transition:height .3s ease;background:var(--accent);opacity:.7;cursor:default}
+.chart-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
+.chart-area{display:flex;align-items:flex-end;gap:2px;height:120px;padding-bottom:26px;min-width:0}
+.bar-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0;position:relative}
+.bar{border-radius:3px 3px 0 0;width:100%;min-height:3px;transition:height .25s ease;background:var(--accent);opacity:.75}
 .bar:hover{opacity:1}
 .bar.is-today{background:var(--green);opacity:1}
-.bar.is-zero{background:var(--surface3);opacity:1;min-height:3px}
-.bar-lbl{position:absolute;bottom:-22px;font-size:8.5px;color:var(--t4);white-space:nowrap;text-align:center}
-.bar-tip{position:absolute;top:-22px;background:var(--surface3);color:var(--t1);font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s}
+.bar.is-zero{background:var(--surface3);opacity:1}
+.bar-lbl{position:absolute;bottom:-20px;font-size:8px;color:var(--t4);white-space:nowrap;text-align:center;left:50%;transform:translateX(-50%)}
+.bar-tip{position:absolute;top:-26px;left:50%;transform:translateX(-50%);background:var(--surface3);color:var(--t1);font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;z-index:10;border:1px solid var(--border2)}
 .bar-wrap:hover .bar-tip{opacity:1}
 .chart-empty{color:var(--t3);text-align:center;padding:40px 16px;font-size:13px}
 .an-loading{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--t3);font-size:13px;padding:32px}
@@ -423,23 +424,43 @@ html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
   .main{margin-left:0}
   .menu-btn{display:flex}
   .bottom-nav{display:block}
-  .content{padding:16px 14px 90px}
+  .content{padding:14px 12px 88px}
   .search-wrap{display:none}
-  .stats-grid,.an-cards{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px}
-  .stat-card,.an-card{padding:14px 15px;border-radius:var(--r)}
-  .stat-val{font-size:30px}
-  .board-grid{grid-template-columns:1fr;gap:10px}
-  .board-col{border-radius:var(--r)}
-  .list-item{padding:12px 14px}
-  .list-col,.list-date{display:none}
+  /* stats */
+  .stats-grid,.an-cards{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+  .stat-card,.an-card{padding:12px 14px;border-radius:var(--r)}
+  .stat-val,.an-val{font-size:28px}
+  /* board — horizontal scroll like Trello */
+  .board-grid{display:flex;flex-direction:row;overflow-x:auto;gap:10px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;padding-bottom:6px}
+  .board-col{min-width:82vw;max-width:82vw;flex-shrink:0;scroll-snap-align:start;border-radius:var(--r)}
+  /* list */
+  .list-item{padding:11px 12px;gap:8px}
+  .list-col{display:none}
+  .list-date{font-size:11px;min-width:auto}
+  /* filter bar — horizontal scroll, no wrap */
+  .filter-bar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:10px;gap:5px;margin-bottom:6px}
+  .filter-bar::-webkit-scrollbar{display:none}
+  .fchip,.fsort{font-size:11px;padding:4px 10px}
+  /* milestones */
   .rm-row{grid-template-columns:80px 1fr}
   .rm-label{font-size:11px;padding-top:16px}
+  /* form */
   .form-row{grid-template-columns:1fr}
-}
-@media(max-width:480px){
+  /* chart */
+  .chart-box{padding:14px 14px}
+  /* topbar */
   .topbar{padding:0 14px}
   .page-title{font-size:15px}
   .btn-text-hide{display:none}
+  /* folder grid */
+  .folder-grid{grid-template-columns:repeat(3,1fr);gap:4px}
+  .folder-ico{font-size:18px}
+  .folder-lbl{font-size:9px}
+}
+@media(max-width:480px){
+  .an-cards{grid-template-columns:repeat(2,1fr)}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .board-col{min-width:88vw;max-width:88vw}
 }
 </style>
 </head>
@@ -577,7 +598,7 @@ html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
             <button class="cf" onclick="setAnRange(90,this)">90 dni</button>
           </div>
         </div>
-        <div id="chartArea" class="chart-area"></div>
+        <div class="chart-scroll"><div id="chartArea" class="chart-area"></div></div>
       </div>
     </div>
   </div>
@@ -1055,18 +1076,23 @@ async function rAnalytics() {
     const maxVal = Math.max(...days.map(([,v]) => v), 1);
     const todayKey = now.toISOString().slice(0,10);
     const DAY = ['nd','pn','wt','śr','cz','pt','sb'];
+    // bar width depends on range
+    const barW = anRange <= 7 ? 36 : anRange <= 30 ? 22 : 14;
+    // show label every Nth bar
+    const lblEvery = anRange <= 7 ? 1 : anRange <= 30 ? 5 : 10;
 
-    document.getElementById('chartArea').innerHTML = days.map(([date, cnt]) => {
+    document.getElementById('chartArea').innerHTML = days.map(([date, cnt], i) => {
       const pct = Math.max(Math.round((cnt / maxVal) * 100), cnt > 0 ? 4 : 2);
       const isToday = date === todayKey;
       const d = new Date(date + 'T12:00:00');
-      const lbl = anRange <= 14
-        ? `${DAY[d.getDay()]}<br>${d.getDate()}`
-        : d.getDate() + '.' + (d.getMonth()+1);
-      return `<div class="bar-wrap">
-        <div class="bar-tip">${cnt} aktywnych</div>
+      const showLbl = (i % lblEvery === 0) || isToday || i === days.length - 1;
+      const lbl = showLbl
+        ? (anRange <= 14 ? `${DAY[d.getDay()]} ${d.getDate()}` : `${d.getDate()}.${d.getMonth()+1}`)
+        : '';
+      return `<div class="bar-wrap" style="width:${barW}px">
+        <div class="bar-tip">${cnt} aktywnych · ${date}</div>
         <div class="bar${isToday?' is-today':cnt===0?' is-zero':''}" style="height:${pct}%"></div>
-        <div class="bar-lbl">${lbl}</div>
+        ${lbl ? `<div class="bar-lbl">${lbl}</div>` : ''}
       </div>`;
     }).join('');
 
