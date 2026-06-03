@@ -6,6 +6,31 @@ import { startRealtime, stopRealtime, setClubScope } from '../lib/realtimeManage
 
 const AuthContext = createContext({})
 
+// ── last_seen_at heartbeat ───────────────────────────────────────────────────
+// Throttle: fire UPDATE tylko gdy minęło >= LAST_SEEN_THROTTLE_MS od ostatniego.
+// Pamięta w localStorage między reloadami, żeby F5 nie generował pingu.
+const LAST_SEEN_THROTTLE_MS = 5 * 60 * 1000  // 5 min
+const lastSeenStorageKey = (uid) => `hc_last_seen_ping_${uid}`
+
+async function pingLastSeen(userId) {
+  if (!userId) return
+  const key = lastSeenStorageKey(userId)
+  const lastPing = +localStorage.getItem(key) || 0
+  if (Date.now() - lastPing < LAST_SEEN_THROTTLE_MS) return
+
+  localStorage.setItem(key, String(Date.now()))
+  // Fire-and-forget — nie blokuje UI, nie await, ignoruje błędy
+  supabase.from('profiles')
+    .update({ last_seen_at: new Date().toISOString() })
+    .eq('id', userId)
+    .then(({ error }) => {
+      if (error) {
+        // Cofnij throttle przy błędzie, żeby następny tick spróbował znowu
+        localStorage.removeItem(key)
+      }
+    })
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -56,6 +81,25 @@ export function AuthProvider({ children }) {
   // Tag Sentry events with the current user — makes errors actionable
   useEffect(() => {
     setSentryUser(user)
+  }, [user?.id])
+
+  // ── Heartbeat: aktualizuj last_seen_at przy każdym otwarciu/refocusie ──────
+  // Throttle 5 min w pingLastSeen() — bezpiecznie wołać często.
+  useEffect(() => {
+    if (!user?.id) return
+    pingLastSeen(user.id)  // initial ping (boot/login)
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') pingLastSeen(user.id)
+    }
+    const onFocus = () => pingLastSeen(user.id)
+
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [user?.id])
 
   async function fetchProfile(userId) {
