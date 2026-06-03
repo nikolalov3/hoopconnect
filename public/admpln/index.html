@@ -35,7 +35,7 @@
   --purple:    #c084fc; --purple-bg: rgba(192,132,252,0.10);
   --teal:      #34d4c0; --teal-bg:   rgba(52,212,192,0.10);
   --t1: #f2f2f7; --t2: #8e8ea8; --t3: #58587a; --t4: #3a3a58;
-  --r-sm: 13px; --r: 17px; --r-lg: 22px; --r-xl: 32px;
+  --r-sm: 8px; --r: 10px; --r-lg: 14px; --r-xl: 20px;
   --font-d: 'Fraunces', Georgia, serif;
   --font-b: 'Figtree', system-ui, sans-serif;
   --sh-sm: 0 1px 12px rgba(0,0,0,.50), 0 4px 24px rgba(0,0,0,.30);
@@ -139,17 +139,32 @@ body{
 .stat-val{font-family:var(--font-d);font-size:38px;font-weight:700;line-height:1;color:var(--t1);letter-spacing:-1px}
 .stat-sub{font-size:11px;color:var(--t4);margin-top:5px;letter-spacing:.02em}
 
-/* ─── BOARD ─────────────────────────────────────────────────────────────────── */
-.board-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;align-items:start}
+/* ─── BOARD — BASE ──────────────────────────────────────────────────────────── */
+.board-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}
+.board-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}
 .board-col{background:rgba(255,255,255,0.042);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);border:1px solid rgba(255,255,255,0.09);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-sm);position:relative}
 .board-col::after{content:'';position:absolute;top:0;left:16px;right:16px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.13),transparent);pointer-events:none}
-.col-head{padding:18px 20px 15px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.06)}
-.col-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.col-title{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--t3)}
-.col-cnt{margin-left:auto;background:rgba(255,255,255,0.07);color:var(--t4);font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;border:1px solid rgba(255,255,255,0.08)}
-.col-body{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:9px;min-height:160px;align-items:start}
-.add-col-btn{grid-column:1/-1;width:100%;padding:9px;font-size:12px;font-weight:500;color:var(--t4);background:none;border:1px dashed rgba(255,255,255,0.12);border-radius:10px;cursor:pointer;transition:all .15s;font-family:var(--font-b);letter-spacing:.01em;margin-top:2px}
+.col-head{padding:16px 18px 13px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.col-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.col-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--t3)}
+.col-cnt{margin-left:auto;background:rgba(255,255,255,0.07);color:var(--t4);font-size:10.5px;font-weight:600;padding:1px 8px;border-radius:20px;border:1px solid rgba(255,255,255,0.08)}
+.col-body{padding:12px;display:flex;flex-direction:column;gap:7px;min-height:140px}
+.add-col-btn{width:100%;padding:8px;font-size:11.5px;font-weight:500;color:var(--t4);background:none;border:1px dashed rgba(255,255,255,0.11);border-radius:8px;cursor:pointer;transition:all .15s;font-family:var(--font-b);margin-top:2px}
 .add-col-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+
+/* ─── BOARD — ROWS VIEW ─────────────────────────────────────────────────────── */
+.board-rows{display:flex;flex-direction:column;gap:10px}
+.board-row{background:rgba(255,255,255,0.042);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);border:1px solid rgba(255,255,255,0.09);border-radius:var(--r-lg);overflow:hidden}
+.board-row-head{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.board-row-body{display:flex;flex-wrap:wrap;gap:9px;padding:14px;min-height:72px;align-items:start}
+.board-row-body .task-card{width:200px;flex-shrink:0}
+.row-empty{color:var(--t4);font-size:12px;padding:8px 4px;letter-spacing:.01em;align-self:center}
+.add-row-btn{margin-left:auto;padding:5px 13px;font-size:11px;font-weight:600;color:var(--t3);background:rgba(255,255,255,0.05);border:1px solid var(--border2);border-radius:999px;cursor:pointer;font-family:var(--font-b);transition:all .15s;white-space:nowrap}
+.add-row-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+
+/* ─── BOARD — FREE GRID VIEW ────────────────────────────────────────────────── */
+.board-free{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.board-free .task-status-chip{font-size:9px;font-weight:700;padding:2px 6px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:inline-block}
 
 /* ─── TASK CARD ─────────────────────────────────────────────────────────────── */
 .task-card{background:rgba(255,255,255,0.038);border:1px solid rgba(255,255,255,0.08);border-top:2px solid transparent;border-radius:12px;padding:13px 13px 11px;cursor:pointer;transition:all .20s;display:flex;flex-direction:column;position:relative}
@@ -443,15 +458,20 @@ html[data-theme="light"] .fi,.html[data-theme="light"] .fs,.html[data-theme="lig
 .chart-empty{color:var(--t3);text-align:center;padding:40px 16px;font-size:13px}
 .an-loading{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--t3);font-size:13px;padding:32px}
 
-/* FILTER BAR */
-.filter-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-bottom:16px;margin-bottom:4px}
-.fchip{padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--surface2);color:var(--t2);transition:all .12s;font-family:var(--font-b);white-space:nowrap;display:inline-flex;align-items:center;gap:4px;line-height:1}
-.fchip:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+/* ─── FILTER BAR ────────────────────────────────────────────────────────────── */
+.filter-bar{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding-bottom:14px;margin-bottom:6px}
+.fchip{padding:5px 11px;border-radius:999px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:rgba(255,255,255,0.04);color:var(--t3);transition:all .14s;font-family:var(--font-b);white-space:nowrap;display:inline-flex;align-items:center;gap:4px;line-height:1}
+.fchip:hover{border-color:rgba(124,110,245,0.5);color:var(--t1);background:rgba(255,255,255,0.07)}
 .fchip.active{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
-.fbar-sep{width:1px;height:18px;background:var(--border2);flex-shrink:0;margin:0 2px;align-self:center}
-.fsort{padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--surface2);color:var(--t3);transition:all .12s;font-family:var(--font-b);white-space:nowrap}
+.fbar-sep{width:1px;height:16px;background:var(--border2);flex-shrink:0;margin:0 3px;align-self:center}
+.fsort{padding:5px 11px;border-radius:999px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:rgba(255,255,255,0.04);color:var(--t3);transition:all .14s;font-family:var(--font-b);white-space:nowrap}
 .fsort:hover{border-color:var(--border3);color:var(--t1)}
 .fsort.active{border-color:var(--amber);background:var(--amber-bg);color:var(--amber)}
+/* view switcher */
+.view-btns{display:flex;gap:1px;background:rgba(255,255,255,0.05);border:1px solid var(--border2);border-radius:8px;padding:3px;margin-left:auto;flex-shrink:0}
+.view-btn{width:30px;height:26px;border:none;background:transparent;color:var(--t3);cursor:pointer;border-radius:6px;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .14s;font-family:var(--font-b)}
+.view-btn:hover{background:rgba(255,255,255,0.08);color:var(--t1)}
+.view-btn.active{background:rgba(255,255,255,0.12);color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.3)}
 
 /* DESKTOP MODAL CENTER */
 @media(min-width:600px){
@@ -473,9 +493,10 @@ html[data-theme="light"] .fi,.html[data-theme="light"] .fs,.html[data-theme="lig
   .stats-grid,.an-cards{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
   .stat-card,.an-card{padding:12px 14px;border-radius:var(--r)}
   .stat-val,.an-val{font-size:28px}
-  .board-grid{display:grid;grid-template-columns:1fr;gap:10px}
-  .board-col{border-radius:var(--r)}
-  .col-body{grid-template-columns:1fr 1fr}
+  .board-cols,.board-grid{grid-template-columns:1fr}
+  .board-col,.board-row{border-radius:var(--r)}
+  .board-row-body .task-card{width:calc(50% - 5px)}
+  .board-free{grid-template-columns:repeat(2,1fr)}
   /* list */
   .list-item{padding:11px 12px;gap:8px}
   .list-col{display:none}
@@ -961,6 +982,7 @@ const SEED = [
 let tasks = [], editId = null, delId = null, filter = null, sort = null;
 let dragId = null, isDragging = false;
 let taskImgPath = '';
+let boardView = 'rows'; // 'cols' | 'rows' | 'grid'
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
 
@@ -1053,17 +1075,24 @@ function rFilterBar() {
   const chips = `
     <button class="fchip${!filter?' active':''}" onclick="setFilter(null)">Wszystkie</button>
     ${Object.entries(TL).map(([k,v]) =>
-      `<button class="fchip${filter===k?' active':''}" onclick="setFilter('${k}')"><span style="color:${TAG_COLORS[k]};font-size:7px;line-height:1">●</span>${v}</button>`
+      `<button class="fchip${filter===k?' active':''}" onclick="setFilter('${k}')"><span style="color:${TAG_COLORS[k]};font-size:7px">●</span>${v}</button>`
     ).join('')}
     <div class="fbar-sep"></div>
-    <button class="fsort${sort==='deadline_asc'?' active':''}" onclick="setSort('deadline_asc')">⏰ Deadline ↑</button>
-    <button class="fsort${sort==='deadline_desc'?' active':''}" onclick="setSort('deadline_desc')">Deadline ↓</button>
-    ${sort ? `<button class="fsort" onclick="setSort(null)" style="padding:5px 8px;color:var(--t4)">✕</button>` : ''}
+    <button class="fsort${sort==='deadline_asc'?' active':''}" onclick="setSort('deadline_asc')">↑ Deadline</button>
+    <button class="fsort${sort==='deadline_desc'?' active':''}" onclick="setSort('deadline_desc')">↓ Deadline</button>
+    ${sort ? `<button class="fsort" onclick="setSort(null)" style="padding:5px 8px">✕</button>` : ''}
   `;
-  ['filterBar','filterBarList'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = chips;
-  });
+  const viewSwitch = `
+    <div class="view-btns">
+      <button class="view-btn${boardView==='cols'?' active':''}" onclick="setBoardView('cols')" title="Kolumny pionowe">⊞</button>
+      <button class="view-btn${boardView==='rows'?' active':''}" onclick="setBoardView('rows')" title="Wiersze poziome">☰</button>
+      <button class="view-btn${boardView==='grid'?' active':''}" onclick="setBoardView('grid')" title="Wolna siatka">⊟</button>
+    </div>
+  `;
+  const fb = document.getElementById('filterBar');
+  if (fb) fb.innerHTML = chips + viewSwitch;
+  const fbl = document.getElementById('filterBarList');
+  if (fbl) fbl.innerHTML = chips;
 }
 
 function setSort(s) { sort = s; renderAll(); }
@@ -1246,28 +1275,80 @@ function rStats() {
     <div class="stat-card s-green" style="cursor:pointer;transition:opacity .15s" onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'" onclick="openDone()"><div class="stat-lbl">Gotowe</div><div class="stat-val">${done}</div><div class="stat-sub">ukończone ↗</div></div>`;
 }
 
+function taskCardHtml(t, showStatus = false) {
+  const statusColors = {todo:'var(--t4)',in_progress:'var(--blue)',next:'var(--purple)',idea:'var(--accent)',done:'var(--green)'};
+  return `<div class="task-card p-${t.priority}"
+      draggable="true"
+      ondragstart="onDragStart(event,'${t.id}')"
+      ondragend="onDragEnd(event)"
+      onclick="onCardClick(event,'${t.id}')">
+    ${showStatus ? `<div style="display:flex;align-items:center;gap:5px;margin-bottom:7px"><span style="width:6px;height:6px;border-radius:50%;background:${statusColors[t.status]||'var(--t4)'};flex-shrink:0;display:inline-block"></span><span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;font-weight:600">${SL[t.status]||t.status}</span></div>` : ''}
+    <div class="task-title">${esc(t.title)}</div>
+    <div class="task-foot">
+      <span class="tag ${TAGS[t.tag]||'tag-plan'}">${TL[t.tag]||t.tag}</span>
+      ${t.date ? `<span class="task-date">${fd(t.date)}</span>` : ''}
+      ${t.card_color&&CARD_COLORS[t.card_color] ? `<span class="card-dot" style="background:${CARD_COLORS[t.card_color]};margin-left:auto"></span>` : ''}
+    </div>
+  </div>`;
+}
+
 function rBoard() {
   const f = getF();
-  document.getElementById('boardGrid').innerHTML = COLS.map(c => {
-    const ct = f.filter(t => t.status === c.id);
-    return `<div class="board-col">
-      <div class="col-head"><div class="col-dot" style="background:${c.dot}"></div><div class="col-title">${c.label}</div><div class="col-cnt">${ct.length}</div></div>
-      <div class="col-body"
-           ondragover="event.preventDefault();this.classList.add('drag-over')"
-           ondragleave="this.classList.remove('drag-over')"
-           ondrop="onDrop(event,'${c.id}')">
-        ${ct.map(t => `<div class="task-card p-${t.priority}"
-            draggable="true"
-            ondragstart="onDragStart(event,'${t.id}')"
-            ondragend="onDragEnd(event)"
-            onclick="onCardClick(event,'${t.id}')">
-          <div class="task-title">${esc(t.title)}</div>
-          <div class="task-foot"><span class="tag ${TAGS[t.tag]||'tag-plan'}">${TL[t.tag]||t.tag}</span>${t.date?`<span class="task-date">${fd(t.date)}</span>`:''} ${t.card_color&&CARD_COLORS[t.card_color]?`<span class="card-dot" style="background:${CARD_COLORS[t.card_color]};margin-left:auto" title="${t.card_color}"></span>`:''}</div>
-        </div>`).join('')}
-        <button class="add-col-btn" onclick="openAdd('${c.id}')">+ Dodaj zadanie</button>
-      </div>
-    </div>`;
-  }).join('');
+  const el = document.getElementById('boardGrid');
+
+  if (boardView === 'rows') {
+    el.className = 'board-rows';
+    el.innerHTML = COLS.map(c => {
+      const ct = f.filter(t => t.status === c.id);
+      return `<div class="board-row">
+        <div class="board-row-head">
+          <div class="col-dot" style="background:${c.dot}"></div>
+          <div class="col-title">${c.label}</div>
+          <div class="col-cnt">${ct.length}</div>
+          <button class="add-row-btn" onclick="openAdd('${c.id}')">+ Dodaj</button>
+        </div>
+        <div class="board-row-body"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="onDrop(event,'${c.id}')">
+          ${ct.length ? ct.map(t => taskCardHtml(t)).join('') : `<div class="row-empty">Brak zadań — przeciągnij lub dodaj ↑</div>`}
+        </div>
+      </div>`;
+    }).join('');
+
+  } else if (boardView === 'grid') {
+    el.className = 'board-free';
+    el.innerHTML = f.length
+      ? f.map(t => taskCardHtml(t, true)).join('')
+      : `<div style="color:var(--t3);padding:40px;text-align:center;font-size:13px;grid-column:1/-1">Brak zadań</div>`;
+
+  } else {
+    // cols — 4 vertical columns
+    el.className = 'board-cols';
+    el.innerHTML = COLS.map(c => {
+      const ct = f.filter(t => t.status === c.id);
+      return `<div class="board-col">
+        <div class="col-head">
+          <div class="col-dot" style="background:${c.dot}"></div>
+          <div class="col-title">${c.label}</div>
+          <div class="col-cnt">${ct.length}</div>
+        </div>
+        <div class="col-body"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="onDrop(event,'${c.id}')">
+          ${ct.map(t => taskCardHtml(t)).join('')}
+          <button class="add-col-btn" onclick="openAdd('${c.id}')">+ Dodaj zadanie</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function setBoardView(v) {
+  boardView = v;
+  rFilterBar();
+  rBoard();
 }
 
 function rList() {
