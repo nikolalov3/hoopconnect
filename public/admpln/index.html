@@ -398,22 +398,25 @@ html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
 .an-week .an-lbl::before{background:var(--accent)} .an-total .an-lbl::before{background:var(--t3)}
 .an-val{font-family:var(--font-d);font-size:34px;font-weight:700;line-height:1;color:var(--t1)}
 .an-sub{font-size:11px;color:var(--t4);margin-top:4px}
-.chart-box{background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;box-shadow:var(--sh-sm);min-width:0;overflow:hidden}
-.chart-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
-.chart-ttl{font-size:13px;font-weight:700;color:var(--t1)}
-.chart-filters{display:flex;gap:6px;flex-wrap:wrap}
-.cf{padding:4px 12px;border-radius:999px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--surface2);color:var(--t3);transition:all .12s;font-family:var(--font-b)}
-.cf.active{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
-.chart-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;max-width:100%}
-.chart-area{display:flex;align-items:flex-end;gap:2px;height:120px;padding-bottom:26px;width:max-content;min-width:100%}
-.bar-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0;position:relative}
-.bar{border-radius:3px 3px 0 0;width:100%;min-height:3px;transition:height .25s ease;background:var(--accent);opacity:.75}
-.bar:hover{opacity:1}
-.bar.is-today{background:var(--green);opacity:1}
-.bar.is-zero{background:var(--surface3);opacity:1}
-.bar-lbl{position:absolute;bottom:-20px;font-size:8px;color:var(--t4);white-space:nowrap;text-align:center;left:50%;transform:translateX(-50%)}
-.bar-tip{position:absolute;top:-26px;left:50%;transform:translateX(-50%);background:var(--surface3);color:var(--t1);font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;z-index:10;border:1px solid var(--border2)}
-.bar-wrap:hover .bar-tip{opacity:1}
+/* LINE CHART */
+.chart-box{background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 22px 14px;box-shadow:var(--sh-sm);min-width:0;overflow:hidden}
+.chart-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px}
+.chart-meta{flex:1}
+.chart-big-val{font-family:var(--font-d);font-size:36px;font-weight:700;color:var(--t1);line-height:1;margin-bottom:2px}
+.chart-ttl{font-size:12px;color:var(--t3);font-weight:500}
+.chart-filters{display:flex;gap:4px}
+.cf{padding:5px 12px;border-radius:999px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--t3);transition:all .12s;font-family:var(--font-b)}
+.cf.active{border-color:var(--border3);color:var(--t1);background:var(--surface3)}
+.chart-svg-wrap{position:relative;width:100%;margin-top:8px}
+.chart-svg-wrap svg{display:block;width:100%;height:180px;overflow:visible}
+.c-grid{stroke:var(--border);stroke-width:1;shape-rendering:crispEdges}
+.c-area{opacity:1}
+.c-line{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.c-lbl{font-size:26px;font-family:system-ui,sans-serif;fill:var(--t4)}
+.c-cursor{stroke:var(--t3);stroke-width:1;stroke-dasharray:3 3;pointer-events:none}
+.c-dot{pointer-events:none}
+.chart-tooltip{position:absolute;top:0;pointer-events:none;display:none;white-space:nowrap}
+.chart-tooltip-inner{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--t1);font-family:var(--font-b);box-shadow:var(--sh);transform:translateX(-50%)}
 .chart-empty{color:var(--t3);text-align:center;padding:40px 16px;font-size:13px}
 .an-loading{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--t3);font-size:13px;padding:32px}
 
@@ -608,14 +611,17 @@ html[data-theme="light"] .prev-ov{background:rgba(230,230,238,.96)}
       </div>
       <div class="chart-box">
         <div class="chart-hd">
-          <div class="chart-ttl">Aktywność dzienna (unikalni użytkownicy)</div>
+          <div class="chart-meta">
+            <div class="chart-big-val" id="chartBigVal">—</div>
+            <div class="chart-ttl">aktywnych użytkowników</div>
+          </div>
           <div class="chart-filters">
             <button class="cf active" onclick="setAnRange(7,this)">7 dni</button>
             <button class="cf" onclick="setAnRange(30,this)">30 dni</button>
             <button class="cf" onclick="setAnRange(90,this)">90 dni</button>
           </div>
         </div>
-        <div class="chart-scroll"><div id="chartArea" class="chart-area"></div></div>
+        <div class="chart-svg-wrap" id="chartArea"></div>
       </div>
     </div>
   </div>
@@ -1042,86 +1048,153 @@ function setSort(s) { sort = s; renderAll(); }
 // ── USER ANALYTICS ────────────────────────────────────────────────────────────
 const USERS_TABLE = 'profiles';
 let anRange = 7;
+let _anPts = []; // chart points for hover
 
 async function rAnalytics() {
-  const ids = ['anOnline','anToday','anWeek','anTotal'];
-  ids.forEach(id => { const el = document.getElementById(id); if(el) el.textContent = '…'; });
+  ['anOnline','anToday','anWeek','anTotal','chartBigVal'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.textContent = '…';
+  });
   document.getElementById('chartArea').innerHTML = '<div class="an-loading">⏳ Pobieranie danych…</div>';
 
   try {
     const now = new Date();
-    const fiveMinAgo  = new Date(now - 5 * 60 * 1000).toISOString();
-    const todayStart  = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const dow = now.getDay(); // 0=sun
-    const diffMon = (dow === 0 ? -6 : 1 - dow);
-    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffMon).toISOString();
-    const rangeStart = new Date(now - anRange * 86400000).toISOString();
+    const fiveMinAgo = new Date(now - 5*60*1000).toISOString();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const dow = now.getDay();
+    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (dow===0?-6:1-dow)).toISOString();
+    const rangeStart = new Date(now - anRange*86400000).toISOString();
 
-    // Fetch all profiles with last_matches_seen_at in range (+ earlier for counts)
-    const { data: all, error } = await sb
-      .from(USERS_TABLE)
-      .select('last_matches_seen_at')
-      .not('last_matches_seen_at', 'is', null);
-
+    const { data: all, error } = await sb.from(USERS_TABLE).select('last_matches_seen_at').not('last_matches_seen_at','is',null);
     if (error) throw error;
 
     const online = all.filter(u => u.last_matches_seen_at >= fiveMinAgo).length;
     const today  = all.filter(u => u.last_matches_seen_at >= todayStart).length;
     const week   = all.filter(u => u.last_matches_seen_at >= weekStart).length;
-
-    // Total profiles (including those never seen)
-    const { count } = await sb.from(USERS_TABLE).select('id', { count: 'exact', head: true });
+    const { count } = await sb.from(USERS_TABLE).select('id',{count:'exact',head:true});
 
     document.getElementById('anOnline').textContent = online;
     document.getElementById('anToday').textContent  = today;
     document.getElementById('anWeek').textContent   = week;
     document.getElementById('anTotal').textContent  = count ?? all.length;
 
-    // Build daily chart
+    // Build day-by-day data
     const inRange = all.filter(u => u.last_matches_seen_at >= rangeStart);
     const byDate = {};
-    for (let i = anRange - 1; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    for (let i = anRange-1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate()-i);
       byDate[d.toISOString().slice(0,10)] = 0;
     }
-    inRange.forEach(u => {
-      const key = u.last_matches_seen_at.slice(0,10);
-      if (key in byDate) byDate[key]++;
-    });
+    inRange.forEach(u => { const k = u.last_matches_seen_at.slice(0,10); if(k in byDate) byDate[k]++; });
 
     const days = Object.entries(byDate);
-    const maxVal = Math.max(...days.map(([,v]) => v), 1);
-    const todayKey = now.toISOString().slice(0,10);
-    const DAY = ['nd','pn','wt','śr','cz','pt','sb'];
-    // 7 days: flex fill full width; 30 days: 22px fixed; 90 days: 12px fixed
-    const useFlexFill = anRange <= 7;
-    const barW = anRange <= 30 ? 22 : 12;
-    const lblEvery = anRange <= 7 ? 1 : anRange <= 30 ? 5 : 10;
+    const total = days.reduce((s,[,v]) => s+v, 0);
+    document.getElementById('chartBigVal').textContent = total.toLocaleString('pl-PL');
 
-    const chartArea = document.getElementById('chartArea');
-    // for 7 days remove width:max-content so bars stretch
-    chartArea.style.width = useFlexFill ? '100%' : 'max-content';
-
-    chartArea.innerHTML = days.map(([date, cnt], i) => {
-      const pct = Math.max(Math.round((cnt / maxVal) * 100), cnt > 0 ? 5 : 2);
-      const isToday = date === todayKey;
-      const d = new Date(date + 'T12:00:00');
-      const showLbl = (i % lblEvery === 0) || isToday || i === days.length - 1;
-      const lbl = showLbl
-        ? (anRange <= 14 ? `${DAY[d.getDay()]} ${d.getDate()}` : `${d.getDate()}.${d.getMonth()+1}`)
-        : '';
-      const wStyle = useFlexFill ? 'flex:1' : `width:${barW}px`;
-      return `<div class="bar-wrap" style="${wStyle}">
-        <div class="bar-tip">${cnt} aktywnych · ${date}</div>
-        <div class="bar${isToday?' is-today':cnt===0?' is-zero':''}" style="height:${pct}%"></div>
-        ${lbl ? `<div class="bar-lbl">${lbl}</div>` : ''}
-      </div>`;
-    }).join('');
+    renderLineChart(days, now.toISOString().slice(0,10));
 
   } catch(e) {
     document.getElementById('chartArea').innerHTML =
       `<div class="chart-empty">Błąd pobierania danych<br><small style="color:var(--t4)">${e.message||''}</small></div>`;
   }
+}
+
+function renderLineChart(days, todayKey) {
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const lineColor  = isDark ? '#4ade80' : '#60a5fa';
+  const fillTop    = isDark ? 'rgba(74,222,128,0.22)' : 'rgba(96,165,250,0.20)';
+  const fillBot    = isDark ? 'rgba(74,222,128,0)' : 'rgba(96,165,250,0)';
+  const dotColor   = isDark ? '#4ade80' : '#60a5fa';
+
+  const n = days.length;
+  if (!n) { document.getElementById('chartArea').innerHTML = '<div class="chart-empty">Brak danych</div>'; return; }
+  const maxVal = Math.max(...days.map(([,v]) => v), 1);
+
+  // SVG viewBox
+  const VW = 1000, VH = 200, PT = 16, PB = 34, PL = 4, PR = 4;
+  const cW = VW-PL-PR, cH = VH-PT-PB;
+
+  const pts = days.map(([date,cnt],i) => ({
+    x: +(PL + (n===1 ? cW/2 : i/(n-1)*cW)).toFixed(2),
+    y: +(PT + (1 - cnt/maxVal)*cH).toFixed(2),
+    date, cnt
+  }));
+  _anPts = pts;
+
+  // Smooth bezier path (cubic, tension 0.4)
+  let line = `M${pts[0].x} ${pts[0].y}`;
+  for (let i=1; i<pts.length; i++) {
+    const p = pts[i-1], c = pts[i];
+    const dx = (c.x-p.x)*0.4;
+    line += ` C${(p.x+dx).toFixed(2)} ${p.y},${(c.x-dx).toFixed(2)} ${c.y},${c.x} ${c.y}`;
+  }
+  const area = line + ` L${pts[n-1].x} ${PT+cH} L${pts[0].x} ${PT+cH} Z`;
+
+  // Labels — show every Nth
+  const ev = n<=7?1:n<=30?5:10;
+  const DAY=['nd','pn','wt','śr','cz','pt','sb'];
+  const labels = pts.map(({x,date},i) => {
+    if (i%ev!==0 && i!==n-1 && date!==todayKey) return '';
+    const d = new Date(date+'T12:00:00');
+    const txt = n<=14 ? `${DAY[d.getDay()]} ${d.getDate()}` : `${d.getDate()}.${d.getMonth()+1}`;
+    return `<text x="${x}" y="${VH-4}" text-anchor="middle" class="c-lbl">${txt}</text>`;
+  }).join('');
+
+  // Horizontal grid lines
+  const grids = [0.33,0.66].map(f =>
+    `<line x1="${PL}" y1="${(PT+cH*f).toFixed(1)}" x2="${VW-PR}" y2="${(PT+cH*f).toFixed(1)}" class="c-grid"/>`
+  ).join('');
+
+  // Today dot
+  const tp = pts.find(p=>p.date===todayKey);
+  const todayDot = tp ? `<circle cx="${tp.x}" cy="${tp.y}" r="5" fill="${dotColor}" stroke="var(--surface)" stroke-width="3"/>` : '';
+
+  document.getElementById('chartArea').innerHTML = `
+    <svg viewBox="0 0 ${VW} ${VH}" preserveAspectRatio="none"
+      onmousemove="anHover(event)" onmouseleave="anLeave()" style="cursor:crosshair">
+      <defs>
+        <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${fillTop}"/>
+          <stop offset="100%" stop-color="${fillBot}"/>
+        </linearGradient>
+      </defs>
+      ${grids}
+      <path d="${area}" fill="url(#cg)" class="c-area"/>
+      <path d="${line}" stroke="${lineColor}" class="c-line"/>
+      ${todayDot}
+      ${labels}
+      <line id="anCursor" x1="0" y1="${PT}" x2="0" y2="${PT+cH}" class="c-cursor" style="display:none"/>
+      <circle id="anDot" cx="0" cy="0" r="5" fill="${dotColor}" stroke="var(--bg)" stroke-width="2.5" class="c-dot" style="display:none"/>
+    </svg>
+    <div id="anTip" class="chart-tooltip"><div class="chart-tooltip-inner" id="anTipInner"></div></div>`;
+}
+
+function anHover(e) {
+  if (!_anPts.length) return;
+  const svg = e.currentTarget;
+  const r = svg.getBoundingClientRect();
+  const pct = (e.clientX - r.left) / r.width;
+  const vx = pct * 1000;
+  let best = _anPts[0];
+  _anPts.forEach(p => { if(Math.abs(p.x-vx) < Math.abs(best.x-vx)) best = p; });
+  const cursor = document.getElementById('anCursor');
+  const dot    = document.getElementById('anDot');
+  const tip    = document.getElementById('anTip');
+  const inner  = document.getElementById('anTipInner');
+  if (cursor) { cursor.setAttribute('x1',best.x); cursor.setAttribute('x2',best.x); cursor.style.display=''; }
+  if (dot)    { dot.setAttribute('cx',best.x); dot.setAttribute('cy',best.y); dot.style.display=''; }
+  if (tip && inner) {
+    const d = new Date(best.date+'T12:00:00');
+    const DN=['Niedziela','Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota'];
+    inner.textContent = `${DN[d.getDay()]}, ${d.getDate()} — ${best.cnt} aktywnych`;
+    tip.style.display = 'block';
+    const lp = best.x/1000*100;
+    tip.style.left = lp+'%';
+    inner.style.transform = lp>75?'translateX(-100%)':lp<25?'translateX(0)':'translateX(-50%)';
+  }
+}
+function anLeave() {
+  ['anCursor','anDot'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
+  const t=document.getElementById('anTip');if(t)t.style.display='none';
 }
 
 function setAnRange(r, btn) {
