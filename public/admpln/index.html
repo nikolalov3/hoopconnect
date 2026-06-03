@@ -450,7 +450,6 @@ html[data-theme="light"] .fi,.html[data-theme="light"] .fs,.html[data-theme="lig
 .c-grid{stroke:var(--border);stroke-width:1;shape-rendering:crispEdges}
 .c-area{opacity:1}
 .c-line{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.c-lbl{font-size:26px;font-family:system-ui,sans-serif;fill:var(--t4)}
 .c-cursor{stroke:var(--t3);stroke-width:1;stroke-dasharray:3 3;pointer-events:none}
 .c-dot{pointer-events:none}
 .chart-tooltip{position:absolute;top:0;pointer-events:none;display:none;white-space:nowrap}
@@ -1181,14 +1180,16 @@ function renderLineChart(days, todayKey) {
   }
   const area = line + ` L${pts[n-1].x} ${PT+cH} L${pts[0].x} ${PT+cH} Z`;
 
-  // Labels — show every Nth
+  // Labels as HTML (avoids SVG stretch distortion)
   const ev = n<=7?1:n<=30?5:10;
   const DAY=['nd','pn','wt','śr','cz','pt','sb'];
-  const labels = pts.map(({x,date},i) => {
+  const htmlLabels = pts.map(({x,date},i) => {
     if (i%ev!==0 && i!==n-1 && date!==todayKey) return '';
     const d = new Date(date+'T12:00:00');
     const txt = n<=14 ? `${DAY[d.getDay()]} ${d.getDate()}` : `${d.getDate()}.${d.getMonth()+1}`;
-    return `<text x="${x}" y="${VH-4}" text-anchor="middle" class="c-lbl">${txt}</text>`;
+    const pct = (x/VW*100).toFixed(2);
+    const isToday = date===todayKey;
+    return `<span style="position:absolute;left:${pct}%;transform:translateX(-50%);${isToday?'color:var(--t2);font-weight:600':''}">${txt}</span>`;
   }).join('');
 
   // Horizontal grid lines
@@ -1198,11 +1199,11 @@ function renderLineChart(days, todayKey) {
 
   // Today dot
   const tp = pts.find(p=>p.date===todayKey);
-  const todayDot = tp ? `<circle cx="${tp.x}" cy="${tp.y}" r="5" fill="${dotColor}" stroke="var(--surface)" stroke-width="3"/>` : '';
+  const todayDot = tp ? `<circle cx="${tp.x}" cy="${tp.y}" r="5" fill="${dotColor}" stroke="var(--bg)" stroke-width="3"/>` : '';
 
   document.getElementById('chartArea').innerHTML = `
     <svg viewBox="0 0 ${VW} ${VH}" preserveAspectRatio="none"
-      onmousemove="anHover(event)" onmouseleave="anLeave()" style="cursor:crosshair">
+      onmousemove="anHover(event)" onmouseleave="anLeave()" style="cursor:crosshair;display:block;width:100%;height:160px">
       <defs>
         <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="${fillTop}"/>
@@ -1213,10 +1214,10 @@ function renderLineChart(days, todayKey) {
       <path d="${area}" fill="url(#cg)" class="c-area"/>
       <path d="${line}" stroke="${lineColor}" class="c-line"/>
       ${todayDot}
-      ${labels}
       <line id="anCursor" x1="0" y1="${PT}" x2="0" y2="${PT+cH}" class="c-cursor" style="display:none"/>
       <circle id="anDot" cx="0" cy="0" r="5" fill="${dotColor}" stroke="var(--bg)" stroke-width="2.5" class="c-dot" style="display:none"/>
     </svg>
+    <div style="position:relative;height:22px;margin-top:6px;font-size:11px;font-family:var(--font-b);color:var(--t4);letter-spacing:.01em">${htmlLabels}</div>
     <div id="anTip" class="chart-tooltip"><div class="chart-tooltip-inner" id="anTipInner"></div></div>`;
 }
 
