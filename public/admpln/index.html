@@ -627,6 +627,59 @@ html[data-theme="light"] .fi,.html[data-theme="light"] .fs,.html[data-theme="lig
 .wa-day-item.on .wa-day-item-name{color:#fff}
 .wa-day-item-mark{font-size:14px;flex-shrink:0}
 @media(min-width:600px){.wa-day-ov{align-items:center;padding:20px}.wa-day-card{border-radius:24px;border-bottom:1px solid rgba(255,255,255,0.12)}}
+/* ─── OSIĄGNIĘCIA ────────────────────────────────────────────────────────────── */
+.wa-ach-btn{margin-top:16px;padding:9px 20px;border-radius:999px;border:1px solid rgba(251,191,36,0.35);background:rgba(251,191,36,0.10);color:#fbbf24;font-size:13px;font-weight:700;font-family:var(--font-b);cursor:pointer;transition:all .18s;letter-spacing:.02em}
+.wa-ach-btn:hover{background:rgba(251,191,36,0.18);border-color:rgba(251,191,36,0.6);transform:translateY(-1px)}
+.ach-screen{position:fixed;inset:0;z-index:860;display:none;flex-direction:column;background:#0a0a12;overflow-y:auto}
+.ach-screen.open{display:flex}
+.ach-bg{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 80% 55% at 50% 0%, rgba(251,191,36,0.14) 0%, transparent 55%),radial-gradient(ellipse 60% 50% at 100% 100%, rgba(167,139,250,0.10) 0%, transparent 55%)}
+.ach-inner{position:relative;z-index:1;max-width:480px;width:100%;margin:0 auto;padding:36px 22px 80px}
+.ach-hero{text-align:center;margin-bottom:26px}
+.ach-char{width:140px;height:170px;margin:0 auto 14px;display:flex;align-items:flex-end;justify-content:center;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.5))}
+.ach-char svg{width:100%;height:100%;image-rendering:pixelated}
+.ach-stage-title{font-family:var(--font-d);font-size:30px;font-weight:700;color:#fff;letter-spacing:-.5px;margin-bottom:4px}
+.ach-stage-sub{font-size:12.5px;color:rgba(255,255,255,0.40);line-height:1.5;max-width:300px;margin:0 auto 18px}
+.ach-xpbar{position:relative;height:24px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:999px;overflow:hidden;max-width:320px;margin:0 auto}
+.ach-xpfill{position:absolute;inset:0;width:0;background:linear-gradient(90deg,#f59e0b,#fbbf24);border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.ach-xptext{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);z-index:1;letter-spacing:.3px}
+.ach-track{display:flex;justify-content:space-between;gap:4px;margin-bottom:30px;padding:0 4px}
+.ach-tstage{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.35;transition:opacity .2s}
+.ach-tstage.reached{opacity:1}
+.ach-tstage.current .ach-tdot{box-shadow:0 0 0 2px #fbbf24,0 0 12px rgba(251,191,36,0.5)}
+.ach-tdot{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:9px}
+.ach-tstage.reached .ach-tdot{background:rgba(251,191,36,0.18);border-color:rgba(251,191,36,0.5)}
+.ach-tdot svg{width:22px;height:22px;image-rendering:pixelated}
+.ach-tlbl{font-size:8px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.3px;font-weight:700;text-align:center;line-height:1.2}
+.ach-list{display:flex;flex-direction:column;gap:8px}
+.ach-card{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:14px 16px;cursor:pointer;transition:all .2s;user-select:none;position:relative;overflow:hidden}
+.ach-card.done{background:rgba(251,191,36,0.07);border-color:rgba(251,191,36,0.25)}
+.ach-card.locked-legend{border-color:rgba(167,139,250,0.18)}
+.ach-card-ico{width:42px;height:42px;border-radius:11px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;filter:grayscale(.7);opacity:.6;transition:all .2s}
+.ach-card.done .ach-card-ico{filter:none;opacity:1;background:rgba(251,191,36,0.14)}
+.ach-card-body{flex:1;min-width:0}
+.ach-card-name{font-size:14px;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:2px;transition:color .2s}
+.ach-card.done .ach-card-name{color:#fff}
+.ach-card-desc{font-size:11.5px;color:rgba(255,255,255,0.3);line-height:1.4}
+.ach-card-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.ach-xp-badge{font-size:11px;font-weight:800;color:#fbbf24;font-family:var(--font-d)}
+.ach-tier{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 6px;border-radius:5px}
+.ach-tier.easy{background:rgba(52,211,153,0.15);color:#34d399}
+.ach-tier.med{background:rgba(96,165,250,0.15);color:#60a5fa}
+.ach-tier.hard{background:rgba(251,146,60,0.15);color:#fb923c}
+.ach-tier.legend{background:rgba(167,139,250,0.18);color:#a78bfa}
+.ach-check{width:24px;height:24px;border-radius:7px;border:1.5px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;transition:all .2s}
+.ach-card.done .ach-check{background:#fbbf24;border-color:#fbbf24;color:#000}
+/* level up toast */
+.ach-levelup{position:fixed;top:0;left:0;right:0;bottom:0;z-index:870;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);flex-direction:column;gap:18px;text-align:center;padding:24px;animation:achFade .3s}
+.ach-levelup.open{display:flex}
+@keyframes achFade{from{opacity:0}to{opacity:1}}
+.ach-lu-char{width:160px;height:190px;animation:achPop .5s cubic-bezier(.34,1.56,.64,1)}
+.ach-lu-char svg{width:100%;height:100%;image-rendering:pixelated;filter:drop-shadow(0 0 30px rgba(251,191,36,0.6))}
+@keyframes achPop{0%{transform:scale(0.3);opacity:0}100%{transform:scale(1);opacity:1}}
+.ach-lu-lbl{font-size:12px;color:#fbbf24;text-transform:uppercase;letter-spacing:2px;font-weight:700}
+.ach-lu-title{font-family:var(--font-d);font-size:36px;font-weight:700;color:#fff}
+.ach-lu-sub{font-size:14px;color:rgba(255,255,255,0.5);max-width:300px}
+.ach-lu-btn{margin-top:10px;padding:12px 32px;border-radius:999px;border:none;background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#000;font-weight:700;font-size:14px;cursor:pointer;font-family:var(--font-b)}
 </style>
 </head>
 <body>
@@ -1038,6 +1091,7 @@ html[data-theme="light"] .fi,.html[data-theme="light"] .fs,.html[data-theme="lig
       <div class="wa-title">144 Arc</div>
       <div class="wa-subtitle">Moje życie · Moja odpowiedzialność</div>
       <div class="wa-date-lbl" id="waDateLbl"></div>
+      <button class="wa-ach-btn" onclick="openAch()">🏆 Osiągnięcia</button>
     </div>
     <div class="wa-stats-row">
       <div class="wa-streak-box">
@@ -1076,6 +1130,35 @@ html[data-theme="light"] .fi,.html[data-theme="light"] .fs,.html[data-theme="lig
     <div class="wa-day-title" id="waDayTitle"></div>
     <div class="wa-day-score" id="waDayScore"></div>
     <div class="wa-day-list" id="waDayList"></div>
+  </div>
+</div>
+
+<!-- LEVEL UP -->
+<div class="ach-levelup" id="achLevelUp" onclick="closeLevelUp()">
+  <div class="ach-lu-lbl">Nowy poziom</div>
+  <div class="ach-lu-char" id="achLuChar"></div>
+  <div class="ach-lu-title" id="achLuTitle"></div>
+  <div class="ach-lu-sub" id="achLuSub"></div>
+  <button class="ach-lu-btn">Lecę dalej 🚀</button>
+</div>
+
+<!-- OSIĄGNIĘCIA SCREEN -->
+<div class="ach-screen" id="achScreen">
+  <div class="ach-bg"></div>
+  <button class="wa-close" onclick="closeAch()">✕</button>
+  <div class="ach-inner">
+    <div class="ach-hero">
+      <div class="ach-char" id="achChar"></div>
+      <div class="ach-stage-title" id="achStageTitle">Marzyciel</div>
+      <div class="ach-stage-sub" id="achStageSub"></div>
+      <div class="ach-xpbar"><div class="ach-xpfill" id="achXpFill"></div><span class="ach-xptext" id="achXpText"></span></div>
+    </div>
+    <div class="ach-track" id="achTrack"></div>
+    <div class="wa-slbl" style="display:flex;justify-content:space-between">
+      <span>Osiągnięcia</span>
+      <span class="wa-hist-hint" id="achCount"></span>
+    </div>
+    <div class="ach-list" id="achList"></div>
   </div>
 </div>
 
@@ -2012,6 +2095,138 @@ function openWaDay(key) {
   document.getElementById('waDayOv').classList.add('open');
 }
 function closeWaDay() { document.getElementById('waDayOv').classList.remove('open'); }
+
+// ── OSIĄGNIĘCIA (founder mode) ────────────────────────────────────────────────
+const ACH_STAGES = [
+  { t:'Marzyciel', xp:0,    sub:'Masz wizję. Reszta to robota.' },
+  { t:'Founder',   xp:100,  sub:'Oficjalnie budujesz. Nie ma odwrotu.' },
+  { t:'Builder',   xp:300,  sub:'Produkt nabiera kształtu.' },
+  { t:'Grinder',   xp:700,  sub:'Codzienny grind. Bez wymówek.' },
+  { t:'Closer',    xp:1500, sub:'Wychodzisz do ludzi. Zamykasz.' },
+  { t:'Operator',  xp:3000, sub:'Masz klientów. To już firma.' },
+  { t:'Wizjoner',  xp:6000, sub:'Budujesz coś większego niż ty.' },
+];
+
+const ACH = [
+  { id:'open',     ico:'🥚', name:'Pierwszy krok',        desc:'Wszedłeś w tryb foundera',              xp:25,   tier:'easy', auto:true },
+  { id:'notion',   ico:'📋', name:'Wizja na papierze',     desc:'Rozpisałeś plan w Notion',              xp:50,   tier:'easy' },
+  { id:'arc_day',  ico:'🧊', name:'Dzień dyscypliny',      desc:'Pełny dzień w 144 Arc',                 xp:75,   tier:'easy' },
+  { id:'deploy',   ico:'🚀', name:'Pierwszy deploy',       desc:'Wdrożyłeś funkcję na produkcję',        xp:50,   tier:'easy' },
+  { id:'streak7',  ico:'🔥', name:'7 dni z rzędu',         desc:'Tydzień bez przerwy w 144 Arc',         xp:150,  tier:'med' },
+  { id:'contact',  ico:'📞', name:'Pierwszy kontakt',      desc:'Odezwałeś się do pierwszego klubu',     xp:150,  tier:'med' },
+  { id:'demo',     ico:'🤝', name:'Pierwsze demo',         desc:'Umówiłeś pierwsze demo z klubem',       xp:300,  tier:'hard' },
+  { id:'revenue1k',ico:'💵', name:'Pierwszy 1000 zł',      desc:'Pierwszy 1000 zł przychodu',            xp:400,  tier:'hard' },
+  { id:'streak30', ico:'🏔️', name:'Miesiąc dyscypliny',    desc:'30 dni z rzędu w 144 Arc',              xp:600,  tier:'hard' },
+  { id:'client',   ico:'💰', name:'Pierwszy klient',       desc:'Zdobyłeś pierwszego płacącego klienta', xp:1000, tier:'legend' },
+  { id:'store',    ico:'📲', name:'Na sklepie',            desc:'Aplikacja w App Store / Google Play',   xp:1500, tier:'legend' },
+  { id:'five',     ico:'🏆', name:'Pięć klubów',           desc:'5 płacących klubów na pokładzie',       xp:2000, tier:'legend' },
+];
+
+// Pixel-art postać foundera — grid → SVG
+const ACH_PAL = [
+  {B:'#6b7280',A:'#6b7280'}, {B:'#6366f1',A:'#818cf8'}, {B:'#f97316',A:'#7c4a1e'},
+  {B:'#ef4444',A:'#fb923c'}, {B:'#14b8a6',A:'#7c4a1e'}, {B:'#a855f7',A:'#fbbf24'},
+  {B:'#eab308',A:'#fde047'},
+];
+const ACH_GRIDS = [
+  ['.........','..KKKKK..','..KEKEK..','..KKKKK..','...BBB...','.BBBBBBB.','.B.BBB.B.','...BBB...','..B...B..','..F...F..'],
+  ['.........','..KKKKK..','..KEKEK..','..KKKKK..','...BBB...','.BBBBBBB.','.B.BBB.B.','...BBB...','..B...B..','..F...F..'],
+  ['..AAAAA..','..KKKKK..','..KEKEK..','..KKKKK..','...BBB...','.BBBBBBB.','.B.BBB.B.','...BBB...','..B...B..','..F...F..'],
+  ['.A.A.A.A.','..KKKKK..','..KEKEK..','..KKKKK..','...BBB...','.BBBBBBB.','.B.BBB.B.','...BBB...','..B...B..','..F...F..'],
+  ['.........','..KKKKK..','..KEKEK..','..KKKKK..','...BBB...','.BBBBBBB.','.B.BBB.AA','...BBB.A.','..B...B..','..F...F..'],
+  ['A.A.A.A.A','..KKKKK..','..KEKEK..','..KKKKK..','...BBB...','.BBBBBBB.','.B.BBB.B.','...BBB...','..B...B..','..F...F..'],
+  ['.AAAAAAA.','.A.A.A.A.','..KKKKK..','..KEKEK..','..KKKKK..','...BBB...','.BBBBBBB.','.B.BBB.B.','...BBB...','..B...B..','..F...F..'],
+];
+function achPixel(stage) {
+  const g = ACH_GRIDS[stage] || ACH_GRIDS[0];
+  const pal = ACH_PAL[stage] || ACH_PAL[0];
+  const col = { K:'#f0c090', E:'#16161a', F:'#2a2a2a', B:pal.B, A:pal.A };
+  const W = g[0].length, H = g.length, cs = 10;
+  let rects = '';
+  for (let y=0;y<H;y++) for (let x=0;x<g[y].length;x++) {
+    const c = g[y][x];
+    if (c !== '.' && col[c]) rects += `<rect x="${x*cs}" y="${y*cs}" width="${cs}" height="${cs}" fill="${col[c]}"/>`;
+  }
+  return `<svg viewBox="0 0 ${W*cs} ${H*cs}" shape-rendering="crispEdges">${rects}</svg>`;
+}
+
+function achLoad() { try { return JSON.parse(localStorage.getItem('ach_done')||'[]'); } catch(e){ return []; } }
+function achSave(a) { localStorage.setItem('ach_done', JSON.stringify(a)); }
+function achTotalXP(done) { return ACH.filter(a=>done.includes(a.id)).reduce((s,a)=>s+a.xp,0); }
+function achStageIdx(xp) { let i=0; for(let s=0;s<ACH_STAGES.length;s++) if(xp>=ACH_STAGES[s].xp) i=s; return i; }
+
+function openAch() {
+  const done = achLoad();
+  if (!done.includes('open')) { done.push('open'); achSave(done); }
+  document.getElementById('achScreen').classList.add('open');
+  rAch();
+}
+function closeAch() { document.getElementById('achScreen').classList.remove('open'); }
+
+function rAch() {
+  const done = achLoad();
+  const xp = achTotalXP(done);
+  const si = achStageIdx(xp);
+  const stage = ACH_STAGES[si];
+  const next = ACH_STAGES[si+1];
+
+  document.getElementById('achChar').innerHTML = achPixel(si);
+  document.getElementById('achStageTitle').textContent = stage.t;
+  document.getElementById('achStageSub').textContent = stage.sub;
+
+  // XP bar
+  const base = stage.xp, top = next ? next.xp : stage.xp;
+  const pct = next ? Math.min(100, Math.round((xp-base)/(top-base)*100)) : 100;
+  document.getElementById('achXpFill').style.width = pct + '%';
+  document.getElementById('achXpText').textContent = next ? `${xp} / ${next.xp} XP → ${next.t}` : `${xp} XP · MAX`;
+
+  // Track
+  document.getElementById('achTrack').innerHTML = ACH_STAGES.map((s,i)=>`
+    <div class="ach-tstage ${i<=si?'reached':''} ${i===si?'current':''}">
+      <div class="ach-tdot">${i<=si?achPixel(i):'🔒'}</div>
+      <div class="ach-tlbl">${s.t}</div>
+    </div>`).join('');
+
+  // List
+  const got = ACH.filter(a=>done.includes(a.id)).length;
+  document.getElementById('achCount').textContent = `${got} / ${ACH.length} · ${xp} XP`;
+  document.getElementById('achList').innerHTML = ACH.map(a=>{
+    const on = done.includes(a.id);
+    return `<div class="ach-card${on?' done':''}${!on&&a.tier==='legend'?' locked-legend':''}" onclick="achToggle('${a.id}')">
+      <div class="ach-card-ico">${a.ico}</div>
+      <div class="ach-card-body">
+        <div class="ach-card-name">${a.name}</div>
+        <div class="ach-card-desc">${a.desc}</div>
+      </div>
+      <div class="ach-card-right">
+        <span class="ach-xp-badge">+${a.xp}</span>
+        <span class="ach-tier ${a.tier}">${a.tier}</span>
+      </div>
+      <div class="ach-check">${on?'✓':''}</div>
+    </div>`;
+  }).join('');
+}
+
+function achToggle(id) {
+  const done = achLoad();
+  const beforeStage = achStageIdx(achTotalXP(done));
+  const i = done.indexOf(id);
+  if (i>=0) done.splice(i,1); else done.push(id);
+  achSave(done);
+  const afterStage = achStageIdx(achTotalXP(done));
+  rAch();
+  if (afterStage > beforeStage) showLevelUp(afterStage);
+}
+
+function showLevelUp(si) {
+  const s = ACH_STAGES[si];
+  document.getElementById('achLuChar').innerHTML = achPixel(si);
+  document.getElementById('achLuTitle').textContent = s.t;
+  document.getElementById('achLuSub').textContent = s.sub;
+  document.getElementById('achLevelUp').classList.add('open');
+}
+function closeLevelUp() { document.getElementById('achLevelUp').classList.remove('open'); }
+
 function toggleSidebar() { const s = document.getElementById('sidebar'), o = document.getElementById('navOverlay'); const open = s.classList.toggle('open'); o.classList.toggle('open', open); }
 function closeSidebar()  { document.getElementById('sidebar').classList.remove('open'); document.getElementById('navOverlay').classList.remove('open'); }
 
