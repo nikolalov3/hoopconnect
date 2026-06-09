@@ -667,6 +667,10 @@ html[data-theme="light"] .fi,.html[data-theme="light"] .fs,.html[data-theme="lig
 .ach-tier.med{background:rgba(96,165,250,0.15);color:#60a5fa}
 .ach-tier.hard{background:rgba(251,146,60,0.15);color:#fb923c}
 .ach-tier.legend{background:rgba(167,139,250,0.18);color:#a78bfa}
+.ach-tier.mythic{background:linear-gradient(135deg,rgba(251,191,36,0.22),rgba(244,114,182,0.22));color:#fcd34d;border:1px solid rgba(251,191,36,0.3)}
+.ach-card.locked-mythic{border-color:rgba(251,191,36,0.2)}
+.ach-card.done .ach-card-ico{filter:none;opacity:1}
+.ach-card.done.tier-mythic .ach-card-ico{background:linear-gradient(135deg,rgba(251,191,36,0.2),rgba(244,114,182,0.2))}
 .ach-check{width:24px;height:24px;border-radius:7px;border:1.5px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;transition:all .2s}
 .ach-card.done .ach-check{background:#fbbf24;border-color:#fbbf24;color:#000}
 /* level up toast */
@@ -2098,28 +2102,45 @@ function closeWaDay() { document.getElementById('waDayOv').classList.remove('ope
 
 // ── OSIĄGNIĘCIA (founder mode) ────────────────────────────────────────────────
 const ACH_STAGES = [
-  { t:'Dreamer', xp:0,    sub:'Masz wizję. Reszta to robota.' },
-  { t:'Founder', xp:100,  sub:'Oficjalnie budujesz. Nie ma odwrotu.' },
-  { t:'Maker',   xp:300,  sub:'Produkt nabiera kształtu.' },
-  { t:'Hustler', xp:700,  sub:'Codzienny grind. Bez wymówek.' },
-  { t:'Closer',  xp:1500, sub:'Wychodzisz do ludzi. Zamykasz.' },
-  { t:'Boss',    xp:3000, sub:'Masz klientów. To już firma.' },
-  { t:'Legend',  xp:6000, sub:'Budujesz coś większego niż ty.' },
+  { t:'Dreamer', xp:0,     sub:'Masz wizję. Reszta to robota.' },
+  { t:'Founder', xp:250,   sub:'Oficjalnie budujesz. Nie ma odwrotu.' },
+  { t:'Maker',   xp:750,   sub:'Produkt nabiera kształtu.' },
+  { t:'Hustler', xp:2000,  sub:'Codzienny grind. Bez wymówek.' },
+  { t:'Closer',  xp:5000,  sub:'Wychodzisz do ludzi. Zamykasz.' },
+  { t:'Boss',    xp:12000, sub:'Masz klientów. To już firma.' },
+  { t:'Legend',  xp:30000, sub:'Budujesz coś większego niż ty.' },
 ];
 
 const ACH = [
-  { id:'open',     ico:'🥚', name:'Pierwszy krok',        desc:'Wszedłeś w tryb foundera',              xp:25,   tier:'easy', auto:true },
-  { id:'notion',   ico:'📋', name:'Wizja na papierze',     desc:'Rozpisałeś plan w Notion',              xp:50,   tier:'easy' },
-  { id:'arc_day',  ico:'🧊', name:'Dzień dyscypliny',      desc:'Pełny dzień w 144 Arc',                 xp:75,   tier:'easy' },
-  { id:'deploy',   ico:'🚀', name:'Pierwszy deploy',       desc:'Wdrożyłeś funkcję na produkcję',        xp:50,   tier:'easy' },
-  { id:'streak7',  ico:'🔥', name:'7 dni z rzędu',         desc:'Tydzień bez przerwy w 144 Arc',         xp:150,  tier:'med' },
-  { id:'contact',  ico:'📞', name:'Pierwszy kontakt',      desc:'Odezwałeś się do pierwszego klubu',     xp:150,  tier:'med' },
-  { id:'demo',     ico:'🤝', name:'Pierwsze demo',         desc:'Umówiłeś pierwsze demo z klubem',       xp:300,  tier:'hard' },
-  { id:'revenue1k',ico:'💵', name:'Pierwszy 1000 zł',      desc:'Pierwszy 1000 zł przychodu',            xp:400,  tier:'hard' },
-  { id:'streak30', ico:'🏔️', name:'Miesiąc dyscypliny',    desc:'30 dni z rzędu w 144 Arc',              xp:600,  tier:'hard' },
-  { id:'client',   ico:'💰', name:'Pierwszy klient',       desc:'Zdobyłeś pierwszego płacącego klienta', xp:1000, tier:'legend' },
-  { id:'store',    ico:'📲', name:'Na sklepie',            desc:'Aplikacja w App Store / Google Play',   xp:1500, tier:'legend' },
-  { id:'five',     ico:'🏆', name:'Pięć klubów',           desc:'5 płacących klubów na pokładzie',       xp:2000, tier:'legend' },
+  // EASY — start
+  { id:'open',     ico:'🥚', name:'Pierwszy krok',        desc:'Wszedłeś w tryb foundera',              xp:25,    tier:'easy', auto:true },
+  { id:'notion',   ico:'📋', name:'Wizja na papierze',     desc:'Rozpisałeś plan w Notion',              xp:50,    tier:'easy' },
+  { id:'deploy',   ico:'🚀', name:'Pierwszy deploy',       desc:'Wdrożyłeś funkcję na produkcję',        xp:50,    tier:'easy' },
+  { id:'arc_day',  ico:'🧊', name:'Dzień dyscypliny',      desc:'Pełny dzień w 144 Arc',                 xp:75,    tier:'easy' },
+  // MED
+  { id:'streak7',  ico:'🔥', name:'7 dni z rzędu',         desc:'Tydzień bez przerwy w 144 Arc',         xp:150,   tier:'med' },
+  { id:'contact',  ico:'📞', name:'Pierwszy kontakt',      desc:'Odezwałeś się do pierwszego klubu',     xp:150,   tier:'med' },
+  // HARD
+  { id:'demo',     ico:'🤝', name:'Pierwsze demo',         desc:'Umówiłeś pierwsze demo z klubem',       xp:300,   tier:'hard' },
+  { id:'profile',  ico:'👤', name:'Profil zawodnika live', desc:'Publiczny profil gracza działa',        xp:300,   tier:'hard' },
+  { id:'revenue1k',ico:'💵', name:'Pierwszy 1000 zł',      desc:'Pierwszy 1000 zł przychodu',            xp:400,   tier:'hard' },
+  { id:'deploy50', ico:'⚙️', name:'50 deployów',           desc:'50 wdrożeń na produkcję',               xp:400,   tier:'hard' },
+  { id:'users100', ico:'👥', name:'Pierwszych 100 userów', desc:'100 zarejestrowanych zawodników',       xp:500,   tier:'hard' },
+  { id:'streak30', ico:'🏔️', name:'Miesiąc dyscypliny',    desc:'30 dni z rzędu w 144 Arc',              xp:600,   tier:'hard' },
+  // LEGEND
+  { id:'client',   ico:'💰', name:'Pierwszy klient',       desc:'Pierwszy płacący klub',                 xp:1000,  tier:'legend' },
+  { id:'store',    ico:'📲', name:'Na sklepie',            desc:'Aplikacja w App Store / Google Play',   xp:1500,  tier:'legend' },
+  { id:'rev10k',   ico:'💸', name:'10 000 zł',             desc:'10 000 zł łącznego przychodu',          xp:1500,  tier:'legend' },
+  { id:'arc144',   ico:'❄️', name:'Pełny 144 Arc',         desc:'144 dni z rzędu — przeżyłeś arc',       xp:2000,  tier:'legend' },
+  { id:'five',     ico:'🏆', name:'Pięć klubów',           desc:'5 płacących klubów na pokładzie',       xp:2000,  tier:'legend' },
+  { id:'users1k',  ico:'🌐', name:'1 000 użytkowników',    desc:'1 000 zawodników w aplikacji',          xp:2500,  tier:'legend' },
+  { id:'clubs10',  ico:'🏟️', name:'10 klubów',             desc:'10 klubów na pokładzie',                xp:4000,  tier:'legend' },
+  // MYTHIC — wielkie marzenia
+  { id:'rev100k',  ico:'🤑', name:'100 000 zł',            desc:'100 000 zł przychodu',                  xp:5000,  tier:'mythic' },
+  { id:'users10k', ico:'🚀', name:'10 000 użytkowników',   desc:'10 000 zawodników trenuje',             xp:6000,  tier:'mythic' },
+  { id:'clubs25',  ico:'👑', name:'25 klubów',             desc:'25 klubów — jesteś standardem',         xp:8000,  tier:'mythic' },
+  { id:'users50k', ico:'🌍', name:'50 000 użytkowników',   desc:'Aplikacja w całej Polsce',              xp:15000, tier:'mythic' },
+  { id:'million',  ico:'💎', name:'Pierwszy milion',       desc:'1 000 000 zł przychodu',                xp:20000, tier:'mythic' },
 ];
 
 // Pixel-art postać foundera — grid → SVG
@@ -2192,7 +2213,7 @@ function rAch() {
   document.getElementById('achCount').textContent = `${got} / ${ACH.length} · ${xp} XP`;
   document.getElementById('achList').innerHTML = ACH.map(a=>{
     const on = done.includes(a.id);
-    return `<div class="ach-card${on?' done':''}${!on&&a.tier==='legend'?' locked-legend':''}" onclick="achToggle('${a.id}')">
+    return `<div class="ach-card tier-${a.tier}${on?' done':''}${!on&&a.tier==='legend'?' locked-legend':''}${!on&&a.tier==='mythic'?' locked-mythic':''}" onclick="achToggle('${a.id}')">
       <div class="ach-card-ico">${a.ico}</div>
       <div class="ach-card-body">
         <div class="ach-card-name">${a.name}</div>
