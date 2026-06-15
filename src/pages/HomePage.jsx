@@ -672,13 +672,41 @@ const ARENA_META = [
     desc: 'Pokazałeś, że jesteś tu na serio. Czas walczyć o jeszcze więcej.',
   },
   {
-    // ZAWSZE OSTATNIA — "Sól tej Ziemi" to aktualny szczyt aren.
-    // Gdy dodasz nową arenę, wstaw ją PRZED tym wpisem i podnieś próg poniżej.
-    name: 'Sól tej Ziemi',   threshold: 1500,
+    name: 'City Run',        threshold: 1500,
     bg: 'rgba(90,60,0,0.50)',    glow: '#E8B030',
     badge: ['#FFE090','#C88820','#1A1000'],
-    tagline: 'Fundament. Bez ciebie nie ma gry.',
-    desc: 'Aktualny szczyt HoopConnect. Gracze, którzy tu dotarli, budują tę społeczność.',
+    tagline: 'Miasto nigdy nie śpi. Ty też nie zwalniasz.',
+    desc: 'Twoja gra zaczyna robić wrażenie — miasto Cię zauważyło.',
+  },
+  {
+    name: 'Golden Reign',    threshold: 2700,
+    bg: 'rgba(90,70,0,0.50)',    glow: '#FFC940',
+    badge: ['#FFF2B0','#C9A227','#241200'],
+    tagline: 'Złota era. Rządzisz parkietem.',
+    desc: 'Złoty wiek Twojej kariery. Nieliczni docierają tak wysoko.',
+  },
+  {
+    name: 'Ankh Court',      threshold: 3900,
+    bg: 'rgba(0,70,65,0.50)',    glow: '#2DD4BF',
+    badge: ['#A8FFF0','#1FA89A','#001A18'],
+    tagline: 'Starożytna moc, nowoczesna gra.',
+    desc: 'Arena dla wybranych. Twoja legenda rośnie z każdym meczem.',
+  },
+  {
+    name: 'Void Gem',        threshold: 5500,
+    bg: 'rgba(60,0,90,0.50)',    glow: '#A855F7',
+    badge: ['#E0B0FF','#7C3AED','#180029'],
+    tagline: 'W pustce świecisz najjaśniej.',
+    desc: 'Otoczony pustką, świecisz jak klejnot. Elita elit.',
+  },
+  {
+    // ZAWSZE OSTATNIA — "Seraphim" to aktualny szczyt aren.
+    // Gdy dodasz nową arenę, wstaw ją PRZED tym wpisem i podnieś próg poniżej.
+    name: 'Seraphim',        threshold: 7500,
+    bg: 'rgba(90,80,40,0.50)',   glow: '#FDE68A',
+    badge: ['#FFFFFF','#FFD700','#3A2C00'],
+    tagline: 'Ostatni stopień. Boska forma.',
+    desc: 'Szczyt HoopConnect. Status legendy.',
   },
 ]
 const ARENA_UP_PARTICLES = Array.from({ length: 16 }, (_, i) => ({
