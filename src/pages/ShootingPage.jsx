@@ -13,6 +13,7 @@ import { creditRestDayStreak } from '../lib/streak'
 import StreakToast from '../components/ui/StreakToast'
 import { shareSessionCard, doShare } from '../lib/shareCard'
 import { dispatchLocal } from '../lib/realtimeManager'
+import { calendarWeekNumber } from '../lib/week'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -433,8 +434,7 @@ export default function ShootingPage() {
       if (!isFreestyle) {
         // Punkty + credit do streak — TYLKO dla dziennego treningu, nie freestyle.
         const TODAY_DATE = new Date().toISOString().split('T')[0]
-        const daysSinceJoin2 = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
-        const weekNum2 = Math.floor(daysSinceJoin2 / 7) + 1
+        const weekNum2 = calendarWeekNumber(new Date())
         await supabase.from('points_log').upsert(
           {
             user_id: profile.id,
@@ -453,8 +453,7 @@ export default function ShootingPage() {
       clearSession()
 
       // Sprawdź osiągnięcia skumulowane + perfekcyjne sesje
-      const daysSinceJoin = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
-      const weekNumber = Math.floor(daysSinceJoin / 7) + 1
+      const weekNumber = calendarWeekNumber(new Date())
       const [unlocked, perfect] = await Promise.all([
         checkShotAchievements(profile.id, config.shotType, weekNumber),
         checkPerfectSession(profile.id, config.shotType, finalMade, newAttempted, weekNumber),
@@ -487,8 +486,7 @@ export default function ShootingPage() {
     if (insertedRow2) dispatchLocal('shooting_sessions', 'INSERT', insertedRow2)
     setFinalStats({ made, attempted })
     clearSession()
-    const daysSinceJoin = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
-    const weekNumber = Math.floor(daysSinceJoin / 7) + 1
+    const weekNumber = calendarWeekNumber(new Date())
     const [unlocked, perfect] = await Promise.all([
       checkShotAchievements(profile.id, config.shotType, weekNumber),
       checkPerfectSession(profile.id, config.shotType, made, attempted, weekNumber),
@@ -522,8 +520,7 @@ export default function ShootingPage() {
 
     if (!isFreestyle) {
       const TODAY_DATE = new Date().toISOString().split('T')[0]
-      const daysSinceJoin2 = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
-      const weekNum2 = Math.floor(daysSinceJoin2 / 7) + 1
+      const weekNum2 = calendarWeekNumber(new Date())
       await supabase.from('points_log').upsert(
         {
           user_id: profile.id,
@@ -541,8 +538,7 @@ export default function ShootingPage() {
     setFinalStats({ made: m, attempted: total })
     clearSession()
 
-    const daysSinceJoin = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
-    const weekNumber = Math.floor(daysSinceJoin / 7) + 1
+    const weekNumber = calendarWeekNumber(new Date())
     const [unlocked, perfect] = await Promise.all([
       checkShotAchievements(profile.id, config.shotType, weekNumber),
       checkPerfectSession(profile.id, config.shotType, m, total, weekNumber),

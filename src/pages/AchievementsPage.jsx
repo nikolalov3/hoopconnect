@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { fetchAchievementsCatalog, getCurrentStage, getTrainingCategoryIds, getCurrentAttendanceStreak, checkTeamPracticeStreak, revokeStaleAchievements } from '../lib/achievements'
 import { getCache, setCache, bustCache } from '../lib/queryCache'
+import { calendarWeekNumber } from '../lib/week'
 
 // ── STYLE MEDALI ──────────────────────────────────────────────────────────────
 const MEDAL_STYLE = {
@@ -262,7 +263,7 @@ export default function AchievementsPage() {
       // (covers the case where coach just marked attendance — Realtime triggers
       // this re-run too).
       try {
-        await checkTeamPracticeStreak(userId, profile?.current_week_number)
+        await checkTeamPracticeStreak(userId, calendarWeekNumber(new Date()))
         await revokeStaleAchievements(userId)
       } catch (e) {
         console.warn('[achievements] streak check failed:', e)

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { UIProvider, useUI } from './context/UIContext'
@@ -44,6 +44,14 @@ const RecoveryPage    = lazy(() => import('./pages/RecoveryPage'))
 const ClubPage        = lazy(() => import('./pages/ClubPage'))
 const JoinClubPage    = lazy(() => import('./pages/JoinClubPage'))
 const QrLandingPage   = lazy(() => import('./pages/QrLandingPage'))
+const ArenaRoad       = lazy(() => import('./components/ArenaRoad'))
+
+// Wrapper trasy /arena — XP z profilu, powrót przyciskiem wstecz
+function ArenaRoadRoute() {
+  const { profile } = useAuth()
+  const navigate = useNavigate()
+  return <ArenaRoad xp={profile?.xp || 0} onClose={() => navigate(-1)} />
+}
 
 // All main tab routes — rendered always (keep-alive), just CSS show/hide
 const TAB_ROUTES = [
@@ -103,7 +111,8 @@ function AppShell() {
   const inShooting   = path.startsWith('/shooting')
   const inOnboarding = path === '/onboarding'
   const inCalendar   = path === '/calendar'
-  const showNav      = !inShooting && !inOnboarding && !inCalendar
+  const inArena      = path === '/arena'
+  const showNav      = !inShooting && !inOnboarding && !inCalendar && !inArena
 
   // Lazy-mount: a tab mounts on first visit, then stays mounted forever (keep-alive).
   // Switching tabs = instant CSS visibility swap, zero re-fetch, zero remount.
@@ -170,6 +179,7 @@ function AppShell() {
             <AnimatePresence mode="wait" initial={false}>
               <Routes location={location} key={location.pathname}>
                 <Route path="/shooting/:id" element={<ShootingPage />} />
+                <Route path="/arena"        element={<ArenaRoadRoute />} />
                 <Route path="/calendar"     element={<CalendarPage />} />
                 <Route path="/onboarding"   element={<OnboardingPage />} />
               </Routes>

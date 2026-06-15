@@ -1,0 +1,39 @@
+<svg width="1050" height="1050" viewBox="0 0 1050 1050" xmlns="http://www.w3.org/2000/svg">
+  <!--
+    SZABLON HEXAGONU — "Twój Postęp" na stronie głównej
+    Skala 5x oryginału (oryginał: 210x210 viewBox)
+
+    WARSTWY (od dołu do góry w Figmie):
+    1. "bleed"  — całe płótno 1050x1050 = obszar, w którym grafika może
+                  swobodnie wystawać poza hex (zostanie częściowo zasłonięty
+                  animowanym paskiem postępu + jego poświatą)
+    2. "outer"  — zewnętrzny hexagon = granica paska postępu / tracka
+    3. "inner"  — wewnętrzny hexagon = "bezpieczny" obszar, zawsze w pełni
+                  widoczny, tu umieszczaj główny motyw/detal
+
+    EKSPORT: narysuj swoją grafikę w tym płótnie, potem wyeksportuj
+    PNG 1050x1050 (lub mniejszy, np. 600x600 — proporcje zostaną zachowane).
+    Warstwy "bleed/outer/inner" to TYLKO PODGLĄD — usuń je przed eksportem
+    finalnego PNG (zostaw tylko swoją grafikę).
+  -->
+
+  <!-- 1. BLEED — całe płótno, tło robocze -->
+  <rect x="0" y="0" width="1050" height="1050" fill="#0a0a12" />
+  <rect x="0" y="0" width="1050" height="1050" fill="none" stroke="#444" stroke-width="2" stroke-dasharray="10 10" />
+  <text x="20" y="35" fill="#888" font-family="sans-serif" font-size="22">BLEED (1050×1050) — może być zasłonięte paskiem postępu</text>
+
+  <!-- 2. OUTER HEX — granica paska postępu (zewnętrzny track) -->
+  <polygon points="525,70 955,375 955,675 525,980 95,675 95,375"
+    fill="none" stroke="#FF8C30" stroke-width="4" stroke-dasharray="14 8" />
+  <text x="525" y="55" fill="#FF8C30" font-family="sans-serif" font-size="22" text-anchor="middle">OUTER HEX — granica animowanego paska postępu</text>
+
+  <!-- 3. INNER HEX — bezpieczny obszar, zawsze widoczny -->
+  <polygon points="525,105 920,385 920,665 525,945 130,665 130,385"
+    fill="rgba(126,203,255,0.06)" stroke="#7ECBFF" stroke-width="4" />
+  <text x="525" y="1010" fill="#7ECBFF" font-family="sans-serif" font-size="22" text-anchor="middle">INNER HEX (790×840) — tu umieść główny motyw, zawsze widoczne</text>
+
+  <!-- Środek -->
+  <circle cx="525" cy="525" r="6" fill="#fff" />
+  <line x1="525" y1="0" x2="525" y2="1050" stroke="#fff" stroke-width="1" stroke-opacity="0.15" />
+  <line x1="0" y1="525" x2="1050" y2="525" stroke="#fff" stroke-width="1" stroke-opacity="0.15" />
+</svg>

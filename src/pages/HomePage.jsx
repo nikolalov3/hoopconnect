@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import { createPortal } from 'react-dom'
+import { motion, AnimatePresence, useMotionValue, useTransform, animate as fmAnimate } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { onTableChange } from '../lib/realtimeManager'
@@ -13,7 +14,10 @@ import { getCache, setCache, bustCache } from '../lib/queryCache'
 import { pGet, pSet } from '../lib/persistentCache'
 import { useNotifications } from '../context/NotificationsContext'
 import { useTodayTeamPractice } from '../hooks/useTodayTeamPractice'
+import { calendarWeekNumber, startOfCalendarWeek } from '../lib/week'
 import TeamPracticeCard from '../components/training/TeamPracticeCard'
+
+const ArenaRoad = lazy(() => import('../components/ArenaRoad'))
 
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -145,24 +149,142 @@ function pickDailyTrainings(allTrainings, profile) {
 }
 
 // ── REPORT RATING RING — hexagonal diamond shape ────────────────────────────
-// Hex outer: points="105,14 191,75 191,135 105,196 19,135 19,75" in 210×210 space
-// Each half (right / left) path length ≈ 270.88 units
+// Channel (progress track, background): hexagon, pointy-top, center (105,105)
+// points="105,23 180.27,65.47 180.27,144.53 105,184.06 29.73,144.53 29.73,65.47"
+// Progress bar polylines are scaled ~1.0125x outward from the same center
+// (points="105,22 181.21,64.98 181.21,145.02 105,185.04 28.79,145.02 28.79,64.98",
+// strokeWidth 13) so the thicker bar grows outward only, beyond the track.
+// Each "half" ≈ 250.5 × 1.0125 ≈ 253.8.
 // Left 500 pts fills from top counter-clockwise; right 500 pts fills clockwise.
 // Both halves fill simultaneously — at 1000 pts the ring is fully closed.
-const HEX_HALF_LEN = 270.88
+const HEX_HALF_LEN = 254
 
-function ReportRatingRing({ score, daysLeft, loading }) {
+// Kolor paska postępu per arena — nadpisuje kolor zależny od wyniku.
+// idx 0 = Playground, 1 = Street Court (miedziano-pomarańczowy), 2 = Sól tej Ziemi (leśna zieleń),
+// 3 = (placeholder — do ustalenia razem z grafiką arena3frame), 4 = (placeholder), 5 = (placeholder — arena5frame)
+const ARENA_RING_COLOR = ['#8899CC', '#D2772E', '#27943F', '#C8A27A', '#7B5CFA', '#A855F7', '#4DA7EA']
+
+// Pasek świeci niezależnie od wyniku (ignoruje próg ARENA_GOLD_THRESHOLD) — idx 6
+const ARENA_BAR_ALWAYS_SHIMMER = [false, false, false, false, false, false, true]
+
+// Wynik punktowy dostaje efekt .score-shimmer — domyślnie tak, idx 6 = nie (połysk tylko na pasku)
+const ARENA_SCORE_SHIMMER = [true, true, true, true, true, true, false]
+
+// Gradient "galaxy" dla paska postępu (stałe, niezależne od isGoldTier) — idx 4 (fioletowo-granatowy z fioletowym połyskiem)
+const ARENA_BAR_GRADIENT = [null, null, null, null, ['#2A1B6B', '#6A4FE0', '#B89CFF', '#6A4FE0', '#2A1B6B'], null, null]
+
+// Szerokość paska postępu (strokeWidth) per arena — domyślnie 13, idx 4 = węższy
+const ARENA_BAR_WIDTH = [13, 13, 13, 13, 10, 13, 13]
+
+// Kolor "połysku" (mieszany z barColor przy isGoldTier) — domyślnie biały, idx 3 = złoty
+const ARENA_SHIMMER_COLOR = ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFD700', '#FFFFFF', '#FFFFFF', '#89CFF0']
+
+// Gradient dla wyniku punktowego (ten sam motyw co pasek postępu) — per arena.
+// Środkowy jaśniejszy stop = przesuwający się "połysk" (animacja .score-shimmer)
+const ARENA_SCORE_GRADIENT = [
+  'linear-gradient(100deg, #8899CC 20%, #E2E8FF 50%, #8899CC 80%)',
+  'linear-gradient(100deg, #D2772E 20%, #FFE0B0 50%, #D2772E 80%)',
+  'linear-gradient(100deg, #27943F 20%, #7FD494 50%, #27943F 80%)',
+  'linear-gradient(100deg, #C8A27A 20%, #FFD700 50%, #C8A27A 80%)',
+  'linear-gradient(100deg, #2A1B6B 0%, #6A4FE0 35%, #B89CFF 50%, #6A4FE0 65%, #2A1B6B 100%)',
+  'linear-gradient(100deg, #A855F7 20%, #E0BFFF 50%, #A855F7 80%)',
+  'linear-gradient(100deg, #C9D6FF 20%, #F4F8FF 50%, #C9D6FF 80%)',
+]
+
+// Mieszanie kolorów hex (t=0 → a, t=1 → b) — używane do przejścia paska w złoto od 600 pkt
+function mixHex(a, b, t) {
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16)
+  const ar = (pa >> 16) & 255, ag = (pa >> 8) & 255, ab = pa & 255
+  const br = (pb >> 16) & 255, bg = (pb >> 8) & 255, bb = pb & 255
+  const r = Math.round(ar + (br - ar) * t)
+  const g = Math.round(ag + (bg - ag) * t)
+  const b2 = Math.round(ab + (bb - ab) * t)
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b2).toString(16).slice(1)}`
+}
+const GOLD_THRESHOLD = 600
+// Próg połysku per arena (nadpisuje GOLD_THRESHOLD) — idx 2 = Sól tej Ziemi
+const ARENA_GOLD_THRESHOLD = [GOLD_THRESHOLD, GOLD_THRESHOLD, 400, GOLD_THRESHOLD, GOLD_THRESHOLD, 400, GOLD_THRESHOLD]
+
+// Efekt paska po przekroczeniu progu połysku — 'shimmer' (przesuwający się gradient) lub 'pulse' (pulsująca poświata)
+const ARENA_BAR_EFFECT = ['shimmer', 'shimmer', 'shimmer', 'shimmer', 'shimmer', 'shimmer', 'shimmer']
+
+// Skala szerokości hexagonu paska postępu per arena (1 = bez zmian) — idx 2 = Sól tej Ziemi (węższy)
+const ARENA_HEX_SCALE_X = [1, 1, 0.93, 0.95, 0.93, 1, 1]
+
+// Przesunięcie czubka górnego hexagonu w górę (px) per arena — idx 3 = lekko wyciągnięty
+const ARENA_HEX_TOP_SHIFT = [0, 0, 0, 4, 4, 0, 0]
+
+// DEV: areny dostępne w podglądzie strzałkami (tylko te z gotową grafiką)
+const DEV_PREVIEW_LEVELS = [1, 2, 3, 4, 5, 6]
+
+// Skaluje współrzędne X punktów polygon/polyline wokół środka cx (Y bez zmian)
+function scalePointsX(points, cx, scaleX) {
+  if (scaleX === 1) return points
+  return points
+    .split(' ')
+    .map(pair => {
+      const [x, y] = pair.split(',').map(Number)
+      return `${(cx + (x - cx) * scaleX).toFixed(2)},${y}`
+    })
+    .join(' ')
+}
+
+// Przesuwa w górę (Y - shift) punkty leżące na czubku (najmniejszy Y) hexagonu
+function shiftTopY(points, shift) {
+  if (!shift) return points
+  const parsed = points.split(' ').map(pair => pair.split(',').map(Number))
+  const topY = Math.min(...parsed.map(([, y]) => y))
+  return parsed
+    .map(([x, y]) => `${x},${(y === topY ? y - shift : y).toFixed(2)}`)
+    .join(' ')
+}
+
+function ReportRatingRing({ score, daysLeft, loading, arenaLevel = 0, devPreviewLevel, setDevPreviewLevel }) {
   const isLocked = daysLeft > 0
   const fillRatio = isLocked ? 0 : Math.min(score, 1000) / 1000
   const dash = fillRatio * HEX_HALF_LEN
 
-  const color = score >= 750 ? '#00E676' : score >= 500 ? '#7ECBFF' : score >= 250 ? '#5BB8F5' : '#6B5040'
-  const ringColor = isLocked ? 'rgba(255,255,255,0.10)' : color
+  // DEV: na localhost przełączaj podgląd ramy strzałkami, niezależnie od profile.arena_level
+  const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  const previewLevel = isDev ? devPreviewLevel : arenaLevel
+
+  const scoreColor = score >= 750 ? '#00E676' : score >= 500 ? '#7ECBFF' : score >= 250 ? '#5BB8F5' : '#6B5040'
+  const color = ARENA_RING_COLOR[previewLevel] ?? scoreColor
+  const scoreGradient = ARENA_SCORE_GRADIENT[previewLevel] ?? `linear-gradient(135deg, ${scoreColor}, ${scoreColor})`
+
+  // Pasek dostaje efekt od progu ustalonego per arena (bez zmiany koloru)
+  const isGoldTier = !isLocked && (ARENA_BAR_ALWAYS_SHIMMER[previewLevel] || score >= (ARENA_GOLD_THRESHOLD[previewLevel] ?? GOLD_THRESHOLD))
+  const barEffect = ARENA_BAR_EFFECT[previewLevel] ?? 'shimmer'
+  const useShimmer = isGoldTier && barEffect === 'shimmer'
+  const usePulse = isGoldTier && barEffect === 'pulse'
+  const barColor = color
+  const ringColor = isLocked ? 'rgba(255,255,255,0.10)' : barColor
+  const galaxyColors = !isLocked ? ARENA_BAR_GRADIENT[previewLevel] : null
+  const barWidth = ARENA_BAR_WIDTH[previewLevel] ?? 13
+
+  // Per-arena szerokość hexagonu (boki bliżej/dalej środka, bez zmiany Y)
+  const hexScaleX = ARENA_HEX_SCALE_X[previewLevel] ?? 1
+  const topShift = ARENA_HEX_TOP_SHIFT[previewLevel] ?? 0
+  const trackPoints = shiftTopY(scalePointsX('105,23 180.27,65.47 180.27,144.53 105,184.06 29.73,144.53 29.73,65.47', 105, hexScaleX), topShift)
+  const rightBarPoints = shiftTopY(scalePointsX('105,22 181.21,64.98 181.21,145.02 105,185.04', 105, hexScaleX), topShift)
+  const leftBarPoints = shiftTopY(scalePointsX('105,22 28.79,64.98 28.79,145.02 105,185.04', 105, hexScaleX), topShift)
+
+  // Preload arena graphic — sprawdza realne zdekodowanie obrazu (dev server
+  // zwraca 200/HTML dla nieistniejących plików, więc samo onError na <image> nie wystarcza)
+  const [arenaImgOk, setArenaImgOk] = useState(false)
+  useEffect(() => {
+    setArenaImgOk(false)
+    const img = new Image()
+    img.onload  = () => setArenaImgOk(true)
+    img.onerror = () => setArenaImgOk(false)
+    img.src = `/arenas/arena-${previewLevel}.png`
+    return () => { img.onload = null; img.onerror = null }
+  }, [previewLevel])
 
   return (
     <div style={{ position: 'relative', width: 210, height: 210, margin: '0 auto' }}>
 
-      {/* SVG: inner fill + track + progress */}
+      {/* SVG: inner fill + frame + progress */}
       <svg width="210" height="210" viewBox="0 0 210 210"
         style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
         <defs>
@@ -170,32 +292,57 @@ function ReportRatingRing({ score, daysLeft, loading }) {
             <stop offset="0%"   stopColor="rgba(10,6,3,0.82)" />
             <stop offset="100%" stopColor="rgba(3,1,0,0.97)" />
           </radialGradient>
+          {useShimmer && (
+            <linearGradient id="barShimmerGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%"   stopColor={barColor} />
+              <stop offset="40%"  stopColor={barColor} />
+              <stop offset="50%"  stopColor={mixHex(barColor, ARENA_SHIMMER_COLOR[previewLevel] ?? '#FFFFFF', 0.4)} />
+              <stop offset="60%"  stopColor={barColor} />
+              <stop offset="100%" stopColor={barColor} />
+              <animateTransform attributeName="gradientTransform" type="translate"
+                from="-1 0" to="1 0" dur="6s" repeatCount="indefinite" />
+            </linearGradient>
+          )}
+          {galaxyColors && (
+            <linearGradient id="barGalaxyGrad" x1="0" y1="0" x2="1" y2="0">
+              {galaxyColors.map((c, i) => (
+                <stop key={i} offset={`${(i / (galaxyColors.length - 1)) * 100}%`} stopColor={c} />
+              ))}
+              <animateTransform attributeName="gradientTransform" type="translate"
+                from="0 0" to="-1 0" dur="8s" repeatCount="indefinite" />
+            </linearGradient>
+          )}
         </defs>
 
-        {/* Inner glass fill — 92 % scaled hex, leaves room for the ring stroke */}
-        <polygon
-          points="105,21 184,77 184,133 105,189 26,133 26,77"
-          fill="url(#ringFillGrad)"
-          stroke="rgba(255,255,255,0.10)"
-          strokeWidth="1"
-        />
+        {/* Inner glass fill — fallback gdy nie ma grafiki ramy (regularny hexagon, R≈59) */}
+        {!arenaImgOk && (
+          <polygon
+            points="105,46 156.1,75.5 156.1,134.5 105,164 53.9,134.5 53.9,75.5"
+            fill="url(#ringFillGrad)"
+            stroke="rgba(255,255,255,0.10)"
+            strokeWidth="1"
+          />
+        )}
 
-        {/* Background track — full hexagon outline */}
+        {/* Background track — kanał w ramie (boki nieco bliżej siebie, szczyt wyżej) */}
         <polygon
-          points="105,14 191,75 191,135 105,196 19,135 19,75"
-          fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8"
+          points={trackPoints}
+          fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="11"
           strokeLinejoin="round"
         />
 
         {/* Right half — top → clockwise → bottom (500 pts) */}
         {!isLocked && (
           <polyline
-            points="105,14 191,75 191,135 105,196"
-            fill="none" stroke={ringColor} strokeWidth="8"
+            points={rightBarPoints}
+            fill="none" stroke={galaxyColors ? 'url(#barGalaxyGrad)' : (useShimmer ? 'url(#barShimmerGrad)' : ringColor)} strokeWidth={barWidth}
             strokeDasharray={`${dash} 9999`}
             strokeLinejoin="round" strokeLinecap="round"
+            className={usePulse ? 'bar-pulse-glow' : undefined}
             style={{
-              filter: `drop-shadow(0 0 7px ${color}) drop-shadow(0 0 18px ${color}65)`,
+              '--bar-glow': barColor,
+              '--bar-glow-soft': `${barColor}80`,
+              filter: `brightness(1.35) drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px ${barColor}) drop-shadow(0 0 24px ${barColor}80)`,
             }}
           />
         )}
@@ -203,13 +350,27 @@ function ReportRatingRing({ score, daysLeft, loading }) {
         {/* Left half — top → counter-clockwise → bottom (500 pts) */}
         {!isLocked && (
           <polyline
-            points="105,14 19,75 19,135 105,196"
-            fill="none" stroke={ringColor} strokeWidth="8"
+            points={leftBarPoints}
+            fill="none" stroke={galaxyColors ? 'url(#barGalaxyGrad)' : (useShimmer ? 'url(#barShimmerGrad)' : ringColor)} strokeWidth={barWidth}
             strokeDasharray={`${dash} 9999`}
             strokeLinejoin="round" strokeLinecap="round"
+            className={usePulse ? 'bar-pulse-glow' : undefined}
             style={{
-              filter: `drop-shadow(0 0 7px ${color}) drop-shadow(0 0 18px ${color}65)`,
+              '--bar-glow': barColor,
+              '--bar-glow-soft': `${barColor}80`,
+              filter: `brightness(1.35) drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px ${barColor}) drop-shadow(0 0 24px ${barColor}80)`,
             }}
+          />
+        )}
+
+        {/* Arena frame graphic — metalowa rama hexagonu z pustym środkiem (przezroczystość PNG),
+            rysowana NA WIERZCHU paska postępu, żeby pasek "świecił spod ramy" */}
+        {arenaImgOk && (
+          <image
+            href={`/arenas/arena-${previewLevel}.png`}
+            x="0" y="0" width="210" height="210"
+            preserveAspectRatio="xMidYMid meet"
+            onError={() => setArenaImgOk(false)}
           />
         )}
       </svg>
@@ -231,7 +392,12 @@ function ReportRatingRing({ score, daysLeft, loading }) {
           />
         ) : (
           <>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 62, lineHeight: 1, color, letterSpacing: '-1px', textShadow: `0 0 22px ${color}73` }}>
+            <span className={(ARENA_SCORE_SHIMMER[previewLevel] ?? true) ? 'score-shimmer' : undefined} style={{
+              fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 62, lineHeight: 1, letterSpacing: '-1px',
+              backgroundImage: scoreGradient,
+              WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
+              textShadow: `0 0 22px ${color}73`,
+            }}>
               {score}
             </span>
             <span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--text-dim)', marginTop: 2 }}>
@@ -240,6 +406,32 @@ function ReportRatingRing({ score, daysLeft, loading }) {
           </>
         )}
       </div>
+
+      {/* DEV-only: przełączanie podglądu areny strzałkami */}
+      {isDev && (
+        <>
+          <button
+            onClick={(e) => { e.stopPropagation(); setDevPreviewLevel(l => { const i = DEV_PREVIEW_LEVELS.indexOf(l); return DEV_PREVIEW_LEVELS[(i + DEV_PREVIEW_LEVELS.length - 1) % DEV_PREVIEW_LEVELS.length] }) }}
+            style={{
+              position: 'absolute', left: -44, top: '50%', transform: 'translateY(-50%)',
+              width: 32, height: 32, borderRadius: '50%',
+              border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.06)',
+              color: 'var(--text-primary)', fontSize: 16, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >‹</button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setDevPreviewLevel(l => { const i = DEV_PREVIEW_LEVELS.indexOf(l); return DEV_PREVIEW_LEVELS[(i + 1) % DEV_PREVIEW_LEVELS.length] }) }}
+            style={{
+              position: 'absolute', right: -44, top: '50%', transform: 'translateY(-50%)',
+              width: 32, height: 32, borderRadius: '50%',
+              border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.06)',
+              color: 'var(--text-primary)', fontSize: 16, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >›</button>
+        </>
+      )}
     </div>
   )
 }
@@ -395,6 +587,548 @@ function RestDayCard() {
   )
 }
 
+// ── XP EVENT: mały toast (bez awansu) ───────────────────────────────────────
+function XpReportToast({ data, onClose }) {
+  useEffect(() => {
+    if (!data) return
+    const t = setTimeout(onClose, 5000)
+    return () => clearTimeout(t)
+  }, [data])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  return createPortal(
+    <AnimatePresence>
+      {data && (
+        <motion.div
+          key="xp-toast"
+          initial={{ y: -140, opacity: 0 }}
+          animate={{ y: 0,    opacity: 1 }}
+          exit={{   y: -140, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+          onClick={onClose}
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+            display: 'flex', justifyContent: 'center',
+            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 10px)',
+            paddingLeft: 16, paddingRight: 16,
+          }}
+        >
+          <div style={{
+            width: '100%', maxWidth: 390,
+            background: 'rgba(4,12,28,0.96)',
+            backdropFilter: 'blur(32px) saturate(1.8)', WebkitBackdropFilter: 'blur(32px) saturate(1.8)',
+            border: '1px solid rgba(0,200,255,0.22)', borderTop: '1px solid rgba(0,220,255,0.40)',
+            borderRadius: 18, padding: '13px 18px',
+            display: 'flex', alignItems: 'center', gap: 14,
+            boxShadow: '0 10px 40px rgba(0,0,0,0.65)',
+          }}>
+            <motion.div
+              animate={{ rotate: [0,-12,12,-6,6,0], scale: [1,1.2,1] }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                background: 'linear-gradient(135deg,rgba(0,160,255,.22),rgba(0,80,200,.12))',
+                border: '1.5px solid rgba(0,200,255,.28)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}
+            >⚡</motion.div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', color: 'rgba(0,200,255,.75)', marginBottom: 2 }}>Raport Tygodniowy</p>
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 16, color: 'var(--text-primary)' }}>Zdobyłeś trwałe XP 🏀</p>
+            </div>
+            <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 22, delay: 0.18 }}
+              style={{ textAlign: 'center', flexShrink: 0 }}>
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 36, lineHeight: 1,
+                color: 'var(--text-primary)', textShadow: '0 0 24px rgba(0,200,255,.70)' }}>+{data.xpGained}</p>
+              <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1.8, textTransform: 'uppercase', color: 'rgba(0,200,255,.65)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+                <img src="/hoopxp.png" alt="XP" style={{ width: 11, height: 11, objectFit: 'contain' }}/>XP
+              </p>
+            </motion.div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
+  )
+}
+
+// ── ARENA UP MODAL — pełnoekranowy panel awansu (jak level-up w Clash Royale) ─
+// ── ARENA_META ────────────────────────────────────────────────────────────────
+// Kolejność: od najniższej (index 0) do najwyższej.
+// "Sól tej Ziemi" jest ZAWSZE ostatnia — gdy dodajesz nową arenę, wstawiaj ją
+// PRZED ostatnim wpisem, a próg Sól podnieś odpowiednio.
+const ARENA_META = [
+  {
+    name: 'Rozgrzewka',      threshold: 0, noFrame: true,
+    bg: 'rgba(30,30,60,0.45)',   glow: '#8899CC',
+    badge: ['#AABBD8','#5566AA','#0C0E22'],
+    tagline: 'Tu zaczyna się każda legenda.',
+    desc: 'Pierwsze kroki. Zbuduj nawyk, zbierz 500 XP i wejdź na prawdziwe boisko.',
+  },
+  {
+    name: 'Street Court',    threshold: 500,
+    bg: 'rgba(100,45,0,0.45)',   glow: '#FF8C30',
+    badge: ['#FFCC80','#E07020','#180900'],
+    tagline: 'Ulica weryfikuje. Ty zdałeś.',
+    desc: 'Pokazałeś, że jesteś tu na serio. Czas walczyć o jeszcze więcej.',
+  },
+  {
+    // ZAWSZE OSTATNIA — "Sól tej Ziemi" to aktualny szczyt aren.
+    // Gdy dodasz nową arenę, wstaw ją PRZED tym wpisem i podnieś próg poniżej.
+    name: 'Sól tej Ziemi',   threshold: 1500,
+    bg: 'rgba(90,60,0,0.50)',    glow: '#E8B030',
+    badge: ['#FFE090','#C88820','#1A1000'],
+    tagline: 'Fundament. Bez ciebie nie ma gry.',
+    desc: 'Aktualny szczyt HoopConnect. Gracze, którzy tu dotarli, budują tę społeczność.',
+  },
+]
+const ARENA_UP_PARTICLES = Array.from({ length: 16 }, (_, i) => ({
+  x: Math.cos((i / 16) * Math.PI * 2) * (55 + (i % 4) * 14),
+  y: Math.sin((i / 16) * Math.PI * 2) * (55 + (i % 4) * 14),
+  delay: i * 0.055,
+  size: 3 + (i % 4) * 2.5,
+}))
+const ARENA_ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI']
+// Iskry wystrzeliwujące z chipa "Osiągnięto" — krótki burst, nie pulsujące kółko
+const MILESTONE_SPARKS = Array.from({ length: 10 }, (_, i) => ({
+  angle: (i / 10) * Math.PI * 2 + (i % 2) * 0.3,
+  dist: 26 + (i % 3) * 10,
+  delay: 0.5 + i * 0.03,
+  size: 2 + (i % 3) * 1.5,
+}))
+
+// Small hex badge used inside the arena modal
+function ArenaHexBadge({ idx, meta, size = 140 }) {
+  const [imgOk, setImgOk] = useState(true)
+  useEffect(() => setImgOk(true), [idx])
+
+  // Etap bez ramki (Rozgrzewka) — wygląd jak w "Droga Aren": przerywany hexagon + 🏀
+  if (meta.noFrame) {
+    return (
+      <div style={{ width: size, height: size, position: 'relative' }}>
+        <svg width={size} height={size} viewBox="0 0 90 90">
+          <polygon points="45,3 82,24 82,66 45,87 8,66 8,24"
+            fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="2"
+            strokeDasharray="6 6" strokeLinejoin="round" />
+        </svg>
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', fontSize: size * 0.34, opacity: 0.5,
+        }}>🏀</div>
+      </div>
+    )
+  }
+
+  return imgOk ? (
+    <img
+      src={`/arenas/arena-${idx}.png`}
+      onError={() => setImgOk(false)}
+      alt={meta.name}
+      style={{ width: size, height: size, objectFit: 'contain',
+        filter: `drop-shadow(0 0 30px ${meta.glow}99)` }}
+    />
+  ) : (
+    <svg width={size} height={size} viewBox="0 0 90 90"
+      style={{ filter: `drop-shadow(0 0 28px ${meta.glow}90)` }}>
+      <defs>
+        <linearGradient id={`ahb-g-${idx}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor={meta.badge[0]}/>
+          <stop offset="55%"  stopColor={meta.badge[1]}/>
+          <stop offset="100%" stopColor={meta.badge[2]}/>
+        </linearGradient>
+      </defs>
+      <polygon points="45,3 82,24 82,66 45,87 8,66 8,24"
+        fill={`url(#ahb-g-${idx})`} stroke={meta.badge[0]} strokeWidth="1.5" strokeOpacity="0.65"/>
+      <polygon points="45,13 72,30 72,60 45,77 18,60 18,30"
+        fill="none" stroke={meta.badge[0]} strokeWidth="0.7" strokeOpacity="0.30"/>
+      <text x="45" y="53" textAnchor="middle" dominantBaseline="middle"
+        fill="white" fontSize="28" fontWeight="900"
+        fontFamily="var(--font-display)" opacity="0.95">{Math.max(1, idx)}</text>
+    </svg>
+  )
+}
+
+function ArenaUpModal({ data, onClose }) {
+  // phase 0 = "before": stara arena + pasek wypełniający się do progu
+  // phase 1 = "after":  nowa arena + cząsteczki + kontynuuj
+  const [phase, setPhase] = useState(0)
+
+  // XP counter dla fazy 0
+  const xpMotion = useMotionValue(0)
+  const xpDisplay = useTransform(xpMotion, v => Math.round(v))
+
+  useEffect(() => {
+    if (!data) return
+    setPhase(0)
+
+    const newIdx   = ARENA_META.findIndex(t => t.name === data.arenaName)
+    const newMeta  = ARENA_META[Math.max(0, newIdx)] || ARENA_META[1]
+
+    // XP counter: od prevXp do progu nowej areny
+    xpMotion.set(data.prevXp ?? 0)
+    const ctrl = fmAnimate(xpMotion, newMeta.threshold, { duration: 1.4, delay: 0.5, ease: 'easeOut' })
+
+    // Po ~2.0s (po zakończeniu wypełnienia) → faza 1 (droga), potem faza 2 (reveal)
+    const t1 = setTimeout(() => setPhase(1), 2100)
+    const t2 = setTimeout(() => setPhase(2), 2100 + 1500)
+    return () => { ctrl.stop(); clearTimeout(t1); clearTimeout(t2) }
+  }, [data?.arenaName]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const newIdx   = ARENA_META.findIndex(t => t.name === data?.arenaName)
+  const prevIdx  = Math.max(0, ARENA_META.findIndex(t => t.name === data?.prevArenaName))
+  const newMeta  = ARENA_META[Math.max(0, newIdx)]  || ARENA_META[1]
+  const prevMeta = ARENA_META[prevIdx]               || ARENA_META[0]
+  const nextMeta = ARENA_META[newIdx + 1]            || null
+
+  const prevXp    = data?.prevXp ?? 0
+  const prevSpan  = Math.max(1, newMeta.threshold - prevMeta.threshold)
+  const prevPct   = Math.min(88, Math.max(0, ((prevXp - prevMeta.threshold) / prevSpan) * 100))
+
+  const showXpChip = (data?.xpGained ?? 0) > 0
+
+  return createPortal(
+    <AnimatePresence>
+      {data && (
+        <motion.div
+          key="arena-up-modal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.28 }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 10000,
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            padding: '0 28px', overflowY: 'auto',
+          }}
+        >
+          {/* Background — crossfade between prev and new arena color */}
+          <motion.div
+            key="bg-prev"
+            style={{ position: 'absolute', inset: 0, zIndex: 0,
+              background: `radial-gradient(ellipse 90% 65% at 50% 35%, ${prevMeta.bg}, rgba(3,8,20,0.98) 75%)` }}
+            animate={{ opacity: phase === 0 ? 1 : 0 }}
+            transition={{ duration: 0.7 }}
+          />
+          <motion.div
+            key="bg-next"
+            style={{ position: 'absolute', inset: 0, zIndex: 0,
+              background: `radial-gradient(ellipse 90% 65% at 50% 35%, ${newMeta.bg}, rgba(3,8,20,0.98) 75%)` }}
+            animate={{ opacity: phase >= 1 ? 1 : 0 }}
+            transition={{ duration: 0.7 }}
+          />
+
+          {/* Przyciemnienie tła — focus mode, prawie pełna czerń, arena jest jedynym światłem */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 1, background: 'rgba(0,0,0,0.88)', pointerEvents: 'none' }} />
+
+          {/* Particles — burst at phase 2 transition */}
+          <AnimatePresence>
+            {phase === 2 && (
+              <div key="particles" style={{ position: 'absolute', top: '38%', left: '50%', pointerEvents: 'none', zIndex: 1 }}>
+                {ARENA_UP_PARTICLES.map((p, i) => (
+                  <motion.div key={i}
+                    initial={{ opacity: 0, x: 0, y: 0, scale: 0 }}
+                    animate={{ opacity: [0, 1, 0], x: p.x * 1.8, y: p.y * 1.8, scale: [0, 1, 0.3] }}
+                    transition={{ duration: 1.3, delay: p.delay * 0.8, ease: 'easeOut' }}
+                    style={{
+                      position: 'absolute', width: p.size, height: p.size,
+                      borderRadius: '50%', background: newMeta.glow,
+                      boxShadow: `0 0 ${p.size * 2}px ${newMeta.glow}`,
+                      transform: 'translate(-50%,-50%)',
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </AnimatePresence>
+
+          {/* ── PHASE 0: stara arena + pasek wypełniający się ─────────────────── */}
+          <AnimatePresence mode="wait">
+            {phase === 0 && (
+              <motion.div key="phase-0"
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ duration: 0.35 }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  width: '100%', maxWidth: 320, position: 'relative', zIndex: 2 }}
+              >
+                <motion.p
+                  initial={{ opacity: 0 }} animate={{ opacity: 0.6 }}
+                  transition={{ delay: 0.1 }}
+                  style={{ fontSize: 9, fontWeight: 800, letterSpacing: 3.5,
+                    textTransform: 'uppercase', color: prevMeta.glow, marginBottom: 20 }}
+                >Twój postęp</motion.p>
+
+                {/* Stary badge — pulsuje, potem shrinkuje przy exit (pomijamy dla Rozgrzewki — brak ramki) */}
+                {!prevMeta.noFrame && (
+                  <motion.div style={{ position: 'relative', marginBottom: 22 }}>
+                    <ArenaHexBadge idx={prevIdx} meta={prevMeta} size={145}/>
+                    <motion.div
+                      animate={{ scale: [1, 1.5], opacity: [0.4, 0] }}
+                      transition={{ duration: 1.0, delay: 0.4, repeat: 1, ease: 'easeOut' }}
+                      style={{ position: 'absolute', inset: -10, borderRadius: '50%',
+                        border: `2px solid ${prevMeta.glow}`, pointerEvents: 'none' }}
+                    />
+                  </motion.div>
+                )}
+
+                {/* Stara arena name — pomijamy dla Rozgrzewki */}
+                {!prevMeta.noFrame && (
+                  <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 22,
+                    letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-primary)',
+                    textAlign: 'center', textShadow: `0 0 30px ${prevMeta.glow}60`,
+                    marginBottom: 18 }}>{prevMeta.name}</p>
+                )}
+
+                {/* Pasek XP wypełniający się do progu */}
+                <div style={{ width: '100%', marginBottom: 8, marginTop: prevMeta.noFrame ? 8 : 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1,
+                      textTransform: 'uppercase', color: prevMeta.noFrame ? '#5BB8F580' : `${prevMeta.glow}80` }}>
+                      {prevMeta.noFrame ? '' : prevMeta.name}
+                    </span>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1,
+                      textTransform: 'uppercase', color: `${newMeta.glow}90` }}>
+                      {newMeta.name} ↑
+                    </span>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 99, background: 'rgba(255,255,255,0.07)',
+                    position: 'relative', overflow: 'hidden' }}>
+                    {/* Wypełnienie od poprzedniej pozycji do 100% */}
+                    <motion.div
+                      initial={{ width: `${prevPct}%` }}
+                      animate={{ width: '100%' }}
+                      transition={{ delay: 0.6, duration: 1.2, ease: 'easeInOut' }}
+                      style={{
+                        position: 'absolute', top: 0, left: 0, height: '100%', borderRadius: 99,
+                        background: prevMeta.noFrame
+                          ? 'linear-gradient(90deg, #5BB8F5, #7ECBFF)'
+                          : `linear-gradient(90deg, ${prevMeta.badge[1]}, ${newMeta.badge[0]})`,
+                        boxShadow: prevMeta.noFrame ? '0 0 14px #5BB8F590' : `0 0 14px ${newMeta.glow}90`,
+                      }}
+                    />
+                  </div>
+                  {/* XP counter */}
+                  <p style={{ textAlign: 'center', marginTop: 8, fontFamily: 'var(--font-display)',
+                    fontWeight: 800, fontSize: 18, color: 'var(--text-primary)',
+                    textShadow: `0 0 16px ${newMeta.glow}60`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                    <motion.span>{xpDisplay}</motion.span>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)',
+                      fontWeight: 700 }}>/ {newMeta.threshold}</span>
+                    <img src="/hoopxp.png" alt="XP" style={{ width: 14, height: 14, objectFit: 'contain' }}/>
+                  </p>
+                </div>
+
+                {showXpChip && (
+                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    style={{ padding: '4px 12px', borderRadius: 99, marginTop: 4,
+                      background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.55)' }}>
+                      +{data.xpGained} XP z tygodniowego raportu
+                    </span>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+
+            {/* ── PHASE 1: hexagon obraca się i po odwróceniu odkrywa nową arenę ── */}
+            {phase === 1 && (
+              <motion.div key="phase-flip"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.3 }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  width: '100%', maxWidth: 320, position: 'relative', zIndex: 2 }}
+              >
+                <motion.p
+                  initial={{ opacity: 0 }} animate={{ opacity: 0.7 }}
+                  style={{ fontSize: 9, fontWeight: 800, letterSpacing: 3.5,
+                    textTransform: 'uppercase', color: newMeta.glow, marginBottom: 20 }}
+                >Awansujesz</motion.p>
+
+                <div style={{ width: 190, height: 190, perspective: 900 }}>
+                  <motion.div
+                    initial={{ rotateY: 0 }}
+                    animate={{ rotateY: 180 }}
+                    transition={{ duration: 0.9, delay: 0.25, ease: 'easeInOut' }}
+                    style={{ width: '100%', height: '100%', position: 'relative', transformStyle: 'preserve-3d' }}
+                  >
+                    {/* Przód — stara arena */}
+                    <div style={{
+                      position: 'absolute', inset: 0, backfaceVisibility: 'hidden',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <ArenaHexBadge idx={prevIdx} meta={prevMeta} size={190}/>
+                    </div>
+                    {/* Tył — nowa arena (obrócona o 180°, więc po flipie stoi prawidłowo) */}
+                    <div style={{
+                      position: 'absolute', inset: 0, backfaceVisibility: 'hidden',
+                      transform: 'rotateY(180deg)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <ArenaHexBadge idx={newIdx} meta={newMeta} size={190}/>
+                    </div>
+                  </motion.div>
+                </div>
+
+                <motion.p
+                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.25 }}
+                  style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)',
+                    marginTop: 22, textAlign: 'center' }}
+                >
+                  <span style={{ color: `${prevMeta.glow}90` }}>{prevMeta.name}</span>
+                  {' → '}
+                  <span style={{ color: newMeta.glow }}>{newMeta.name}</span>
+                </motion.p>
+              </motion.div>
+            )}
+
+            {/* ── PHASE 2: nowa arena reveal ──────────────────────────────────── */}
+            {phase === 2 && (
+              <motion.div key="phase-2"
+                initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  width: '100%', maxWidth: 320, position: 'relative', zIndex: 2 }}
+              >
+                <motion.p
+                  initial={{ opacity: 0, y: -8 }} animate={{ opacity: 0.8, y: 0 }}
+                  transition={{ delay: 0.08 }}
+                  style={{ fontSize: 9, fontWeight: 800, letterSpacing: 4,
+                    textTransform: 'uppercase', color: newMeta.glow, marginBottom: 20 }}
+                >Awansowałeś</motion.p>
+
+                {/* Nowy badge — wlatuje z dołu/skaluje, większy — dominuje ekran */}
+                <motion.div
+                  initial={{ scale: 0.3, opacity: 0, y: 30 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 320, damping: 22, delay: 0.10 }}
+                  style={{ position: 'relative', marginBottom: 18 }}
+                >
+                  <ArenaHexBadge idx={newIdx} meta={newMeta} size={180}/>
+                  <motion.div
+                    animate={{ scale: [1, 1.7], opacity: [0.5, 0] }}
+                    transition={{ duration: 1.2, delay: 0.4, repeat: 2, ease: 'easeOut' }}
+                    style={{ position: 'absolute', inset: -12, borderRadius: '50%',
+                      border: `2px solid ${newMeta.glow}`, pointerEvents: 'none' }}
+                  />
+                </motion.div>
+
+                {/* Nowa arena name — emocjonalne powitanie */}
+                <motion.p
+                  initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.22, duration: 0.4 }}
+                  style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 30,
+                    letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-primary)',
+                    textAlign: 'center', lineHeight: 1.1,
+                    textShadow: `0 0 44px ${newMeta.glow}70`, marginBottom: 8 }}
+                >Witaj na<br/>{newMeta.name}</motion.p>
+
+                {/* Tagline emocjonalny */}
+                <motion.p
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  transition={{ delay: 0.36 }}
+                  style={{ fontSize: 13, fontWeight: 600, fontStyle: 'italic',
+                    color: 'rgba(255,255,255,0.55)', textAlign: 'center',
+                    maxWidth: 260, lineHeight: 1.4, marginBottom: 20 }}
+                >Nie jesteś już rookie.</motion.p>
+
+                {/* Milestone chip — polysk + iskry */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.42 }}
+                  style={{ position: 'relative', padding: '6px 18px', borderRadius: 10, marginBottom: 24,
+                    background: `linear-gradient(135deg, ${newMeta.glow}30, ${newMeta.glow}10)`,
+                    border: `1px solid ${newMeta.glow}60`,
+                    boxShadow: `0 0 18px ${newMeta.glow}35, inset 0 1px 0 rgba(255,255,255,0.25)`,
+                    overflow: 'hidden' }}
+                >
+                  {/* Połysk — przesuwający się sweep */}
+                  <motion.div
+                    initial={{ x: '-120%' }}
+                    animate={{ x: '220%' }}
+                    transition={{ delay: 0.7, duration: 0.9, ease: 'easeInOut' }}
+                    style={{ position: 'absolute', top: 0, bottom: 0, width: '40%',
+                      background: `linear-gradient(75deg, transparent, ${newMeta.glow}55, transparent)`,
+                      pointerEvents: 'none' }}
+                  />
+                  <span style={{ position: 'relative', fontSize: 11, fontWeight: 800, color: newMeta.glow, letterSpacing: 0.5 }}>
+                    Osiągnięto: {newMeta.threshold === 0 ? 'Start' : `${newMeta.threshold} XP`}
+                  </span>
+                  {/* Iskry — krótki burst */}
+                  {MILESTONE_SPARKS.map((s, i) => (
+                    <motion.div key={i}
+                      initial={{ opacity: 0, x: 0, y: 0, scale: 0 }}
+                      animate={{ opacity: [0, 1, 0], x: Math.cos(s.angle) * s.dist, y: Math.sin(s.angle) * s.dist, scale: [0, 1, 0.4] }}
+                      transition={{ duration: 0.7, delay: s.delay, ease: 'easeOut' }}
+                      style={{ position: 'absolute', top: '50%', left: '50%', width: s.size, height: s.size,
+                        borderRadius: '50%', background: newMeta.glow,
+                        boxShadow: `0 0 ${s.size * 2}px ${newMeta.glow}`,
+                        transform: 'translate(-50%,-50%)', pointerEvents: 'none' }}
+                    />
+                  ))}
+                </motion.div>
+
+                {/* Pasek nowej areny (start 0% → następny) */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.50 }}
+                  style={{ width: '100%', marginBottom: 30 }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.2,
+                      textTransform: 'uppercase', color: `${newMeta.glow}90` }}>{newMeta.name}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.2,
+                      textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' }}>
+                      {nextMeta ? `Arena ${ARENA_ROMAN[newIdx + 1] || newIdx + 1}` : 'MAX'}
+                    </span>
+                  </div>
+                  <div style={{ height: 6, borderRadius: 99, background: 'rgba(255,255,255,0.07)' }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: nextMeta ? '1.5%' : '100%' }}
+                      transition={{ delay: 0.70, duration: 0.6 }}
+                      style={{ height: '100%', borderRadius: 99,
+                        background: `linear-gradient(90deg, ${newMeta.badge[1]}, ${newMeta.badge[0]})`,
+                        boxShadow: `0 0 10px ${newMeta.glow}80` }}
+                    />
+                  </div>
+                  <p style={{ textAlign: 'center', fontSize: 10, color: 'rgba(255,255,255,0.30)',
+                    marginTop: 6, fontWeight: 700 }}>
+                    {newMeta.threshold} / {nextMeta ? nextMeta.threshold : newMeta.threshold} XP
+                    {nextMeta && <span style={{ color: 'rgba(255,255,255,0.18)' }}> → Arena {ARENA_ROMAN[newIdx + 1] || newIdx + 1}</span>}
+                  </p>
+                </motion.div>
+
+                {/* Continue */}
+                <motion.button
+                  initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.56 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={onClose}
+                  style={{
+                    width: '100%', height: 54, borderRadius: 16,
+                    background: `linear-gradient(135deg, ${newMeta.badge[1]}, ${newMeta.badge[0]})`,
+                    border: `1px solid ${newMeta.badge[0]}80`,
+                    boxShadow: `0 4px 32px ${newMeta.glow}55`,
+                    color: 'white', fontFamily: 'var(--font-display)', fontWeight: 900,
+                    fontSize: 15, letterSpacing: 2.5, textTransform: 'uppercase', cursor: 'pointer',
+                  }}
+                >Kontynuuj</motion.button>
+                <div style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
+  )
+}
+
 // ── DAY DONE MODAL ───────────────────────────────────────────────────────────
 function DayDoneModal({ completedCount, onClose }) {
   const [width, setWidth] = useState(0)
@@ -518,7 +1252,37 @@ export default function HomePage() {
     setAchievementToast(data)
   }
   const [showDayDoneModal, setShowDayDoneModal] = useState(false)
+  const [showArenaRoad, setShowArenaRoad] = useState(false)
+  const [devArenaUpLevel, setDevArenaUpLevel] = useState(0)
+  // DEV: na localhost przełączaj podgląd ramy strzałkami/przyciskiem, niezależnie od profile.arena_level
+  const [devPreviewLevel, setDevPreviewLevel] = useState(6)
   const [streakToast,     setStreakToast]     = useState(0)   // >0 = visible, value = new streak
+  const [weeklyXpToast,  setWeeklyXpToast]  = useState(null) // { xpGained, arenaUp, arenaName } | null
+  // Kolejka: jeśli DayDoneModal jest otwarty gdy chcemy pokazać arenę,
+  // zapamiętujemy dane i odpalamy dopiero po jego zamknięciu.
+  const pendingArenaToastRef = useRef(null)
+  useEffect(() => {
+    if (!showDayDoneModal && pendingArenaToastRef.current) {
+      setWeeklyXpToast(pendingArenaToastRef.current)
+      pendingArenaToastRef.current = null
+    }
+  }, [showDayDoneModal])
+
+  // ── DEV ONLY: podgląd animacji awansu areny (przycisk na HomePage) ──────────
+  function devTriggerArenaUp() {
+    const DEV_T = ARENA_META.map(a => a.threshold)
+    const DEV_N = ARENA_META.map(a => a.name)
+    const prevLevel = devArenaUpLevel
+    const nextLevel = prevLevel + 1
+    setWeeklyXpToast({
+      xpGained:      0,
+      prevXp:        DEV_T[prevLevel],
+      prevArenaName: DEV_N[prevLevel],
+      arenaUp:       true,
+      arenaName:     DEV_N[nextLevel],
+    })
+    setDevArenaUpLevel(nextLevel >= DEV_T.length - 1 ? 0 : nextLevel)
+  }
 
   useEffect(() => { loadData() }, [profile])
   // Ref mirror — pozwala silentSyncLog czytać bieżący activityLog bez
@@ -668,21 +1432,37 @@ export default function HomePage() {
     // efektów. Teraz pokazujemy NARASTAJĄCY wynik z bieżącego tygodnia —
     // resetuje się do 0 w pierwszym dniu nowego tygodnia i rośnie wraz z
     // każdym ćwiczeniem.
-    const createdAt = profile.created_at ? new Date(profile.created_at) : new Date()
-    const daysSinceJoin = Math.floor((new Date() - createdAt) / (1000 * 60 * 60 * 24))
+    //
+    // ZMIANA (spec "System XP i Areny" — "Tygodniowy Draft Score resetuje
+    // się każdy poniedziałek"): tydzień jest teraz GLOBALNY/kalendarzowy
+    // (poniedziałek 00:00 UTC), wspólny dla wszystkich graczy — a nie
+    // przesunięty względem daty dołączenia. Dzięki temu nowy gracz od razu
+    // nabija punkty w BIEŻĄCYM (choćby częściowym) tygodniu; jego pierwszy
+    // raport po prostu pojawi się, gdy ten tydzień się zakończy (czyli w
+    // najbliższy poniedziałek — maksymalnie ~7 dni, jak w specyfikacji).
+    const now = new Date()
+    const createdAt = profile.created_at ? new Date(profile.created_at) : now
 
-    // 1-indexed week (matches WRITE convention: floor(days/7) + 1)
-    const currentWeek    = Math.floor(daysSinceJoin / 7) + 1
-    const completedWeek  = currentWeek - 1
-    const daysIntoWeek   = daysSinceJoin % 7
-    const daysToWeekEnd  = 7 - daysIntoWeek         // dni do końca tygodnia (1-7)
-    // W pierwszym tygodniu komunikat brzmi „Twój pierwszy raport za N dni”
-    // — zostawiamy ten countdown żeby nie zburzyć first-time UX.
-    const remaining = completedWeek === 0 ? Math.max(0, 7 - daysSinceJoin) : 0
+    const currentWeek   = calendarWeekNumber(now)
+    const joinWeek      = calendarWeekNumber(createdAt)
+    const completedWeek = currentWeek - 1
+
+    const weekStart     = startOfCalendarWeek(now)
+    const daysIntoWeek  = Math.floor((now.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24))
+    const daysToWeekEnd = 7 - daysIntoWeek          // dni do końca tygodnia / poniedziałku (1-7)
+
+    // Dopóki trwa tydzień, w którym gracz dołączył, nie ma jeszcze ŻADNEGO
+    // zakończonego (jego) tygodnia do zaraportowania — pokazujemy countdown
+    // „pierwszy raport za N dni”. Punkty mimo to liczą się od razu (patrz
+    // `runningTotal` niżej, filtrowany po dacie bieżącego tygodnia).
+    const hasFirstReport = currentWeek > joinWeek
+    const remaining = hasFirstReport ? 0 : Math.max(1, daysToWeekEnd)
     setDaysUntilReport(remaining)
 
-    // Archiwizacja zakończonego tygodnia (jeśli jeszcze nie zapisana)
-    if (completedWeek >= 1) {
+    // Archiwizacja zakończonego tygodnia (jeśli jeszcze nie zapisana) —
+    // tylko dla tygodni OD dołączenia gracza wzwyż (nie cudzych, sprzed jego
+    // rejestracji — i tak nie miałby tam żadnych punktów).
+    if (hasFirstReport && completedWeek >= joinWeek) {
       const { data: archived } = await supabase
         .from('weekly_reports')
         .select('total_points')
@@ -690,36 +1470,66 @@ export default function HomePage() {
         .eq('week_number', completedWeek)
         .maybeSingle()
       if (!archived) {
+        // "Pula treningowa" zakończonego tygodnia = TYLKO punkty z treningu/
+        // rzutów (source='training'). Punkty meczowe (source='match') już
+        // dały XP od razu (instant, przy zakończeniu meczu) — nie liczymy
+        // ich drugi raz w batchu poniedziałkowym.
         const { data: oldPoints } = await supabase
           .from('points_log')
           .select('points')
           .eq('user_id', profile.id)
           .eq('week_number', completedWeek)
+          .eq('source', 'training')
         const oldTotal = (oldPoints || []).reduce((s, r) => s + (r.points || 0), 0)
+        const xpGained = Math.round(oldTotal * 0.1)
+
+        // Zapamiętaj stan PRZED archiwizacją (trigger zaraz go zmieni)
+        const oldArenaLevel = profile.arena_level ?? 0
+        const prevXp        = profile.xp ?? 0
+        const ARENA_NAMES   = ARENA_META.map(a => a.name)
+
         await supabase.from('weekly_reports').insert({
           user_id:      profile.id,
           week_number:  completedWeek,
           total_points: oldTotal,
           revealed_at:  new Date().toISOString(),
         })
+
+        // Trigger `award_weekly_xp` już uruchomił się synchronicznie — pobierz
+        // zaktualizowany profil i pokaż animację tylko gdy faktycznie przyznano XP.
+        if (xpGained > 0) {
+          await refreshProfile()
+          const { data: fresh } = await supabase
+            .from('profiles').select('xp,arena_level').eq('id', profile.id).single()
+          const newArenaLevel = fresh?.arena_level ?? oldArenaLevel
+          setWeeklyXpToast({
+            xpGained,
+            prevXp,
+            prevArenaName: ARENA_NAMES[oldArenaLevel] ?? null,
+            arenaUp:       newArenaLevel > oldArenaLevel,
+            arenaName:     ARENA_NAMES[newArenaLevel] ?? null,
+          })
+        }
       }
     }
 
-    // BIEŻĄCY wynik = suma punktów z aktualnego okna 7-dniowego.
-    // Filtrujemy po DACIE (nie week_number) — odporne na historyczne wpisy
-    // które mogły mieć złe week_number przez wcześniejsze bugi.
-    const weekStart = new Date(createdAt)
-    weekStart.setDate(weekStart.getDate() + (currentWeek - 1) * 7)
-    const weekStartISO = weekStart.toISOString().slice(0, 10)
+    // BIEŻĄCY wynik (Draft Score) = suma punktów od początku TEGO
+    // kalendarzowego tygodnia (poniedziałek 00:00 UTC) — ALBO od ostatniego
+    // `draft_score_reset_at`, jeśli jest późniejszy (np. awans areny
+    // w środku tygodnia zeruje Draft Score od razu, mid-week).
+    const weekStartISO  = weekStart.toISOString().slice(0, 10)
+    const resetAt       = profile.draft_score_reset_at ? new Date(profile.draft_score_reset_at) : weekStart
+    const effectiveFrom = resetAt > weekStart ? resetAt : weekStart
+    const effectiveFromISO = effectiveFrom.toISOString().slice(0, 10)
     const { data: pointsData } = await supabase
       .from('points_log')
       .select('points,date,week_number')
       .eq('user_id', profile.id)
-      .gte('date', weekStartISO)
+      .gte('date', effectiveFromISO)
     const runningTotal = (pointsData || []).reduce((sum, r) => sum + (r.points || 0), 0)
     if (typeof window !== 'undefined' && window.location?.hostname === 'localhost') {
       // eslint-disable-next-line no-console
-      console.log('[weekly-report]', { currentWeek, weekStartISO, daysSinceJoin, rows: pointsData })
+      console.log('[weekly-report]', { currentWeek, joinWeek, weekStartISO, rows: pointsData })
     }
 
     setCache(`report:${profile.id}`, { score: runningTotal, daysLeft: remaining }, 60 * 1000)
@@ -733,17 +1543,17 @@ export default function HomePage() {
   // żeby UI ZAWSZE dopasował się do faktycznego stanu bazy.
   async function reconcileReportScore() {
     if (!profile) return
-    const createdAt = profile.created_at ? new Date(profile.created_at) : new Date()
-    const daysSinceJoin = Math.floor((new Date() - createdAt) / (1000 * 60 * 60 * 24))
-    const currentWeek   = Math.floor(daysSinceJoin / 7) + 1
-    const weekStart = new Date(createdAt)
-    weekStart.setDate(weekStart.getDate() + (currentWeek - 1) * 7)
-    const weekStartISO = weekStart.toISOString().slice(0, 10)
+    // Globalny kalendarzowy tydzień (poniedziałek 00:00 UTC) — patrz `lib/week.js`.
+    // Albo `draft_score_reset_at`, jeśli późniejszy (awans areny mid-week).
+    const weekStart = startOfCalendarWeek(new Date())
+    const resetAt = profile.draft_score_reset_at ? new Date(profile.draft_score_reset_at) : weekStart
+    const effectiveFrom = resetAt > weekStart ? resetAt : weekStart
+    const effectiveFromISO = effectiveFrom.toISOString().slice(0, 10)
     const { data } = await supabase
       .from('points_log')
       .select('points')
       .eq('user_id', profile.id)
-      .gte('date', weekStartISO)
+      .gte('date', effectiveFromISO)
     const trueTotal = (data || []).reduce((s, r) => s + (r.points || 0), 0)
     setReportScore(trueTotal)
     // Zachowujemy daysLeft z bieżącego stanu — nie nadpisujemy countdown'a
@@ -834,7 +1644,7 @@ export default function HomePage() {
     // ── Punkty ──
     const training = trainings.find(t => t.id === trainingId)
     const points = (training?._pts || 1) * (training?._multiplier || 1)
-    const weekNumber = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24 * 7)) + 1
+    const weekNumber = calendarWeekNumber(new Date())
     // Supabase queries są lazy — bez .then()/await request NIE LECI.
     // Upsert z ignoreDuplicates: idempotentne wobec UNIQUE (user_id,
     // training_id, date, source) — kliknięcie dwa razy / na dwóch
@@ -858,6 +1668,38 @@ export default function HomePage() {
 
     if (allDone) setShowDayDoneModal(true)
     setTimeout(() => checkAchievements(trainingId, allDone), 0)
+
+    // ── DEV ONLY: localhost — każdy trening wyzwala modal awansu areny ──────
+    // Pobiera ŚWIEŻE dane z DB (profile w closure może być stary). Cykl:
+    //   0→1→2→3→4→5→0→1→... (Elite wraca do Street Court i pokazuje 0→1)
+    // prevXp = próg prevLevel (nie DB xp) → pasek zawsze liczy W GÓRĘ, nie w dół.
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      const DEV_T = ARENA_META.map(a => a.threshold)
+      const DEV_N = ARENA_META.map(a => a.name)
+      const { data: devFresh } = await supabase
+        .from('profiles').select('xp,arena_level').eq('id', profile.id).single()
+      const currLevel = devFresh?.arena_level ?? 0
+      // Gdy na Elite (lub wyżej) — wróć do Street Court i pokaż awans 0→1
+      const prevLevel = currLevel >= DEV_T.length - 1 ? 0 : currLevel
+      const nextLevel = prevLevel + 1
+      await supabase.from('profiles')
+        .update({ xp: DEV_T[nextLevel], arena_level: nextLevel })
+        .eq('id', profile.id)
+      await refreshProfile()
+      const arenaPayload = {
+        xpGained:      0,
+        prevXp:        DEV_T[prevLevel],   // próg prevLevel → pasek liczy w górę
+        prevArenaName: DEV_N[prevLevel],
+        arenaUp:       true,
+        arenaName:     DEV_N[nextLevel],
+      }
+      if (allDone) {
+        pendingArenaToastRef.current = arenaPayload
+      } else {
+        setWeeklyXpToast(arenaPayload)
+      }
+    }
+    // ── koniec bloku DEV ──
   }
 
   async function unmarkTrainingDone(trainingId) {
@@ -946,8 +1788,7 @@ export default function HomePage() {
   async function checkAchievements(completedTrainingId, newAllDone) {
     if (!profile) return
 
-    const daysSinceJoin = Math.floor((new Date() - new Date(profile.created_at)) / (1000 * 60 * 60 * 24))
-    const weekNumber = Math.floor(daysSinceJoin / 7) + 1
+    const weekNumber = calendarWeekNumber(new Date())
 
     const [
       catalog,
@@ -1199,7 +2040,20 @@ export default function HomePage() {
           <DayDoneModal completedCount={completed.length} onClose={() => setShowDayDoneModal(false)} />
         )}
       </AnimatePresence>
+      <AnimatePresence>
+        {showArenaRoad && (
+          <Suspense fallback={null}>
+            <ArenaRoad
+              xp={profile?.xp ?? 0}
+              onClose={() => setShowArenaRoad(false)}
+            />
+          </Suspense>
+        )}
+      </AnimatePresence>
       <StreakToast streak={streakToast} visible={streakToast > 0} onHide={() => setStreakToast(0)} />
+      {/* Arena awans → pełnoekranowy modal; samo XP (bez awansu) → mały toast z góry */}
+      <XpReportToast  data={weeklyXpToast?.arenaUp ? null : weeklyXpToast} onClose={() => setWeeklyXpToast(null)} />
+      <ArenaUpModal   data={weeklyXpToast?.arenaUp ? weeklyXpToast   : null} onClose={() => setWeeklyXpToast(null)} />
 
       {/* Header — identical structure to StatsPage */}
       <div style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 0' }}>
@@ -1317,11 +2171,34 @@ export default function HomePage() {
           </div>
         </div>
 
-        <ReportRatingRing
-          score={reportScore}
-          daysLeft={daysUntilReport}
-          loading={reportLoading}
-        />
+        <div
+          onClick={() => setShowArenaRoad(true)}
+          role="button" tabIndex={0}
+          style={{ cursor: 'pointer' }}
+        >
+          <ReportRatingRing
+            score={typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 800 : reportScore}
+            daysLeft={daysUntilReport}
+            loading={reportLoading}
+            arenaLevel={profile?.arena_level ?? 0}
+            devPreviewLevel={devPreviewLevel}
+            setDevPreviewLevel={setDevPreviewLevel}
+          />
+        </div>
+
+        {typeof window !== 'undefined' && window.location.hostname === 'localhost' && (
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+            <button onClick={devTriggerArenaUp} className="btn-ghost" style={{ fontSize: 11, padding: '8px 14px' }}>
+              DEV: Pokaż awans areny
+            </button>
+            <button
+              onClick={() => setDevPreviewLevel(l => l === 0 ? 6 : 0)}
+              className="btn-ghost" style={{ fontSize: 11, padding: '8px 14px' }}
+            >
+              DEV: {devPreviewLevel === 0 ? 'Pokaż ramkę' : 'Bez ramki (przed arenami)'}
+            </button>
+          </div>
+        )}
 
         {/* Info below ring */}
         <div style={{ textAlign: 'center', marginTop: 16 }}>
