@@ -158,12 +158,12 @@ export default function ArenaRoad({ xp = 0, onClose }) {
                     </div>
                   ) : (
                     <>
-                      <div style={{ fontSize: 12, color: 'rgba(238,244,255,0.5)', marginBottom: isCurrent ? 10 : 0 }}>
+                      <div style={{ fontSize: 12, color: 'rgba(238,244,255,0.5)' }}>
                         {a.threshold === 0 ? 'Start' : `${a.threshold} XP`}{a.tagline ? ` · ${a.tagline}` : ''}
                       </div>
-                      {a.noFrame && (
-                        <div style={{ fontSize: 11, color: 'rgba(238,244,255,0.35)', marginTop: 2, marginBottom: isCurrent ? 8 : 0 }}>
-                          Zdobądź 500 XP, aby odblokować pierwszą ramkę
+                      {a.desc && (
+                        <div style={{ fontSize: 11, color: 'rgba(238,244,255,0.35)', marginTop: 4, marginBottom: isCurrent ? 8 : 0 }}>
+                          {a.desc}
                         </div>
                       )}
                       {isCurrent && prog.next && (

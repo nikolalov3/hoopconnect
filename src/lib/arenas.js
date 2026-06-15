@@ -8,37 +8,44 @@ export const ARENAS = [
   {
     name: 'Rozgrzewka', threshold: 0, noFrame: true,
     glow: '#8899CC', badge: ['#AABBD8', '#5566AA', '#0C0E22'],
-    tagline: 'Tu zaczyna się każda legenda.',
+    tagline: 'Każda historia zaczyna się tutaj.',
+    desc: 'Zbieraj XP, kończ treningi i odblokuj swoją pierwszą arenę HC.',
   },
   {
     name: 'Street Court', threshold: 500,
     glow: '#FF8C30', badge: ['#FFCC80', '#E07020', '#180900'],
-    tagline: 'Ulica weryfikuje. Ty zdałeś.',
+    tagline: 'Pierwsze boisko. Pierwszy progres.',
+    desc: 'Tu zaczyna się prawdziwa gra. Trenuj regularnie i wspinaj się wyżej.',
   },
   {
     name: 'City Run', threshold: 1500,
     glow: '#E8B030', badge: ['#FFE090', '#C88820', '#1A1000'],
-    tagline: 'Miasto nigdy nie śpi. Ty też nie zwalniasz.',
+    tagline: 'Miasto jest w ruchu.',
+    desc: 'Coraz więcej graczy. Coraz większa rywalizacja.',
   },
   {
     name: 'Golden Reign', threshold: 2700,
     glow: '#FFC940', badge: ['#FFF2B0', '#C9A227', '#241200'],
-    tagline: 'Złota era. Rządzisz parkietem.',
+    tagline: 'Twój moment zaczyna błyszczeć.',
+    desc: 'Wysoka arena dla graczy, którzy nie zwalniają tempa.',
   },
   {
     name: 'Ankh Court', threshold: 3900,
     glow: '#2DD4BF', badge: ['#A8FFF0', '#1FA89A', '#001A18'],
-    tagline: 'Starożytna moc, nowoczesna gra.',
+    tagline: 'Zostaw po sobie ślad.',
+    desc: 'Arena inspirowana legendami i drogą, która trwa dalej.',
   },
   {
     name: 'Void Gem', threshold: 5500,
     glow: '#A855F7', badge: ['#E0B0FF', '#7C3AED', '#180029'],
-    tagline: 'W pustce świecisz najjaśniej.',
+    tagline: 'Inny poziom gry.',
+    desc: 'Tylko najbardziej aktywni gracze docierają tak wysoko.',
   },
   {
     name: 'Seraphim', threshold: 7500,
     glow: '#FDE68A', badge: ['#FFFFFF', '#FFD700', '#3A2C00'],
-    tagline: 'Ostatni stopień. Boska forma.',
+    tagline: 'Szczyt świata HC.',
+    desc: 'Najwyższa arena dla graczy, którzy przeszli całą drogę.',
   },
 ]
 
