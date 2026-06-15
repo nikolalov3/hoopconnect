@@ -14,7 +14,11 @@
 --  Uruchom po każdej zmianie progów/listy aren.
 -- ============================================================
 
-create or replace function public.arena_level_for_xp(xp_val integer)
+-- Stara wersja miała inną nazwę parametru (p_xp) — Postgres nie pozwala
+-- zmienić nazwy parametru przez CREATE OR REPLACE, więc usuwamy ją najpierw.
+drop function if exists public.arena_level_for_xp(integer);
+
+create function public.arena_level_for_xp(xp_val integer)
 returns integer
 language sql
 immutable
