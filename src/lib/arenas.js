@@ -6,7 +6,7 @@
 
 export const ARENAS = [
   {
-    name: 'Playground', threshold: 0,
+    name: 'Rozgrzewka', threshold: 0, noFrame: true,
     glow: '#8899CC', badge: ['#AABBD8', '#5566AA', '#0C0E22'],
     tagline: 'Tu zaczyna się każda legenda.',
   },

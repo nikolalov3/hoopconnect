@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useDragControls, useMotionValue, useTransform, animate } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { creditRestDayStreak } from '../lib/streak'
 import { checkTeamWinAchievements } from '../lib/achievements'
+import { calendarWeekNumber } from '../lib/week'
 import { shareMatchCard, doShare } from '../lib/shareCard'
 import HexAvatar, { HexFrameOnly } from '../components/ui/HexAvatar'
+import { ARENAS as ARENA_THEMES } from '../lib/arenas'
 import L from 'leaflet'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,24 +93,82 @@ function fmtDist(km) {
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`
 }
 
+// `flagFile` → matches /public/flags/<name>.png (English country name, lowercase, hyphenated)
 const COUNTRIES = [
-  { code: 'PL', name: 'Polska',          flag: '🇵🇱' },
-  { code: 'US', name: 'USA',             flag: '🇺🇸' },
-  { code: 'DE', name: 'Niemcy',          flag: '🇩🇪' },
-  { code: 'FR', name: 'Francja',         flag: '🇫🇷' },
-  { code: 'ES', name: 'Hiszpania',       flag: '🇪🇸' },
-  { code: 'IT', name: 'Włochy',          flag: '🇮🇹' },
-  { code: 'GB', name: 'Wielka Brytania', flag: '🇬🇧' },
-  { code: 'PT', name: 'Portugalia',      flag: '🇵🇹' },
-  { code: 'BR', name: 'Brazylia',        flag: '🇧🇷' },
-  { code: 'NG', name: 'Nigeria',         flag: '🇳🇬' },
-  { code: 'LT', name: 'Litwa',           flag: '🇱🇹' },
-  { code: 'RS', name: 'Serbia',          flag: '🇷🇸' },
-  { code: 'HR', name: 'Chorwacja',       flag: '🇭🇷' },
-  { code: 'GR', name: 'Grecja',          flag: '🇬🇷' },
-  { code: 'AU', name: 'Australia',       flag: '🇦🇺' },
-  { code: 'CA', name: 'Kanada',          flag: '🇨🇦' },
+  { code: 'PL', name: 'Polska',          flag: '🇵🇱', flagFile: 'poland'         },
+  { code: 'US', name: 'USA',             flag: '🇺🇸', flagFile: 'united-states'  },
+  { code: 'DE', name: 'Niemcy',          flag: '🇩🇪', flagFile: 'germany'        },
+  { code: 'FR', name: 'Francja',         flag: '🇫🇷', flagFile: 'france'         },
+  { code: 'ES', name: 'Hiszpania',       flag: '🇪🇸', flagFile: 'spain'          },
+  { code: 'IT', name: 'Włochy',          flag: '🇮🇹', flagFile: 'italy'          },
+  { code: 'GB', name: 'Wielka Brytania', flag: '🇬🇧', flagFile: 'united-kingdom' },
+  { code: 'PT', name: 'Portugalia',      flag: '🇵🇹', flagFile: 'portugal'       },
+  { code: 'BR', name: 'Brazylia',        flag: '🇧🇷', flagFile: 'brazil'         },
+  { code: 'NG', name: 'Nigeria',         flag: '🇳🇬', flagFile: 'nigeria'        },
+  { code: 'LT', name: 'Litwa',           flag: '🇱🇹', flagFile: 'lithuania'      },
+  { code: 'RS', name: 'Serbia',          flag: '🇷🇸', flagFile: 'serbia'         },
+  { code: 'HR', name: 'Chorwacja',       flag: '🇭🇷', flagFile: 'croatia'        },
+  { code: 'GR', name: 'Grecja',          flag: '🇬🇷', flagFile: 'greece'         },
+  { code: 'AU', name: 'Australia',       flag: '🇦🇺', flagFile: 'australia'      },
+  { code: 'CA', name: 'Kanada',          flag: '🇨🇦', flagFile: 'canada'         },
 ]
+
+// ── ARENA / XP LADDER ─────────────────────────────────────────────────────────
+// ── ARENAS ────────────────────────────────────────────────────────────────────
+// Zsynchronizowane z ARENA_META w HomePage.jsx.
+// "Sól tej Ziemi" ZAWSZE ostatnia — nowe areny wstawiaj przed nią.
+const ARENAS = [
+  { level: 0, name: 'Playground',    threshold: 0 },
+  { level: 1, name: 'Street Court',  threshold: 500 },
+  { level: 2, name: 'Sól tej Ziemi', threshold: 1500 },
+]
+
+function arenaProgress(xp = 0, level = 0) {
+  const current = ARENAS[level] ?? ARENAS[0]
+  const next = ARENAS[level + 1] ?? null
+  if (!next) return { current, next: null, pct: 1 }
+  const span = next.threshold - current.threshold
+  const pct = span > 0 ? Math.min(1, Math.max(0, (xp - current.threshold) / span)) : 1
+  return { current, next, pct }
+}
+
+// Per-arena color theme — drives the glow / accents / progress bar / buttons
+// shown on the player's profile card, sourced from lib/arenas.js (badge gradient
+// + glow color, the same palette used by Droga Aren).
+function getArenaTheme(level = 0) {
+  const a = ARENA_THEMES[level] ?? ARENA_THEMES[0]
+  const [hi, mid, lo] = a.badge || ['#AABBD8', '#5566AA', '#0C0E22']
+  return { glow: a.glow, hi, mid, lo, name: a.name }
+}
+
+// Small arena badge icon — current arena, shown in place of the old text pill.
+// Falls back to a flat hex with the arena's gradient if the PNG is missing
+// (e.g. level 0 "Rozgrzewka", which has no badge artwork yet).
+function ArenaMiniBadge({ level = 0, theme, size = 30 }) {
+  const [imgOk, setImgOk] = useState(true)
+  useEffect(() => setImgOk(true), [level])
+  return (
+    <div style={{ width: size, height: size, position: 'relative', flexShrink: 0,
+      filter: `drop-shadow(0 0 8px ${theme.glow}90)` }}>
+      {imgOk && level > 0 ? (
+        <img src={`/arenas/arena-${level}.png`} onError={() => setImgOk(false)} alt={theme.name}
+          style={{ width: size, height: size, objectFit: 'contain' }}/>
+      ) : (
+        <svg width={size} height={size} viewBox="0 0 90 90">
+          <defs>
+            <linearGradient id={`pmb-${level}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={theme.hi}/>
+              <stop offset="55%" stopColor={theme.mid}/>
+              <stop offset="100%" stopColor={theme.lo}/>
+            </linearGradient>
+          </defs>
+          <polygon points="45,3 82,24 82,66 45,87 8,66 8,24"
+            fill={`url(#pmb-${level})`} stroke={theme.hi} strokeWidth="2" strokeOpacity="0.6"/>
+        </svg>
+      )}
+    </div>
+  )
+}
 
 // ── DB LAYER ──────────────────────────────────────────────────────────────────
 function dbToUi(club) {
@@ -432,40 +492,21 @@ async function apiSubmitHomeScore(matchId, scoreHome, scoreAway, autoComplete = 
   if (autoComplete) await awardMatchPoints(matchId)
 }
 
-// Award 20 pts to every player who participated in a completed match
-// and check team win achievements for each player
+// Check team win achievements for each player.
+// Punkty meczowe (XP + Draft Score, 35/50 wygrana vs 15/20 przegrana) są
+// teraz przyznawane server-side przez trigger `trg_award_match_xp` na
+// `club_matches` (after update → status='completed') — patrz migracja
+// 20260613_three_counters_system.sql. Front nie wstawia już punktów ręcznie.
 async function awardMatchPoints(matchId) {
   const { data: players } = await supabase
     .from('match_players')
     .select('user_id, profiles(created_at)')
     .eq('match_id', matchId)
   if (!players || players.length === 0) return
-  const today = new Date().toISOString().split('T')[0]
-  const now = Date.now()
-  const rows = players.map(p => {
-    const createdAt = p.profiles?.created_at
-    const daysSince = createdAt
-      ? Math.floor((now - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24))
-      : 0
-    const weekNumber = Math.floor(daysSince / 7) + 1
-    return {
-      user_id:     p.user_id,
-      points:      20,
-      source:      'match',
-      date:        today,
-      match_id:    matchId,
-      week_number: weekNumber,
-    }
-  })
-  await supabase.from('points_log').insert(rows)
-  Promise.all(players.map(p => {
-    const createdAt = p.profiles?.created_at
-    const daysSince = createdAt
-      ? Math.floor((now - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24))
-      : 0
-    const weekNumber = Math.floor(daysSince / 7) + 1
-    return checkTeamWinAchievements(p.user_id, weekNumber)
-  })).catch(() => {})
+  // Globalny kalendarzowy tydzień (poniedziałek 00:00 UTC, wspólny dla
+  // wszystkich graczy) — patrz `lib/week.js`.
+  const weekNumber = calendarWeekNumber(new Date())
+  Promise.all(players.map(p => checkTeamWinAchievements(p.user_id, weekNumber))).catch(() => {})
 }
 
 // Away captain confirms home's submitted score
@@ -568,24 +609,35 @@ function Court() {
 }
 
 // ── DIAMOND BADGE ─────────────────────────────────────────────────────────────
-function Badge({ abbr = '?', size = 64 }) {
+// `theme` lets the same hex-crystal crest be recolored — e.g. blue (default) for the
+// home side and red for the away side in head-to-head match cards, so the duel reads
+// at a glance without relying on text.
+const BADGE_THEMES = {
+  blue: { id: 'bdgG-blue', hi: '#66CCFF', mid: '#1A78D0', lo: '#061640',
+          glow: 'rgba(0,160,255,0.55)', edgeA: 'rgba(0,80,200,.55)', edgeB: 'rgba(0,20,90,.70)' },
+  red:  { id: 'bdgG-red',  hi: '#FF8A8A', mid: '#D5303F', lo: '#3D0612',
+          glow: 'rgba(255,70,90,0.50)',  edgeA: 'rgba(200,30,50,.55)', edgeB: 'rgba(90,5,20,.70)' },
+}
+
+function Badge({ abbr = '?', size = 64, theme = 'blue' }) {
+  const t = BADGE_THEMES[theme] || BADGE_THEMES.blue
   return (
     <svg width={size} height={size} viewBox="0 0 90 90"
       style={{ flexShrink: 0, overflow: 'visible',
-        filter: 'drop-shadow(0 8px 22px rgba(0,160,255,0.55))' }}>
+        filter: `drop-shadow(0 8px 22px ${t.glow})` }}>
       <defs>
-        <linearGradient id="bdgG" x1="20%" y1="0%" x2="80%" y2="100%">
-          <stop offset="0%"   stopColor="#66CCFF"/>
-          <stop offset="45%"  stopColor="#1A78D0"/>
-          <stop offset="100%" stopColor="#061640"/>
+        <linearGradient id={t.id} x1="20%" y1="0%" x2="80%" y2="100%">
+          <stop offset="0%"   stopColor={t.hi}/>
+          <stop offset="45%"  stopColor={t.mid}/>
+          <stop offset="100%" stopColor={t.lo}/>
         </linearGradient>
       </defs>
       <polygon points="45,9 84,33 84,61 45,87 6,61 6,33" fill="rgba(0,0,0,.35)"/>
-      <polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill="url(#bdgG)"/>
+      <polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill={`url(#${t.id})`}/>
       <polygon points="45,6 8,32 45,42"  fill="rgba(255,255,255,.30)"/>
       <polygon points="45,6 82,32 45,42" fill="rgba(255,255,255,.13)"/>
-      <polygon points="8,32 8,58 45,48 45,42"  fill="rgba(0,80,200,.55)"/>
-      <polygon points="82,32 82,58 45,48 45,42" fill="rgba(0,20,90,.70)"/>
+      <polygon points="8,32 8,58 45,48 45,42"  fill={t.edgeA}/>
+      <polygon points="82,32 82,58 45,48 45,42" fill={t.edgeB}/>
       <polygon points="45,6 82,32 82,58 45,84 8,58 8,32"
         fill="none" stroke="rgba(255,255,255,.55)" strokeWidth="1.8" strokeLinejoin="round"/>
       <text x="45" y="51" textAnchor="middle" dominantBaseline="middle"
@@ -593,6 +645,34 @@ function Badge({ abbr = '?', size = 64 }) {
         fontFamily="var(--font-display),Montserrat,sans-serif" letterSpacing="1">
         {abbr.toUpperCase()}
       </text>
+    </svg>
+  )
+}
+
+// Team-side accent colors for head-to-head match cards — blue for home (left), red for
+// away (right), mirroring the artwork's own blue↔red split so the duel reads instantly.
+const TEAM_BLUE = '#4FA8FF'
+const TEAM_RED  = '#FF5468'
+
+// ── HEX ROSTER SLOT (mini) — filled = joined silhouette glow, empty = dashed outline ──
+// Both states carry a translucent dark backing so they stay crisp over the bright,
+// busy match artwork regardless of which side of the blue/red split they sit on.
+function HexSlot({ filled, color, size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" style={{ flexShrink: 0, overflow: 'visible' }}>
+      <polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="rgba(4,10,22,0.40)"/>
+      {filled ? (
+        <>
+          <polygon points="20,2 36,11 36,29 20,38 4,29 4,11"
+            fill={`${color}30`} stroke={color} strokeWidth="1.6"
+            style={{ filter: `drop-shadow(0 0 4px ${color}80)` }}/>
+          <circle cx="20" cy="15.4" r="4.4" fill={color}/>
+          <path d="M11.2 31c0-6 3.9-9.4 8.8-9.4s8.8 3.4 8.8 9.4" fill={color}/>
+        </>
+      ) : (
+        <polygon points="20,2 36,11 36,29 20,38 4,29 4,11"
+          fill="none" stroke={`${color}70`} strokeWidth="1.4" strokeDasharray="3.2 2.6"/>
+      )}
     </svg>
   )
 }
@@ -619,13 +699,13 @@ function Token({ posKey, member, onPress, swapMode, isSrc, isTgt }) {
       }}
     >
       <div style={{ position: 'relative', width: TK, height: TK }}>
-        {/* Glow bloom */}
+        {/* Glow bloom — a perfectly round radial fade well inside the box, blurred,
+            so the falloff completes before any container edge (no hard clipped ring) */}
         {member && (
           <div style={{
-            position: 'absolute', top: '10%', left: '5%', width: '90%', height: '80%',
-            borderRadius: '50%',
-            background: `radial-gradient(ellipse, ${isSrc ? 'rgba(0,221,255,0.60)' : pos.glow} 0%, transparent 70%)`,
-            filter: 'blur(12px)', pointerEvents: 'none',
+            position: 'absolute', inset: '-18%',
+            background: `radial-gradient(circle at 50% 50%, ${isSrc ? 'rgba(0,221,255,0.46)' : pos.glow.replace(/[\d.]+\)$/, '0.40)')} 0%, ${isSrc ? 'rgba(0,221,255,0.16)' : pos.glow.replace(/[\d.]+\)$/, '0.14)')} 36%, transparent 68%)`,
+            filter: 'blur(16px)', pointerEvents: 'none',
           }}/>
         )}
         {/* Sci-fi frame overlay — only for filled slots */}
@@ -723,6 +803,7 @@ function Token({ posKey, member, onPress, swapMode, isSrc, isTgt }) {
 // stacking context (opacity animation creates isolated stacking context)
 // and always sits above the bottom nav regardless of z-index.
 function Sheet({ onClose, children }) {
+  const dragControls = useDragControls()
   return createPortal(
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
@@ -737,6 +818,17 @@ function Sheet({ onClose, children }) {
         exit={{ y: 80, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
         onClick={e => e.stopPropagation()}
+        // Swipe-to-dismiss — only the handle below starts the drag (dragListener=false),
+        // so normal scrolling inside the sheet's content keeps working untouched.
+        drag="y"
+        dragControls={dragControls}
+        dragListener={false}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0, bottom: 0.62 }}
+        onDragEnd={(e, info) => {
+          if (info.offset.y > 110 || info.velocity.y > 700) onClose()
+        }}
+        className="hide-scrollbar"
         style={{
           width: '100%', maxWidth: 420, margin: '0 0',
           background: '#07101E',
@@ -745,10 +837,17 @@ function Sheet({ onClose, children }) {
           borderBottom: 'none',
           padding: '20px 22px 40px',
           boxShadow: '0 -6px 60px rgba(0,0,0,0.60)',
+          maxHeight: '88vh', overflowY: 'auto', overscrollBehavior: 'contain',
         }}>
-        {/* Drag pill */}
-        <div style={{ width: 36, height: 4, background: '#1A3050',
-          borderRadius: 2, margin: '0 auto 20px' }}/>
+        {/* Drag handle — grab here and pull down to dismiss, like a native iOS sheet */}
+        <div
+          onPointerDown={e => dragControls.start(e)}
+          style={{
+            width: 46, height: 5, borderRadius: 3, margin: '0 auto 20px',
+            background: 'linear-gradient(90deg, rgba(120,190,255,0.18), rgba(140,205,255,0.55), rgba(120,190,255,0.18))',
+            boxShadow: '0 0 12px rgba(90,180,255,0.28)',
+            cursor: 'grab', touchAction: 'none',
+          }}/>
         {children}
       </motion.div>
     </motion.div>,
@@ -901,125 +1000,541 @@ function EmptySlotSheet({ club, posKey, onClose }) {
 }
 
 // ── PLAYER PROFILE SHEET ──────────────────────────────────────────────────────
-function PlayerSheet({ club, posKey, member, isOwner, isSelf, onClose, onRemove, onLeave, removing }) {
-  const { profile } = useAuth()
-  const pos = POS[posKey]
-  const joinedDate = member?.joinedAt
-    ? new Date(member.joinedAt).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })
-    : null
+function destructiveBtnStyle(disabled) {
+  return {
+    width: '100%', padding: '14px',
+    background: disabled ? `${C.dim}40` : 'rgba(255,60,80,0.08)',
+    border: `1.5px solid ${disabled ? C.dim : 'rgba(255,60,80,0.28)'}`,
+    borderRadius: 14, color: disabled ? C.sub : C.loss,
+    fontFamily: 'var(--font-display)', fontWeight: 800,
+    fontSize: 14, letterSpacing: 1, cursor: disabled ? 'default' : 'pointer',
+    transition: 'all 0.2s',
+  }
+}
+
+// Subtle glass tile for the "quick stats" trio — calm, identity-first, no percentages
+function StatTile({ label, value }) {
+  return (
+    <div style={{
+      flex: 1, padding: '14px 8px', borderRadius: 16, textAlign: 'center',
+      background: 'linear-gradient(180deg, rgba(40,55,85,0.34) 0%, rgba(22,32,52,0.28) 100%)',
+      backdropFilter: 'blur(24px) saturate(1.4)',
+      WebkitBackdropFilter: 'blur(24px) saturate(1.4)',
+      boxShadow: [
+        'inset 0 1px 0 rgba(200,225,255,0.08)',
+        'inset 0 -1px 0 rgba(0,0,0,0.16)',
+        '0 1px 6px rgba(0,0,0,0.16)',
+      ].join(', '),
+    }}>
+      <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 22,
+        letterSpacing: -0.5, color: C.text, margin: 0, lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 1.8,
+        textTransform: 'uppercase', color: C.sub, margin: '6px 0 0' }}>{label}</p>
+    </div>
+  )
+}
+
+// Club strip — identity row beneath the player's name; tap → read-only club preview
+function ClubStrip({ club, role, onPress, accent = C.accent }) {
+  return (
+    <motion.button whileTap={{ scale: 0.97 }} onClick={onPress}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 11, width: '100%',
+        padding: '10px 14px 10px 10px', borderRadius: 16, marginTop: 18,
+        background: 'linear-gradient(180deg, rgba(40,55,85,0.32) 0%, rgba(22,32,52,0.26) 100%)',
+        border: '1px solid rgba(0,200,255,0.10)',
+        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+        cursor: 'pointer', WebkitTapHighlightColor: 'transparent', textAlign: 'left',
+      }}>
+      <Badge abbr={club.abbr} size={38}/>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13.5,
+          color: C.text, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {club.name}
+        </p>
+        <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 1, color: accent, margin: '2px 0 0' }}>
+          {role}
+        </p>
+      </div>
+      <svg width="9" height="14" viewBox="0 0 9 14" fill="none">
+        <path d="M1.5 1.5L7 7l-5.5 5.5" stroke={C.sub} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </motion.button>
+  )
+}
+
+// Secondary glass action row — used for "soon" management shortcuts (UI scaffolding only)
+function ActionRow({ label, icon, soon, onClick, accent }) {
+  return (
+    <motion.button whileTap={soon ? {} : { scale: 0.97 }} onClick={soon ? undefined : onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+        padding: '13px 14px', borderRadius: 14, marginBottom: 8,
+        background: 'rgba(255,255,255,0.03)',
+        border: `1px solid ${accent ? `${accent}22` : 'rgba(255,255,255,0.06)'}`,
+        cursor: soon ? 'default' : 'pointer', WebkitTapHighlightColor: 'transparent', textAlign: 'left',
+        opacity: soon ? 0.55 : 1,
+      }}>
+      <span style={{ fontSize: 15, lineHeight: 1 }}>{icon}</span>
+      <span style={{ flex: 1, fontSize: 12.5, fontWeight: 700, color: C.text }}>{label}</span>
+      {soon ? (
+        <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase',
+          color: C.sub, padding: '3px 8px', borderRadius: 99, border: `1px solid ${C.dim}` }}>
+          Wkrótce
+        </span>
+      ) : (
+        <svg width="8" height="13" viewBox="0 0 8 13" fill="none">
+          <path d="M1 1l5.5 5.5L1 12" stroke={accent || C.sub} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )}
+    </motion.button>
+  )
+}
+
+// ── XP bar with number count-up animation (used in PlayerProfileSheet) ──────
+// Mounts fresh every time `xp` changes (key prop on parent), so on profile
+// open the bar fills from 0 and the number counts up from 0 to the current XP.
+function XpProgressBar({ xp, pct, nextArena, accentLo, accentHi, accent, sub, tappable }) {
+  const motionXp = useMotionValue(0)
+  const displayXp = useTransform(motionXp, v => Math.round(v))
+  useEffect(() => {
+    const controls = animate(motionXp, xp, { duration: 0.85, ease: 'easeOut' })
+    return controls.stop
+  }, [xp])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div style={{ margin: '26px 0 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: sub }}>
+          {nextArena
+            ? <>Następna arena: <b style={{ color: 'var(--text-primary)', fontWeight: 800 }}>{nextArena.name}</b></>
+            : 'Najwyższa arena'}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: accent, fontFamily: 'var(--font-display)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+            <motion.span>{displayXp}</motion.span>
+            {nextArena ? ` / ${nextArena.threshold}` : ''}
+            <img src="/hoopxp.png" alt="XP" style={{ width: 13, height: 13, objectFit: 'contain' }}/>
+          </span>
+          {tappable && (
+            <span style={{ fontSize: 11, color: `${accent}80`, lineHeight: 1 }}>›</span>
+          )}
+        </span>
+      </div>
+
+      {/* Track */}
+      <div style={{ position: 'relative', height: 9, borderRadius: 99, background: 'rgba(255,255,255,0.06)' }}>
+        {/* Fill */}
+        <motion.div
+          key={xp}
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.round(pct * 100)}%` }}
+          transition={{ duration: 0.85, ease: 'easeOut' }}
+          style={{
+            position: 'absolute', inset: 0, borderRadius: 99,
+            background: `linear-gradient(90deg, ${accentLo}, ${accentHi})`,
+            boxShadow: `0 0 12px ${accent}80`,
+            overflow: 'visible',
+          }}
+        >
+          {/* Glowing endpoint dot */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: [0, 1, 0.7], scale: [0.5, 1.4, 1] }}
+            transition={{ duration: 0.55, delay: 0.78, ease: 'easeOut' }}
+            style={{
+              position: 'absolute', right: -5, top: '50%', transform: 'translateY(-50%)',
+              width: 13, height: 13, borderRadius: '50%',
+              background: accentHi,
+              boxShadow: `0 0 10px ${accent}, 0 0 22px ${accent}80`,
+            }}
+          />
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+// ── ARENA ROAD SHEET — podgląd postępu aren (jak Trophy Road w Clash Royale) ─
+// Zsynchronizowane z ARENAS — jeden wpis na arenę, ta sama kolejność.
+const ARENA_ROAD_THEMES = [
+  { glow: '#8899CC', hi: '#AABBD8', mid: '#5566AA', lo: '#0C0E22' }, // Playground
+  { glow: '#FF8C30', hi: '#FFCC80', mid: '#E07020', lo: '#180900' }, // Street Court
+  { glow: '#E8B030', hi: '#FFE090', mid: '#C88820', lo: '#1A1000' }, // Sól tej Ziemi
+]
+function ArenaRoadSheet({ xp, arenaLevel, onClose }) {
+  const currLevel = arenaLevel ?? 0
+  const currXp    = xp ?? 0
 
   return (
     <Sheet onClose={onClose}>
-      {/* Position badge */}
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: 7,
-        padding: '5px 14px', borderRadius: 99,
-        background: `${pos.hi}18`, border: `1px solid ${pos.hi}40`, marginBottom: 16,
-      }}>
-        <span style={{ width: 7, height: 7, borderRadius: '50%', background: pos.hi,
-          boxShadow: `0 0 5px ${pos.glow}` }}/>
-        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 2,
-          color: pos.hi, textTransform: 'uppercase' }}>{posKey}</span>
-        <span style={{ fontSize: 10, fontWeight: 600, color: C.sub }}>{pos.label}</span>
-      </div>
+      <p style={{
+        fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
+        letterSpacing: 1.5, textTransform: 'uppercase', color: C.text,
+        marginBottom: 6,
+      }}>Droga Aren</p>
+      <p style={{ fontSize: 11, color: C.sub, marginBottom: 28, fontWeight: 600 }}>
+        Twój postęp w systemie aren HoopConnect
+      </p>
 
-      {/* Avatar + name */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
-        <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
-          <HexFrameOnly size={64} variant={(isSelf ? profile?.equipped_frame : member?.frame) || 'none'} />
-          <svg width="64" height="64" viewBox="0 0 90 90"
-            style={{ overflow: 'visible', position: 'relative', zIndex: 1,
-              filter: `drop-shadow(0 6px 18px ${pos.glow.replace('0.55', '0.80')})` }}>
-            <defs>
-              <linearGradient id="sheetTg" x1="20%" y1="0%" x2="80%" y2="100%">
-                <stop offset="0%"   stopColor={pos.hi} stopOpacity="0.80"/>
-                <stop offset="100%" stopColor={pos.lo}/>
-              </linearGradient>
-            </defs>
-            <polygon points="45,9 84,33 84,61 45,87 6,61 6,33" fill="rgba(0,0,0,.42)"/>
-            <polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill="url(#sheetTg)"/>
-            <polygon points="45,6 8,32 45,42"  fill="rgba(255,255,255,.22)"/>
-            <polygon points="45,6 82,32 45,42" fill="rgba(255,255,255,.10)"/>
-            <polygon points="8,32 8,58 45,48 45,42"  fill={`${pos.hi}20`}/>
-            <polygon points="82,32 82,58 45,48 45,42" fill="rgba(0,0,0,.35)"/>
-            <polygon points="45,6 82,32 82,58 45,84 8,58 8,32"
-              fill="none" stroke={`${pos.hi}CC`} strokeWidth="2.2" strokeLinejoin="round"/>
-            <text x="45" y="50" textAnchor="middle" dominantBaseline="middle"
-              fill="white" fontSize="31" fontWeight="900"
-              fontFamily="var(--font-display),Montserrat,sans-serif">
-              {member.initial}
-            </text>
-          </svg>
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900,
-            fontSize: 22, color: C.text, letterSpacing: -0.3, lineHeight: 1.1,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {member.name}
-            {member.isOwner && (
-              <span style={{ fontSize: 8, fontWeight: 700, color: C.accent,
-                marginLeft: 9, letterSpacing: 1.5, verticalAlign: 'middle' }}>
-                KAPITAN
-              </span>
-            )}
-          </p>
-          {joinedDate && (
-            <p style={{ fontSize: 10, color: C.sub, marginTop: 4, fontWeight: 500 }}>
-              W klubie od {joinedDate}
-            </p>
+      {/* Road — arenas from bottom (highest) to top (lowest) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {[...ARENAS].reverse().map((arena, reversedIdx) => {
+          const idx       = ARENAS.length - 1 - reversedIdx
+          const theme     = ARENA_ROAD_THEMES[idx]
+          const isCurrent = idx === currLevel
+          const isPast    = idx < currLevel
+          const isLocked  = idx > currLevel
+          const nextArena = ARENAS[idx + 1]
+          const span      = nextArena ? nextArena.threshold - arena.threshold : 1
+          const filled    = isCurrent ? Math.min(1, (currXp - arena.threshold) / span) : 0
+
+          return (
+            <div key={arena.level} style={{ display: 'flex', gap: 14, alignItems: 'stretch' }}>
+              {/* Connector road */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 28, flexShrink: 0 }}>
+                {/* Line above badge (not on last/top element) */}
+                <div style={{
+                  width: 3, flex: '0 0 18px',
+                  background: reversedIdx === 0
+                    ? 'transparent'
+                    : isLocked && !isCurrent
+                      ? 'rgba(255,255,255,0.07)'
+                      : `linear-gradient(to bottom, ${theme.hi}40, ${theme.hi}90)`,
+                  borderRadius: 3,
+                }}/>
+                {/* Badge */}
+                <div style={{ flexShrink: 0 }}>
+                  <svg width={28} height={28} viewBox="0 0 90 90"
+                    style={{
+                      filter: isCurrent
+                        ? `drop-shadow(0 0 10px ${theme.glow})`
+                        : isPast ? 'none' : 'none',
+                      opacity: isLocked ? 0.32 : 1,
+                    }}>
+                    <defs>
+                      <linearGradient id={`road-g-${idx}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stopColor={isPast ? '#4a5568' : theme.hi}/>
+                        <stop offset="100%" stopColor={isPast ? '#2d3748' : theme.lo}/>
+                      </linearGradient>
+                    </defs>
+                    <polygon points="45,4 80,24 80,66 45,86 10,66 10,24"
+                      fill={`url(#road-g-${idx})`}
+                      stroke={isPast ? 'rgba(255,255,255,0.15)' : theme.hi}
+                      strokeWidth="2" strokeOpacity={isPast ? 0.3 : 0.65}/>
+                    {isPast ? (
+                      <text x="45" y="52" textAnchor="middle" dominantBaseline="middle"
+                        fill="rgba(255,255,255,0.55)" fontSize="30">✓</text>
+                    ) : isLocked ? (
+                      <text x="45" y="52" textAnchor="middle" dominantBaseline="middle"
+                        fill="rgba(255,255,255,0.4)" fontSize="26">🔒</text>
+                    ) : (
+                      <text x="45" y="52" textAnchor="middle" dominantBaseline="middle"
+                        fill="white" fontSize="24" fontWeight="900"
+                        fontFamily="var(--font-display)">{idx}</text>
+                    )}
+                  </svg>
+                </div>
+                {/* Line below badge */}
+                <div style={{
+                  width: 3, flex: 1, minHeight: 18,
+                  background: isPast
+                    ? `linear-gradient(to bottom, ${theme.hi}80, ${ARENA_ROAD_THEMES[Math.max(0,idx-1)]?.hi ?? theme.hi}50)`
+                    : 'rgba(255,255,255,0.07)',
+                  borderRadius: 3,
+                }}/>
+              </div>
+
+              {/* Arena info */}
+              <div style={{ flex: 1, paddingBottom: 22, paddingTop: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: isCurrent ? 6 : 3 }}>
+                  <p style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 900,
+                    fontSize: isCurrent ? 17 : 14,
+                    color: isLocked ? 'rgba(255,255,255,0.30)'
+                         : isPast   ? 'rgba(255,255,255,0.50)'
+                         : C.text,
+                    textTransform: 'uppercase', letterSpacing: 0.8,
+                    textShadow: isCurrent ? `0 0 20px ${theme.glow}80` : 'none',
+                  }}>{arena.name}</p>
+                  {isCurrent && (
+                    <span style={{
+                      fontSize: 8, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase',
+                      color: theme.glow, padding: '2px 7px', borderRadius: 99,
+                      background: `${theme.glow}18`, border: `1px solid ${theme.glow}40`,
+                    }}>TU JESTEŚ</span>
+                  )}
+                </div>
+                <p style={{ fontSize: 11, color: isLocked ? 'rgba(255,255,255,0.22)' : C.sub,
+                  fontWeight: 600, marginBottom: isCurrent ? 8 : 0 }}>
+                  {arena.threshold === 0 ? 'Start' : `${arena.threshold} XP`}
+                  {nextArena && !isLocked && !isPast ? ` → ${nextArena.threshold} XP` : ''}
+                </p>
+                {isCurrent && nextArena && (
+                  <>
+                    <div style={{ height: 5, borderRadius: 99, background: 'rgba(255,255,255,0.07)', marginBottom: 4 }}>
+                      <motion.div
+                        initial={{ width: 0 }} animate={{ width: `${Math.round(filled * 100)}%` }}
+                        transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+                        style={{
+                          height: '100%', borderRadius: 99,
+                          background: `linear-gradient(90deg, ${theme.mid}, ${theme.hi})`,
+                          boxShadow: `0 0 8px ${theme.glow}70`,
+                        }}
+                      />
+                    </div>
+                    <p style={{ fontSize: 10, color: C.sub, fontWeight: 700 }}>
+                      {currXp} / {nextArena.threshold} XP
+                    </p>
+                  </>
+                )}
+                {isCurrent && !nextArena && (
+                  <p style={{ fontSize: 11, color: theme.glow, fontWeight: 800 }}>MAX — Legendarny status 👑</p>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </Sheet>
+  )
+}
+
+// Loads the extended profile row + aggregate identity stats for the player shown in the sheet.
+function usePlayerProfileData(memberId) {
+  const [profile, setProfile] = useState(null)
+  const [stats,   setStats]   = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!memberId) return
+    let cancelled = false
+    setLoading(true)
+    setProfile(null)
+    setStats(null)
+
+    Promise.all([
+      supabase.from('profiles').select('xp,arena_level,country,background,username,equipped_frame').eq('id', memberId).single(),
+      supabase.from('shooting_sessions').select('shot_type,made,attempted').eq('user_id', memberId),
+      supabase.from('activity_log').select('trainings_completed').eq('user_id', memberId),
+      supabase.from('match_players').select('match_id,team').eq('user_id', memberId),
+    ]).then(async ([profileRes, sessionsRes, logsRes, mpRes]) => {
+      if (cancelled) return
+
+      const byType = {}
+      ;(sessionsRes.data || []).forEach(s => {
+        if (!byType[s.shot_type]) byType[s.shot_type] = { made: 0, attempted: 0 }
+        byType[s.shot_type].made      += s.made
+        byType[s.shot_type].attempted += s.attempted
+      })
+      const pctOf = t => byType[t]?.attempted ? Math.round((byType[t].made / byType[t].attempted) * 100) : 0
+      const trainings = (logsRes.data || []).reduce((a, l) => a + (l.trainings_completed || []).length, 0)
+
+      // Wins: join this player's match participations with completed club_matches results
+      const mpRows = mpRes.data || []
+      const matchIds = mpRows.map(r => r.match_id)
+      let wins = 0
+      if (matchIds.length) {
+        const { data: matches } = await supabase.from('club_matches')
+          .select('id,score_home,score_away,walkover,status')
+          .in('id', matchIds).eq('status', 'completed')
+        const teamByMatch = {}
+        mpRows.forEach(r => { teamByMatch[r.match_id] = r.team })
+        ;(matches || []).forEach(m => {
+          const team = teamByMatch[m.id]
+          if (!team) return
+          if (m.walkover) {
+            const won = (m.walkover === 'away_noshow' && team === 'home') || (m.walkover === 'home_cancelled' && team === 'away')
+            if (won) wins++
+          } else if (m.score_home != null && m.score_away != null) {
+            const ps = team === 'home' ? m.score_home : m.score_away
+            const os = team === 'home' ? m.score_away : m.score_home
+            if (ps > os) wins++
+          }
+        })
+      }
+
+      if (cancelled) return
+      setProfile(profileRes.data || null)
+      setStats({
+        pct3: pctOf('3pt'), made3: byType['3pt']?.made || 0, att3: byType['3pt']?.attempted || 0,
+        pct2: pctOf('2pt'), made2: byType['2pt']?.made || 0, att2: byType['2pt']?.attempted || 0,
+        pctFt: pctOf('ft'), madeFt: byType.ft?.made || 0,    attFt: byType.ft?.attempted || 0,
+        trainings,
+        matches: mpRows.length,
+        wins,
+      })
+      setLoading(false)
+    })
+
+    return () => { cancelled = true }
+  }, [memberId])
+
+  return { profile, stats, loading }
+}
+
+function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, onRemove, onLeave, removing, onOpenClub }) {
+  const { profile: myProfile } = useAuth()
+  const { profile, stats, loading } = usePlayerProfileData(member.id)
+  const country = COUNTRIES.find(c => c.code === profile?.country) || null
+  const { next: nextArena, pct } = arenaProgress(profile?.xp, profile?.arena_level)
+  const theme = getArenaTheme(profile?.arena_level ?? 0)
+  // Prefer the freshly-fetched DB row (always current) over the AuthContext snapshot,
+  // so a just-changed equipped frame shows immediately when opening your own profile.
+  const frameVariant = profile?.equipped_frame || myProfile?.equipped_frame || member.frame || 'none'
+  const [flagOk, setFlagOk] = useState(true)
+  const [showArenaRoad, setShowArenaRoad] = useState(false)
+  useEffect(() => { setFlagOk(true) }, [country?.flagFile])
+  const role = member.isOwner ? 'Kapitan' : 'Zawodnik'
+  const showDanger = isSelf || (isOwner && !member.isOwner)
+
+  return (
+    <Sheet onClose={onClose}>
+      <div style={{ position: 'relative' }}>
+        {/* ── Full-bleed cover artwork — sits BEHIND every section, not just the header.
+               Stretched via top/bottom to the wrapper's full content height (incl. the
+               sheet's own bleed margins), then faded into the base navy as it descends
+               so every panel below stays readable while the flag still shows through. ── */}
+        <div style={{
+          position: 'absolute', top: -20, left: -22, right: -22, bottom: -40,
+          zIndex: 0, overflow: 'hidden', borderRadius: '24px 24px 0 0', pointerEvents: 'none',
+          background: 'linear-gradient(170deg, rgba(20,40,75,0.45), #07101E 70%)',
+        }}>
+          {country && country.flagFile && flagOk && (
+            <img
+              src={`/flags/${country.flagFile}.png`}
+              alt=""
+              onError={() => setFlagOk(false)}
+              style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 620,
+                width: '100%', objectFit: 'cover', objectPosition: 'center top',
+              }}
+            />
           )}
+          {/* Fade: vivid up top, dissolving into the base navy well before the
+              progress bar section so it always sits on solid dark navy ── */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(180deg, rgba(7,16,30,0.10) 0%, rgba(7,16,30,0.50) 18%, rgba(7,16,30,0.85) 32%, #07101E 46%)',
+          }}/>
+        </div>
+
+        {/* ── Foreground content — everything renders above the backdrop ──────── */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+
+      {/* ── SECTION 2 — Identity ──────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 6 }}>
+        <div style={{ position: 'relative' }}>
+          {/* Ambient glow ring — colored by the player's current arena */}
+          <div style={{
+            position: 'absolute', inset: -10, borderRadius: '50%',
+            background: `radial-gradient(circle, ${theme.glow}30, transparent 70%)`,
+            pointerEvents: 'none',
+          }}/>
+          <HexAvatar name={member.name} size={104} variant={frameVariant}/>
+        </div>
+
+        <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 26,
+          color: C.text, letterSpacing: -0.4, margin: '16px 0 0', textAlign: 'center',
+          maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {member.name}
+        </p>
+        {country && (
+          <p style={{ fontSize: 12, fontWeight: 600, color: C.sub, margin: '5px 0 0' }}>
+            {country.flag} {country.name}
+          </p>
+        )}
+      </div>
+
+      {/* ── SECTION 3 — Progression: arena badge + XP bar (tap → Droga Aren) ── */}
+      <div
+        role="button" tabIndex={0}
+        onClick={() => setShowArenaRoad(true)}
+        style={{ cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+          display: 'flex', alignItems: 'center', gap: 12 }}
+      >
+        <ArenaMiniBadge level={profile?.arena_level ?? 0} theme={theme} size={44}/>
+        <div style={{ flex: 1 }}>
+          <XpProgressBar
+            xp={profile?.xp ?? 0}
+            pct={pct}
+            nextArena={nextArena}
+            accentLo={theme.mid}
+            accentHi={theme.hi}
+            accent={theme.glow}
+            sub={C.sub}
+            tappable
+          />
+        </div>
+      </div>
+      <AnimatePresence>
+        {showArenaRoad && (
+          <ArenaRoadSheet
+            xp={profile?.xp ?? 0}
+            arenaLevel={profile?.arena_level ?? 0}
+            onClose={() => setShowArenaRoad(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── SECTION 4 — Quick stats (identity-level only, no percentages) ─────── */}
+      <div style={{ display: 'flex', gap: 8, margin: '24px 0 26px' }}>
+        <StatTile label="Mecze"    value={loading ? '—' : stats.matches}/>
+        <StatTile label="Wygrane"  value={loading ? '—' : stats.wins}/>
+        <StatTile label="Treningi" value={loading ? '—' : stats.trainings}/>
+      </div>
+
+      {/* ── SECTION 5 — Trophy showcase ────────────────────────────────────────── */}
+      <div style={{ marginBottom: 26 }}>
+        <p style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 2.4,
+          textTransform: 'uppercase', color: C.sub, margin: '0 0 10px' }}>Gablota</p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} style={{
+              flex: 1, aspectRatio: '1', borderRadius: 14,
+              background: 'rgba(0,200,255,0.04)',
+              border: '1.5px dashed rgba(0,200,255,0.16)',
+            }}/>
+          ))}
         </div>
       </div>
 
-      {/* Actions */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* ── SECTION 6 — Club strip (tap → read-only club preview) ─────────────── */}
+      <ClubStrip club={club} role={role} onPress={onOpenClub} accent={theme.glow}/>
+
+      {/* ── SECTION 7 — Actions ────────────────────────────────────────────────── */}
+      <div style={{ marginTop: 22 }}>
         {isSelf && (
           <>
-            {member.isOwner ? (
-              /* Owner: disband */
-              <motion.button whileTap={{ scale: 0.96 }} onClick={onLeave} disabled={removing}
-                style={{
-                  width: '100%', padding: '14px',
-                  background: removing ? `${C.dim}40` : 'rgba(255,60,80,0.08)',
-                  border: `1.5px solid ${removing ? C.dim : 'rgba(255,60,80,0.28)'}`,
-                  borderRadius: 14, color: removing ? C.sub : C.loss,
-                  fontFamily: 'var(--font-display)', fontWeight: 800,
-                  fontSize: 14, letterSpacing: 1, cursor: removing ? 'default' : 'pointer',
-                  transition: 'all 0.2s',
-                }}>
-                {removing ? 'Rozwiązywanie…' : '🗑 Rozwiąż klub'}
-              </motion.button>
-            ) : (
-              /* Member: leave */
-              <motion.button whileTap={{ scale: 0.96 }} onClick={onLeave} disabled={removing}
-                style={{
-                  width: '100%', padding: '14px',
-                  background: removing ? `${C.dim}40` : 'rgba(255,60,80,0.08)',
-                  border: `1.5px solid ${removing ? C.dim : 'rgba(255,60,80,0.28)'}`,
-                  borderRadius: 14, color: removing ? C.sub : C.loss,
-                  fontFamily: 'var(--font-display)', fontWeight: 800,
-                  fontSize: 14, letterSpacing: 1, cursor: removing ? 'default' : 'pointer',
-                  transition: 'all 0.2s',
-                }}>
-                {removing ? 'Opuszczanie…' : '🚪 Opuść klub'}
-              </motion.button>
-            )}
+            <ActionRow icon="👤" label="Zarządzaj profilem"      soon accent={theme.glow}/>
+            <ActionRow icon="🏆" label="Edytuj gablotę"          soon accent={theme.glow}/>
+            <ActionRow icon="📊" label="Zobacz pełne statystyki" soon accent={theme.glow}/>
           </>
         )}
-        {!isSelf && isOwner && !member.isOwner && (
-          <motion.button whileTap={{ scale: 0.96 }} onClick={onRemove} disabled={removing}
-            style={{
-              width: '100%', padding: '14px',
-              background: removing ? `${C.dim}40` : 'rgba(255,60,80,0.08)',
-              border: `1.5px solid ${removing ? C.dim : 'rgba(255,60,80,0.28)'}`,
-              borderRadius: 14, color: removing ? C.sub : C.loss,
-              fontFamily: 'var(--font-display)', fontWeight: 800,
-              fontSize: 14, letterSpacing: 1, cursor: removing ? 'default' : 'pointer',
-              transition: 'all 0.2s',
-            }}>
-            {removing ? 'Usuwanie…' : '✕ Usuń z klubu'}
-          </motion.button>
+
+        {showDanger && (
+          <div style={{ marginTop: isSelf ? 14 : 0 }}>
+            <p style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 2.4,
+              textTransform: 'uppercase', color: `${C.loss}90`, margin: '0 0 8px' }}>
+              Strefa zagrożenia
+            </p>
+            {isSelf ? (
+              <motion.button whileTap={{ scale: 0.96 }} onClick={onLeave} disabled={removing}
+                style={destructiveBtnStyle(removing)}>
+                {member.isOwner
+                  ? (removing ? 'Rozwiązywanie…' : '🗑 Rozwiąż klub')
+                  : (removing ? 'Opuszczanie…'   : '🚪 Opuść klub')}
+              </motion.button>
+            ) : (
+              <motion.button whileTap={{ scale: 0.96 }} onClick={onRemove} disabled={removing}
+                style={destructiveBtnStyle(removing)}>
+                {removing ? 'Usuwanie…' : '✕ Usuń z klubu'}
+              </motion.button>
+            )}
+          </div>
         )}
+      </div>
+        </div>
       </div>
     </Sheet>
   )
@@ -1257,57 +1772,96 @@ function ClubHeader({ club, isOwner, onEditPress }) {
 }
 
 // ── MATCH CARD ────────────────────────────────────────────────────────────────
+// Aesthetic divider between "my matches" and other nearby matches.
+function SectionDivider() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 2px 14px' }}>
+      <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, rgba(120,180,255,0.18))' }}/>
+      <span style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase', color: C.dim }}>
+        Inne mecze
+      </span>
+      <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(120,180,255,0.18), transparent)' }}/>
+    </div>
+  )
+}
+
+// Roster — wraps to a 2-on-top/3-on-bottom layout for 5v5, single row otherwise.
+// Player hexagons are the focal point now (no club crest), so they're sized up.
+function RosterGrid({ players, slots, color, size = 32 }) {
+  const rows = slots === 5 ? [2, 3] : [slots]
+  let slot = 0
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+      {rows.map((count, ri) => (
+        <div key={ri} style={{ display: 'flex', gap: 10, justifyContent: 'center', alignItems: 'center', height: size }}>
+          {Array.from({ length: count }).map(() => {
+            slot += 1
+            const s = slot
+            const p = players.find(pl => pl.slot === s)
+            return p
+              ? <HexAvatar key={s} name={p.profile?.name} size={size} variant={p.profile?.equipped_frame || 'none'} noAnim/>
+              : <HexSlot key={s} filled={false} color={color} size={size * 0.76}/>
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function MatchCard({ match, dist, uid, onPress }) {
   const slots = MODE_SLOTS[match.mode]
   const homePlayers = match.players.filter(p => p.team === 'home')
   const awayPlayers = match.players.filter(p => p.team === 'away')
   const color = MODE_COLOR[match.mode]
   const isPast = new Date(match.scheduled_at) < new Date()
-  const homeTeamName = match._club?.abbr || match._club?.name || 'Klub'
+  const homeTeamName = match._club?.name || match._club?.abbr || 'Klub'
+  const awayTeamName = match._awayClub?.name || match._awayClub?.abbr || (match.away_club_id ? 'Rywale' : 'Otwarte')
   const hasTeammate = !!match._hasTeammate
   // Match where the current user has already joined — strongest highlight
   const isParticipating = uid && match.players.some(p => p.user_id === uid)
+  const totalJoined = homePlayers.length + awayPlayers.length
 
-  const cardBorder = isParticipating
-    ? `1.5px solid rgba(0,210,255,0.55)`
+  const frameGlow = isParticipating
+    ? `0 0 34px rgba(0,210,255,0.22), inset 0 1px 0 rgba(255,255,255,0.10)`
     : hasTeammate
-      ? `1.5px solid rgba(0,210,255,0.38)`
-      : `1px solid rgba(255,255,255,0.05)`
-  const cardBorderLeft = isParticipating
-    ? `3px solid ${C.accent}`
+      ? `0 0 24px rgba(0,210,255,0.14), inset 0 1px 0 rgba(255,255,255,0.08)`
+      : '0 10px 30px rgba(0,8,24,0.45), inset 0 1px 0 rgba(255,255,255,0.07)'
+  const frameBorder = isParticipating
+    ? '1.4px solid rgba(0,221,255,0.55)'
     : hasTeammate
-      ? `3px solid ${C.accent}`
-      : `3px solid ${color}`
-  const cardBg = isParticipating
-    ? 'rgba(0,180,220,0.10)'
-    : hasTeammate
-      ? 'rgba(0,180,220,0.07)'
-      : C.surface
-  const cardShadow = isParticipating
-    ? `0 0 28px rgba(0,210,255,0.14), inset 0 0 0 0.5px rgba(0,210,255,0.12)`
-    : hasTeammate
-      ? `0 0 22px rgba(0,210,255,0.10)`
-      : 'none'
+      ? '1.4px solid rgba(0,200,255,0.34)'
+      : '1px solid rgba(120,180,255,0.14)'
 
   return (
     <motion.div whileTap={{ scale: 0.975 }} onClick={onPress}
       style={{
-        borderRadius: 16, marginBottom: 10, cursor: 'pointer',
-        background: cardBg,
-        border: cardBorder,
-        borderLeft: cardBorderLeft,
-        boxShadow: cardShadow,
-        opacity: isPast && match.status !== 'completed' ? 0.65 : 1,
-        overflow: 'hidden',
+        position: 'relative', borderRadius: 20, marginBottom: 12, cursor: 'pointer',
+        overflow: 'hidden', isolation: 'isolate',
+        border: frameBorder,
+        boxShadow: frameGlow,
+        opacity: isPast && match.status !== 'completed' ? 0.62 : 1,
+        background: 'linear-gradient(165deg, rgba(28,48,78,0.50) 0%, rgba(6,14,26,0.72) 100%)',
+        backdropFilter: 'blur(20px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(160%)',
       }}>
-      <div style={{ padding: '12px 14px' }}>
-        {/* Top row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+
+      {/* Liquid-glass sheen — soft mode-colored bloom in the top corner + a thin
+          diagonal highlight, standing in for the removed matchbg.png artwork. */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', inset: 0,
+          background: `radial-gradient(ellipse 70% 50% at 18% -8%, ${color}26, transparent 60%)` }}/>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.20), transparent)' }}/>
+      </div>
+
+      <div style={{ position: 'relative', zIndex: 1, padding: '11px 15px 13px' }}>
+        {/* Top row — mode / status badges + distance */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <div style={{
-              padding: '3px 9px', borderRadius: 6,
-              background: `${color}18`, border: `1px solid ${color}40`,
-              fontSize: 9.5, fontWeight: 800, letterSpacing: 1.5,
+              padding: '3px 10px', borderRadius: 7,
+              background: `${color}1c`,
+              fontSize: 9.5, fontWeight: 800, letterSpacing: 1.6,
               color, textTransform: 'uppercase', fontFamily: 'var(--font-display)',
             }}>{match.mode}</div>
             {isParticipating && (
@@ -1359,79 +1913,47 @@ function MatchCard({ match, dist, uid, onPress }) {
               </div>
             )}
           </div>
-          <span style={{ fontSize: 10, fontWeight: 700, color: C.accent }}>{fmtDist(dist)}</span>
-        </div>
-
-        {/* Location row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-          <svg width="9" height="12" viewBox="0 0 24 30" fill={C.sub}>
-            <path d="M12 0C7.6 0 4 3.6 4 8c0 6 8 22 8 22s8-16 8-22c0-4.4-3.6-8-8-8zm0 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
-          </svg>
-          <span style={{ fontSize: 10.5, color: C.text, flex: 1, overflow: 'hidden',
-            textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1 }}>
-            {match.address || 'Lokalizacja na mapie'}
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: C.accent, flexShrink: 0 }}>
+            <svg width="8" height="11" viewBox="0 0 24 30" fill={C.accent}>
+              <path d="M12 0C7.6 0 4 3.6 4 8c0 6 8 22 8 22s8-16 8-22c0-4.4-3.6-8-8-8zm0 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
+            </svg>
+            {fmtDist(dist)}
           </span>
         </div>
 
-        {/* Date row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.sub} strokeWidth="2" strokeLinecap="round">
-            <rect x="3" y="4" width="18" height="18" rx="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-          <span style={{ fontSize: 10.5, color: C.sub }}>
-            {fmtMatchDate(match.scheduled_at)} · {fmtMatchTime(match.scheduled_at)}
-          </span>
-        </div>
-
-        {/* Slots row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {/* Home team */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
-            <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase',
-              color: `${C.accent}90` }}>{homeTeamName}</span>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {Array.from({ length: slots }).map((_, i) => {
-                const filled = homePlayers.some(p => p.slot === i + 1)
-                return (
-                  <div key={i} style={{
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: filled ? C.accent : C.dim,
-                    boxShadow: filled ? `0 0 5px ${C.accent}65` : 'none',
-                    transition: 'all 0.2s',
-                  }}/>
-                )
-              })}
+        {/* ── Center duel: team names on their own row, roster hexagons + "VS"
+              divider on the next — keeps VS vertically centered against the
+              hexagon rows regardless of label height. ──────── */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 4, marginBottom: 9 }}>
+            <span style={{
+              flex: 1, minWidth: 0, textAlign: 'center',
+              fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: C.text,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{homeTeamName}</span>
+            <span style={{
+              flex: 1, minWidth: 0, textAlign: 'center',
+              fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: C.text,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{awayTeamName}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', flex: 1, minWidth: 0 }}>
+              <RosterGrid players={homePlayers} slots={slots} color={TEAM_BLUE} size={58}/>
+            </div>
+            <span style={{
+              fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 900, letterSpacing: 2,
+              color: 'rgba(160,200,255,0.35)', flexShrink: 0,
+            }}>VS</span>
+            <div style={{ display: 'flex', justifyContent: 'center', flex: 1, minWidth: 0 }}>
+              <RosterGrid players={awayPlayers} slots={slots} color={TEAM_RED} size={58}/>
             </div>
           </div>
-          <span style={{ fontSize: 9, fontWeight: 800, color: C.dim, letterSpacing: 1, marginTop: 12 }}>VS</span>
-          {/* Away team */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
-            <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase',
-              color: `${C.hoop}90` }}>{match._awayClub?.abbr || match._awayClub?.name || (match.away_club_id ? 'Rywale' : 'Dołącz')}</span>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {Array.from({ length: slots }).map((_, i) => {
-                const filled = awayPlayers.some(p => p.slot === i + 1)
-                return (
-                  <div key={i} style={{
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: filled ? C.hoop : C.dim,
-                    boxShadow: filled ? `0 0 5px ${C.hoop}65` : 'none',
-                    transition: 'all 0.2s',
-                  }}/>
-                )
-              })}
-            </div>
-          </div>
-          <span style={{ fontSize: 9.5, fontWeight: 700, color: C.sub, marginLeft: 'auto', marginTop: 12 }}>
-            {homePlayers.length + awayPlayers.length}/{slots * 2}
-          </span>
         </div>
 
         {/* Score */}
         {match.status === 'completed' && match.score_home != null && (
-          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, marginBottom: 14 }}>
             <span style={{ fontSize: 26, fontWeight: 900, lineHeight: 1, fontFamily: 'var(--font-display)',
               color: match.score_home > match.score_away ? C.win : C.text,
               textShadow: match.score_home > match.score_away ? `0 0 16px ${C.win}48` : 'none' }}>
@@ -1443,6 +1965,45 @@ function MatchCard({ match, dist, uid, onPress }) {
               textShadow: match.score_away > match.score_home ? `0 0 16px ${C.win}48` : 'none' }}>
               {match.score_away}
             </span>
+          </div>
+        )}
+
+        {/* Date/time + location — centered, no box, date on top (primary) */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, textAlign: 'center' }}>
+          <span style={{
+            fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 800, letterSpacing: 0.5,
+            color: C.text, lineHeight: 1.3,
+          }}>
+            {fmtMatchDate(match.scheduled_at)} · {fmtMatchTime(match.scheduled_at)}
+          </span>
+          <span style={{
+            fontSize: 11.5, color: 'rgba(224,238,255,0.62)', lineHeight: 1.3,
+            maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {match.address || 'Lokalizacja na mapie'}
+          </span>
+        </div>
+
+        {/* CTA bar — only when the match still has open slots; once both teams are
+            full there's nothing to join, so the bar is dropped entirely (tapping
+            the card still opens details). */}
+        {totalJoined < slots * 2 && (
+          <div style={{
+            marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '11px 15px', borderRadius: 13,
+            background: `linear-gradient(90deg, ${C.accent}20, ${C.accent}0a)`,
+            border: `1px solid ${C.accent}40`,
+            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), 0 0 18px ${C.accent}14`,
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10.5, letterSpacing: 1.8,
+              textTransform: 'uppercase', color: C.accentHi,
+            }}>
+              {isParticipating ? 'Twój mecz · szczegóły' : 'Dołącz do meczu'}
+            </span>
+            <svg width="7" height="12" viewBox="0 0 12 20" fill="none" stroke={C.accentHi} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 2l8 8-8 8"/>
+            </svg>
           </div>
         )}
       </div>
@@ -1906,7 +2467,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
       if (local._isDemo) {
         const fakePlayer = {
           match_id: local.id, user_id: uid, team, slot: 1,
-          profile: { id: uid, name: profile?.name || 'Ty' },
+          profile: { id: uid, name: profile?.name || 'Ty', equipped_frame: profile?.equipped_frame || 'none' },
         }
         const updated = { ...local, players: [fakePlayer] }
         setLocal(updated)
@@ -1916,7 +2477,13 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
 
       await apiJoinMatch(local.id, uid, team, local.mode)
       const { data } = await supabase.from('match_players').select('*').eq('match_id', local.id)
-      const updated = { ...local, players: data || [] }
+      const userIds = [...new Set((data || []).map(p => p.user_id))]
+      const { data: profiles } = userIds.length
+        ? await supabase.from('profiles').select('id,name,equipped_frame').in('id', userIds)
+        : { data: [] }
+      const pm = Object.fromEntries((profiles || []).map(pr => [pr.id, pr]))
+      const playersWithProfiles = (data || []).map(p => ({ ...p, profile: pm[p.user_id] || null }))
+      const updated = { ...local, players: playersWithProfiles }
       if ((data || []).length >= n * 2) updated.status = 'full'
       setLocal(updated); onJoined?.(updated, true)
 
@@ -1965,6 +2532,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
 
       <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 32 }}
+        className="hide-scrollbar"
         style={{ marginTop: 'auto', width: '100%', maxWidth: 430,
           background: 'rgba(4,10,22,0.92)',
           backdropFilter: 'blur(48px) saturate(1.9)',
@@ -2858,6 +3426,37 @@ function createDemoMatch(userLoc) {
   }
 }
 
+// 5v5 demo — showcases the 2-on-top/3-on-bottom roster hexagon layout, with a
+// couple of filled slots (incl. an equipped frame) on each side.
+function createDemoMatch5v5(userLoc) {
+  return {
+    id: '__demo5v5__',
+    club_id: '__demo_club__',
+    away_club_id: '__demo_club_away__',
+    created_by: '__demo_user__',
+    mode: '5v5',
+    lat: userLoc.lat + 0.0009,
+    lng: userLoc.lng - 0.0011,
+    address: 'Orlik, ul. Sportowa 8',
+    scheduled_at: new Date(Date.now() + 2.5 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'open',
+    note: 'Pełna piątka — dołącz!',
+    score_home: null, score_away: null,
+    _dist: 0.34,
+    _club: { id: '__demo_club__', name: 'Demo FC', abbr: 'DFC', country_flag: '🇵🇱' },
+    _awayClub: { id: '__demo_club_away__', name: 'Rival United', abbr: 'RIV', country_flag: '🇩🇪' },
+    players: [
+      { match_id: '__demo5v5__', user_id: '__d1__', team: 'home', slot: 1, profile: { id: '__d1__', name: 'Kacper', equipped_frame: 'default' } },
+      { match_id: '__demo5v5__', user_id: '__d2__', team: 'home', slot: 2, profile: { id: '__d2__', name: 'Bartek', equipped_frame: 'default' } },
+      { match_id: '__demo5v5__', user_id: '__d3__', team: 'home', slot: 3, profile: { id: '__d3__', name: 'Olek', equipped_frame: 'default' } },
+      { match_id: '__demo5v5__', user_id: '__d4__', team: 'away', slot: 1, profile: { id: '__d4__', name: 'Marek', equipped_frame: 'default' } },
+      { match_id: '__demo5v5__', user_id: '__d5__', team: 'away', slot: 2, profile: { id: '__d5__', name: 'Tomek', equipped_frame: 'default' } },
+    ],
+    _hasTeammate: false,
+    _isDemo: true,
+  }
+}
+
 async function forwardGeocode(city) {
   try {
     const res = await fetch(
@@ -2884,7 +3483,10 @@ function MatchesPanel({ club, uid, isActive }) {
   const [pendingRole, setPendingRole] = useState('home')
   const [joinedMatch, setJoinedMatch] = useState(null)
   const [autoCancelNotif, setAutoCancelNotif] = useState(false)
-  const RADIUS = 25
+  const RADIUS_OPTIONS = [5, 10, 25]
+  const [radius, setRadius] = useState(25)
+  const MODE_OPTIONS = ['Wszystkie', '2v2', '3v3', '5v5']
+  const [modeFilter, setModeFilter] = useState('Wszystkie')
 
   const isMember = Object.values(club.members).some(m => m?.id === uid)
 
@@ -2990,12 +3592,12 @@ function MatchesPanel({ club, uid, isActive }) {
 
   useEffect(() => {
     if (locState === 'granted' && userLoc) loadMatches()
-  }, [locState, userLoc])
+  }, [locState, userLoc, radius])
 
   async function loadMatches() {
     setLoading(true)
     try {
-      const data = await apiFetchMatches(userLoc.lat, userLoc.lng, RADIUS, myMemberIds, club.id)
+      const data = await apiFetchMatches(userLoc.lat, userLoc.lng, radius, myMemberIds, club.id)
 
       // ── Auto-cancel matches starting in <5min with no away players ───────────
       const now = new Date()
@@ -3020,7 +3622,7 @@ function MatchesPanel({ club, uid, isActive }) {
       // ─────────────────────────────────────────────────────────────────────────
 
       // Demo match only in development — for testing the join flow
-      const demoList = import.meta.env.DEV ? [createDemoMatch(userLoc)] : []
+      const demoList = import.meta.env.DEV ? [createDemoMatch(userLoc), createDemoMatch5v5(userLoc)] : []
       const allMatches = [...demoList, ...filtered]
       setMatches(allMatches)
       checkPendingResult(filtered)
@@ -3090,27 +3692,58 @@ function MatchesPanel({ club, uid, isActive }) {
     })
   }
 
+  const modeFiltered = modeFilter === 'Wszystkie' ? matches : matches.filter(m => m.mode === modeFilter)
+
   const upcoming = sortByTeam(
-    matches.filter(m => m.status !== 'completed' && new Date(m.scheduled_at) > new Date())
+    modeFiltered.filter(m => m.status !== 'completed' && new Date(m.scheduled_at) > new Date())
   )
   const past = sortByTeam(
-    matches.filter(m => m.status === 'completed' || new Date(m.scheduled_at) <= new Date())
+    modeFiltered.filter(m => m.status === 'completed' || new Date(m.scheduled_at) <= new Date())
   )
 
   return (
     <div style={{ padding: '0 16px var(--nav-h)' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0 16px' }}>
+      <div style={{ padding: '4px 0 16px' }}>
         <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.8, textTransform: 'uppercase',
-          color: C.dim, margin: 0 }}>
+          color: C.dim, margin: '0 0 10px' }}>
           {cityFallback && profile?.city
             ? `Mecze w pobliżu · ${profile.city}`
             : 'Mecze w pobliżu'}
         </p>
-        <div style={{ padding: '3px 10px', borderRadius: 8,
-          background: `${C.accent}10`, border: `1px solid ${C.accent}22` }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: C.accent }}>{RADIUS} km</span>
+        {/* Radius filter — pills, reloads the list on change */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+          {RADIUS_OPTIONS.map(km => (
+            <button key={km} onClick={() => setRadius(km)}
+              style={{
+                flex: 1, padding: '7px 0', borderRadius: 9, cursor: 'pointer',
+                fontSize: 11, fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: 0.5,
+                border: radius === km ? `1px solid ${C.accent}70` : '1px solid rgba(120,180,255,0.14)',
+                background: radius === km ? `${C.accent}1c` : 'rgba(255,255,255,0.03)',
+                color: radius === km ? C.accentHi : C.sub,
+                transition: 'all 0.15s ease',
+              }}>
+              {km} km
+            </button>
+          ))}
+        </div>
+
+        {/* Mode filter — pills, client-side filter (no reload) */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          {MODE_OPTIONS.map(opt => (
+            <button key={opt} onClick={() => setModeFilter(opt)}
+              style={{
+                flex: 1, padding: '7px 0', borderRadius: 9, cursor: 'pointer',
+                fontSize: 11, fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: 0.5,
+                border: modeFilter === opt ? `1px solid ${C.accent}70` : '1px solid rgba(120,180,255,0.14)',
+                background: modeFilter === opt ? `${C.accent}1c` : 'rgba(255,255,255,0.03)',
+                color: modeFilter === opt ? C.accentHi : C.sub,
+                transition: 'all 0.15s ease',
+              }}>
+              {opt}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -3196,26 +3829,44 @@ function MatchesPanel({ club, uid, isActive }) {
       {/* Match list */}
       {!loading && locState === 'granted' && (
         <>
-          {upcoming.length > 0 && (
-            <>
-              <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
-                color: C.dim, margin: '0 0 10px 2px' }}>Nadchodzące</p>
-              {upcoming.map(m => (
-                <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
-                  onPress={() => { setActive(m); setSheet('detail') }}/>
-              ))}
-            </>
-          )}
-          {past.length > 0 && (
-            <>
-              <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
-                color: C.dim, margin: '16px 0 10px 2px' }}>Ostatnie</p>
-              {past.map(m => (
-                <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
-                  onPress={() => { setActive(m); setSheet('detail') }}/>
-              ))}
-            </>
-          )}
+          {upcoming.length > 0 && (() => {
+            const mine = upcoming.filter(m => m._hasTeammate)
+            const others = upcoming.filter(m => !m._hasTeammate)
+            return (
+              <>
+                <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
+                  color: C.dim, margin: '0 0 10px 2px' }}>Nadchodzące</p>
+                {mine.map(m => (
+                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
+                    onPress={() => { setActive(m); setSheet('detail') }}/>
+                ))}
+                {mine.length > 0 && others.length > 0 && <SectionDivider/>}
+                {others.map(m => (
+                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
+                    onPress={() => { setActive(m); setSheet('detail') }}/>
+                ))}
+              </>
+            )
+          })()}
+          {past.length > 0 && (() => {
+            const mine = past.filter(m => m._hasTeammate)
+            const others = past.filter(m => !m._hasTeammate)
+            return (
+              <>
+                <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
+                  color: C.dim, margin: '16px 0 10px 2px' }}>Ostatnie</p>
+                {mine.map(m => (
+                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
+                    onPress={() => { setActive(m); setSheet('detail') }}/>
+                ))}
+                {mine.length > 0 && others.length > 0 && <SectionDivider/>}
+                {others.map(m => (
+                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
+                    onPress={() => { setActive(m); setSheet('detail') }}/>
+                ))}
+              </>
+            )
+          })()}
           {upcoming.length === 0 && past.length === 0 && (
             <div style={{ padding: '48px 24px', textAlign: 'center',
               border: `1px solid rgba(255,255,255,0.06)`,
@@ -3229,7 +3880,7 @@ function MatchesPanel({ club, uid, isActive }) {
               </p>
               <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)',
                 lineHeight: 1.65, margin: 0 }}>
-                Żaden klub nie zaplanował meczu{'\n'}w zasięgu {RADIUS} km. Możesz to zmienić.
+                Żaden klub nie zaplanował meczu{'\n'}w zasięgu {radius} km. Możesz zmienić zasięg powyżej.
               </p>
             </div>
           )}
@@ -3540,6 +4191,87 @@ function StatsPanel({ club }) {
   )
 }
 
+// ── READ-ONLY COURT (used inside the club preview — no taps, no swap FAB) ─────
+function MiniCourt({ club }) {
+  return (
+    <div style={{ padding: '0 22px 0', position: 'relative' }}>
+      <svg width="0" height="0" aria-hidden="true"
+        style={{ position: 'absolute', pointerEvents: 'none', overflow: 'hidden' }}>
+        <defs>
+          <clipPath id="courtClipPreview" clipPathUnits="objectBoundingBox">
+            <path d="M0.070,0 L0.930,0 Q0.930,0.059 1,0.059 L1,0.941 Q0.930,0.941 0.930,1 L0.070,1 Q0.070,0.941 0,0.941 L0,0.059 Q0.070,0.059 0,0 Z"/>
+          </clipPath>
+        </defs>
+      </svg>
+      <div style={{ position: 'relative', width: '100%', aspectRatio: '343 / 410' }}>
+        <div style={{ position: 'absolute', inset: 0, clipPath: 'url(#courtClipPreview)', overflow: 'hidden' }}>
+          <Court/>
+          {POSITIONS.map(posKey => (
+            <div key={posKey} style={{
+              position: 'absolute', left: SPOT[posKey].x, top: SPOT[posKey].y,
+              transform: 'translate(-50%, -50%)', zIndex: 3, pointerEvents: 'none',
+            }}>
+              <Token posKey={posKey} member={club.members[posKey]} onPress={() => {}}
+                swapMode={false} isSrc={false} isTgt={false}/>
+            </div>
+          ))}
+        </div>
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%',
+          pointerEvents: 'none', zIndex: 10, overflow: 'visible' }}
+          viewBox="0 0 343 410" preserveAspectRatio="none">
+          <defs>
+            <filter id="neonGPrev" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3"  result="b1"/>
+              <feGaussianBlur stdDeviation="10" result="b2"/>
+              <feMerge><feMergeNode in="b2"/><feMergeNode in="b1"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <path d={COURT_PATH} fill="none" stroke="rgba(0,200,255,0.13)" strokeWidth="7" filter="url(#neonGPrev)"/>
+          <path d={COURT_PATH} fill="none" stroke="rgba(0,220,255,0.42)" strokeWidth="1.4"/>
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+// ── CLUB PREVIEW SHEET — read-only "view from outside": court, stats, recent matches ──
+function ClubPreviewSheet({ club, onClose }) {
+  return (
+    <Sheet onClose={onClose}>
+      {/* Header — badge, name, read-only notice */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+        <Badge abbr={club.abbr} size={54}/>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
+            color: C.text, letterSpacing: -0.3, margin: 0,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {club.name}
+          </p>
+          <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase',
+            color: C.sub, margin: '3px 0 0' }}>
+            {club.country?.flag ? `${club.country.flag} ` : ''}Podgląd klubu
+          </p>
+        </div>
+        <span style={{
+          fontSize: 8, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase',
+          color: C.accent, padding: '5px 10px', borderRadius: 99,
+          background: `${C.accent}14`, border: `1px solid ${C.accent}38`,
+        }}>
+          Tylko podgląd
+        </span>
+      </div>
+
+      {/* Read-only court — squad as currently set up, nothing tappable */}
+      <MiniCourt club={club}/>
+
+      {/* Club stats + recent results (mirrors the in-club Statystyki tab) */}
+      <div style={{ marginTop: 18 }}>
+        <StatsPanel club={club}/>
+      </div>
+    </Sheet>
+  )
+}
+
 // ── COURT PANEL ───────────────────────────────────────────────────────────────
 function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, swapSrc, swapping, swapError }) {
   const isOwner = club.ownerId === uid
@@ -3688,6 +4420,7 @@ function ClubView({ club, onUpdate, uid }) {
   const [panel,    setPanel]    = useState(1) // 0=Mecze 1=Boisko(default) 2=Statystyki
   const [sheet,    setSheet]    = useState(null) // 'empty'|'player'|'edit'|null
   const [sheetPos, setSheetPos] = useState(null)
+  const [clubPreviewOpen, setClubPreviewOpen] = useState(false)
   const [swapMode,  setSwapMode]  = useState(false)
   const [swapSrc,   setSwapSrc]   = useState(null)
   const [swapping,  setSwapping]  = useState(false)
@@ -3737,9 +4470,8 @@ function ClubView({ club, onUpdate, uid }) {
     }
     const member = club.members[posKey]
     setSheetPos(posKey)
-    if (!member)                setSheet('empty')
-    else if (member.id === uid) setSheet('player-self')
-    else                        setSheet('player-other')
+    if (!member) setSheet('empty')
+    else         setSheet('profile')
   }
 
   async function doSwap(pA, pB) {
@@ -3836,17 +4568,18 @@ function ClubView({ club, onUpdate, uid }) {
             club={club} posKey={sheetPos}
             onClose={closeSheet}/>
         )}
-        {(sheet === 'player-self' || sheet === 'player-other') && sheetPos && club.members[sheetPos] && (
-          <PlayerSheet
+        {sheet === 'profile' && sheetPos && club.members[sheetPos] && (
+          <PlayerProfileSheet
             key="player"
             club={club} posKey={sheetPos}
             member={club.members[sheetPos]}
             isOwner={isOwner}
-            isSelf={sheet === 'player-self'}
+            isSelf={club.members[sheetPos].id === uid}
             removing={removing}
             onClose={closeSheet}
             onRemove={() => handleRemove(sheetPos)}
-            onLeave={handleLeave}/>
+            onLeave={handleLeave}
+            onOpenClub={() => setClubPreviewOpen(true)}/>
         )}
         {sheet === 'edit' && (
           <EditClubSheet
@@ -3854,6 +4587,13 @@ function ClubView({ club, onUpdate, uid }) {
             club={club}
             onClose={closeSheet}
             onSaved={updated => { onUpdate(updated); setSheet(null) }}/>
+        )}
+      </AnimatePresence>
+
+      {/* Read-only club preview — stacks above the profile sheet */}
+      <AnimatePresence>
+        {clubPreviewOpen && (
+          <ClubPreviewSheet key="club-preview" club={club} onClose={() => setClubPreviewOpen(false)}/>
         )}
       </AnimatePresence>
     </div>
