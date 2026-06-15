@@ -118,9 +118,13 @@ const COUNTRIES = [
 // Zsynchronizowane z ARENA_META w HomePage.jsx.
 // "Sól tej Ziemi" ZAWSZE ostatnia — nowe areny wstawiaj przed nią.
 const ARENAS = [
-  { level: 0, name: 'Playground',    threshold: 0 },
-  { level: 1, name: 'Street Court',  threshold: 500 },
-  { level: 2, name: 'Sól tej Ziemi', threshold: 1500 },
+  { level: 0, name: 'Rozgrzewka',   threshold: 0 },
+  { level: 1, name: 'Street Court', threshold: 500 },
+  { level: 2, name: 'City Run',     threshold: 1500 },
+  { level: 3, name: 'Golden Reign', threshold: 2700 },
+  { level: 4, name: 'Ankh Court',   threshold: 3900 },
+  { level: 5, name: 'Void Gem',     threshold: 5500 },
+  { level: 6, name: 'Seraphim',     threshold: 7500 },
 ]
 
 function arenaProgress(xp = 0, level = 0) {

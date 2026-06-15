@@ -16,13 +16,30 @@ export const ARENAS = [
     tagline: 'Ulica weryfikuje. Ty zdałeś.',
   },
   {
-    name: 'Sól tej Ziemi', threshold: 1500,
+    name: 'City Run', threshold: 1500,
     glow: '#E8B030', badge: ['#FFE090', '#C88820', '#1A1000'],
-    tagline: 'Fundament. Bez ciebie nie ma gry.',
+    tagline: 'Miasto nigdy nie śpi. Ty też nie zwalniasz.',
   },
-  // ── SECRET — zablokowane teasery (nieodkryte areny) ──
-  { name: '?????', threshold: 3500, glow: '#5566AA', secret: true },
-  { name: '?????', threshold: 7500, glow: '#5566AA', secret: true },
+  {
+    name: 'Golden Reign', threshold: 2700,
+    glow: '#FFC940', badge: ['#FFF2B0', '#C9A227', '#241200'],
+    tagline: 'Złota era. Rządzisz parkietem.',
+  },
+  {
+    name: 'Ankh Court', threshold: 3900,
+    glow: '#2DD4BF', badge: ['#A8FFF0', '#1FA89A', '#001A18'],
+    tagline: 'Starożytna moc, nowoczesna gra.',
+  },
+  {
+    name: 'Void Gem', threshold: 5500,
+    glow: '#A855F7', badge: ['#E0B0FF', '#7C3AED', '#180029'],
+    tagline: 'W pustce świecisz najjaśniej.',
+  },
+  {
+    name: 'Seraphim', threshold: 7500,
+    glow: '#FDE68A', badge: ['#FFFFFF', '#FFD700', '#3A2C00'],
+    tagline: 'Ostatni stopień. Boska forma.',
+  },
 ]
 
 // Aktualny poziom areny na podstawie XP (index w ARENAS, tylko areny nie-secret)
