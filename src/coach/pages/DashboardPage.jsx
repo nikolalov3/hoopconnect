@@ -1,22 +1,74 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useCoachAuth } from '../context/CoachAuthContext'
 import { addDays, startOfDay, formatDateShort } from '../lib/dateUtil'
 
+// ── DEMO MODE ───────────────────────────────────────────────────────────────
+// Odwiedź panel z ?demo=1 aby zobaczyć w pełni wypełniony pulpit (14 zawodników,
+// 8 nadchodzących treningów, wykres aktywności, frekwencja). Nic nie zapisuje do
+// bazy — czysta wizualizacja do zrzutów ekranu i demo na żywo dla klubów.
+const DEMO_NAMES = [
+  ['Kacper', 'Nowak', 7], ['Jan', 'Kowalski', 4], ['Szymon', 'Wiśniewski', 11],
+  ['Antoni', 'Wójcik', 5], ['Filip', 'Kamiński', 23], ['Mikołaj', 'Lewandowski', 8],
+  ['Aleksander', 'Zieliński', 12], ['Jakub', 'Szymański', 3], ['Franciszek', 'Woźniak', 9],
+  ['Wojciech', 'Dąbrowski', 15], ['Adam', 'Kozłowski', 6], ['Igor', 'Jankowski', 21],
+  ['Tymon', 'Mazur', 10], ['Leon', 'Krawczyk', 14],
+]
+function buildDemoData() {
+  const now = new Date()
+  const roster = DEMO_NAMES.map(([f, l, n], i) => ({
+    player_id: `demo-${i}`, display_first_name: f, display_last_name: l, jersey_number: n,
+  }))
+  // Przeszłe treningi: rozkład 2/3/2/3 na 4 ostatnie tygodnie (= 10, wykres + treningi/tydz)
+  const perWeek = [2, 3, 2, 3] // tydzień -4, -3, -2, -1
+  const pastPractices = []
+  let pid = 0
+  perWeek.forEach((cnt, wIdx) => {
+    const weekFromNow = -(4 - wIdx) // -4..-1
+    for (let k = 0; k < cnt; k++) {
+      const d = addDays(startOfDay(now), 7 * weekFromNow + 2 + k * 2)
+      d.setHours(18, 0, 0, 0)
+      pastPractices.push({ id: `pp-${pid++}`, scheduled_at: d.toISOString() })
+    }
+  })
+  // Nadchodzące treningi: 8 w ciągu najbliższych 4 tygodni (wt/czw 18:00)
+  const LOCS = ['Hala SP nr 2', 'Hala SP nr 2', 'Hala MOSiR', 'Hala SP nr 2']
+  const CATS = ['Trening', 'Rzuty + gra', 'Obrona', 'Kondycja']
+  const upcomingPractices = []
+  for (let i = 0; i < 8; i++) {
+    const d = addDays(startOfDay(now), 2 + i * 3) // co ~3 dni, pierwszy w tym tygodniu
+    d.setHours(18, 0, 0, 0)
+    upcomingPractices.push({
+      id: `up-${i}`, scheduled_at: d.toISOString(),
+      category: CATS[i % CATS.length], location: LOCS[i % LOCS.length],
+    })
+  }
+  // Frekwencja: ~91% (mix present/late/absent), wszystkie wpięte do przeszłych treningów
+  const attendance = []
+  for (let i = 0; i < 50; i++) {
+    const status = i % 11 === 0 ? 'absent' : (i % 6 === 0 ? 'late' : 'present')
+    attendance.push({ practice_id: pastPractices[i % pastPractices.length].id, status })
+  }
+  return { roster, pastPractices, upcomingPractices, attendance, pendingInvites: [], hasBroadcast: true }
+}
+
 export default function DashboardPage() {
   const { currentTeam } = useCoachAuth()
   const navigate = useNavigate()
+  const isDemo = new URLSearchParams(useLocation().search).get('demo') === '1'
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (isDemo) { setData(buildDemoData()); setLoading(false); return }
     if (!currentTeam?.id) return
     load()
-  }, [currentTeam?.id])
+  }, [currentTeam?.id, isDemo])
 
   // Realtime: każda zmiana w member/practice/attendance/invites/broadcast → refetch
   useEffect(() => {
+    if (isDemo) return
     if (!currentTeam?.id) return
     const teamId = currentTeam.id
     let ch = null
