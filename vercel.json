@@ -4,6 +4,8 @@
     { "source": "/admpln/", "destination": "/admpln/index.html" },
     { "source": "/qrhc",    "destination": "/qrhc/index.html" },
     { "source": "/qrhc/",   "destination": "/qrhc/index.html" },
-    { "source": "/((?!api/|admpln/|qrhc/|terms|privacy).*)", "destination": "/index.html" }
+    { "source": "/oferta",  "destination": "/oferta/index.html" },
+    { "source": "/oferta/", "destination": "/oferta/index.html" },
+    { "source": "/((?!api/|admpln/|qrhc/|oferta/|terms|privacy).*)", "destination": "/index.html" }
   ]
 }
