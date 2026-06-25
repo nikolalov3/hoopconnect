@@ -13,6 +13,7 @@ import { useUI } from '../context/UIContext'
 import StreakToast from '../components/ui/StreakToast'
 import { getCache, setCache, bustCache } from '../lib/queryCache'
 import { pGet, pSet } from '../lib/persistentCache'
+import { localizeTraining } from '../lib/i18nDb'
 import { useNotifications } from '../context/NotificationsContext'
 import { useTodayTeamPractice } from '../hooks/useTodayTeamPractice'
 import { calendarWeekNumber, startOfCalendarWeek } from '../lib/week'
@@ -511,6 +512,7 @@ function SlotHeader({ emoji, label }) {
 // ── ACHIEVEMENT TOAST ────────────────────────────────────────────────────────
 function AchievementToast({ data, onClose }) {
   const { t } = useTranslation('home')
+  const { t: tAch } = useTranslation('achievements')
   useEffect(() => {
     const t = setTimeout(onClose, 4000)
     return () => clearTimeout(t)
@@ -561,7 +563,7 @@ function AchievementToast({ data, onClose }) {
           {data.title}
         </p>
         <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3, fontWeight: 500 }}>
-          {t('achievementToast.unlocked', { label: data.stage.label })}
+          {t('achievementToast.unlocked', { label: tAch(`medals.${data.stage.medal}`) })}
         </p>
       </div>
     </motion.div>
@@ -1406,7 +1408,7 @@ export default function HomePage() {
     const cachedReport    = getCache(`report:${profile.id}`)
 
     if (cachedTrainings) {
-      setTrainings(cachedTrainings)
+      setTrainings(cachedTrainings.map(localizeTraining))
       setLoading(false)
     }
     if (cachedLog !== null)    setActivityLog(cachedLog)
@@ -1441,7 +1443,7 @@ export default function HomePage() {
         } catch { return t }
       })
       setCache(`trainings:${TODAY}`, withSwaps, 30 * 60 * 1000)
-      setTrainings(withSwaps)
+      setTrainings(withSwaps.map(localizeTraining))
     }
     setLoading(false)
 
@@ -1627,7 +1629,7 @@ export default function HomePage() {
       _multiplier: current._multiplier,
       _isCooldown: current._isCooldown,
     }
-    setTrainings(prev => prev.map(t => t.id === trainingId ? merged : t))
+    setTrainings(prev => prev.map(t => t.id === trainingId ? localizeTraining(merged) : t))
     try {
       localStorage.setItem(`hc:swap:${TODAY}:${trainingId}`, JSON.stringify(merged))
     } catch { /* localStorage może być pełne lub zablokowane */ }

@@ -432,7 +432,7 @@ export default function ShootingPage() {
         attempted:    newAttempted,
         started_at:   sessionStartRef.current,
         session_date: new Date().toISOString().split('T')[0],
-      }).select('*, trainings(title)').single()
+      }).select('*, trainings(title, title_en)').single()
       pushSessionToCache(insertedRow1)
       if (insertedRow1) dispatchLocal('shooting_sessions', 'INSERT', insertedRow1)
 
@@ -486,7 +486,7 @@ export default function ShootingPage() {
       attempted,
       started_at:   sessionStartRef.current,
       session_date: new Date().toISOString().split('T')[0],
-    }).select('*, trainings(title)').single()
+    }).select('*, trainings(title, title_en)').single()
     pushSessionToCache(insertedRow2)
     if (insertedRow2) dispatchLocal('shooting_sessions', 'INSERT', insertedRow2)
     setFinalStats({ made, attempted })
@@ -519,7 +519,7 @@ export default function ShootingPage() {
       attempted:    total,
       started_at:   sessionStartRef.current,
       session_date: new Date().toISOString().split('T')[0],
-    }).select('*, trainings(title)').single()
+    }).select('*, trainings(title, title_en)').single()
     pushSessionToCache(insertedRow3)
     if (insertedRow3) dispatchLocal('shooting_sessions', 'INSERT', insertedRow3)
 

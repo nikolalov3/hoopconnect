@@ -254,7 +254,7 @@ export default function StatsPage() {
     async function fetchSessions() {
       const { data } = await supabase
         .from('shooting_sessions')
-        .select('*, trainings(title)')
+        .select('*, trainings(title, title_en)')
         .eq('user_id', profile.id)
         .order('session_date', { ascending: false })
         .limit(500)
@@ -565,7 +565,7 @@ export default function StatsPage() {
                     color: 'var(--text-primary)', textTransform: 'uppercase',
                     letterSpacing: 0.5, fontFamily: 'var(--font-display)',
                   }}>
-                    {s.trainings?.title || SHOT_LABELS[s.shot_type]}
+                    {(i18n.language === 'en' && s.trainings?.title_en) || s.trainings?.title || SHOT_LABELS[s.shot_type]}
                   </p>
                   <p style={{ color: 'var(--text-dim)', fontSize: 12 }}>
                     {s.made}/{s.attempted} · {new Date(s.session_date).toLocaleDateString(i18n.language === 'pl' ? 'pl-PL' : 'en-US')}
