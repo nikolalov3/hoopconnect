@@ -1,0 +1,34 @@
+{
+  "activities": {
+    "sleep": "Sen 9h+",
+    "foam": "Foam rolling",
+    "stretch": "Stretching",
+    "meditate": "Medytacja",
+    "read": "Czytanie",
+    "video": "Analiza video",
+    "cold": "Zimny prysznic",
+    "meal": "Meal prep",
+    "journal": "Dziennik",
+    "walk": "Spacer",
+    "ice": "Okłady lodowe",
+    "nap": "Drzemka 20min"
+  },
+  "tips": [
+    "Wypij 500ml wody zaraz po przebudzeniu — twoje ciało jest odwodnione po 8h snu.",
+    "Nie dotykaj telefonu przez pierwszą godzinę dnia — to czas dla twojego mózgu.",
+    "Wyjdź na 10 minut słońca przed 10:00 — reguluje rytm dobowy i poziom melatoniny.",
+    "Muzyka 60-70 BPM podczas foam rollingu redukuje napięcie mięśniowe o 20%.",
+    "Banan + masło orzechowe to idealna przekąska 30 min przed treningiem.",
+    "\"The Mamba Mentality\" Kobe Bryanta — must-read dla każdego kto chce być najlepszy.",
+    "Temperatura 18°C w sypialni = 45 minut dłuższy głęboki sen według badań.",
+    "Wizualizacja przed snem: wyobraź sobie jutrzejszy trening krok po kroku."
+  ],
+  "today": "Dzisiaj",
+  "title": "Regeneracja",
+  "subtitle": "Jutrzejszy trening zaczyna się teraz. Bez regeneracji nie ma progresu.",
+  "recoveryScore": "Recovery score",
+  "proTip": "Pro tip: ",
+  "checkToday": "Zaznacz co dziś zrobiłeś",
+  "eliteBadge": "💚 ELITE RECOVERY",
+  "eliteSubtitle": "Twoje ciało jutro będzie silniejsze. Tak pracują zawodowcy."
+}

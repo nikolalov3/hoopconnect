@@ -1,0 +1,26 @@
+{
+  "positions": {
+    "PG": "Rozgrywający",
+    "SG": "Rzucający",
+    "SF": "Skrzydłowy",
+    "C": "Środkowy",
+    "PF": "Silny skrzydłowy"
+  },
+  "notFound": "Nie znaleziono klubu.",
+  "alreadyInOtherClub": "Jesteś już członkiem innego klubu.",
+  "oops": "Ups!",
+  "backToApp": "Wróć do aplikacji",
+  "joined": "Dołączyłeś!",
+  "redirecting": "Przekierowanie do klubu…",
+  "invitation": "Zaproszenie do klubu",
+  "playersCount": "{{count}}/5 graczy",
+  "alreadyMember": "Jesteś już członkiem tego klubu",
+  "goToClub": "Przejdź do klubu",
+  "choosePosition": "Wybierz pozycję",
+  "taken": "ZAJĘTE",
+  "joining": "Dołączanie…",
+  "joinAs": "Dołącz jako {{pos}}",
+  "selectPosition": "Wybierz pozycję",
+  "cancel": "Anuluj",
+  "defaultPlayerName": "Gracz"
+}

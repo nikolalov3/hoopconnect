@@ -1,0 +1,46 @@
+{
+  "title": "Arena Road",
+  "youAreHere": "you are here",
+  "secret": "SECRET",
+  "secretDesc": "Unlocks at {{xp}} XP — you'll find out what's next soon",
+  "start": "Start",
+  "toNext": "{{xp}} XP to go until: {{name}}",
+  "moreSoon": "✦ More arenas coming soon ✦",
+  "arenas": [
+    {
+      "name": "Warm-up",
+      "tagline": "Every story starts here.",
+      "desc": "Earn XP, finish workouts, and unlock your first HC arena."
+    },
+    {
+      "name": "Street Court",
+      "tagline": "First court. First progress.",
+      "desc": "This is where the real game begins. Train regularly and climb higher."
+    },
+    {
+      "name": "City Run",
+      "tagline": "The city is on the move.",
+      "desc": "More players. Tougher competition."
+    },
+    {
+      "name": "Golden Reign",
+      "tagline": "Your moment starts to shine.",
+      "desc": "A high arena for players who never slow down."
+    },
+    {
+      "name": "Ankh Court",
+      "tagline": "Leave your mark.",
+      "desc": "An arena inspired by legends and a road that keeps going."
+    },
+    {
+      "name": "Void Gem",
+      "tagline": "A different level of play.",
+      "desc": "Only the most active players reach this high."
+    },
+    {
+      "name": "Seraphim",
+      "tagline": "The top of the HC world.",
+      "desc": "The highest arena, for players who walked the whole road."
+    }
+  ]
+}

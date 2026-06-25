@@ -1,0 +1,51 @@
+{
+  "types": { "shooting_3pt": "Trójki", "shooting_2pt": "Dwójki", "shooting_ft": "Wolne" },
+  "freestyleTitle": "Sesja freestyle — {{label}}",
+  "success": {
+    "sessionFallback": "Sesja",
+    "finishedSuffix": "zakończona",
+    "titleLine1": "Trening",
+    "titleLine2": "zaliczony",
+    "support": {
+      "perfect": "Perfekcyjna sesja",
+      "elite": "Elite touch",
+      "great": "Świetna robota",
+      "solid": "Solidnie",
+      "tryHarder": "Wracaj jutro mocniej",
+      "everyChampion": "Każdy mistrz miał taki dzień"
+    },
+    "madeLabel": "trafione",
+    "missOne": "pudło",
+    "missOther": "pudła",
+    "totalOne": "rzut",
+    "totalFew": "rzuty",
+    "totalMany": "rzutów",
+    "totalSuffix": "łącznie",
+    "achievementsUnlocked": "Osiągnięcia odblokowane",
+    "unlockedFallback": "{{label}} odblokowany",
+    "hitsSuffix": "traf.",
+    "generating": "Generuję...",
+    "shareResults": "Udostępnij wyniki",
+    "backToPlan": "Wróć do planu",
+    "shareTitle": "HoopConnect — {{pct}}% skuteczność",
+    "shareText": "Skuteczność {{pct}}% ({{made}}/{{attempted}}) 🏀 hoopconnect.pl"
+  },
+  "back": "Wstecz",
+  "resumed": "wznowiono",
+  "accuracy": "skuteczność",
+  "statLabels": { "made": "Trafione", "missed": "Pudła", "remaining": "Zostało" },
+  "shotButtons": { "made": "Trafione", "missed": "Pudło" },
+  "recentShots": "Ostatnie rzuty",
+  "finishSession": "Zakończ sesję",
+  "enterManually": "Wpisz ręcznie",
+  "undoLast": "Cofnij ostatni",
+  "manualModal": {
+    "title": "Wpisz ręcznie",
+    "max": "maks. {{target}}",
+    "made": "Trafione",
+    "missed": "Pudła",
+    "sum": "Suma",
+    "tooMany": "— za dużo!",
+    "submit": "Zatwierdź trening"
+  }
+}

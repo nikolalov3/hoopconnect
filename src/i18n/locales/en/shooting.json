@@ -1,0 +1,51 @@
+{
+  "types": { "shooting_3pt": "Threes", "shooting_2pt": "Twos", "shooting_ft": "Free throws" },
+  "freestyleTitle": "Freestyle session — {{label}}",
+  "success": {
+    "sessionFallback": "Session",
+    "finishedSuffix": "finished",
+    "titleLine1": "Workout",
+    "titleLine2": "complete",
+    "support": {
+      "perfect": "Perfect session",
+      "elite": "Elite touch",
+      "great": "Great work",
+      "solid": "Solid",
+      "tryHarder": "Come back stronger tomorrow",
+      "everyChampion": "Every champion has had a day like this"
+    },
+    "madeLabel": "made",
+    "missOne": "miss",
+    "missOther": "misses",
+    "totalOne": "shot",
+    "totalFew": "shots",
+    "totalMany": "shots",
+    "totalSuffix": "total",
+    "achievementsUnlocked": "Achievements unlocked",
+    "unlockedFallback": "{{label}} unlocked",
+    "hitsSuffix": "made",
+    "generating": "Generating...",
+    "shareResults": "Share results",
+    "backToPlan": "Back to plan",
+    "shareTitle": "HoopConnect — {{pct}}% accuracy",
+    "shareText": "Accuracy {{pct}}% ({{made}}/{{attempted}}) 🏀 hoopconnect.pl"
+  },
+  "back": "Back",
+  "resumed": "resumed",
+  "accuracy": "accuracy",
+  "statLabels": { "made": "Made", "missed": "Missed", "remaining": "Left" },
+  "shotButtons": { "made": "Made", "missed": "Miss" },
+  "recentShots": "Recent shots",
+  "finishSession": "Finish session",
+  "enterManually": "Enter manually",
+  "undoLast": "Undo last",
+  "manualModal": {
+    "title": "Enter manually",
+    "max": "max. {{target}}",
+    "made": "Made",
+    "missed": "Missed",
+    "sum": "Total",
+    "tooMany": "— too many!",
+    "submit": "Confirm workout"
+  }
+}

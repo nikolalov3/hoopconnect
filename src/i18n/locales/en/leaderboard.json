@@ -1,0 +1,21 @@
+{
+  "tiers": {
+    "diamond": "Diamond",
+    "platinum": "Platinum",
+    "gold": "Gold",
+    "silver": "Silver",
+    "bronze": "Bronze"
+  },
+  "you": " (YOU)",
+  "points": "pts",
+  "watched": "⚠ WATCHED",
+  "defaultPlayerName": "Player",
+  "seasonFallback": "◆ Season 01",
+  "title": "RANKING",
+  "end": "Ends",
+  "yourPosition": "Your position",
+  "noResults": "◆ No results",
+  "beFirst": "Be the first to score points!",
+  "rankingsInfo": "Official rankings start June 1, 2026.",
+  "weeklyReset": "The league resets every Monday."
+}

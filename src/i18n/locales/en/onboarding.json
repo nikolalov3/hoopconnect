@@ -1,0 +1,90 @@
+{
+  "stepOf": "Step {{n}} of {{total}}",
+  "welcome": {
+    "betaLabel": "Beta · Limited release",
+    "titleNamed": "Hey,\n{{name}}!",
+    "titleAnon": "You're\nin the game!",
+    "betaUnlocked": "Beta access unlocked ✓",
+    "betaTextPrefix": "Before HoopConnect reaches thousands of players — ",
+    "betaTextBold": "you're already here",
+    "betaTextSuffix": ". You're part of an elite group of early users shaping this app. Your feedback changes the game — literally.",
+    "discordLabel": "Join the community",
+    "discordText": "We have a Discord server — chat with other players, show up to events with us, and help us build HoopConnect.",
+    "discordButton": "Join Discord",
+    "cta": "LET'S GO 🏀"
+  },
+  "step0": {
+    "title": "What's\nyour name?",
+    "sub": "NBA coaches know every player's name. Let's start the same way.",
+    "placeholder": "Your name...",
+    "greeting": "Hey, {{name}}! 🏀",
+    "greetingSub": "Good call being here. Let's get started."
+  },
+  "step1": {
+    "title": "When were\nyou born?",
+    "sub": "Age decides the intensity and type of training. We have a special program for every stage.",
+    "day": "Day",
+    "month": "Month",
+    "year": "Year",
+    "months": ["January","February","March","April","May","June","July","August","September","October","November","December"],
+    "ageLabel": "AGE {{age}}",
+    "phases": {
+      "foundations": "🌱 Foundations phase",
+      "development": "⚡ Development phase",
+      "intensification": "🔥 Intensification phase",
+      "advanced": "🏆 Advanced phase"
+    },
+    "descs": {
+      "foundations": "We focus on technique and fun. Priority: fundamentals and love for the game.",
+      "development": "Time to build the engine. Technique + athleticism + early tactics.",
+      "intensification": "College recruiting window is open. Intensity rises, recovery is key.",
+      "advanced": "A serious program. You train like a pro — with pro discipline."
+    }
+  },
+  "step2": {
+    "title": "How many\ndays a week?",
+    "sub": "More isn't always better. Recovery is part of training — without it, you don't grow.",
+    "days": [
+      { "label": "3 DAYS", "sub": "Light start · 3 workouts + 4 rest" },
+      { "label": "4 DAYS", "sub": "Balanced · Recommended for beginners" },
+      { "label": "5 DAYS", "sub": "Intense · For advanced players" },
+      { "label": "6 DAYS", "sub": "Pro · Only if you sleep 9h and eat well" }
+    ]
+  },
+  "step3": {
+    "title": "Where are\nyou from?",
+    "sub": "Helps us show matches and teams near you, even without GPS.",
+    "country": "Country",
+    "countries": [
+      { "code": "PL", "name": "Poland 🇵🇱" },
+      { "code": "US", "name": "USA 🇺🇸" },
+      { "code": "DE", "name": "Germany 🇩🇪" },
+      { "code": "FR", "name": "France 🇫🇷" },
+      { "code": "ES", "name": "Spain 🇪🇸" },
+      { "code": "IT", "name": "Italy 🇮🇹" },
+      { "code": "GB", "name": "United Kingdom 🇬🇧" },
+      { "code": "PT", "name": "Portugal 🇵🇹" },
+      { "code": "BR", "name": "Brazil 🇧🇷" },
+      { "code": "NG", "name": "Nigeria 🇳🇬" },
+      { "code": "LT", "name": "Lithuania 🇱🇹" },
+      { "code": "RS", "name": "Serbia 🇷🇸" },
+      { "code": "HR", "name": "Croatia 🇭🇷" },
+      { "code": "GR", "name": "Greece 🇬🇷" },
+      { "code": "AU", "name": "Australia 🇦🇺" },
+      { "code": "CA", "name": "Canada 🇨🇦" }
+    ],
+    "city": "City",
+    "cityPlaceholder": "e.g. New York...",
+    "citySubPrefix": "Matches in ",
+    "citySubSuffix": " will show up right away when GPS isn't available."
+  },
+  "back": "←",
+  "next": "NEXT →",
+  "finishCta": "LET'S GO, {{name}}! 🏀",
+  "errors": {
+    "nameRequired": "Enter your name",
+    "birthRequired": "Choose your date of birth",
+    "noSession": "No session — refresh the page",
+    "saveError": "Save error: {{message}}"
+  }
+}

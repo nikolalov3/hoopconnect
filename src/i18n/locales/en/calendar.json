@@ -1,0 +1,19 @@
+{
+  "months": [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ],
+  "days": ["Mo","Tu","We","Th","Fr","Sa","Su"],
+  "historyLabel": "Activity history",
+  "title": "Calendar",
+  "legend": {
+    "all": "All done",
+    "partial": "Partial",
+    "none": "None"
+  },
+  "summary": {
+    "full": "full",
+    "partial": "partial",
+    "active": "active"
+  }
+}

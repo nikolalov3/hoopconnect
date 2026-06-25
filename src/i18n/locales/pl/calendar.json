@@ -1,0 +1,19 @@
+{
+  "months": [
+    "Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec",
+    "Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"
+  ],
+  "days": ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"],
+  "historyLabel": "Historia aktywności",
+  "title": "Kalendarz",
+  "legend": {
+    "all": "Wszystko",
+    "partial": "Częściowo",
+    "none": "Brak"
+  },
+  "summary": {
+    "full": "pełnych",
+    "partial": "częściowych",
+    "active": "aktywnych"
+  }
+}

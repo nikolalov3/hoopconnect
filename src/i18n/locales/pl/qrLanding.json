@@ -1,0 +1,31 @@
+{
+  "countdown": { "days": "Dni", "hours": "Godz", "mins": "Min", "secs": "Sek" },
+  "headlineLine1": "Pokolenie Cudów",
+  "headlineLine2": "ląduje na ziemi",
+  "eventDate": "04 · 06 · 2026 — 16:20",
+  "prizeLabel": "Nagroda",
+  "prizeAmount": "500",
+  "prizeCurrency": "zł",
+  "prizeTitle": "do wydania w SK Store",
+  "prizeSub": "za pokonanie drużyny Pokolenia Cudów",
+  "howToJoinLabel": "Jak dołączyć",
+  "steps": [
+    {
+      "n": "01",
+      "title": "Zarejestruj się",
+      "body": "Załóż konto w HoopConnect i wspieraj swój trening — sesje rzutowe, siłowe i statystyki pomogą Ci przygotować się do meczu jak zawodnik."
+    },
+    {
+      "n": "02",
+      "title": "Załóż klub",
+      "body": "Mecz rozgrywany jest w formacie 3 na 3. Załóż klub w aplikacji i zbierz minimum 3 osoby do swojej drużyny — albo dołącz do istniejącej i dobierz brakujące osoby."
+    },
+    {
+      "n": "03",
+      "title": "Zagraj z nami",
+      "body": "Mecz odbędzie się 4 czerwca o 16:20 na boisku przy Szkole Podstawowej im. Białych Górników. Przyjdź gotowy — Pokolenie Cudów już czeka."
+    }
+  ],
+  "timeHasCome": "Czas nadszedł.",
+  "cta": "Wejdź do gry →"
+}

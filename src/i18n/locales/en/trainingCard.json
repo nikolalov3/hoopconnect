@@ -1,0 +1,18 @@
+{
+  "types": {
+    "shooting_3pt": "3PT",
+    "shooting_2pt": "2PT",
+    "shooting_ft": "FT",
+    "fitness": "FITNESS",
+    "skills": "SKILLS",
+    "dribbling": "DRIBBLING",
+    "running": "RUNNING"
+  },
+  "pts": "{{n}}PTS",
+  "startShootingTracker": "Start shooting tracker",
+  "completeExercise": "Complete exercise",
+  "swapWithLabel": "I don't have ({{label}}) — swap exercise",
+  "swapGeneric": "I don't have the equipment — swap exercise",
+  "done": "✓ Completed",
+  "undo": "Undo"
+}

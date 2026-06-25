@@ -1,0 +1,17 @@
+{
+  "rarity": { "legendary": "LEGENDARNA", "rare": "RZADKA", "common": "ZWYKŁA" },
+  "newFrame": "Nowa ramka",
+  "unlocked": "✦ Ramka odblokowana ✦",
+  "thanks": "Super, dziękuję!",
+  "close": "Zamknij",
+  "earlyAccess": {
+    "label": "Early Access",
+    "sublabel": "Dostęp przed premierą · Sezon 1",
+    "description": "Za dołączenie do HoopConnect przed startem pierwszego sezonu. Jesteś częścią historii."
+  },
+  "diamondS1": {
+    "label": "Diament · Sezon 1",
+    "sublabel": "Koniec Sezonu 1 · 24.08.2026",
+    "description": "Nagroda za osiągnięcie rangi Diament w pierwszym sezonie HoopConnect. Tylko dla elity."
+  }
+}

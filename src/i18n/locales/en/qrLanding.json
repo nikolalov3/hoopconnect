@@ -1,0 +1,31 @@
+{
+  "countdown": { "days": "Days", "hours": "Hrs", "mins": "Min", "secs": "Sec" },
+  "headlineLine1": "Pokolenie Cudów",
+  "headlineLine2": "is landing",
+  "eventDate": "06 · 04 · 2026 — 4:20 PM",
+  "prizeLabel": "Prize",
+  "prizeAmount": "500",
+  "prizeCurrency": "PLN",
+  "prizeTitle": "to spend at SK Store",
+  "prizeSub": "for beating the Pokolenie Cudów team",
+  "howToJoinLabel": "How to join",
+  "steps": [
+    {
+      "n": "01",
+      "title": "Sign up",
+      "body": "Create a HoopConnect account and back up your training — shooting sessions, strength work and stats will help you get ready for the match like a pro."
+    },
+    {
+      "n": "02",
+      "title": "Start a club",
+      "body": "The match is played 3-on-3. Start a club in the app and get at least 3 people on your team — or join an existing one and fill the missing spots."
+    },
+    {
+      "n": "03",
+      "title": "Play with us",
+      "body": "The match takes place June 4th at 4:20 PM on the court by Szkoła Podstawowa im. Białych Górników. Show up ready — Pokolenie Cudów is waiting."
+    }
+  ],
+  "timeHasCome": "Time's up.",
+  "cta": "Enter the game →"
+}

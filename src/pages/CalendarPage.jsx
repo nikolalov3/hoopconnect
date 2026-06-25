@@ -1,14 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-
-const MONTHS_PL = [
-  'Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec',
-  'Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień',
-]
-const DAYS_PL = ['Pn','Wt','Śr','Cz','Pt','Sb','Nd']
 
 const HEX_CLIP = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
 
@@ -124,6 +119,9 @@ function HexDay({ day, level, isToday, isEmpty, hasPractice }) {
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function CalendarPage() {
+  const { t } = useTranslation('calendar')
+  const MONTHS = t('months', { returnObjects: true })
+  const DAYS = t('days', { returnObjects: true })
   const { profile } = useAuth()
   const navigate = useNavigate()
 
@@ -237,9 +235,9 @@ export default function CalendarPage() {
 
         {/* ── HEADER — identical structure to StatsPage / HomePage ── */}
         <div style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 0 0' }}>
-          <p className="section-label" style={{ marginBottom: 4 }}>Historia aktywności</p>
+          <p className="section-label" style={{ marginBottom: 4 }}>{t('historyLabel')}</p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-            <h1 className="display-title" style={{ fontSize: 38 }}>Kalendarz</h1>
+            <h1 className="display-title" style={{ fontSize: 38 }}>{t('title')}</h1>
             {/* X — close, same bare-icon style as gear/sparkle/calendar icons */}
             <motion.button
               whileTap={{ scale: 0.82 }}
@@ -280,7 +278,7 @@ export default function CalendarPage() {
             fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
             color: 'var(--text-primary)', letterSpacing: 1, textTransform: 'uppercase',
           }}>
-            {MONTHS_PL[month]} {year}
+            {MONTHS[month]} {year}
           </p>
           <motion.button
             whileTap={isCurrent ? {} : { scale: 0.82 }}
@@ -303,7 +301,7 @@ export default function CalendarPage() {
           display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
           marginBottom: 10, paddingLeft: 2, paddingRight: 2,
         }}>
-          {DAYS_PL.map(d => (
+          {DAYS.map(d => (
             <div key={d} style={{
               textAlign: 'center', fontSize: 9, fontWeight: 700,
               letterSpacing: 1, textTransform: 'uppercase',
@@ -362,9 +360,9 @@ export default function CalendarPage() {
           justifyContent: 'center', flexWrap: 'wrap',
         }}>
           {[
-            { bg: 'linear-gradient(135deg, #4a5a6f, #9ab4c8, #daeeff)', label: 'Wszystko' },
-            { bg: 'rgba(91,184,245,0.28)', label: 'Częściowo' },
-            { bg: 'rgba(255,255,255,0.07)', label: 'Brak' },
+            { bg: 'linear-gradient(135deg, #4a5a6f, #9ab4c8, #daeeff)', label: t('legend.all') },
+            { bg: 'rgba(91,184,245,0.28)', label: t('legend.partial') },
+            { bg: 'rgba(255,255,255,0.07)', label: t('legend.none') },
           ].map(({ bg, label }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <div style={{ width: 14, height: 16, clipPath: HEX_CLIP, background: bg, flexShrink: 0 }} />
@@ -379,9 +377,9 @@ export default function CalendarPage() {
         {logs && (
           <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
             {[
-              { v: doneDays,               label: 'pełnych',    color: '#b8d0e8' },
-              { v: partialDays,            label: 'częściowych', color: '#5BB8F5' },
-              { v: doneDays + partialDays, label: 'aktywnych',   color: 'var(--text-secondary)' },
+              { v: doneDays,               label: t('summary.full'),    color: '#b8d0e8' },
+              { v: partialDays,            label: t('summary.partial'), color: '#5BB8F5' },
+              { v: doneDays + partialDays, label: t('summary.active'),   color: 'var(--text-secondary)' },
             ].map(({ v, label, color }) => (
               <div key={label} style={{
                 flex: 1, textAlign: 'center',

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { creditRestDayStreak } from '../lib/streak'
@@ -23,31 +24,22 @@ function getTodayType(profile) {
   return schedule[dow === 0 ? 6 : dow - 1]
 }
 
-const QUICK_ACTIVITIES = [
-  { id: 'sleep',     emoji: '😴', label: 'Sen 9h+',         minutes: 540, color: '#7C5CBF' },
-  { id: 'foam',      emoji: '🎯', label: 'Foam rolling',    minutes: 20,  color: '#2980B9' },
-  { id: 'stretch',   emoji: '🤸', label: 'Stretching',      minutes: 15,  color: '#27AE60' },
-  { id: 'meditate',  emoji: '🧘', label: 'Medytacja',       minutes: 10,  color: '#E67E22' },
-  { id: 'read',      emoji: '📖', label: 'Czytanie',        minutes: 30,  color: '#D4AC0D' },
-  { id: 'video',     emoji: '🎬', label: 'Analiza video',   minutes: 30,  color: '#C0392B' },
-  { id: 'cold',      emoji: '🧊', label: 'Zimny prysznic',  minutes: 5,   color: '#148F77' },
-  { id: 'meal',      emoji: '🥗', label: 'Meal prep',       minutes: 45,  color: '#1E8449' },
-  { id: 'journal',   emoji: '✍️', label: 'Dziennik',        minutes: 15,  color: '#2471A3' },
-  { id: 'walk',      emoji: '🚶', label: 'Spacer',          minutes: 30,  color: '#5D6D7E' },
-  { id: 'ice',       emoji: '❄️', label: 'Okłady lodowe',   minutes: 15,  color: '#1A5276' },
-  { id: 'nap',       emoji: '💤', label: 'Drzemka 20min',   minutes: 20,  color: '#6C3483' },
+const QUICK_META = [
+  { id: 'sleep',     emoji: '😴', minutes: 540, color: '#7C5CBF' },
+  { id: 'foam',      emoji: '🎯', minutes: 20,  color: '#2980B9' },
+  { id: 'stretch',   emoji: '🤸', minutes: 15,  color: '#27AE60' },
+  { id: 'meditate',  emoji: '🧘', minutes: 10,  color: '#E67E22' },
+  { id: 'read',      emoji: '📖', minutes: 30,  color: '#D4AC0D' },
+  { id: 'video',     emoji: '🎬', minutes: 30,  color: '#C0392B' },
+  { id: 'cold',      emoji: '🧊', minutes: 5,   color: '#148F77' },
+  { id: 'meal',      emoji: '🥗', minutes: 45,  color: '#1E8449' },
+  { id: 'journal',   emoji: '✍️', minutes: 15,  color: '#2471A3' },
+  { id: 'walk',      emoji: '🚶', minutes: 30,  color: '#5D6D7E' },
+  { id: 'ice',       emoji: '❄️', minutes: 15,  color: '#1A5276' },
+  { id: 'nap',       emoji: '💤', minutes: 20,  color: '#6C3483' },
 ]
 
-const TIPS = [
-  { icon: '💧', text: 'Wypij 500ml wody zaraz po przebudzeniu — twoje ciało jest odwodnione po 8h snu.' },
-  { icon: '📵', text: 'Nie dotykaj telefonu przez pierwszą godzinę dnia — to czas dla twojego mózgu.' },
-  { icon: '☀️', text: 'Wyjdź na 10 minut słońca przed 10:00 — reguluje rytm dobowy i poziom melatoniny.' },
-  { icon: '🎵', text: 'Muzyka 60-70 BPM podczas foam rollingu redukuje napięcie mięśniowe o 20%.' },
-  { icon: '🍌', text: 'Banan + masło orzechowe to idealna przekąska 30 min przed treningiem.' },
-  { icon: '📚', text: '"The Mamba Mentality" Kobe Bryanta — must-read dla każdego kto chce być najlepszy.' },
-  { icon: '🛏️', text: 'Temperatura 18°C w sypialni = 45 minut dłuższy głęboki sen według badań.' },
-  { icon: '🧠', text: 'Wizualizacja przed snem: wyobraź sobie jutrzejszy trening krok po kroku.' },
-]
+const TIP_ICONS = ['💧','📵','☀️','🎵','🍌','📚','🛏️','🧠']
 
 function RecoveryTile({ activity, done, onToggle }) {
   return (
@@ -104,6 +96,9 @@ function RecoveryTile({ activity, done, onToggle }) {
 }
 
 export default function RecoveryPage() {
+  const { t } = useTranslation('recovery')
+  const QUICK_ACTIVITIES = QUICK_META.map(m => ({ ...m, label: t(`activities.${m.id}`) }))
+  const TIPS = t('tips', { returnObjects: true }).map((text, i) => ({ icon: TIP_ICONS[i], text }))
   const { profile, refreshProfile, setProfileData } = useAuth()
   const [doneActivities, setDoneActivities] = useState(new Set())
   const [tipIndex,       setTipIndex]       = useState(0)
@@ -213,14 +208,14 @@ export default function RecoveryPage() {
       {/* Header */}
       <div style={{ marginBottom: 22 }}>
         <p style={{ fontSize: 13, fontWeight: 500, letterSpacing: 0.2, color: '#6A96B8', marginBottom: 4 }}>
-          Dzisiaj
+          {t('today')}
         </p>
         <h1 style={{
           fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 38,
           textTransform: 'uppercase', color: '#1A3D5C', lineHeight: 0.95, letterSpacing: 0,
-        }}>Regeneracja</h1>
+        }}>{t('title')}</h1>
         <p style={{ color: '#5A8AAA', fontSize: 13, fontWeight: 400, marginTop: 8, lineHeight: 1.45 }}>
-          Jutrzejszy trening zaczyna się teraz. Bez regeneracji nie ma progresu.
+          {t('subtitle')}
         </p>
       </div>
 
@@ -244,7 +239,7 @@ export default function RecoveryPage() {
         }}>
         <div style={{ marginBottom: 14 }}>
           <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.6, textTransform: 'uppercase', color: '#6A96B8', marginBottom: 4 }}>
-            Recovery score
+            {t('recoveryScore')}
           </p>
           <p style={{
             fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 56,
@@ -291,14 +286,14 @@ export default function RecoveryPage() {
         }}>
         <span style={{ fontSize: 22, flexShrink: 0, marginTop: 1 }}>{tip.icon}</span>
         <p style={{ color: '#4A6880', fontSize: 13, lineHeight: 1.55, letterSpacing: 0.1 }}>
-          <span style={{ color: '#2471A3', fontWeight: 600 }}>Pro tip: </span>
+          <span style={{ color: '#2471A3', fontWeight: 600 }}>{t('proTip')}</span>
           {tip.text}
         </p>
       </motion.div>
 
       {/* Activities grid */}
       <p style={{ fontSize: 13, fontWeight: 500, letterSpacing: 0.2, color: '#6A96B8', marginBottom: 12 }}>
-        Zaznacz co dziś zrobiłeś
+        {t('checkToday')}
       </p>
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
@@ -344,10 +339,10 @@ export default function RecoveryPage() {
           }}
         >
           <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: '#1E8449', letterSpacing: 1, marginBottom: 4 }}>
-            💚 ELITE RECOVERY
+            {t('eliteBadge')}
           </p>
           <p style={{ color: '#2E7D52', fontSize: 13 }}>
-            Twoje ciało jutro będzie silniejsze. Tak pracują zawodowcy.
+            {t('eliteSubtitle')}
           </p>
         </motion.div>
       )}

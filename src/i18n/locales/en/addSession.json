@@ -1,0 +1,30 @@
+{
+  "court": {
+    "threes": "THREES",
+    "mid": "MID",
+    "free": "FT"
+  },
+  "stepper": {
+    "sets": "Sets",
+    "reps": "Reps"
+  },
+  "exercise": "Exercise {{n}}",
+  "remove": "Remove",
+  "selectExercise": "— select exercise —",
+  "customOption": "Other (type your own)",
+  "exerciseNamePlaceholder": "Exercise name",
+  "weightPlaceholder": "Weight (kg) — optional",
+  "addExercise": "+ Add exercise",
+  "notePlaceholder": "Note (optional)",
+  "saving": "Saving...",
+  "saveSession": "Save session",
+  "title": "Add session",
+  "tabs": {
+    "shooting": "Shooting",
+    "strength": "Strength"
+  },
+  "shootingDesc": "Pick the court zone you want to shoot from. The tracker starts a freestyle session — it only counts toward stats and achievements (zero ranking points).",
+  "shotsCount": "Number of shots",
+  "tapToStart": "Tap a zone to start the shooting session",
+  "strengthDesc": "Add the exercises from today's strength session. Each with a set and rep count. Weight is optional."
+}

@@ -1,0 +1,21 @@
+{
+  "tiers": {
+    "diamond": "Diament",
+    "platinum": "Platyna",
+    "gold": "Złoto",
+    "silver": "Srebro",
+    "bronze": "Brąz"
+  },
+  "you": " (TY)",
+  "points": "pkt",
+  "watched": "⚠ OBSERWOWANY",
+  "defaultPlayerName": "Gracz",
+  "seasonFallback": "◆ Season 01",
+  "title": "RANKING",
+  "end": "Koniec",
+  "yourPosition": "Twoja pozycja",
+  "noResults": "◆ Brak wyników",
+  "beFirst": "Bądź pierwszym który zdobędzie punkty!",
+  "rankingsInfo": "Oficjalne rankingi startują 01 czerwca 2026.",
+  "weeklyReset": "Liga resetuje się co poniedziałek."
+}

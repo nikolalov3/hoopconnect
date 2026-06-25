@@ -1,0 +1,46 @@
+{
+  "title": "Droga Aren",
+  "youAreHere": "tu jesteś",
+  "secret": "SECRET",
+  "secretDesc": "Odblokujesz po {{xp}} XP — wkrótce odkryjesz co dalej",
+  "start": "Start",
+  "toNext": "Jeszcze {{xp}} XP do: {{name}}",
+  "moreSoon": "✦ Więcej aren wkrótce ✦",
+  "arenas": [
+    {
+      "name": "Rozgrzewka",
+      "tagline": "Każda historia zaczyna się tutaj.",
+      "desc": "Zbieraj XP, kończ treningi i odblokuj swoją pierwszą arenę HC."
+    },
+    {
+      "name": "Street Court",
+      "tagline": "Pierwsze boisko. Pierwszy progres.",
+      "desc": "Tu zaczyna się prawdziwa gra. Trenuj regularnie i wspinaj się wyżej."
+    },
+    {
+      "name": "City Run",
+      "tagline": "Miasto jest w ruchu.",
+      "desc": "Coraz więcej graczy. Coraz większa rywalizacja."
+    },
+    {
+      "name": "Golden Reign",
+      "tagline": "Twój moment zaczyna błyszczeć.",
+      "desc": "Wysoka arena dla graczy, którzy nie zwalniają tempa."
+    },
+    {
+      "name": "Ankh Court",
+      "tagline": "Zostaw po sobie ślad.",
+      "desc": "Arena inspirowana legendami i drogą, która trwa dalej."
+    },
+    {
+      "name": "Void Gem",
+      "tagline": "Inny poziom gry.",
+      "desc": "Tylko najbardziej aktywni gracze docierają tak wysoko."
+    },
+    {
+      "name": "Seraphim",
+      "tagline": "Szczyt świata HC.",
+      "desc": "Najwyższa arena dla graczy, którzy przeszli całą drogę."
+    }
+  ]
+}

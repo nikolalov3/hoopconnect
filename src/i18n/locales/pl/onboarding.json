@@ -1,0 +1,90 @@
+{
+  "stepOf": "Krok {{n}} z {{total}}",
+  "welcome": {
+    "betaLabel": "Beta · Wersja limitowana",
+    "titleNamed": "Cześć,\n{{name}}!",
+    "titleAnon": "Jesteś\nw grze!",
+    "betaUnlocked": "Dostęp do bety odblokowany ✓",
+    "betaTextPrefix": "Zanim HoopConnect trafi do tysięcy zawodników — ",
+    "betaTextBold": "Ty już tu jesteś",
+    "betaTextSuffix": ". Jesteś częścią elitarnej grupy pierwszych, którzy kształtują tę apkę. Twój feedback zmienia grę — dosłownie.",
+    "discordLabel": "Dołącz do społeczności",
+    "discordText": "Mamy serwer na Discordzie — rozmawiaj z innymi zawodnikami, pojawiaj się z nami na eventach i pomagaj nam budować HoopConnect.",
+    "discordButton": "Dołącz na Discord",
+    "cta": "ZACZYNAM 🏀"
+  },
+  "step0": {
+    "title": "Jak masz\nna imię?",
+    "sub": "Trenerzy NBA znają imię każdego zawodnika. Zacznijmy tak samo.",
+    "placeholder": "Twoje imię...",
+    "greeting": "Cześć, {{name}}! 🏀",
+    "greetingSub": "Dobra decyzja że tu jesteś. Zaczynamy."
+  },
+  "step1": {
+    "title": "Kiedy się\nurodziłeś?",
+    "sub": "Wiek decyduje o intensywności i rodzaju treningów. Mamy specjalny program dla każdego etapu.",
+    "day": "Dzień",
+    "month": "Miesiąc",
+    "year": "Rok",
+    "months": ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"],
+    "ageLabel": "{{age}} LAT",
+    "phases": {
+      "foundations": "🌱 Faza fundamentów",
+      "development": "⚡ Faza rozwoju",
+      "intensification": "🔥 Faza intensyfikacji",
+      "advanced": "🏆 Faza zaawansowana"
+    },
+    "descs": {
+      "foundations": "Skupiamy się na technice i zabawie. Priorytet: fundamenty i miłość do gry.",
+      "development": "Czas na budowanie silnika. Technika + atletyzm + zaczątki taktyki.",
+      "intensification": "Okno rekrutacji uczelnianych otwarte. Intensywność rośnie, regeneracja kluczowa.",
+      "advanced": "Poważny program. Trenujesz jak zawodowiec — z zawodową dyscypliną."
+    }
+  },
+  "step2": {
+    "title": "Ile dni\nw tygodniu?",
+    "sub": "Więcej nie zawsze lepiej. Regeneracja to część treningu — bez niej nie rośniesz.",
+    "days": [
+      { "label": "3 DNI", "sub": "Lekki start · 3 treningi + 4 odpoczynek" },
+      { "label": "4 DNI", "sub": "Zbalansowany · Polecany dla początkujących" },
+      { "label": "5 DNI", "sub": "Intensywny · Dla zaawansowanych" },
+      { "label": "6 DNI", "sub": "Pro · Tylko jeśli śpisz 9h i dobrze jesz" }
+    ]
+  },
+  "step3": {
+    "title": "Skąd\njesteś?",
+    "sub": "Pomaga nam pokazywać mecze i drużyny blisko Ciebie, nawet bez GPS.",
+    "country": "Kraj",
+    "countries": [
+      { "code": "PL", "name": "Polska 🇵🇱" },
+      { "code": "US", "name": "USA 🇺🇸" },
+      { "code": "DE", "name": "Niemcy 🇩🇪" },
+      { "code": "FR", "name": "Francja 🇫🇷" },
+      { "code": "ES", "name": "Hiszpania 🇪🇸" },
+      { "code": "IT", "name": "Włochy 🇮🇹" },
+      { "code": "GB", "name": "Wielka Brytania 🇬🇧" },
+      { "code": "PT", "name": "Portugalia 🇵🇹" },
+      { "code": "BR", "name": "Brazylia 🇧🇷" },
+      { "code": "NG", "name": "Nigeria 🇳🇬" },
+      { "code": "LT", "name": "Litwa 🇱🇹" },
+      { "code": "RS", "name": "Serbia 🇷🇸" },
+      { "code": "HR", "name": "Chorwacja 🇭🇷" },
+      { "code": "GR", "name": "Grecja 🇬🇷" },
+      { "code": "AU", "name": "Australia 🇦🇺" },
+      { "code": "CA", "name": "Kanada 🇨🇦" }
+    ],
+    "city": "Miasto",
+    "cityPlaceholder": "np. Warszawa...",
+    "citySubPrefix": "Mecze w ",
+    "citySubSuffix": " będą widoczne od razu, gdy GPS jest niedostępny."
+  },
+  "back": "←",
+  "next": "DALEJ →",
+  "finishCta": "ZACZYNAMY, {{name}}! 🏀",
+  "errors": {
+    "nameRequired": "Wpisz swoje imię",
+    "birthRequired": "Wybierz datę urodzenia",
+    "noSession": "Brak sesji — odśwież stronę",
+    "saveError": "Błąd zapisu: {{message}}"
+  }
+}

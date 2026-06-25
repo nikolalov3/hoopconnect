@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
-const TYPE_LABELS = {
-  shooting_3pt: { label: '3PKT',         color: 'badge-orange' },
-  shooting_2pt: { label: '2PKT',         color: 'badge-green'  },
-  shooting_ft:  { label: 'WOLNE',        color: 'badge-gray'   },
-  fitness:      { label: 'FITNESS',      color: 'badge-gray'   },
-  skills:       { label: 'UMIEJĘTNOŚCI', color: 'badge-gray'   },
-  dribbling:    { label: 'KOZŁOWANIE',   color: 'badge-gray'   },
-  running:      { label: 'BIEGANIE',     color: 'badge-red'    },
+const TYPE_COLORS = {
+  shooting_3pt: 'badge-orange',
+  shooting_2pt: 'badge-green',
+  shooting_ft:  'badge-gray',
+  fitness:      'badge-gray',
+  skills:       'badge-gray',
+  dribbling:    'badge-gray',
+  running:      'badge-red',
 }
 const SHOOTING_TYPES = ['shooting_3pt', 'shooting_2pt', 'shooting_ft']
 
@@ -33,10 +34,12 @@ const ChevronIcon = ({ up }) => (
 )
 
 function TrainingCard({ training, done, onDone, onUndo, onSwap, canSwap }) {
+  const { t } = useTranslation('trainingCard')
   const [expanded, setExpanded] = useState(false)
   const navigate = useNavigate()
   const isShooting = SHOOTING_TYPES.includes(training.type)
-  const typeInfo = TYPE_LABELS[training.type] || { label: training.type, color: 'badge-gray' }
+  const typeLabel = TYPE_COLORS[training.type] ? t(`types.${training.type}`) : training.type
+  const typeColor = TYPE_COLORS[training.type] || 'badge-gray'
 
   // Pulse: zielony przy ukończeniu, niebieski przy swap-ie ćwiczenia.
   // Triggerujemy tylko na faktyczne PRZEJŚCIE stanu (nie na każdy mount).
@@ -153,10 +156,10 @@ function TrainingCard({ training, done, onDone, onUndo, onSwap, canSwap }) {
         {/* Meta — badge + multiplier + trudność, w jednej linii, lekko wcięta pod tytułem */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, paddingLeft: 44 }}>
           <span
-            className={`badge ${training._pts != null ? (training._pts === 1 ? 'badge-gray' : 'badge-green') : typeInfo.color}`}
+            className={`badge ${training._pts != null ? (training._pts === 1 ? 'badge-gray' : 'badge-green') : typeColor}`}
             style={{ borderRadius: 6 }}
           >
-            {training._pts != null ? `${training._pts}PKT` : typeInfo.label}
+            {training._pts != null ? t('pts', { n: training._pts }) : typeLabel}
           </span>
           {training._multiplier != null && (
             <span style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>
@@ -225,7 +228,7 @@ function TrainingCard({ training, done, onDone, onUndo, onSwap, canSwap }) {
               {!done ? (
                 <>
                   <button className="btn-primary" onClick={handleAction} style={{ fontSize: 15, padding: '13px' }}>
-                    {isShooting ? 'Zacznij tracker rzutów' : 'Ukończ ćwiczenie'}
+                    {isShooting ? t('startShootingTracker') : t('completeExercise')}
                   </button>
                   {training.requires_equipment && onSwap && canSwap && (
                     <button
@@ -240,7 +243,9 @@ function TrainingCard({ training, done, onDone, onUndo, onSwap, canSwap }) {
                         textDecoration: 'underline', textUnderlineOffset: 3,
                       }}
                     >
-                      Nie mam {training.equipment_label ? `(${training.equipment_label})` : 'sprzętu'} — zmień ćwiczenie
+                      {training.equipment_label
+                        ? t('swapWithLabel', { label: training.equipment_label })
+                        : t('swapGeneric')}
                     </button>
                   )}
                 </>
@@ -254,7 +259,7 @@ function TrainingCard({ training, done, onDone, onUndo, onSwap, canSwap }) {
                     letterSpacing: 2,
                     textTransform: 'uppercase',
                   }}>
-                    ✓ Ukończono
+                    {t('done')}
                   </p>
                   {onUndo && !isShooting && (
                     <button
@@ -274,7 +279,7 @@ function TrainingCard({ training, done, onDone, onUndo, onSwap, canSwap }) {
                         textUnderlineOffset: 3,
                       }}
                     >
-                      Anuluj zaznaczenie
+                      {t('undo')}
                     </button>
                   )}
                 </div>

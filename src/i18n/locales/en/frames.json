@@ -1,0 +1,17 @@
+{
+  "rarity": { "legendary": "LEGENDARY", "rare": "RARE", "common": "COMMON" },
+  "newFrame": "New frame",
+  "unlocked": "✦ Frame unlocked ✦",
+  "thanks": "Awesome, thanks!",
+  "close": "Close",
+  "earlyAccess": {
+    "label": "Early Access",
+    "sublabel": "Pre-launch access · Season 1",
+    "description": "For joining HoopConnect before the first season started. You're part of the story."
+  },
+  "diamondS1": {
+    "label": "Diamond · Season 1",
+    "sublabel": "End of Season 1 · 08.24.2026",
+    "description": "Reward for reaching Diamond rank in HoopConnect's first season. For the elite only."
+  }
+}

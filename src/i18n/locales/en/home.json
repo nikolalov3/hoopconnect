@@ -1,0 +1,103 @@
+{
+  "slots": {
+    "morning": "MORNING SESSION",
+    "main": "MAIN SESSION",
+    "recovery": "RECOVERY"
+  },
+  "reportAlt": "Report in 7 days",
+  "quote": {
+    "title": "Quote of the day",
+    "close": "Close"
+  },
+  "achievementToast": {
+    "newAchievement": "New achievement",
+    "unlocked": "{{label}} unlocked"
+  },
+  "restDay": {
+    "title": "Rest day",
+    "desc": "Champions recover just as seriously as they train. Check the Recovery tab for what to do today."
+  },
+  "xpToast": {
+    "weeklyReport": "Weekly Report",
+    "earnedXp": "You earned permanent XP 🏀"
+  },
+  "arenaUp": {
+    "yourProgress": "Your progress",
+    "promoting": "Promoting",
+    "promoted": "You're promoted",
+    "welcomeTo": "Welcome to",
+    "notRookie": "You're not a rookie anymore.",
+    "achieved": "Achieved: {{value}}",
+    "start": "Start",
+    "arenaLabel": "Arena {{roman}}",
+    "max": "MAX",
+    "continue": "Continue",
+    "xpFromWeeklyReport": "+{{xp}} XP from the weekly report",
+    "arenas": [
+      {
+        "name": "Warm-up",
+        "tagline": "Every legend starts here.",
+        "desc": "First steps. Build the habit, earn 500 XP, and step onto the real court."
+      },
+      {
+        "name": "Street Court",
+        "tagline": "The streets test you. You passed.",
+        "desc": "You showed you're here for real. Time to fight for even more."
+      },
+      {
+        "name": "City Run",
+        "tagline": "The city never sleeps. Neither do you.",
+        "desc": "Your game is starting to turn heads — the city noticed."
+      },
+      {
+        "name": "Golden Reign",
+        "tagline": "A golden era. You rule the court.",
+        "desc": "The golden age of your career. Few reach this high."
+      },
+      {
+        "name": "Ankh Court",
+        "tagline": "Ancient power, modern game.",
+        "desc": "An arena for the chosen. Your legend grows with every match."
+      },
+      {
+        "name": "Void Gem",
+        "tagline": "In the void, you shine brightest.",
+        "desc": "Surrounded by emptiness, you shine like a gem. Elite of the elite."
+      },
+      {
+        "name": "Seraphim",
+        "tagline": "The final stage. Divine form.",
+        "desc": "The peak of HoopConnect. Legend status."
+      }
+    ]
+  },
+  "dayDone": {
+    "labelTop": "Day complete",
+    "titleBig": "DAY COMPLETE",
+    "sessions": "SESSIONS",
+    "next": "NEXT"
+  },
+  "greetingHi": "Hi, {{name}}",
+  "greetingDefault": "Today",
+  "notificationsAria": "Notifications",
+  "report": {
+    "draftScore": "Draft Score",
+    "scoutingReport": "Your Scouting Report",
+    "yourProgress": "Your progress",
+    "scoreLabels": {
+      "great": "GREAT CONSISTENCY",
+      "good": "GOOD PROGRESS",
+      "start": "START A STREAK",
+      "training": "TRAINING?"
+    },
+    "devShowArenaUp": "DEV: Show arena promotion",
+    "devShowFrame": "Show frame",
+    "devNoFrame": "No frame (before arenas)",
+    "firstReportPrefix": "Your first report will be ready in",
+    "dayOne": "day",
+    "dayMany": "days",
+    "trainMore": "The more you train now, the higher your score.",
+    "sessionsCompletedToday": "{{completed}} / {{total}} SESSIONS COMPLETED TODAY",
+    "dayCompleted": "✓ Day complete"
+  }
+}

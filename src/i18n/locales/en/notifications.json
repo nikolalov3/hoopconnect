@@ -1,0 +1,38 @@
+{
+  "title": "Notifications",
+  "empty": "No notifications",
+  "teamInvite": {
+    "badge": "Team invitation",
+    "defaultTeamName": "Team",
+    "greeting": {
+      "bothPrefix": "Coach ",
+      "bothMid": " wants to add you to the team as ",
+      "bothSuffix": ".",
+      "nameOnlyPrefix": "Coach ",
+      "nameOnlySuffix": " wants to add you to their team.",
+      "labelOnlyPrefix": "The coach wants to add you to the team as ",
+      "labelOnlySuffix": ".",
+      "neither": "The coach wants to add you to their team."
+    },
+    "afterAccept": "Once accepted, they'll see your training stats and send you the weekly plan.",
+    "accepted": "✓ You joined team {{teamName}}",
+    "declined": "Invitation declined",
+    "revoked": "This invitation was withdrawn by the coach",
+    "postpone": "Later",
+    "accepting": "...",
+    "accept": "Accept",
+    "decline": "Decline invitation",
+    "acceptError": "Couldn't accept.",
+    "declineError": "Couldn't decline."
+  },
+  "coachMessage": {
+    "badge": "Message from coach"
+  },
+  "teamRemoved": {
+    "badge": "Team change",
+    "removed": "The coach removed you from team {{teamName}}.",
+    "ok": "OK, got it"
+  },
+  "ok": "OK",
+  "generic": "Notification"
+}

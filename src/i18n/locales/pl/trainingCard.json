@@ -1,0 +1,18 @@
+{
+  "types": {
+    "shooting_3pt": "3PKT",
+    "shooting_2pt": "2PKT",
+    "shooting_ft": "WOLNE",
+    "fitness": "FITNESS",
+    "skills": "UMIEJĘTNOŚCI",
+    "dribbling": "KOZŁOWANIE",
+    "running": "BIEGANIE"
+  },
+  "pts": "{{n}}PKT",
+  "startShootingTracker": "Zacznij tracker rzutów",
+  "completeExercise": "Ukończ ćwiczenie",
+  "swapWithLabel": "Nie mam ({{label}}) — zmień ćwiczenie",
+  "swapGeneric": "Nie mam sprzętu — zmień ćwiczenie",
+  "done": "✓ Ukończono",
+  "undo": "Anuluj zaznaczenie"
+}
