@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { useUI } from '../../context/UIContext'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -7,14 +8,17 @@ import { supabase } from '../../lib/supabase'
 const ORANGE = '#FFA820'
 const CY     = '#00FFEE'
 
-const TIERS = [
-  { key: 'diamond',  label: 'Diament', color: '#B9F2FF', min: 820 },
-  { key: 'platinum', label: 'Platyna', color: '#5BB8F5', min: 650 },
-  { key: 'gold',     label: 'Złoto',   color: '#FFD700', min: 450 },
-  { key: 'silver',   label: 'Srebro',  color: '#C0C0C0', min: 250 },
-  { key: 'bronze',   label: 'Brąz',    color: '#CD7F32', min: 0   },
+const TIER_DEFS = [
+  { key: 'diamond',  color: '#B9F2FF', min: 820 },
+  { key: 'platinum', color: '#5BB8F5', min: 650 },
+  { key: 'gold',     color: '#FFD700', min: 450 },
+  { key: 'silver',   color: '#C0C0C0', min: 250 },
+  { key: 'bronze',   color: '#CD7F32', min: 0   },
 ]
-function getTier(s) { return TIERS.find(t => s >= t.min) || TIERS[TIERS.length - 1] }
+function getTier(s, tLabels) {
+  const def = TIER_DEFS.find(t => s >= t.min) || TIER_DEFS[TIER_DEFS.length - 1]
+  return { ...def, label: tLabels[def.key] }
+}
 
 // Monday of any given date (returns ISO date string "YYYY-MM-DD")
 function toMondayKey(dateStr) {
@@ -147,6 +151,7 @@ const RankNum = memo(function RankNum({ rank }) {
 })
 
 const RowItem = memo(function RowItem({ row, rank, isMe }) {
+  const { t } = useTranslation('leaderboard')
   const isTop3 = rank <= 3
   const top3C  = rank === 1 ? ORANGE : rank === 2 ? '#C0C0C0' : '#CD7F32'
   return (
@@ -187,7 +192,7 @@ const RowItem = memo(function RowItem({ row, rank, isMe }) {
           fontFamily: isMe ? 'var(--font-display)' : 'inherit',
           letterSpacing: isMe ? 0.5 : 0,
         }}>
-          {row.name}{isMe ? ' (TY)' : ''}
+          {row.name}{isMe ? t('you') : ''}
         </p>
         <p style={{
           fontSize: 9, fontWeight: 600, margin: '2px 0 0',
@@ -196,7 +201,7 @@ const RowItem = memo(function RowItem({ row, rank, isMe }) {
           {row.tier.label}
           {row.fraud > 0.5 && (
             <span style={{ color: '#FF6B35', marginLeft: 6, fontSize: 8, letterSpacing: 1 }}>
-              ⚠ OBSERWOWANY
+              {t('watched')}
             </span>
           )}
         </p>
@@ -210,7 +215,7 @@ const RowItem = memo(function RowItem({ row, rank, isMe }) {
           {row.score}
         </p>
         <p style={{ fontSize: 7.5, color: 'rgba(255,255,255,0.20)',
-          margin: 0, letterSpacing: 1, textTransform: 'uppercase' }}>pkt</p>
+          margin: 0, letterSpacing: 1, textTransform: 'uppercase' }}>{t('points')}</p>
       </div>
     </div>
   )
@@ -218,6 +223,7 @@ const RowItem = memo(function RowItem({ row, rank, isMe }) {
 
 /* ── main ────────────────────────────────────────────────────────── */
 export default function LeaderboardDrawer() {
+  const { t, i18n } = useTranslation('leaderboard')
   const {
     leaderboardOpen, setLeaderboardOpen,
     leaderboardFromLeague, setLeaderboardFromLeague,
@@ -313,6 +319,7 @@ export default function LeaderboardDrawer() {
       const { data: profiles } = await supabase
         .from('profiles').select('id, name, fraud_probability').in('id', uids)
       const pm = Object.fromEntries((profiles || []).map(pr => [pr.id, pr]))
+      const tierLabels = t('tiers', { returnObjects: true })
 
       const freshRows = uids
         .map(uid => {
@@ -320,11 +327,11 @@ export default function LeaderboardDrawer() {
           const avg       = Math.min(seasonAvg[uid] || weekScore, 1000)
           return {
             uid,
-            name:  pm[uid]?.name || 'Gracz',
+            name:  pm[uid]?.name || t('defaultPlayerName'),
             score: weekScore,           // weekly ranking position
             avg,                        // season avg — shown in tier
             fraud: pm[uid]?.fraud_probability || 0,
-            tier:  getTier(avg),        // tier from season average
+            tier:  getTier(avg, tierLabels),  // tier from season average
           }
         })
         .sort((a, b) => b.score - a.score)
@@ -339,7 +346,7 @@ export default function LeaderboardDrawer() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     if (!leaderboardOpen) return
@@ -362,9 +369,9 @@ export default function LeaderboardDrawer() {
   }, [rows, user?.id])
 
   const periodEnd = useMemo(() =>
-    period ? new Date(period.ends_at).toLocaleDateString('pl-PL',
+    period ? new Date(period.ends_at).toLocaleDateString(i18n.language === 'pl' ? 'pl-PL' : 'en-US',
       { day: 'numeric', month: 'short' }) : null
-  , [period])
+  , [period, i18n.language])
 
   return (
     <AnimatePresence>
@@ -392,12 +399,12 @@ export default function LeaderboardDrawer() {
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 2.5,
                 color: `${ORANGE}55`, textTransform: 'uppercase', margin: '0 0 1px' }}>
-                {period?.season_label || '◆ Season 01'}
+                {period?.season_label || t('seasonFallback')}
               </p>
               <h1 style={{ fontSize: 20, fontWeight: 900, color: ORANGE,
                 fontFamily: 'var(--font-display)', letterSpacing: 1,
                 textTransform: 'uppercase', margin: 0, lineHeight: 1 }}>
-                RANKING
+                {t('title')}
               </h1>
             </div>
 
@@ -417,7 +424,7 @@ export default function LeaderboardDrawer() {
             {periodEnd && (
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <p style={{ fontSize: 8, color: `${ORANGE}44`, margin: 0,
-                  letterSpacing: 1, textTransform: 'uppercase' }}>Koniec</p>
+                  letterSpacing: 1, textTransform: 'uppercase' }}>{t('end')}</p>
                 <p style={{ fontSize: 11, fontWeight: 700, margin: '2px 0 0',
                   color: 'rgba(255,255,255,0.50)',
                   fontFamily: 'var(--font-display)', letterSpacing: 0.5 }}>
@@ -446,10 +453,10 @@ export default function LeaderboardDrawer() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1.5,
                   color: `${ORANGE}88`, textTransform: 'uppercase', margin: '0 0 1px' }}>
-                  Twoja pozycja
+                  {t('yourPosition')}
                 </p>
                 <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.50)', margin: 0 }}>
-                  {myRow.tier.label} · <span style={{color:'rgba(255,255,255,0.75)',fontWeight:700}}>{myRow.score} pkt</span>
+                  {myRow.tier.label} · <span style={{color:'rgba(255,255,255,0.75)',fontWeight:700}}>{myRow.score} {t('points')}</span>
                   <span style={{color:'rgba(255,255,255,0.25)',fontSize:9}}> · avg {myRow.avg}</span>
                 </p>
               </div>
@@ -469,11 +476,11 @@ export default function LeaderboardDrawer() {
               <div style={S.spinnerWrap}><div className="spinner"/></div>
             ) : rows.length === 0 ? (
               <div style={S.emptyWrap}>
-                <div style={S.emptyLabel}>◆ Brak wyników</div>
-                <p style={S.emptyTitle}>Bądź pierwszym który zdobędzie punkty!</p>
+                <div style={S.emptyLabel}>{t('noResults')}</div>
+                <p style={S.emptyTitle}>{t('beFirst')}</p>
                 <p style={S.emptyBody}>
-                  Oficjalne rankingi startują 01 czerwca 2026.<br/>
-                  Liga resetuje się co poniedziałek.
+                  {t('rankingsInfo')}<br/>
+                  {t('weeklyReset')}
                 </p>
               </div>
             ) : rows.map((row, idx) => (

@@ -1,0 +1,25 @@
+{
+  "medals": {
+    "bronze": "Bronze",
+    "silver": "Silver",
+    "gold": "Gold",
+    "diamond": "Diamond",
+    "platinum": "Platinum"
+  },
+  "yourScore": "Your score",
+  "close": "Close",
+  "yourCollection": "Your collection",
+  "title": "Achievements",
+  "unlockedCount": "{{unlocked}} of {{total}} unlocked",
+  "noAchievements": "No achievements yet",
+  "emptyMessages": [
+    "Every legend started from zero. Your first medal is one workout away.",
+    "An empty shelf doesn't fill itself. Time to get to work.",
+    "No trophies yet? Not for long. You'll earn your first one today."
+  ],
+  "dev": {
+    "clearConfirm": "Clear all achievements and activity logs?",
+    "unlockAll": "🛠 Unlock all",
+    "clearAccount": "🗑 Clear account"
+  }
+}

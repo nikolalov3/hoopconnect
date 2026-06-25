@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { useUI } from '../../context/UIContext'
 import { useAuth } from '../../context/AuthContext'
 
@@ -16,7 +17,7 @@ function getThisMonday() {
   d.setHours(0,0,0,0); d.setDate(d.getDate()+diff); return d
 }
 function getNextMonday() { const m=getThisMonday(); m.setDate(m.getDate()+7); return m }
-function fmtDate(d){ return d.toLocaleDateString('pl-PL',{day:'numeric',month:'short'}) }
+function fmtDate(d, locale='pl-PL'){ return d.toLocaleDateString(locale,{day:'numeric',month:'short'}) }
 function pad(n){ return String(n).padStart(2,'0') }
 function msToCD(ms){
   if(ms<=0)return{d:0,h:0,m:0,s:0}
@@ -60,6 +61,7 @@ function CDBlock({ label, value }) {
 
 /* ─── prize image placeholder ──────────────────────────────────── */
 function PrizePlaceholder({ color, height=110 }) {
+  const { t } = useTranslation('leagueInfo')
   return (
     <div style={{
       height, position:'relative', overflow:'hidden',
@@ -93,32 +95,21 @@ function PrizePlaceholder({ color, height=110 }) {
           </svg>
         </div>
         <p style={{fontSize:8,color:`${color}66`,margin:0,letterSpacing:2,
-          textTransform:'uppercase',fontWeight:700}}>Grafika nagrody</p>
+          textTransform:'uppercase',fontWeight:700}}>{t('prizes.placeholder')}</p>
       </div>
     </div>
   )
 }
 
 /* ─── tier carousel ────────────────────────────────────────────── */
-const TIERS = [
-  { label:'Brąz',    color:'#CD7F32', min:0,   max:249,
-    desc:'Punkt startowy każdego gracza.',
-    sub:'Zacznij trenować i zbieraj punkty do wyższej ligi.' },
-  { label:'Srebro',  color:'#C0C0C0', min:250, max:449,
-    desc:'Budujesz regularny nawyk treningowy.',
-    sub:'Utrzymaj aktywność przez kilka tygodni.' },
-  { label:'Złoto',   color:'#FFD700', min:450, max:649,
-    desc:'Zaangażowany gracz realizujący plan.',
-    sub:'Co najmniej 70% zaplanowanych treningów tygodniowo.' },
-  { label:'Platyna', color:'#5BB8F5', min:650, max:819,
-    desc:'Doświadczony zawodnik — wysoka konsekwencja.',
-    sub:'Regularny udział w sesjach i spotkaniach klubowych.' },
-  { label:'Diament', color:'#B9F2FF', min:820, max:1000,
-    desc:'Absolutna elita sezonu.',
-    sub:'Tylko dla graczy z pełnym zaangażowaniem każdego tygodnia.' },
-]
+const TIER_COLORS = ['#CD7F32', '#C0C0C0', '#FFD700', '#5BB8F5', '#B9F2FF']
+const TIER_RANGES  = [{min:0,max:249},{min:250,max:449},{min:450,max:649},{min:650,max:819},{min:820,max:1000}]
 
 function TierCarousel() {
+  const { t } = useTranslation('leagueInfo')
+  const TIERS = t('tiers', { returnObjects: true }).map((tier, i) => ({
+    ...tier, color: TIER_COLORS[i], ...TIER_RANGES[i],
+  }))
   const [active, setActive] = useState(0)
   const ref = useRef(null)
 
@@ -142,14 +133,14 @@ function TierCarousel() {
         scrollSnapType:'x mandatory', WebkitOverflowScrolling:'touch',
         scrollbarWidth:'none',
       }}>
-        {TIERS.map((t,i) => (
-          <div key={t.label} onClick={()=>scrollTo(i)} style={{
+        {TIERS.map((tier,i) => (
+          <div key={tier.label} onClick={()=>scrollTo(i)} style={{
             scrollSnapAlign:'center', flexShrink:0,
             width:'calc(100% - 64px)',
-            background:`linear-gradient(135deg,${t.color}0E,rgba(0,0,0,0.3))`,
-            border:`1px solid ${t.color}${active===i?'50':'18'}`,
-            borderTop:`1px solid ${t.color}${active===i?'99':'35'}`,
-            borderBottom:`1px solid ${t.color}${active===i?'99':'35'}`,
+            background:`linear-gradient(135deg,${tier.color}0E,rgba(0,0,0,0.3))`,
+            border:`1px solid ${tier.color}${active===i?'50':'18'}`,
+            borderTop:`1px solid ${tier.color}${active===i?'99':'35'}`,
+            borderBottom:`1px solid ${tier.color}${active===i?'99':'35'}`,
             padding:'18px 16px',
             position:'relative',
             cursor:'pointer',
@@ -158,33 +149,33 @@ function TierCarousel() {
             {/* corner accents — active only */}
             {active===i && <>
               <div style={{position:'absolute',top:-1,left:-1,width:14,height:14,
-                borderTop:`2px solid ${t.color}`,borderLeft:`2px solid ${t.color}`}}/>
+                borderTop:`2px solid ${tier.color}`,borderLeft:`2px solid ${tier.color}`}}/>
               <div style={{position:'absolute',bottom:-1,right:-1,width:14,height:14,
-                borderBottom:`2px solid ${t.color}`,borderRight:`2px solid ${t.color}`}}/>
+                borderBottom:`2px solid ${tier.color}`,borderRight:`2px solid ${tier.color}`}}/>
             </>}
 
             <div style={{display:'flex',alignItems:'center',
               justifyContent:'space-between',marginBottom:12}}>
               <div style={{display:'flex',alignItems:'center',gap:9}}>
-                <div style={{width:10,height:10,background:t.color,flexShrink:0,
-                  boxShadow:`0 0 7px ${t.color}8A`}}/>
-                <span style={{fontSize:19,fontWeight:900,color:t.color,
+                <div style={{width:10,height:10,background:tier.color,flexShrink:0,
+                  boxShadow:`0 0 7px ${tier.color}8A`}}/>
+                <span style={{fontSize:19,fontWeight:900,color:tier.color,
                   fontFamily:'var(--font-display)',letterSpacing:1}}>
-                  {t.label.toUpperCase()}
+                  {tier.label.toUpperCase()}
                 </span>
               </div>
-              <span style={{fontSize:10,fontWeight:800,color:`${t.color}88`,
+              <span style={{fontSize:10,fontWeight:800,color:`${tier.color}88`,
                 fontFamily:'var(--font-display)'}}>
-                {t.min}–{t.max} PKT
+                {tier.min}–{tier.max} {t('pointsLabel')}
               </span>
             </div>
-            <div style={{height:1,background:`${t.color}20`,marginBottom:12}}/>
+            <div style={{height:1,background:`${tier.color}20`,marginBottom:12}}/>
             <p style={{fontSize:12.5,fontWeight:700,
               color:'rgba(255,255,255,0.85)',margin:'0 0 5px',lineHeight:1.4}}>
-              {t.desc}
+              {tier.desc}
             </p>
             <p style={{fontSize:10,color:'rgba(255,255,255,0.38)',margin:0,lineHeight:1.55}}>
-              {t.sub}
+              {tier.sub}
             </p>
           </div>
         ))}
@@ -207,6 +198,7 @@ function TierCarousel() {
 const SLIDE = { type: 'tween', duration: 0.28, ease: [0.16, 1, 0.3, 1] }
 
 function CountdownTimer({ open, isWaiting, nextStart }) {
+  const { t } = useTranslation('leagueInfo')
   const [, setTick] = useState(0)
   useEffect(() => {
     if (!open) return
@@ -221,21 +213,21 @@ function CountdownTimer({ open, isWaiting, nextStart }) {
       <p style={{ fontSize:8.5, fontWeight:700, letterSpacing:2.5,
         textTransform:'uppercase', color:`${ORANGE}44`,
         margin:'0 0 12px', textAlign:'center' }}>
-        {isWaiting ? '— punkty startują za —' : '— reset ligi za —'}
+        {isWaiting ? t('countdown.waiting') : t('countdown.reset')}
       </p>
       <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:8 }}>
-        {cd.d > 0 && <><CDBlock label="dni" value={cd.d}/><Sep/></>}
-        <CDBlock label="godz" value={cd.h}/>
+        {cd.d > 0 && <><CDBlock label={t('countdown.days')} value={cd.d}/><Sep/></>}
+        <CDBlock label={t('countdown.hours')} value={cd.h}/>
         <Sep/>
-        <CDBlock label="min" value={cd.m}/>
+        <CDBlock label={t('countdown.minutes')} value={cd.m}/>
         <Sep/>
-        <CDBlock label="sek" value={cd.s}/>
+        <CDBlock label={t('countdown.seconds')} value={cd.s}/>
       </div>
       <p style={{ fontSize:9, color:`${ORANGE}44`, textAlign:'center',
         margin:'11px 0 0', letterSpacing:1 }}>
         {isWaiting
-          ? <><strong style={{color:`${ORANGE}77`}}>START: {nextStart.toUpperCase()}</strong> · 00:00</>
-          : <><strong style={{color:`${ORANGE}77`}}>ZAMKNIĘCIE: {nextStart.toUpperCase()}</strong> · 00:00</>}
+          ? <><strong style={{color:`${ORANGE}77`}}>{t('countdown.start')}: {nextStart.toUpperCase()}</strong> · 00:00</>
+          : <><strong style={{color:`${ORANGE}77`}}>{t('countdown.close')}: {nextStart.toUpperCase()}</strong> · 00:00</>}
       </p>
     </div>
   )
@@ -259,9 +251,11 @@ function getLeagueStatus(createdAt) {
 
 /* ─── main ─────────────────────────────────────────────────────── */
 export default function LeagueInfoPanel({ open, onClose }) {
+  const { t, i18n } = useTranslation('leagueInfo')
   const { setLeaderboardOpen, setLeaderboardFromLeague } = useUI()
   const { profile } = useAuth()
 
+  const dateLocale = i18n.language === 'pl' ? 'pl-PL' : 'en-US'
   const thisMonday = getThisMonday()
   const nextMonday = getNextMonday()
   const status     = getLeagueStatus(profile?.created_at)
@@ -272,8 +266,8 @@ export default function LeagueInfoPanel({ open, onClose }) {
     ? Math.max(0, Math.ceil((new Date(profile.created_at).getTime() + 7*24*3600*1000 - Date.now()) / 86400000))
     : 7
   const weekPct    = Math.min(1,(Date.now()-thisMonday.getTime())/(7*24*3600*1000))
-  const weekLabel  = `${fmtDate(thisMonday)} – ${fmtDate(new Date(nextMonday-86400000))}`
-  const nextStart  = fmtDate(nextMonday)
+  const weekLabel  = `${fmtDate(thisMonday, dateLocale)} – ${fmtDate(new Date(nextMonday-86400000), dateLocale)}`
+  const nextStart  = fmtDate(nextMonday, dateLocale)
 
   return (
     <AnimatePresence>
@@ -327,7 +321,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
 
               {/* ── LOGO ──────────────────────────────────────────── */}
               <div style={{margin:'28px -18px 0', position:'relative'}}>
-                <img src="/logo-league.png" alt="Liga HoopConnect First Season"
+                <img src="/logo-league.png" alt={t('logoAlt')}
                   style={{width:'100%',height:'auto',
                     mixBlendMode:'screen',display:'block',
                     userSelect:'none',pointerEvents:'none'}}/>
@@ -344,14 +338,14 @@ export default function LeagueInfoPanel({ open, onClose }) {
               }}>
                 <p style={{fontSize:9,fontWeight:800,letterSpacing:3,color:`${CY}70`,
                   textTransform:'uppercase',margin:'0 0 10px'}}>
-                  ◆ Season 01 · Connect All
+                  {t('season.badge')}
                 </p>
                 <p style={{fontSize:14,fontWeight:700,
                   color:'rgba(255,255,255,0.82)',margin:'0 0 8px',lineHeight:1.5}}>
-                  Pierwszy sezon HoopConnect w Polsce.
+                  {t('season.title')}
                 </p>
                 <p style={{fontSize:11.5,color:'rgba(255,255,255,0.38)',margin:0,lineHeight:1.65}}>
-                  Rywalizuj co tydzień — treningi, mecze i osiągnięcia przekładają się na punkty ligowe. Liga resetuje się każdy poniedziałek o 00:00. Aby dołączyć, musisz być aktywny przez <span style={{color:'rgba(255,255,255,0.62)',fontWeight:700}}>minimum 7 dni</span> — wchodzisz wtedy od startu kolejnego tygodnia.
+                  {t('season.descPrefix')}<span style={{color:'rgba(255,255,255,0.62)',fontWeight:700}}>{t('season.descBold')}</span>{t('season.descSuffix')}
                 </p>
               </div>
 
@@ -383,10 +377,10 @@ export default function LeagueInfoPanel({ open, onClose }) {
                           <div style={{flex:1}}>
                             <p style={{fontSize:9.5,fontWeight:800,letterSpacing:1.8,
                               textTransform:'uppercase',color:GREEN,margin:'0 0 2px'}}>
-                              Aktywny uczestnik
+                              {t('status.active')}
                             </p>
                             <p style={{fontSize:11,color:'rgba(255,255,255,0.45)',margin:0}}>
-                              Tydzień · {weekLabel}
+                              {t('status.weekLabel', { weekLabel })}
                             </p>
                           </div>
                         </div>
@@ -410,10 +404,10 @@ export default function LeagueInfoPanel({ open, onClose }) {
                         <div style={{flex:1}}>
                           <p style={{fontSize:9.5,fontWeight:800,letterSpacing:1.8,
                             textTransform:'uppercase',color:ORANGE,margin:'0 0 2px'}}>
-                            Gotowy — start od następnego tygodnia
+                            {t('status.waitingTitle')}
                           </p>
                           <p style={{fontSize:11,color:'rgba(255,255,255,0.45)',margin:0}}>
-                            Twoje punkty liczą się od <strong style={{color:'rgba(255,255,255,0.65)'}}>{nextStart}</strong>
+                            {t('status.waitingBodyPrefix')}<strong style={{color:'rgba(255,255,255,0.65)'}}>{nextStart}</strong>
                           </p>
                         </div>
                       </div>
@@ -427,10 +421,10 @@ export default function LeagueInfoPanel({ open, onClose }) {
                         <div style={{flex:1}}>
                           <p style={{fontSize:9.5,fontWeight:800,letterSpacing:1.8,
                             textTransform:'uppercase',color:'rgba(160,185,210,0.70)',margin:'0 0 2px'}}>
-                            {daysLeft > 1 ? `Kwalifikacja za ${daysLeft} dni` : 'Kwalifikacja jutro'}
+                            {daysLeft > 1 ? t('status.notEligibleTitleDays', { days: daysLeft }) : t('status.notEligibleTitleTomorrow')}
                           </p>
                           <p style={{fontSize:11,color:'rgba(255,255,255,0.38)',margin:0}}>
-                            Potrzebujesz pierwszego raportu tygodniowego — bądź aktywny przez 7 dni, by dołączyć do ligi.
+                            {t('status.notEligibleBody')}
                           </p>
                         </div>
                       </div>
@@ -443,7 +437,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
               <CountdownTimer open={open} isWaiting={!isActive} nextStart={nextStart}/>
 
               {/* ── NAGRODY ───────────────────────────────────────── */}
-              <SLabel mt={0}>Nagrody za sezon</SLabel>
+              <SLabel mt={0}>{t('prizes.title')}</SLabel>
 
               {/* 1st — full glowing frame */}
               <div style={{
@@ -472,9 +466,9 @@ export default function LeagueInfoPanel({ open, onClose }) {
                   </div>
                   <div style={{flex:1}}>
                     <p style={{fontSize:15,fontWeight:800,
-                      color:'rgba(255,255,255,0.95)',margin:'0 0 2px'}}>Koszulka NBA</p>
+                      color:'rgba(255,255,255,0.95)',margin:'0 0 2px'}}>{t('prizes.first')}</p>
                     <p style={{fontSize:10,color:'rgba(255,255,255,0.38)',margin:0}}>
-                      Oryginalna koszulka do wyboru · miejsce 1.
+                      {t('prizes.firstDesc')}
                     </p>
                   </div>
                   <div style={{width:8,height:8,background:ORANGE,flexShrink:0,
@@ -485,8 +479,8 @@ export default function LeagueInfoPanel({ open, onClose }) {
               {/* 2nd & 3rd — no border, only corner accents */}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:0}}>
                 {[
-                  {rank:'2',color:BLUE,  prize:'Kupon 150 zł'},
-                  {rank:'3',color:PURPLE,prize:'Kupon 150 zł'},
+                  {rank:'2',color:BLUE,  prize:t('prizes.coupon')},
+                  {rank:'3',color:PURPLE,prize:t('prizes.coupon')},
                 ].map(r=>(
                   <div key={r.rank} style={{
                     overflow:'hidden',position:'relative',
@@ -515,7 +509,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
                           {r.prize}
                         </p>
                         <p style={{fontSize:9,color:'rgba(255,255,255,0.3)',margin:0}}>
-                          Sklep koszykarski
+                          {t('prizes.shop')}
                         </p>
                       </div>
                     </div>
@@ -524,24 +518,22 @@ export default function LeagueInfoPanel({ open, onClose }) {
               </div>
 
               {/* ── POZIOMY ───────────────────────────────────────── */}
-              <SLabel>Poziomy ligowe</SLabel>
+              <SLabel>{t('tiersTitle')}</SLabel>
               <TierCarousel />
 
               {/* ── PUNKTY ────────────────────────────────────────── */}
-              <SLabel>Źródła punktów</SLabel>
+              <SLabel>{t('pointsTitle')}</SLabel>
               <div style={{display:'flex',flexDirection:'column',gap:7,marginBottom:0}}>
-                {[
-                  { label:'Mecz klubowy',       sub:'Zagrany i potwierdzony mecz drużynowy · maks. 3 dziennie',
-                    pts:'+20', weight:'×1.0', wC:'#00E676', accent:'#00E676' },
-                  { label:'Sesja rzutów',        sub:'Ukończona sesja rejestrowana w aplikacji',
-                    pts:'+30', weight:'×1.0', wC:'#00E676', accent:'#00C870' },
-                  { label:'Osiągnięcia',         sub:'Brąz +20 · Srebro +30 · Złoto +50 · Platyna +75 · Diament +100',
-                    pts:'+20–100', weight:'×0.75', wC:ORANGE, accent:ORANGE },
-                  { label:'Trening (100% planu)',sub:'Wszystkie ćwiczenia dnia oznaczone jako wykonane',
-                    pts:'+15–80', weight:'×0.5', wC:'#8A9BB0', accent:'#5A7090' },
-                  { label:'Seria tygodniowa',    sub:'Bonus za każdy kolejny tydzień aktywności bez przerwy',
-                    pts:'+80', weight:'×1.0', wC:'#FF6B35', accent:'#FF6B35' },
-                ].map(s=>(
+                {t('pointSources', { returnObjects: true }).map((s, i) => ({
+                  ...s,
+                  ...[
+                    { pts:'+20', weight:'×1.0', wC:'#00E676', accent:'#00E676' },
+                    { pts:'+30', weight:'×1.0', wC:'#00E676', accent:'#00C870' },
+                    { pts:'+20–100', weight:'×0.75', wC:ORANGE, accent:ORANGE },
+                    { pts:'+15–80', weight:'×0.5', wC:'#8A9BB0', accent:'#5A7090' },
+                    { pts:'+80', weight:'×1.0', wC:'#FF6B35', accent:'#FF6B35' },
+                  ][i],
+                })).map(s=>(
                   <div key={s.label} style={{
                     display:'flex',alignItems:'stretch',
                     background:'rgba(255,255,255,0.025)',
@@ -567,11 +559,11 @@ export default function LeagueInfoPanel({ open, onClose }) {
                         color:'rgba(255,255,255,0.70)',
                         fontFamily:'var(--font-display)',
                         letterSpacing:0.5,
-                        margin:0}}>{s.pts} <span style={{fontSize:9,color:'rgba(255,255,255,0.28)',fontWeight:600,letterSpacing:0.5}}>PKT</span></p>
+                        margin:0}}>{s.pts} <span style={{fontSize:9,color:'rgba(255,255,255,0.28)',fontWeight:600,letterSpacing:0.5}}>{t('pointsLabel')}</span></p>
                       <div style={{padding:'2px 5px',background:`${s.wC}12`,
                         border:`1px solid ${s.wC}25`}}>
                         <span style={{fontSize:8,fontWeight:700,
-                          color:`${s.wC}88`,letterSpacing:0.3}}>liga {s.weight}</span>
+                          color:`${s.wC}88`,letterSpacing:0.3}}>{t('leagueMultiplier', { weight: s.weight })}</span>
                       </div>
                     </div>
                   </div>
@@ -579,16 +571,9 @@ export default function LeagueInfoPanel({ open, onClose }) {
               </div>
 
               {/* ── ZASADY ────────────────────────────────────────── */}
-              <SLabel>Zasady ligi</SLabel>
+              <SLabel>{t('rulesTitle')}</SLabel>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:7,marginBottom:0}}>
-                {[
-                  {title:'Liga tygodniowa',   body:'Pon–niedz, reset w poniedziałek 00:00'},
-                  {title:'7 dni stażu',       body:'Musisz mieć pierwszy raport tygodniowy, by dołączyć do ligi'},
-                  {title:'Start od pon.',     body:'Wchodzisz zawsze od początku nowego tygodnia — nie w trakcie'},
-                  {title:'Fair play',         body:'Treningi liczą się z mnożnikiem ×0.5 · mecze i rzuty ×1.0'},
-                  {title:'Limit meczów',      body:'Maks. 3 mecze dziennie · punkty naliczane po potwierdzeniu wyniku'},
-                  {title:'Przerwa meczowa',   body:'3v3 / 5v5 — min. 75 min odstępu · 2v2 — min. 45 min odstępu'},
-                ].map(item=>(
+                {t('rules', { returnObjects: true }).map(item=>(
                   <div key={item.title} style={{
                     padding:'11px 12px',
                     background:'rgba(255,255,255,0.025)',
@@ -633,7 +618,7 @@ export default function LeagueInfoPanel({ open, onClose }) {
                   borderTop:`2px solid rgba(0,0,0,0.3)`,borderLeft:`2px solid rgba(0,0,0,0.3)`}}/>
                 <div style={{position:'absolute',top:0,right:0,width:10,height:10,
                   borderTop:`2px solid rgba(0,0,0,0.3)`,borderRight:`2px solid rgba(0,0,0,0.3)`}}/>
-                RANKING — AKTUALNY TYDZIEŃ
+                {t('cta')}
               </motion.button>
 
             </div>

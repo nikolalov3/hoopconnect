@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, useMotionValue, useTransform, animate as fmAnimate } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { onTableChange } from '../lib/realtimeManager'
@@ -240,6 +241,7 @@ function shiftTopY(points, shift) {
 }
 
 function ReportRatingRing({ score, daysLeft, loading, arenaLevel = 0, devPreviewLevel, setDevPreviewLevel }) {
+  const { t } = useTranslation('home')
   const isLocked = daysLeft > 0
   const fillRatio = isLocked ? 0 : Math.min(score, 1000) / 1000
   const dash = fillRatio * HEX_HALF_LEN
@@ -386,7 +388,7 @@ function ReportRatingRing({ score, daysLeft, loading, arenaLevel = 0, devPreview
         ) : isLocked ? (
           <img
             src="/7days.png"
-            alt="Raport za 7 dni"
+            alt={t('reportAlt')}
             style={{ width: '78%', height: '78%', objectFit: 'contain', userSelect: 'none', pointerEvents: 'none' }}
             draggable={false}
           />
@@ -438,6 +440,7 @@ function ReportRatingRing({ score, daysLeft, loading, arenaLevel = 0, devPreview
 
 // ── QUOTE PANEL ──────────────────────────────────────────────────────────────
 function QuotePanel({ quote, onClose }) {
+  const { t } = useTranslation('home')
   if (!quote) return null
   return (
     <motion.div
@@ -472,7 +475,7 @@ function QuotePanel({ quote, onClose }) {
           fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 13,
           letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--orange)',
           marginBottom: 16,
-        }}>Cytat dnia</p>
+        }}>{t('quote.title')}</p>
         <p style={{
           fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 700,
           fontSize: 22, lineHeight: 1.35, color: 'var(--text-primary)',
@@ -487,7 +490,7 @@ function QuotePanel({ quote, onClose }) {
           — {quote.author}
         </p>
         <button className="btn-ghost" onClick={onClose} style={{ width: '100%', padding: '13px' }}>
-          Zamknij
+          {t('quote.close')}
         </button>
       </motion.div>
     </motion.div>
@@ -507,6 +510,7 @@ function SlotHeader({ emoji, label }) {
 
 // ── ACHIEVEMENT TOAST ────────────────────────────────────────────────────────
 function AchievementToast({ data, onClose }) {
+  const { t } = useTranslation('home')
   useEffect(() => {
     const t = setTimeout(onClose, 4000)
     return () => clearTimeout(t)
@@ -551,13 +555,13 @@ function AchievementToast({ data, onClose }) {
       />
       <div style={{ minWidth: 0 }}>
         <p style={{ fontSize: 9, letterSpacing: 2.5, color: color, textTransform: 'uppercase', fontWeight: 700, marginBottom: 3 }}>
-          Nowe osiągnięcie
+          {t('achievementToast.newAchievement')}
         </p>
         <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.5, lineHeight: 1.1 }}>
           {data.title}
         </p>
         <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3, fontWeight: 500 }}>
-          {data.stage.label} odblokowany
+          {t('achievementToast.unlocked', { label: data.stage.label })}
         </p>
       </div>
     </motion.div>
@@ -566,6 +570,7 @@ function AchievementToast({ data, onClose }) {
 
 // ── REST DAY CARD ────────────────────────────────────────────────────────────
 function RestDayCard() {
+  const { t } = useTranslation('home')
   return (
     <div style={{
       padding: '28px 20px', textAlign: 'center',
@@ -578,10 +583,10 @@ function RestDayCard() {
       boxShadow: '0 8px 28px rgba(0,0,0,0.40)',
     }}>
       <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-primary)', marginBottom: 6 }}>
-        Dzień odpoczynku
+        {t('restDay.title')}
       </p>
       <p style={{ color: 'var(--text-dim)', fontSize: 13, lineHeight: 1.5 }}>
-        Mistrzowie regenerują się tak samo serio jak trenują. Sprawdź co masz dziś do zrobienia w zakładce Regeneracja.
+        {t('restDay.desc')}
       </p>
     </div>
   )
@@ -589,6 +594,7 @@ function RestDayCard() {
 
 // ── XP EVENT: mały toast (bez awansu) ───────────────────────────────────────
 function XpReportToast({ data, onClose }) {
+  const { t } = useTranslation('home')
   useEffect(() => {
     if (!data) return
     const t = setTimeout(onClose, 5000)
@@ -630,8 +636,8 @@ function XpReportToast({ data, onClose }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}
             >⚡</motion.div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', color: 'rgba(0,200,255,.75)', marginBottom: 2 }}>Raport Tygodniowy</p>
-              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 16, color: 'var(--text-primary)' }}>Zdobyłeś trwałe XP 🏀</p>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2.5, textTransform: 'uppercase', color: 'rgba(0,200,255,.75)', marginBottom: 2 }}>{t('xpToast.weeklyReport')}</p>
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 16, color: 'var(--text-primary)' }}>{t('xpToast.earnedXp')}</p>
             </div>
             <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
               transition={{ type: 'spring', stiffness: 500, damping: 22, delay: 0.18 }}
@@ -776,6 +782,9 @@ function ArenaHexBadge({ idx, meta, size = 140 }) {
 }
 
 function ArenaUpModal({ data, onClose }) {
+  const { t } = useTranslation('home')
+  const arenaNames = t('arenaUp.arenas', { returnObjects: true }).map(a => a.name)
+  const trName = (idx) => arenaNames[idx] ?? ARENA_META[idx]?.name
   // phase 0 = "before": stara arena + pasek wypełniający się do progu
   // phase 1 = "after":  nowa arena + cząsteczki + kontynuuj
   const [phase, setPhase] = useState(0)
@@ -884,12 +893,12 @@ function ArenaUpModal({ data, onClose }) {
                   transition={{ delay: 0.1 }}
                   style={{ fontSize: 9, fontWeight: 800, letterSpacing: 3.5,
                     textTransform: 'uppercase', color: prevMeta.glow, marginBottom: 20 }}
-                >Twój postęp</motion.p>
+                >{t('arenaUp.yourProgress')}</motion.p>
 
                 {/* Stary badge — pulsuje, potem shrinkuje przy exit (pomijamy dla Rozgrzewki — brak ramki) */}
                 {!prevMeta.noFrame && (
                   <motion.div style={{ position: 'relative', marginBottom: 22 }}>
-                    <ArenaHexBadge idx={prevIdx} meta={prevMeta} size={145}/>
+                    <ArenaHexBadge idx={prevIdx} meta={{ ...prevMeta, name: trName(prevIdx) }} size={145}/>
                     <motion.div
                       animate={{ scale: [1, 1.5], opacity: [0.4, 0] }}
                       transition={{ duration: 1.0, delay: 0.4, repeat: 1, ease: 'easeOut' }}
@@ -904,7 +913,7 @@ function ArenaUpModal({ data, onClose }) {
                   <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 22,
                     letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-primary)',
                     textAlign: 'center', textShadow: `0 0 30px ${prevMeta.glow}60`,
-                    marginBottom: 18 }}>{prevMeta.name}</p>
+                    marginBottom: 18 }}>{trName(prevIdx)}</p>
                 )}
 
                 {/* Pasek XP wypełniający się do progu */}
@@ -912,11 +921,11 @@ function ArenaUpModal({ data, onClose }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                     <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1,
                       textTransform: 'uppercase', color: prevMeta.noFrame ? '#5BB8F580' : `${prevMeta.glow}80` }}>
-                      {prevMeta.noFrame ? '' : prevMeta.name}
+                      {prevMeta.noFrame ? '' : trName(prevIdx)}
                     </span>
                     <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1,
                       textTransform: 'uppercase', color: `${newMeta.glow}90` }}>
-                      {newMeta.name} ↑
+                      {trName(newIdx)} ↑
                     </span>
                   </div>
                   <div style={{ height: 8, borderRadius: 99, background: 'rgba(255,255,255,0.07)',
@@ -953,7 +962,7 @@ function ArenaUpModal({ data, onClose }) {
                     style={{ padding: '4px 12px', borderRadius: 99, marginTop: 4,
                       background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
                     <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.55)' }}>
-                      +{data.xpGained} XP z tygodniowego raportu
+                      {t('arenaUp.xpFromWeeklyReport', { xp: data.xpGained })}
                     </span>
                   </motion.div>
                 )}
@@ -973,7 +982,7 @@ function ArenaUpModal({ data, onClose }) {
                   initial={{ opacity: 0 }} animate={{ opacity: 0.7 }}
                   style={{ fontSize: 9, fontWeight: 800, letterSpacing: 3.5,
                     textTransform: 'uppercase', color: newMeta.glow, marginBottom: 20 }}
-                >Awansujesz</motion.p>
+                >{t('arenaUp.promoting')}</motion.p>
 
                 <div style={{ width: 190, height: 190, perspective: 900 }}>
                   <motion.div
@@ -987,7 +996,7 @@ function ArenaUpModal({ data, onClose }) {
                       position: 'absolute', inset: 0, backfaceVisibility: 'hidden',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <ArenaHexBadge idx={prevIdx} meta={prevMeta} size={190}/>
+                      <ArenaHexBadge idx={prevIdx} meta={{ ...prevMeta, name: trName(prevIdx) }} size={190}/>
                     </div>
                     {/* Tył — nowa arena (obrócona o 180°, więc po flipie stoi prawidłowo) */}
                     <div style={{
@@ -995,7 +1004,7 @@ function ArenaUpModal({ data, onClose }) {
                       transform: 'rotateY(180deg)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <ArenaHexBadge idx={newIdx} meta={newMeta} size={190}/>
+                      <ArenaHexBadge idx={newIdx} meta={{ ...newMeta, name: trName(newIdx) }} size={190}/>
                     </div>
                   </motion.div>
                 </div>
@@ -1006,9 +1015,9 @@ function ArenaUpModal({ data, onClose }) {
                   style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)',
                     marginTop: 22, textAlign: 'center' }}
                 >
-                  <span style={{ color: `${prevMeta.glow}90` }}>{prevMeta.name}</span>
+                  <span style={{ color: `${prevMeta.glow}90` }}>{trName(prevIdx)}</span>
                   {' → '}
-                  <span style={{ color: newMeta.glow }}>{newMeta.name}</span>
+                  <span style={{ color: newMeta.glow }}>{trName(newIdx)}</span>
                 </motion.p>
               </motion.div>
             )}
@@ -1027,7 +1036,7 @@ function ArenaUpModal({ data, onClose }) {
                   transition={{ delay: 0.08 }}
                   style={{ fontSize: 9, fontWeight: 800, letterSpacing: 4,
                     textTransform: 'uppercase', color: newMeta.glow, marginBottom: 20 }}
-                >Awansowałeś</motion.p>
+                >{t('arenaUp.promoted')}</motion.p>
 
                 {/* Nowy badge — wlatuje z dołu/skaluje, większy — dominuje ekran */}
                 <motion.div
@@ -1036,7 +1045,7 @@ function ArenaUpModal({ data, onClose }) {
                   transition={{ type: 'spring', stiffness: 320, damping: 22, delay: 0.10 }}
                   style={{ position: 'relative', marginBottom: 18 }}
                 >
-                  <ArenaHexBadge idx={newIdx} meta={newMeta} size={180}/>
+                  <ArenaHexBadge idx={newIdx} meta={{ ...newMeta, name: trName(newIdx) }} size={180}/>
                   <motion.div
                     animate={{ scale: [1, 1.7], opacity: [0.5, 0] }}
                     transition={{ duration: 1.2, delay: 0.4, repeat: 2, ease: 'easeOut' }}
@@ -1053,7 +1062,7 @@ function ArenaUpModal({ data, onClose }) {
                     letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-primary)',
                     textAlign: 'center', lineHeight: 1.1,
                     textShadow: `0 0 44px ${newMeta.glow}70`, marginBottom: 8 }}
-                >Witaj na<br/>{newMeta.name}</motion.p>
+                >{t('arenaUp.welcomeTo')}<br/>{trName(newIdx)}</motion.p>
 
                 {/* Tagline emocjonalny */}
                 <motion.p
@@ -1062,7 +1071,7 @@ function ArenaUpModal({ data, onClose }) {
                   style={{ fontSize: 13, fontWeight: 600, fontStyle: 'italic',
                     color: 'rgba(255,255,255,0.55)', textAlign: 'center',
                     maxWidth: 260, lineHeight: 1.4, marginBottom: 20 }}
-                >Nie jesteś już rookie.</motion.p>
+                >{t('arenaUp.notRookie')}</motion.p>
 
                 {/* Milestone chip — polysk + iskry */}
                 <motion.div
@@ -1084,7 +1093,7 @@ function ArenaUpModal({ data, onClose }) {
                       pointerEvents: 'none' }}
                   />
                   <span style={{ position: 'relative', fontSize: 11, fontWeight: 800, color: newMeta.glow, letterSpacing: 0.5 }}>
-                    Osiągnięto: {newMeta.threshold === 0 ? 'Start' : `${newMeta.threshold} XP`}
+                    {t('arenaUp.achieved', { value: newMeta.threshold === 0 ? t('arenaUp.start') : `${newMeta.threshold} XP` })}
                   </span>
                   {/* Iskry — krótki burst */}
                   {MILESTONE_SPARKS.map((s, i) => (
@@ -1108,10 +1117,10 @@ function ArenaUpModal({ data, onClose }) {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                     <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.2,
-                      textTransform: 'uppercase', color: `${newMeta.glow}90` }}>{newMeta.name}</span>
+                      textTransform: 'uppercase', color: `${newMeta.glow}90` }}>{trName(newIdx)}</span>
                     <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.2,
                       textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' }}>
-                      {nextMeta ? `Arena ${ARENA_ROMAN[newIdx + 1] || newIdx + 1}` : 'MAX'}
+                      {nextMeta ? t('arenaUp.arenaLabel', { roman: ARENA_ROMAN[newIdx + 1] || newIdx + 1 }) : t('arenaUp.max')}
                     </span>
                   </div>
                   <div style={{ height: 6, borderRadius: 99, background: 'rgba(255,255,255,0.07)' }}>
@@ -1127,7 +1136,7 @@ function ArenaUpModal({ data, onClose }) {
                   <p style={{ textAlign: 'center', fontSize: 10, color: 'rgba(255,255,255,0.30)',
                     marginTop: 6, fontWeight: 700 }}>
                     {newMeta.threshold} / {nextMeta ? nextMeta.threshold : newMeta.threshold} XP
-                    {nextMeta && <span style={{ color: 'rgba(255,255,255,0.18)' }}> → Arena {ARENA_ROMAN[newIdx + 1] || newIdx + 1}</span>}
+                    {nextMeta && <span style={{ color: 'rgba(255,255,255,0.18)' }}> → {t('arenaUp.arenaLabel', { roman: ARENA_ROMAN[newIdx + 1] || newIdx + 1 })}</span>}
                   </p>
                 </motion.div>
 
@@ -1145,7 +1154,7 @@ function ArenaUpModal({ data, onClose }) {
                     color: 'white', fontFamily: 'var(--font-display)', fontWeight: 900,
                     fontSize: 15, letterSpacing: 2.5, textTransform: 'uppercase', cursor: 'pointer',
                   }}
-                >Kontynuuj</motion.button>
+                >{t('arenaUp.continue')}</motion.button>
                 <div style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }} />
               </motion.div>
             )}
@@ -1159,6 +1168,7 @@ function ArenaUpModal({ data, onClose }) {
 
 // ── DAY DONE MODAL ───────────────────────────────────────────────────────────
 function DayDoneModal({ completedCount, onClose }) {
+  const { t } = useTranslation('home')
   const [width, setWidth] = useState(0)
 
   useEffect(() => {
@@ -1199,16 +1209,16 @@ function DayDoneModal({ completedCount, onClose }) {
         }}
       >
         <p style={{ fontSize: 9, letterSpacing: 3, color: 'var(--green-shot)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14 }}>
-          Dzień zaliczony
+          {t('dayDone.labelTop')}
         </p>
         <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 30, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-primary)', lineHeight: 1.1, marginBottom: 6 }}>
-          DZIEŃ ZALICZONY
+          {t('dayDone.titleBig')}
         </p>
         <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 64, lineHeight: 1, color: 'var(--green-shot)', letterSpacing: '-3px', textShadow: '0 0 24px rgba(0,230,118,0.45)', marginBottom: 4 }}>
           {completedCount}
         </p>
         <p style={{ fontSize: 10, letterSpacing: 2.5, color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 600, marginBottom: 28 }}>
-          SESJE
+          {t('dayDone.sessions')}
         </p>
 
         {/* Progress bar */}
@@ -1234,7 +1244,7 @@ function DayDoneModal({ completedCount, onClose }) {
             cursor: 'pointer',
           }}
         >
-          DALEJ
+          {t('dayDone.next')}
         </button>
       </motion.div>
     </motion.div>
@@ -1243,6 +1253,7 @@ function DayDoneModal({ completedCount, onClose }) {
 
 // ── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function HomePage() {
+  const { t, i18n } = useTranslation('home')
   const { profile, refreshProfile } = useAuth()
   const [trainings, setTrainings] = useState([])
   // Trzymamy pełną listę aktywnych treningów (do swap-funkcji "nie mam sprzętu").
@@ -2006,17 +2017,17 @@ export default function HomePage() {
   const progress = trainings.length > 0 ? (completed.length / trainings.length) * 100 : 0
 
 
-  const greeting = profile?.name ? `Cześć, ${profile.name}` : 'Dzisiaj'
-  const dateStr = new Date().toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })
+  const greeting = profile?.name ? t('greetingHi', { name: profile.name }) : t('greetingDefault')
+  const dateStr = new Date().toLocaleDateString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })
 
   const slots = [
-    { key: 'morning',  label: 'SESJA PORANNA',  emoji: '🌅' },
-    { key: 'main',     label: 'SESJA GŁÓWNA',   emoji: '🏀' },
-    { key: 'recovery', label: 'REGENERACJA',    emoji: '🧘' },
+    { key: 'morning',  label: t('slots.morning'),  emoji: '🌅' },
+    { key: 'main',     label: t('slots.main'),   emoji: '🏀' },
+    { key: 'recovery', label: t('slots.recovery'),    emoji: '🧘' },
   ]
 
   const scoreColor = reportScore >= 750 ? 'var(--green-shot)' : reportScore >= 500 ? 'var(--orange-hot)' : reportScore >= 250 ? 'var(--orange)' : 'var(--text-dim)'
-  const scoreLabel = reportScore >= 750 ? 'ŚWIETNA REGULARNOŚĆ' : reportScore >= 500 ? 'DOBRY POSTĘP' : reportScore >= 250 ? 'ZACZNIJ SERIĘ' : 'TRENUJESZ?'
+  const scoreLabel = reportScore >= 750 ? t('report.scoreLabels.great') : reportScore >= 500 ? t('report.scoreLabels.good') : reportScore >= 250 ? t('report.scoreLabels.start') : t('report.scoreLabels.training')
 
   function handleTouchStart(e) {
     const t = e.touches[0]
@@ -2131,7 +2142,7 @@ export default function HomePage() {
                 color: 'rgba(200,210,230,0.55)',
                 position: 'relative',
               }}
-              aria-label="Powiadomienia"
+              aria-label={t('notificationsAria')}
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
@@ -2180,9 +2191,9 @@ export default function HomePage() {
         {/* Label + badge */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
-            <p className="section-label" style={{ marginBottom: 2 }}>{daysUntilReport === 0 ? 'Draft Score' : 'Twój Raport Scoutingowy'}</p>
+            <p className="section-label" style={{ marginBottom: 2 }}>{daysUntilReport === 0 ? t('report.draftScore') : t('report.scoutingReport')}</p>
             <p style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: 'var(--text-primary)', letterSpacing: 0.5, textTransform: 'uppercase' }}>
-              Twój postęp
+              {t('report.yourProgress')}
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -2217,13 +2228,13 @@ export default function HomePage() {
         {typeof window !== 'undefined' && window.location.hostname === 'localhost' && (
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
             <button onClick={devTriggerArenaUp} className="btn-ghost" style={{ fontSize: 11, padding: '8px 14px' }}>
-              DEV: Pokaż awans areny
+              {t('report.devShowArenaUp')}
             </button>
             <button
               onClick={() => setDevPreviewLevel(l => l === 0 ? 6 : 0)}
               className="btn-ghost" style={{ fontSize: 11, padding: '8px 14px' }}
             >
-              DEV: {devPreviewLevel === 0 ? 'Pokaż ramkę' : 'Bez ramki (przed arenami)'}
+              DEV: {devPreviewLevel === 0 ? t('report.devShowFrame') : t('report.devNoFrame')}
             </button>
           </div>
         )}
@@ -2232,9 +2243,9 @@ export default function HomePage() {
         <div style={{ textAlign: 'center', marginTop: 16 }}>
           {daysUntilReport > 0 ? (
             <p style={{ color: 'var(--text-dim)', fontSize: 12, lineHeight: 1.6 }}>
-              Twój pierwszy raport będzie gotowy za{' '}
-              <span style={{ color: 'var(--orange)', fontWeight: 600 }}>{daysUntilReport} {daysUntilReport === 1 ? 'dzień' : 'dni'}</span>.
-              <br />Im więcej trenujesz teraz, tym wyższy wynik.
+              {t('report.firstReportPrefix')}{' '}
+              <span style={{ color: 'var(--orange)', fontWeight: 600 }}>{daysUntilReport} {daysUntilReport === 1 ? t('report.dayOne') : t('report.dayMany')}</span>.
+              <br />{t('report.trainMore')}
             </p>
           ) : (
             <>
@@ -2242,10 +2253,10 @@ export default function HomePage() {
                 <div style={{ height: '100%', background: scoreColor, borderRadius: 2, width: `${progress}%` }} />
               </div>
               <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500 }}>
-                {completed.length} / {trainings.length} SESJI UKOŃCZONYCH DZIŚ
+                {t('report.sessionsCompletedToday', { completed: completed.length, total: trainings.length })}
               </span>
               {activityLog?.all_done && !showDayDoneModal && (
-                <div style={{ marginTop: 8 }}><span className="badge badge-green">✓ Dzień zaliczony</span></div>
+                <div style={{ marginTop: 8 }}><span className="badge badge-green">{t('report.dayCompleted')}</span></div>
               )}
             </>
           )}

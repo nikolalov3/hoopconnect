@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { UIProvider, useUI } from './context/UIContext'
 import { NotificationsProvider } from './context/NotificationsContext'
@@ -12,25 +13,6 @@ import NotificationsSheet from './components/ui/NotificationsSheet'
 // ── Frame reward configs ──────────────────────────────────────────────────────
 const SEASON_1_END = new Date('2026-08-24T00:00:00')
 const DIAMOND_MIN  = 820   // weekly avg threshold for Diamond tier
-
-const FRAMES = {
-  early_access: {
-    id:          'early_access',
-    path:        '/earlyaccess.png',
-    label:       'Early Access',
-    rarity:      'rare',
-    sublabel:    'Dostęp przed premierą · Sezon 1',
-    description: 'Za dołączenie do HoopConnect przed startem pierwszego sezonu. Jesteś częścią historii.',
-  },
-  diamond_s1: {
-    id:          'diamond_s1',
-    path:        '/ramkas1diax.png',
-    label:       'Diament · Sezon 1',
-    rarity:      'legendary',
-    sublabel:    'Koniec Sezonu 1 · 24.08.2026',
-    description: 'Nagroda za osiągnięcie rangi Diament w pierwszym sezonie HoopConnect. Tylko dla elity.',
-  },
-}
 
 // Lazy-loaded pages — each page loads as a separate JS chunk
 const AuthPage        = lazy(() => import('./pages/AuthPage'))
@@ -76,9 +58,21 @@ function PageLoader() {
 }
 
 function AppShell() {
+  const { t } = useTranslation('frames')
   const { user, profile, loading, profileReady } = useAuth()
   const { leaderboardOpen, frameUnlockOpen, setFrameUnlockOpen, frameUnlockData, setFrameUnlockData } = useUI()
   const location = useLocation()
+
+  const FRAMES = {
+    early_access: {
+      id: 'early_access', path: '/earlyaccess.png', rarity: 'rare',
+      label: t('earlyAccess.label'), sublabel: t('earlyAccess.sublabel'), description: t('earlyAccess.description'),
+    },
+    diamond_s1: {
+      id: 'diamond_s1', path: '/ramkas1diax.png', rarity: 'legendary',
+      label: t('diamondS1.label'), sublabel: t('diamondS1.sublabel'), description: t('diamondS1.description'),
+    },
+  }
 
   // ── Frame reward — load pending frame into UIContext (shows red dot) ─────────
   // Panel opens only when user taps the notification dot (in HomePage header).

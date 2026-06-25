@@ -72,7 +72,8 @@ if (isAdminSubdomain) {
     )
   })
 } else {
-  import('./App.jsx').then(({ default: App }) => {
+  // i18n (PL/EN auto-detect) — tylko player app, coach/admin app go nie ładują
+  Promise.all([import('./App.jsx'), import('./i18n')]).then(([{ default: App }]) => {
     root.render(
       <StrictMode>
         <SentryErrorBoundary fallback={fallback} showDialog={false}>

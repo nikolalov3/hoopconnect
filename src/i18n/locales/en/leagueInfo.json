@@ -1,0 +1,65 @@
+{
+  "logoAlt": "HoopConnect League First Season",
+  "season": {
+    "badge": "◆ Season 01 · Connect All",
+    "title": "The first HoopConnect season in Poland.",
+    "descPrefix": "Compete every week — workouts, games and achievements all add up to league points. The league resets every Monday at 00:00. To join, you need to be active for ",
+    "descBold": "at least 7 days",
+    "descSuffix": " — you then enter at the start of the next week."
+  },
+  "status": {
+    "active": "Active participant",
+    "weekLabel": "Week · {{weekLabel}}",
+    "waitingTitle": "Ready — starting next week",
+    "waitingBodyPrefix": "Your points start counting on ",
+    "notEligibleTitleDays": "Eligible in {{days}} days",
+    "notEligibleTitleTomorrow": "Eligible tomorrow",
+    "notEligibleBody": "You need your first weekly report — stay active for 7 days to join the league."
+  },
+  "countdown": {
+    "waiting": "— points start in —",
+    "reset": "— league resets in —",
+    "days": "days",
+    "hours": "hrs",
+    "minutes": "min",
+    "seconds": "sec",
+    "start": "START",
+    "close": "CLOSE"
+  },
+  "prizes": {
+    "title": "Season prizes",
+    "placeholder": "Prize artwork",
+    "first": "NBA jersey",
+    "firstDesc": "Original jersey of your choice · 1st place.",
+    "coupon": "150 PLN voucher",
+    "shop": "Basketball store"
+  },
+  "tiersTitle": "League tiers",
+  "tiers": [
+    { "label": "Bronze", "desc": "Every player's starting point.", "sub": "Start training and earn points toward a higher league." },
+    { "label": "Silver", "desc": "Building a regular training habit.", "sub": "Stay active for a few weeks." },
+    { "label": "Gold", "desc": "An engaged player following the plan.", "sub": "At least 70% of planned workouts weekly." },
+    { "label": "Platinum", "desc": "An experienced player — high consistency.", "sub": "Regular participation in sessions and club meetups." },
+    { "label": "Diamond", "desc": "The season's absolute elite.", "sub": "Only for players fully committed every week." }
+  ],
+  "pointsTitle": "Point sources",
+  "pointsLabel": "PTS",
+  "leagueMultiplier": "league {{weight}}",
+  "pointSources": [
+    { "label": "Club match", "sub": "Played and confirmed team match · max 3 per day" },
+    { "label": "Shooting session", "sub": "Completed session logged in the app" },
+    { "label": "Achievements", "sub": "Bronze +20 · Silver +30 · Gold +50 · Platinum +75 · Diamond +100" },
+    { "label": "Workout (100% of plan)", "sub": "All exercises for the day marked as done" },
+    { "label": "Weekly streak", "sub": "Bonus for each consecutive week of activity" }
+  ],
+  "rulesTitle": "League rules",
+  "rules": [
+    { "title": "Weekly league", "body": "Mon–Sun, resets Monday at 00:00" },
+    { "title": "7-day tenure", "body": "You need your first weekly report to join the league" },
+    { "title": "Starts on Mon.", "body": "You always enter at the start of a new week — not mid-week" },
+    { "title": "Fair play", "body": "Workouts count with a ×0.5 multiplier · matches and shooting ×1.0" },
+    { "title": "Match limit", "body": "Max 3 matches per day · points awarded once the result is confirmed" },
+    { "title": "Match cooldown", "body": "3v3 / 5v5 — min. 75 min apart · 2v2 — min. 45 min apart" }
+  ],
+  "cta": "RANKING — CURRENT WEEK"
+}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 // Data i godzina premiery / eventu — odliczanie na landing page po skanie QR
 const COUNTDOWN_TARGET = new Date('2026-06-04T16:20:00')
@@ -152,25 +153,9 @@ function SectionLabel({ children }) {
 }
 
 // ── Steps accordion — rozwijane kroki z chevron arrow ──────────────────────
-const STEPS = [
-  {
-    n: '01',
-    title: 'Zarejestruj się',
-    body: 'Załóż konto w HoopConnect i wspieraj swój trening — sesje rzutowe, siłowe i statystyki pomogą Ci przygotować się do meczu jak zawodnik.',
-  },
-  {
-    n: '02',
-    title: 'Załóż klub',
-    body: 'Mecz rozgrywany jest w formacie 3 na 3. Załóż klub w aplikacji i zbierz minimum 3 osoby do swojej drużyny — albo dołącz do istniejącej i dobierz brakujące osoby.',
-  },
-  {
-    n: '03',
-    title: 'Zagraj z nami',
-    body: 'Mecz odbędzie się 4 czerwca o 16:20 na boisku przy Szkole Podstawowej im. Białych Górników. Przyjdź gotowy — Pokolenie Cudów już czeka.',
-  },
-]
-
 function StepsAccordion() {
+  const { t } = useTranslation('qrLanding')
+  const STEPS = t('steps', { returnObjects: true })
   const [openSet, setOpenSet] = useState(new Set())
   const toggle = (n) => setOpenSet(prev => {
     const next = new Set(prev)
@@ -276,6 +261,7 @@ function StepsAccordion() {
 }
 
 export default function QrLandingPage() {
+  const { t } = useTranslation('qrLanding')
   const { days, hours, mins, secs, finished } = useCountdown(COUNTDOWN_TARGET)
 
   return (
@@ -353,14 +339,14 @@ export default function QrLandingPage() {
             margin: 0,
             whiteSpace: 'nowrap',
           }}>
-            Pokolenie Cudów<br/>
+            {t('headlineLine1')}<br/>
             <span style={{
               background: 'linear-gradient(180deg, #C8F2FF 0%, #5BC9F5 50%, #1E8DD8 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
               filter: 'drop-shadow(0 0 16px rgba(91,200,255,0.7)) drop-shadow(0 0 32px rgba(91,184,245,0.4)) drop-shadow(0 3px 14px rgba(0,0,0,0.5))',
-            }}>ląduje na ziemi</span>
+            }}>{t('headlineLine2')}</span>
           </h1>
           <p style={{
             fontSize: 10, fontWeight: 600,
@@ -369,7 +355,7 @@ export default function QrLandingPage() {
             textTransform: 'uppercase',
             margin: '14px 0 0',
           }}>
-            04 · 06 · 2026 — 16:20
+            {t('eventDate')}
           </p>
         </div>
 
@@ -377,17 +363,17 @@ export default function QrLandingPage() {
         <div style={{
           display: 'flex', width: '100%', maxWidth: 340,
         }}>
-          <CountdownDigit value={days}  label="Dni"  />
+          <CountdownDigit value={days}  label={t('countdown.days')}  />
           <div style={{ width: 1, background: 'linear-gradient(180deg, transparent, rgba(150,200,240,0.3), transparent)' }}/>
-          <CountdownDigit value={hours} label="Godz" />
+          <CountdownDigit value={hours} label={t('countdown.hours')} />
           <div style={{ width: 1, background: 'linear-gradient(180deg, transparent, rgba(150,200,240,0.3), transparent)' }}/>
-          <CountdownDigit value={mins}  label="Min"  />
+          <CountdownDigit value={mins}  label={t('countdown.mins')}  />
           <div style={{ width: 1, background: 'linear-gradient(180deg, transparent, rgba(150,200,240,0.3), transparent)' }}/>
-          <CountdownDigit value={secs}  label="Sek"  />
+          <CountdownDigit value={secs}  label={t('countdown.secs')}  />
         </div>
 
         {/* ── NAGRODA ── grey panel z płomieniami + shimmering chrome/cosmic border ── */}
-        <SectionLabel>Nagroda</SectionLabel>
+        <SectionLabel>{t('prizeLabel')}</SectionLabel>
         <motion.a
           href="https://skstore.eu"
           target="_blank"
@@ -435,7 +421,7 @@ export default function QrLandingPage() {
                 backgroundClip: 'text',
                 filter: 'drop-shadow(0 0 16px rgba(180,210,240,0.55))',
                 letterSpacing: -1.5,
-              }}>500</p>
+              }}>{t('prizeAmount')}</p>
               <p style={{
                 fontFamily: 'var(--font-display)',
                 fontSize: 16, fontWeight: 900,
@@ -443,7 +429,7 @@ export default function QrLandingPage() {
                 color: '#C8D8E8',
                 letterSpacing: 0.5,
                 textShadow: '0 0 10px rgba(180,210,240,0.5)',
-              }}>zł</p>
+              }}>{t('prizeCurrency')}</p>
             </div>
             <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
               <p style={{
@@ -453,19 +439,19 @@ export default function QrLandingPage() {
                 color: '#F0F8FF',
                 letterSpacing: 1.2, textTransform: 'uppercase',
                 textShadow: '0 0 12px rgba(140,200,255,0.4)',
-              }}>do wydania w SK Store</p>
+              }}>{t('prizeTitle')}</p>
               <p style={{
                 fontSize: 10.5, fontWeight: 500,
                 margin: '3px 0 0',
                 color: 'rgba(220,230,245,0.78)',
                 lineHeight: 1.35,
-              }}>za pokonanie drużyny Pokolenia Cudów</p>
+              }}>{t('prizeSub')}</p>
             </div>
           </div>
         </motion.a>
 
         {/* ── JAK DOŁĄCZYĆ ── rozwijane sekcje ── */}
-        <SectionLabel>Jak dołączyć</SectionLabel>
+        <SectionLabel>{t('howToJoinLabel')}</SectionLabel>
         <StepsAccordion />
 
         {finished && (
@@ -475,7 +461,7 @@ export default function QrLandingPage() {
             letterSpacing: 3, textTransform: 'uppercase',
             margin: 0,
           }}>
-            Czas nadszedł.
+            {t('timeHasCome')}
           </p>
         )}
 
@@ -506,7 +492,7 @@ export default function QrLandingPage() {
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
             }}>
-            Wejdź do gry →
+            {t('cta')}
           </motion.div>
         </Link>
       </div>

@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../../lib/supabase'
 
-const DAYS_PL = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd']
-const MONTHS_PL = ['Sty','Lut','Mar','Kwi','Maj','Cze','Lip','Sie','Wrz','Paź','Lis','Gru']
 const WEEKS = 14  // ~3.5 miesiące
 
 export default function ActivityCalendar({ userId }) {
+  const { t } = useTranslation('activityCalendar')
+  const DAYS = t('days', { returnObjects: true })
+  const MONTHS = t('months', { returnObjects: true })
   const [logs, setLogs] = useState(null)  // null = loading
 
   useEffect(() => {
@@ -60,14 +62,14 @@ export default function ActivityCalendar({ userId }) {
 
         // Month label on first day of month
         if (d === 0 && day.getMonth() !== lastMonth) {
-          monthLabels.push({ col: w, label: MONTHS_PL[day.getMonth()] })
+          monthLabels.push({ col: w, label: MONTHS[day.getMonth()] })
           lastMonth = day.getMonth()
         }
       }
       grid.push(col)
     }
     return { grid, monthLabels }
-  }, [actMap])
+  }, [actMap, MONTHS])
 
   const cellColor = (level, isFuture) => {
     if (isFuture || level < 0) return 'rgba(255,255,255,0.05)'
@@ -79,13 +81,13 @@ export default function ActivityCalendar({ userId }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <p className="section-label">Aktywność</p>
+        <p className="section-label">{t('title')}</p>
         {/* Legenda */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {[
-            { color: 'rgba(0,230,118,0.65)',   label: 'Wszystko' },
-            { color: 'rgba(91,184,245,0.45)',  label: 'Część' },
-            { color: 'rgba(255,255,255,0.07)', label: 'Brak' },
+            { color: 'rgba(0,230,118,0.65)',   label: t('legend.all') },
+            { color: 'rgba(91,184,245,0.45)',  label: t('legend.partial') },
+            { color: 'rgba(255,255,255,0.07)', label: t('legend.none') },
           ].map(({ color, label }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <div style={{ width: 8, height: 8, borderRadius: 2, background: color }} />
@@ -112,7 +114,7 @@ export default function ActivityCalendar({ userId }) {
 
         {/* Day labels */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginRight: 4 }}>
-          {DAYS_PL.map((d, i) => (
+          {DAYS.map((d, i) => (
             <div key={d} style={{
               height: 14, fontSize: 8, color: 'var(--text-dim)',
               fontWeight: 600, letterSpacing: 0.3,
@@ -161,9 +163,9 @@ export default function ActivityCalendar({ userId }) {
         return (
           <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
             {[
-              { v: done,    label: 'pełnych dni',    color: 'var(--green-shot)' },
-              { v: partial, label: 'częściowych',    color: 'var(--orange)' },
-              { v: done + partial, label: 'łącznie aktywnych', color: 'var(--text-secondary)' },
+              { v: done,    label: t('summary.fullDays'),    color: 'var(--green-shot)' },
+              { v: partial, label: t('summary.partialDays'),    color: 'var(--orange)' },
+              { v: done + partial, label: t('summary.totalActive'), color: 'var(--text-secondary)' },
             ].map(({ v, label, color }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
                 <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color }}>{v}</span>

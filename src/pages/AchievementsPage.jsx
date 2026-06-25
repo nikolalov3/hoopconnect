@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { fetchAchievementsCatalog, getCurrentStage, getTrainingCategoryIds, getCurrentAttendanceStreak, checkTeamPracticeStreak, revokeStaleAchievements } from '../lib/achievements'
@@ -23,10 +24,8 @@ function titleFontSize(title) {
   return 9
 }
 
-// ── MODAL SZCZEGÓŁÓW ─────────────────────────────────────────────────────────
-const MEDAL_LABEL_PL = { bronze: 'Brąz', silver: 'Srebro', gold: 'Złoto', diamond: 'Diament', platinum: 'Platyna' }
-
 function AchievementModal({ achievement, onClose }) {
+  const { t } = useTranslation('achievements')
   const { currentStage, title, description } = achievement
   const displayDescription = currentStage.description || description
   const medal = MEDAL_STYLE[currentStage.medal]
@@ -89,7 +88,7 @@ function AchievementModal({ achievement, onClose }) {
           padding: '4px 14px', borderRadius: 99,
           marginBottom: 12,
         }}>
-          {MEDAL_LABEL_PL[currentStage.medal]}
+          {t(`medals.${currentStage.medal}`)}
         </span>
 
         {/* Tytuł */}
@@ -118,12 +117,12 @@ function AchievementModal({ achievement, onClose }) {
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           marginBottom: 20,
         }}>
-          <span style={{ color: 'var(--text-dim)', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', fontWeight: 600 }}>Twój wynik</span>
+          <span style={{ color: 'var(--text-dim)', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', fontWeight: 600 }}>{t('yourScore')}</span>
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, color }}>{achievement.count ?? currentStage.threshold}×</span>
         </div>
 
         <button className="btn-ghost" onClick={onClose} style={{ width: '100%', padding: '13px' }}>
-          Zamknij
+          {t('close')}
         </button>
       </motion.div>
     </motion.div>
@@ -175,6 +174,7 @@ function AchievementCell({ achievement, onPress, isNew }) {
 
 // ── STRONA ────────────────────────────────────────────────────────────────────
 export default function AchievementsPage() {
+  const { t } = useTranslation('achievements')
   const { profile } = useAuth()
   const [catalog, setCatalog] = useState([])
   const [userProgress, setUserProgress] = useState({})
@@ -210,7 +210,7 @@ export default function AchievementsPage() {
   }
 
   async function devClearAll() {
-    if (!profile || !window.confirm('Wyczyścić wszystkie osiągnięcia i logi aktywności?')) return
+    if (!profile || !window.confirm(t('dev.clearConfirm'))) return
     setDevBusy(true)
     try {
       await Promise.all([
@@ -235,12 +235,8 @@ export default function AchievementsPage() {
     }
   }
 
-  const EMPTY_MESSAGES = [
-    "Każda legenda zaczęła od zera. Twój pierwszy medal jest o jeden trening stąd.",
-    "Puste miejsce nie wypełni się samo. Czas na robotę.",
-    "Żadnych trofeów? Jeszcze. Pierwsze zdobędziesz dziś."
-  ]
-  const emptyMessage = useMemo(() => EMPTY_MESSAGES[Math.floor(Math.random() * EMPTY_MESSAGES.length)], [])
+  const EMPTY_MESSAGES = t('emptyMessages', { returnObjects: true })
+  const emptyMessage = useMemo(() => EMPTY_MESSAGES[Math.floor(Math.random() * EMPTY_MESSAGES.length)], [EMPTY_MESSAGES])
 
   useEffect(() => {
     if (!profile?.id) return
@@ -417,10 +413,10 @@ export default function AchievementsPage() {
         {selected && <AchievementModal achievement={selected} onClose={() => setSelected(null)} />}
       </AnimatePresence>
       <div style={{ position: 'relative', zIndex: 1 }}>
-      <p className="section-label" style={{ marginBottom: 4 }}>Twoja kolekcja</p>
-      <h1 className="display-title" style={{ fontSize: 38, marginBottom: 4 }}>Osiągnięcia</h1>
+      <p className="section-label" style={{ marginBottom: 4 }}>{t('yourCollection')}</p>
+      <h1 className="display-title" style={{ fontSize: 38, marginBottom: 4 }}>{t('title')}</h1>
       <p style={{ color: 'var(--text-dim)', fontSize: 12, fontWeight: 500, marginBottom: 20, letterSpacing: 0.5 }}>
-        {totalUnlocked} z {total} odblokowanych
+        {t('unlockedCount', { unlocked: totalUnlocked, total })}
       </p>
 
 
@@ -432,7 +428,7 @@ export default function AchievementsPage() {
             borderRadius: 10, color: 'var(--orange)', fontSize: 11, fontWeight: 700,
             letterSpacing: 0.8, textTransform: 'uppercase', cursor: 'pointer',
           }}>
-            {devBusy ? '...' : '🛠 Odblokuj wszystkie'}
+            {devBusy ? '...' : t('dev.unlockAll')}
           </button>
           <button onClick={devClearAll} disabled={devBusy} style={{
             flex: 1, padding: '9px 6px',
@@ -440,7 +436,7 @@ export default function AchievementsPage() {
             borderRadius: 10, color: 'rgba(255,90,90,0.85)', fontSize: 11, fontWeight: 700,
             letterSpacing: 0.8, textTransform: 'uppercase', cursor: 'pointer',
           }}>
-            {devBusy ? '...' : '🗑 Wyczyść konto'}
+            {devBusy ? '...' : t('dev.clearAccount')}
           </button>
         </div>
       )}
@@ -467,7 +463,7 @@ export default function AchievementsPage() {
             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
           <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>
-            Brak osiągnięć
+            {t('noAchievements')}
           </p>
           <p style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 8 }}>
             {emptyMessage}

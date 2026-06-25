@@ -1,0 +1,34 @@
+{
+  "activities": {
+    "sleep": "Sleep 9h+",
+    "foam": "Foam rolling",
+    "stretch": "Stretching",
+    "meditate": "Meditation",
+    "read": "Reading",
+    "video": "Film study",
+    "cold": "Cold shower",
+    "meal": "Meal prep",
+    "journal": "Journaling",
+    "walk": "Walk",
+    "ice": "Ice packs",
+    "nap": "20min nap"
+  },
+  "tips": [
+    "Drink 500ml of water right after waking up — your body is dehydrated after 8h of sleep.",
+    "Don't touch your phone during the first hour of the day — that's time for your brain.",
+    "Get 10 minutes of sunlight before 10am — it regulates your circadian rhythm and melatonin levels.",
+    "Music at 60-70 BPM during foam rolling reduces muscle tension by 20%.",
+    "A banana with peanut butter is the perfect snack 30 min before training.",
+    "\"The Mamba Mentality\" by Kobe Bryant — a must-read for anyone who wants to be the best.",
+    "An 18°C bedroom temperature means 45 extra minutes of deep sleep, according to studies.",
+    "Visualize before bed: picture tomorrow's workout step by step."
+  ],
+  "today": "Today",
+  "title": "Recovery",
+  "subtitle": "Tomorrow's workout starts now. No recovery, no progress.",
+  "recoveryScore": "Recovery score",
+  "proTip": "Pro tip: ",
+  "checkToday": "Check off what you did today",
+  "eliteBadge": "💚 ELITE RECOVERY",
+  "eliteSubtitle": "Your body will be stronger tomorrow. This is how the pros do it."
+}

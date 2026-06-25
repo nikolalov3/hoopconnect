@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import HexAvatar from './HexAvatar'
@@ -27,19 +28,12 @@ const SLIDE = { type: 'tween', duration: 0.26, ease: [0.16, 1, 0.3, 1] }
 const SHEET = { type: 'spring', stiffness: 340, damping: 38 }
 const APP_VERSION = '1.2.1-beta'
 
-const DAY_SHORT = ['Nd', 'Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob']
 const SCHEDULES = {
   3: ['T','O','T','O','T','R','O'],
   4: ['T','T','O','T','T','R','O'],
   5: ['T','T','R','T','T','T','O'],
   6: ['T','T','T','R','T','T','T'],
 }
-
-const ALL_FRAMES = [
-  { id: 'none',         label: 'Brak'         },
-  { id: 'early_access', label: 'Early Access' },
-  { id: 'diamond_s1',   label: 'Diament S1'   },
-]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function SLabel({ children, style }) {
@@ -87,6 +81,7 @@ function Row({ label, sub, right, onClick, danger }) {
  * Each card has a "Opuść drużynę" button that calls leave_team() RPC.
  */
 function TeamsSection() {
+  const { t } = useTranslation('settings')
   const [teams, setTeams] = useState(null)         // null = loading, [] = empty
   const [confirmTeamId, setConfirmTeamId] = useState(null)
   const [busyTeamId, setBusyTeamId] = useState(null)
@@ -112,14 +107,14 @@ function TeamsSection() {
 
   return (
     <>
-      <SLabel>Drużyna</SLabel>
+      <SLabel>{t('team.label')}</SLabel>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {teams.map(t => {
-          const isConfirming = confirmTeamId === t.team_id
-          const isBusy = busyTeamId === t.team_id
-          const sectionLabel = t.section === 'M' ? 'Męska' : t.section === 'K' ? 'Żeńska' : 'Mixed'
+        {teams.map(tm => {
+          const isConfirming = confirmTeamId === tm.team_id
+          const isBusy = busyTeamId === tm.team_id
+          const sectionLabel = tm.section === 'M' ? t('team.sectionM') : tm.section === 'K' ? t('team.sectionK') : t('team.sectionMixed')
           return (
-            <div key={t.team_id} style={{
+            <div key={tm.team_id} style={{
               borderRadius: 14,
               border: `1px solid ${C.border}`,
               borderTop: `1px solid ${C.borderT}`,
@@ -127,9 +122,9 @@ function TeamsSection() {
               overflow: 'hidden',
             }}>
               <div style={{ padding: '14px 16px 12px' }}>
-                {t.organization && (
+                {tm.organization && (
                   <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', color: C.sub, margin: 0 }}>
-                    {t.organization}
+                    {tm.organization}
                   </p>
                 )}
                 <p style={{
@@ -138,11 +133,11 @@ function TeamsSection() {
                   letterSpacing: 0.4, textTransform: 'uppercase',
                   color: C.text, margin: '2px 0 4px',
                 }}>
-                  {t.team_name}
+                  {tm.team_name}
                 </p>
                 <p style={{ fontSize: 11, color: C.sub, margin: 0, letterSpacing: 0.3 }}>
-                  {t.age_category} · {sectionLabel}
-                  {t.jersey_number ? ` · #${t.jersey_number}` : ''}
+                  {tm.age_category} · {sectionLabel}
+                  {tm.jersey_number ? ` · #${tm.jersey_number}` : ''}
                 </p>
               </div>
 
@@ -156,9 +151,9 @@ function TeamsSection() {
                       border: `1px solid ${C.border}`, background: 'transparent',
                       color: C.sub, fontSize: 12, fontWeight: 600, cursor: 'pointer',
                     }}
-                  >Nie, zostaję</button>
+                  >{t('team.stayConfirm')}</button>
                   <button
-                    onClick={() => leave(t.team_id)}
+                    onClick={() => leave(tm.team_id)}
                     disabled={isBusy}
                     style={{
                       flex: 1, padding: '8px 12px', borderRadius: 9,
@@ -166,11 +161,11 @@ function TeamsSection() {
                       color: C.red, fontSize: 12, fontWeight: 700, cursor: 'pointer',
                       opacity: isBusy ? 0.5 : 1,
                     }}
-                  >{isBusy ? '...' : 'Tak, opuść drużynę'}</button>
+                  >{isBusy ? '...' : t('team.leaveConfirm')}</button>
                 </div>
               ) : (
                 <button
-                  onClick={() => setConfirmTeamId(t.team_id)}
+                  onClick={() => setConfirmTeamId(tm.team_id)}
                   style={{
                     width: '100%', borderTop: `1px solid ${C.border}`,
                     background: 'transparent', border: 'none',
@@ -180,7 +175,7 @@ function TeamsSection() {
                     WebkitTapHighlightColor: 'transparent',
                   }}
                 >
-                  Opuść drużynę
+                  {t('team.leave')}
                 </button>
               )}
             </div>
@@ -287,6 +282,8 @@ function PrimaryBtn({ label, onClick, disabled, state }) {
 
 // ── Week picker ───────────────────────────────────────────────────────────────
 function WeekPicker({ trainingDays }) {
+  const { t } = useTranslation('settings')
+  const dayShort = t('dayShort', { returnObjects: true })
   const maxDays = trainingDays || 4
   const days = useMemo(() => {
     const today = new Date()
@@ -341,7 +338,7 @@ function WeekPicker({ trainingDays }) {
               <span style={{ fontSize: 7.5, fontWeight: 600, letterSpacing: 0.5,
                 textTransform: 'uppercase', lineHeight: 1,
                 color: isSel ? C.sub : C.dim }}>
-                {DAY_SHORT[d.getDay()]}
+                {dayShort[d.getDay()]}
               </span>
             </button>
           )
@@ -351,7 +348,7 @@ function WeekPicker({ trainingDays }) {
         {showWarn && (
           <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             style={{ fontSize: 10, color: C.orange, fontWeight: 600, marginTop: 8, textAlign: 'center' }}>
-            Limit {maxDays} dni — odznacz dzień żeby zmienić inny.
+            {t('editProfile.weekLimit', { maxDays })}
           </motion.p>
         )}
       </AnimatePresence>
@@ -361,6 +358,12 @@ function WeekPicker({ trainingDays }) {
 
 // ── Frame picker ──────────────────────────────────────────────────────────────
 function FramePicker({ current, uid, profile, onPick }) {
+  const { t } = useTranslation('settings')
+  const ALL_FRAMES = [
+    { id: 'none',         label: t('frames.none') },
+    { id: 'early_access', label: t('frames.early_access') },
+    { id: 'diamond_s1',   label: t('frames.diamond_s1') },
+  ]
   const unlocked = useMemo(() => {
     const frames = new Set(['none'])
     if (uid && localStorage.getItem(`hc_frame_seen_early_access_${uid}`)) frames.add('early_access')
@@ -439,6 +442,7 @@ function SpinPicker({ label, value, onChange, min, max, unit = '' }) {
 // ── Sub-view: Edytuj profil ───────────────────────────────────────────────────
 // Zawiera: dane profilowe + dane fizyczne + plan tygodnia + ramka avatara
 function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFrameChange }) {
+  const { t } = useTranslation('settings')
   const uid = user?.id
   const currentYear = new Date().getFullYear()
   const [name,       setName]       = useState(profile?.name || '')
@@ -510,30 +514,30 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <SubHeader title="Edytuj profil" onBack={onBack} onClose={onClose}/>
+      <SubHeader title={t('editProfile.title')} onBack={onBack} onClose={onClose}/>
       <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch',
         padding: '0 18px 40px' }}>
 
         {/* ── Dane profilowe ── */}
-        <SLabel>Dane profilowe</SLabel>
+        <SLabel>{t('editProfile.profileData')}</SLabel>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Field label="Imię / Nazwa" value={name} onChange={setName} placeholder="Twoja nazwa"/>
-          <Field label="Miasto" value={city} onChange={setCity} placeholder="np. Warszawa"/>
+          <Field label={t('editProfile.nameLabel')} value={name} onChange={setName} placeholder={t('editProfile.namePlaceholder')}/>
+          <Field label={t('editProfile.cityLabel')} value={city} onChange={setCity} placeholder={t('editProfile.cityPlaceholder')}/>
         </div>
 
         {/* ── Dane fizyczne ── */}
         <Divider/>
-        <SLabel style={{ margin: '0 0 12px 2px' }}>Dane fizyczne</SLabel>
+        <SLabel style={{ margin: '0 0 12px 2px' }}>{t('editProfile.physicalData')}</SLabel>
         <div style={{ display: 'flex', gap: 8 }}>
           <SpinPicker
-            label="Rok urodzenia"
+            label={t('editProfile.birthYear')}
             value={birthYear}
             onChange={setBirthYear}
             min={currentYear - 60}
             max={currentYear - 10}
           />
           <SpinPicker
-            label="Wzrost"
+            label={t('editProfile.height')}
             value={heightCm}
             onChange={setHeightCm}
             min={140}
@@ -544,7 +548,7 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
 
         {/* ── Plan tygodnia ── */}
         <Divider/>
-        <SLabel style={{ margin: '0 0 12px 2px' }}>Plan tygodnia</SLabel>
+        <SLabel style={{ margin: '0 0 12px 2px' }}>{t('editProfile.weekPlan')}</SLabel>
 
         {/* Wybór liczby dni */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -559,14 +563,14 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
               <p style={{ fontSize: 19, fontWeight: 900, margin: 0,
                 color: days === n ? C.accent : C.sub,
                 fontFamily: 'var(--font-display)' }}>{n}</p>
-              <p style={{ fontSize: 8, color: C.dim, margin: '1px 0 0', letterSpacing: 0.5 }}>dni</p>
+              <p style={{ fontSize: 8, color: C.dim, margin: '1px 0 0', letterSpacing: 0.5 }}>{t('editProfile.days')}</p>
             </button>
           ))}
         </div>
 
         {/* WeekPicker */}
         <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase',
-          color: C.dim, margin: '0 0 8px 2px' }}>Ten tydzień</p>
+          color: C.dim, margin: '0 0 8px 2px' }}>{t('editProfile.thisWeek')}</p>
         <WeekPicker trainingDays={days}/>
 
         {/* Przycisk zapisz (profil + plan) */}
@@ -576,11 +580,7 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               style={{ marginTop: 14 }}>
               <PrimaryBtn
-                label={
-                  saveState === 'saved'  ? '✓ Zapisano' :
-                  saveState === 'error'  ? 'Błąd — spróbuj ponownie' :
-                  saveState === 'saving' ? 'Zapisywanie…' : 'Zapisz zmiany'
-                }
+                label={t(`editProfile.saveStates.${saveState}`)}
                 onClick={handleSave}
                 disabled={saveState === 'saving'}
                 state={saveState}
@@ -593,14 +593,14 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
         <Divider/>
         <div style={{ display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', marginBottom: 12 }}>
-          <SLabel style={{ margin: 0 }}>Ramka avatara</SLabel>
+          <SLabel style={{ margin: 0 }}>{t('editProfile.avatarFrame')}</SLabel>
           <AnimatePresence>
             {frameState !== 'idle' && (
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 style={{ fontSize: 10, fontWeight: 700, margin: 0,
                   color: frameState === 'error' ? C.red
                        : frameState === 'saving' ? C.dim : C.green }}>
-                {frameState === 'error' ? '✗ Błąd' : frameState === 'saving' ? '…' : '✓ Zmieniono'}
+                {frameState === 'error' ? t('editProfile.frameError') : frameState === 'saving' ? '…' : t('editProfile.frameSaved')}
               </motion.p>
             )}
           </AnimatePresence>
@@ -618,6 +618,7 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
 
 // ── Sub-view: Konto ───────────────────────────────────────────────────────────
 function AccountView({ onBack, onClose, user }) {
+  const { t } = useTranslation('settings')
   const [pwState,  setPwState]  = useState('idle')
   const [delState, setDelState] = useState('idle')
 
@@ -633,14 +634,14 @@ function AccountView({ onBack, onClose, user }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <SubHeader title="Konto" onBack={onBack} onClose={onClose}/>
+      <SubHeader title={t('accountView.title')} onBack={onBack} onClose={onClose}/>
       <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch',
         padding: '0 18px 36px' }}>
 
-        <SLabel>Email</SLabel>
+        <SLabel>{t('accountView.email')}</SLabel>
         <CardGroup>
           <Row
-            label={user?.email_confirmed_at ? 'Email potwierdzony' : 'Email niepotwierdzony'}
+            label={user?.email_confirmed_at ? t('accountView.emailConfirmed') : t('accountView.emailUnconfirmed')}
             sub={user?.email}
             right={
               <div style={{
@@ -660,39 +661,39 @@ function AccountView({ onBack, onClose, user }) {
           />
         </CardGroup>
 
-        <SLabel>Hasło</SLabel>
+        <SLabel>{t('accountView.password')}</SLabel>
         <CardGroup>
           <Row
-            label={pwState === 'sent' ? '✓ Link wysłany' : pwState === 'error' ? 'Błąd — spróbuj ponownie' : 'Zmień hasło'}
-            sub={pwState === 'idle' ? 'Link resetujący wysyłamy na Twój email' : undefined}
+            label={pwState === 'sent' ? t('accountView.passwordSent') : pwState === 'error' ? t('accountView.passwordError') : t('accountView.passwordChange')}
+            sub={pwState === 'idle' ? t('accountView.passwordSub') : undefined}
             onClick={pwState === 'idle' ? handlePasswordReset : undefined}
           />
         </CardGroup>
 
-        <SLabel>Usuń konto</SLabel>
+        <SLabel>{t('accountView.deleteAccount')}</SLabel>
         {delState === 'idle' ? (
           <CardGroup>
-            <Row label="Usuń konto" danger onClick={() => setDelState('confirm')}/>
+            <Row label={t('accountView.deleteAccount')} danger onClick={() => setDelState('confirm')}/>
           </CardGroup>
         ) : (
           <div style={{
             background: 'rgba(255,80,96,0.06)', border: `1px solid rgba(255,80,96,0.18)`,
             borderRadius: 12, padding: '14px 16px',
           }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: C.red, margin: '0 0 4px' }}>Czy na pewno?</p>
+            <p style={{ fontSize: 12, fontWeight: 700, color: C.red, margin: '0 0 4px' }}>{t('accountView.deleteConfirmTitle')}</p>
             <p style={{ fontSize: 10.5, color: C.sub, margin: '0 0 14px', lineHeight: 1.5 }}>
-              Tej akcji nie można cofnąć. Skontaktuj się z nami.
+              {t('accountView.deleteConfirmBody')}
             </p>
-            <a href="mailto:kontakt@hoopconnect.pl?subject=Usunięcie konta" style={{
+            <a href={`mailto:kontakt@hoopconnect.pl?subject=${encodeURIComponent(t('accountView.deleteEmailSubject'))}`} style={{
               display: 'block', padding: '10px', background: C.red,
               borderRadius: 8, fontSize: 12, fontWeight: 700, color: '#fff',
               textDecoration: 'none', textAlign: 'center',
-            }}>Napisz do nas</a>
+            }}>{t('accountView.writeToUs')}</a>
             <button onClick={() => setDelState('idle')} style={{
               background: 'none', border: 'none', cursor: 'pointer',
               fontSize: 10, color: C.sub, marginTop: 10, width: '100%',
               WebkitTapHighlightColor: 'transparent',
-            }}>Anuluj</button>
+            }}>{t('accountView.cancel')}</button>
           </div>
         )}
 
@@ -703,16 +704,17 @@ function AccountView({ onBack, onClose, user }) {
 
 // ── Sub-view: Informacje ──────────────────────────────────────────────────────
 function InfoView({ onBack, onClose }) {
+  const { t } = useTranslation('settings')
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <SubHeader title="Informacje" onBack={onBack} onClose={onClose}/>
+      <SubHeader title={t('infoView.title')} onBack={onBack} onClose={onClose}/>
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 18px 36px' }}>
-        <SLabel>Dokumenty</SLabel>
+        <SLabel>{t('infoView.documents')}</SLabel>
         <CardGroup>
           {[
-            { label: 'Polityka prywatności', href: 'https://hoopconnect.pl/privacy' },
-            { label: 'Regulamin',            href: 'https://hoopconnect.pl/terms'   },
-            { label: 'Kontakt',              href: 'mailto:kontakt@hoopconnect.pl'  },
+            { label: t('infoView.privacyPolicy'), href: 'https://hoopconnect.pl/privacy' },
+            { label: t('infoView.terms'),         href: 'https://hoopconnect.pl/terms'   },
+            { label: t('infoView.contact'),       href: 'mailto:kontakt@hoopconnect.pl'  },
           ].map(l => (
             <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer"
               style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px',
@@ -736,6 +738,7 @@ function InfoView({ onBack, onClose }) {
 
 // ── Discord card (featured, tuż pod profilem) ─────────────────────────────────
 function DiscordCard() {
+  const { t } = useTranslation('settings')
   return (
     <a href="https://discord.gg/7TwhZAvEzb" target="_blank" rel="noopener noreferrer"
       style={{ textDecoration: 'none', display: 'block' }}>
@@ -761,10 +764,10 @@ function DiscordCard() {
         {/* Text */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: 0 }}>
-            Dołącz na Discord
+            {t('discord.title')}
           </p>
           <p style={{ fontSize: 10, color: C.sub, margin: '2px 0 0' }}>
-            Społeczność HoopConnect
+            {t('discord.sub')}
           </p>
         </div>
         {/* Arrow */}
@@ -780,6 +783,7 @@ function DiscordCard() {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function SettingsPanel({ open, onClose }) {
   const { profile, user, signOut, refreshProfile, setProfileData } = useAuth()
+  const { t, i18n } = useTranslation('settings')
   const [view, setView] = useState('main')
 
   useEffect(() => {
@@ -789,7 +793,7 @@ export default function SettingsPanel({ open, onClose }) {
   async function handleSignOut() { onClose(); await signOut() }
 
   const memberSince = profile?.created_at
-    ? new Date(profile.created_at).toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })
+    ? new Date(profile.created_at).toLocaleDateString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', { month: 'long', year: 'numeric' })
     : null
 
   const isMain = view === 'main'
@@ -859,7 +863,7 @@ export default function SettingsPanel({ open, onClose }) {
                     <p style={{ fontSize: 18, fontWeight: 800, color: C.text, margin: 0,
                       fontFamily: 'var(--font-display)', letterSpacing: 0.4,
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {profile?.name || 'Gracz'}
+                      {profile?.name || t('defaultPlayerName')}
                     </p>
                     <p style={{ fontSize: 10, color: C.sub, margin: '3px 0 0',
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -868,7 +872,7 @@ export default function SettingsPanel({ open, onClose }) {
                     {memberSince && (
                       <p style={{ fontSize: 9, color: C.accent, fontWeight: 600,
                         letterSpacing: 0.5, margin: '5px 0 0' }}>
-                        Beta · {memberSince}
+                        {t('beta', { date: memberSince })}
                       </p>
                     )}
                   </div>
@@ -883,7 +887,7 @@ export default function SettingsPanel({ open, onClose }) {
                       WebkitTapHighlightColor: 'transparent',
                     }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: C.accent,
-                      margin: 0, letterSpacing: 0.5 }}>Edytuj</p>
+                      margin: 0, letterSpacing: 0.5 }}>{t('edit')}</p>
                   </motion.button>
                 </div>
               </div>
@@ -896,15 +900,15 @@ export default function SettingsPanel({ open, onClose }) {
               {/* Sekcje */}
               <div style={{ padding: '0 18px', flex: 1 }}>
 
-                <SLabel>Konto</SLabel>
+                <SLabel>{t('account')}</SLabel>
                 <CardGroup>
-                  <Row label="Ustawienia konta" sub="Email · Hasło · Usuń konto" onClick={() => setView('account')}/>
-                  <Row label="Język" sub="Polski" onClick={() => setView('language')}/>
+                  <Row label={t('accountSettings')} sub={t('accountSub')} onClick={() => setView('account')}/>
+                  <Row label={t('language')} sub={i18n.language === 'pl' ? t('polish') : t('english')} onClick={() => setView('language')}/>
                 </CardGroup>
 
-                <SLabel>Inne</SLabel>
+                <SLabel>{t('other')}</SLabel>
                 <CardGroup>
-                  <Row label="Informacje" sub="Polityka · Regulamin · Kontakt" onClick={() => setView('info')}/>
+                  <Row label={t('info')} sub={t('infoSub')} onClick={() => setView('info')}/>
                 </CardGroup>
 
               </div>
@@ -915,7 +919,7 @@ export default function SettingsPanel({ open, onClose }) {
                   background: 'none', border: 'none', cursor: 'pointer',
                   fontSize: 12, fontWeight: 600, color: C.red,
                   WebkitTapHighlightColor: 'transparent', padding: '6px 16px',
-                }}>Wyloguj się</button>
+                }}>{t('signOut')}</button>
                 <p style={{ fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
                   color: C.dim, fontWeight: 600, margin: '10px 0 0' }}>
                   HoopConnect · {APP_VERSION}
@@ -948,20 +952,24 @@ export default function SettingsPanel({ open, onClose }) {
               )}
               {view === 'language' && (
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                  <SubHeader title="Język" onBack={() => setView('main')} onClose={onClose}/>
+                  <SubHeader title={t('language')} onBack={() => setView('main')} onClose={onClose}/>
                   <div style={{ padding: '0 18px' }}>
-                    <SLabel>Dostępne języki</SLabel>
+                    <SLabel>{t('availableLanguages')}</SLabel>
                     <CardGroup>
-                      <Row label="Polski" right={
-                        <div style={{ width: 18, height: 18, borderRadius: '50%',
-                          background: C.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-                            stroke="#000" strokeWidth="3" strokeLinecap="round">
-                            <polyline points="20 6 9 17 4 12"/>
-                          </svg>
-                        </div>
-                      }/>
-                      <Row label="English" sub="Wkrótce"/>
+                      {[{ code: 'pl', label: t('polish') }, { code: 'en', label: t('english') }].map(l => (
+                        <Row key={l.code} label={l.label}
+                          onClick={() => i18n.changeLanguage(l.code)}
+                          right={i18n.language === l.code ? (
+                            <div style={{ width: 18, height: 18, borderRadius: '50%',
+                              background: C.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                                stroke="#000" strokeWidth="3" strokeLinecap="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                              </svg>
+                            </div>
+                          ) : null}
+                        />
+                      ))}
                     </CardGroup>
                   </div>
                 </div>

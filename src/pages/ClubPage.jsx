@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, useDragControls, useMotionValue, useTransform, animate } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import i18n from '../i18n'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { creditRestDayStreak } from '../lib/streak'
@@ -31,7 +33,8 @@ const C = {
   loss:     '#FF5060',
 }
 
-// Per-position identity colors
+// Per-position identity colors. `label` kept as a Polish fallback for
+// non-component call sites; render sites should prefer t(`positions.${key}`).
 const POS = {
   PG: { hi: '#4A80FF', lo: '#0A2070', glow: 'rgba(74,128,255,0.55)',  label: 'Rozgrywający'   },
   SG: { hi: '#00C880', lo: '#003828', glow: 'rgba(0,200,128,0.55)',   label: 'Rzucający'      },
@@ -55,7 +58,7 @@ const COURT_PATH = 'M24,0 L319,0 Q319,24 343,24 L343,386 Q319,386 319,410 L24,41
 
 // ── MATCH CONSTANTS ───────────────────────────────────────────────────────────
 const MODE_SLOTS = { '2v2': 2, '3v3': 3, '5v5': 5 }
-const MODE_LABEL = { '2v2': '2 na 2', '3v3': '3 na 3', '5v5': '5 na 5' }
+const MODE_LABEL = { '2v2': '2 na 2', '3v3': '3 na 3', '5v5': '5 na 5' } // PL fallback; render sites use t(`modeLabel.${m}`)
 const MODE_COLOR = { '2v2': '#9050FF', '3v3': '#00CCFF', '5v5': '#FFA820' }
 const MODE_GAP   = { '2v2': 45, '3v3': 75, '5v5': 75 }  // min between match start times
 
@@ -70,19 +73,19 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 async function reverseGeocode(lat, lng) {
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=pl`,
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=${i18n.language}`,
       { headers: { 'User-Agent': 'HoopConnect/1.0' } }
     )
     const d = await res.json()
     const { road, suburb, quarter, city, town, village } = d.address || {}
-    return [road, suburb || quarter || city || town || village].filter(Boolean).join(', ') || 'Lokalizacja'
-  } catch { return 'Lokalizacja' }
+    return [road, suburb || quarter || city || town || village].filter(Boolean).join(', ') || i18n.t('club:locationFallback')
+  } catch { return i18n.t('club:locationFallback') }
 }
 
 function fmtMatchDate(iso) {
   const d = new Date(iso)
-  const days = ['Ndz', 'Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob']
-  const months = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru']
+  const days = i18n.t('club:days', { returnObjects: true })
+  const months = i18n.t('club:months', { returnObjects: true })
   return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`
 }
 function fmtMatchTime(iso) {
@@ -112,6 +115,8 @@ const COUNTRIES = [
   { code: 'AU', name: 'Australia',       flag: '🇦🇺', flagFile: 'australia'      },
   { code: 'CA', name: 'Kanada',          flag: '🇨🇦', flagFile: 'canada'         },
 ]
+// `name` above is persisted to the DB (clubs.country_name) and must stay
+// untouched/Polish. For display, always look up by code: t(`countries.${code}`).
 
 // ── ARENA / XP LADDER ─────────────────────────────────────────────────────────
 // ── ARENAS ────────────────────────────────────────────────────────────────────
@@ -326,11 +331,11 @@ async function apiFetchByCode(code) {
 
 async function apiJoinByCode({ code, userId, position }) {
   const result = await apiFetchByCode(code)
-  if (!result) throw new Error('Nie znaleziono klubu z tym kodem.')
+  if (!result) throw new Error(i18n.t('club:errors.codeNotFound'))
   const { club, members } = result
-  if (members.length >= 5)              throw new Error('Klub jest pełny.')
-  if (members.some(m => m.user_id === userId))  throw new Error('Już jesteś w tym klubie.')
-  if (members.some(m => m.position === position)) throw new Error('Ta pozycja jest zajęta.')
+  if (members.length >= 5)              throw new Error(i18n.t('club:errors.clubFull'))
+  if (members.some(m => m.user_id === userId))  throw new Error(i18n.t('club:errors.alreadyMember'))
+  if (members.some(m => m.position === position)) throw new Error(i18n.t('club:errors.positionTaken'))
   const { error } = await supabase.from('club_members')
     .insert({ club_id: club.id, user_id: userId, position })
   if (error) throw new Error(error.message)
@@ -441,7 +446,7 @@ async function apiJoinMatch(matchId, userId, team, mode) {
     ])
     const userClubId = membership?.club_id || null
     if (matchRow?.away_club_id && matchRow.away_club_id !== userClubId) {
-      throw new Error('Drużyna away jest już zajęta przez inny klub')
+      throw new Error(i18n.t('club:errors.awayClubTaken'))
     }
     // First away player — claim the slot for their club
     if (!matchRow?.away_club_id && userClubId) {
@@ -452,11 +457,11 @@ async function apiJoinMatch(matchId, userId, team, mode) {
   const { data: existing } = await supabase.from('match_players').select('slot').eq('match_id', matchId).eq('team', team)
   const taken = new Set((existing || []).map(p => p.slot))
   const slot = Array.from({ length: n }, (_, i) => i + 1).find(s => !taken.has(s))
-  if (!slot) throw new Error('Drużyna jest już pełna')
+  if (!slot) throw new Error(i18n.t('club:errors.teamFull'))
 
   const { error } = await supabase.from('match_players').insert({ match_id: matchId, user_id: userId, team, slot })
   if (error) {
-    if (error.code === '23505') throw new Error('Ten slot właśnie zajął ktoś inny — odśwież i spróbuj ponownie')
+    if (error.code === '23505') throw new Error(i18n.t('club:errors.slotTaken'))
     throw error
   }
   const { count } = await supabase.from('match_players').select('*', { count: 'exact', head: true }).eq('match_id', matchId)
@@ -685,6 +690,7 @@ function HexSlot({ filled, color, size = 22 }) {
 const TK = 78  // token size px
 
 function Token({ posKey, member, onPress, swapMode, isSrc, isTgt }) {
+  const { t } = useTranslation('club')
   const { profile, user } = useAuth()
   const pos = POS[posKey]
   const hi  = isSrc ? C.swap : pos.hi
@@ -795,7 +801,7 @@ function Token({ posKey, member, onPress, swapMode, isSrc, isTgt }) {
               {member.name}
             </p>
           : <p style={{ fontSize: 8.5, margin: '2px 0 0',
-              color: 'rgba(0,160,200,0.40)' }}>Zaproś</p>
+              color: 'rgba(0,160,200,0.40)' }}>{t('emptySlot.invite')}</p>
         }
       </div>
     </motion.button>
@@ -861,6 +867,7 @@ function Sheet({ onClose, children }) {
 
 // ── EMPTY SLOT SHEET ──────────────────────────────────────────────────────────
 function EmptySlotSheet({ club, posKey, onClose }) {
+  const { t } = useTranslation('club')
   const pos  = POS[posKey]
   const [mode,   setMode]   = useState('link') // 'link' | 'code'
   const [copied, setCopied] = useState(false)
@@ -874,8 +881,8 @@ function EmptySlotSheet({ club, posKey, onClose }) {
   }
 
   const TABS = [
-    { key: 'link', label: 'LINK' },
-    { key: 'code', label: 'KOD KLUBU' },
+    { key: 'link', label: t('emptySlot.tabLink') },
+    { key: 'code', label: t('emptySlot.tabCode') },
   ]
 
   return (
@@ -890,12 +897,12 @@ function EmptySlotSheet({ club, posKey, onClose }) {
           boxShadow: `0 0 5px ${pos.glow}` }}/>
         <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 2,
           color: pos.hi, textTransform: 'uppercase' }}>{posKey}</span>
-        <span style={{ fontSize: 10, fontWeight: 600, color: C.sub }}>{pos.label}</span>
+        <span style={{ fontSize: 10, fontWeight: 600, color: C.sub }}>{t(`positions.${posKey}`)}</span>
       </div>
 
       <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 24,
         color: C.text, marginBottom: 18, letterSpacing: -0.3 }}>
-        Zaproś zawodnika
+        {t('emptySlot.title')}
       </p>
 
       {/* Tab switcher — same style as Boisko/Mecze/Statystyki */}
@@ -945,7 +952,7 @@ function EmptySlotSheet({ club, posKey, onClose }) {
                 color: copied ? C.win : '#fff',
                 boxShadow: copied ? 'none' : `0 6px 22px ${C.accentLo}60`,
               }}>
-              {copied ? '✓ Skopiowano!' : '🔗 Kopiuj link zaproszenia'}
+              {copied ? t('emptySlot.copied') : t('emptySlot.copyLink')}
             </motion.button>
           </motion.div>
         ) : (
@@ -955,7 +962,7 @@ function EmptySlotSheet({ club, posKey, onClose }) {
             {code ? (
               <>
                 <p style={{ fontSize: 11, color: C.sub, marginBottom: 12, lineHeight: 1.6 }}>
-                  Podaj ten kod znajomemu — wpisze go w zakładce Klub, żeby dołączyć.
+                  {t('emptySlot.codeHint')}
                 </p>
                 {/* Big code display */}
                 <div style={{
@@ -967,7 +974,7 @@ function EmptySlotSheet({ club, posKey, onClose }) {
                 }}>
                   <p style={{ fontSize: 8, letterSpacing: 3, fontWeight: 700,
                     color: `${C.accent}55`, textTransform: 'uppercase', marginBottom: 10 }}>
-                    Kod klubu
+                    {t('emptySlot.clubCode')}
                   </p>
                   <p style={{
                     fontFamily: 'var(--font-display)', fontSize: 42, fontWeight: 900,
@@ -988,12 +995,12 @@ function EmptySlotSheet({ club, posKey, onClose }) {
                     color: copied ? C.win : '#fff',
                     boxShadow: copied ? 'none' : `0 6px 22px ${C.accentLo}60`,
                   }}>
-                  {copied ? '✓ Skopiowano!' : '📋 Kopiuj kod'}
+                  {copied ? t('emptySlot.copied') : t('emptySlot.copyCode')}
                 </motion.button>
               </>
             ) : (
               <p style={{ fontSize: 12, color: C.sub, textAlign: 'center', padding: '20px 0' }}>
-                Kod klubu niedostępny — odśwież aplikację.
+                {t('emptySlot.codeUnavailable')}
               </p>
             )}
           </motion.div>
@@ -1069,6 +1076,7 @@ function ClubStrip({ club, role, onPress, accent = C.accent }) {
 
 // Secondary glass action row — used for "soon" management shortcuts (UI scaffolding only)
 function ActionRow({ label, icon, soon, onClick, accent }) {
+  const { t } = useTranslation('club')
   return (
     <motion.button whileTap={soon ? {} : { scale: 0.97 }} onClick={soon ? undefined : onClick}
       style={{
@@ -1084,7 +1092,7 @@ function ActionRow({ label, icon, soon, onClick, accent }) {
       {soon ? (
         <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase',
           color: C.sub, padding: '3px 8px', borderRadius: 99, border: `1px solid ${C.dim}` }}>
-          Wkrótce
+          {t('soon')}
         </span>
       ) : (
         <svg width="8" height="13" viewBox="0 0 8 13" fill="none">
@@ -1099,6 +1107,7 @@ function ActionRow({ label, icon, soon, onClick, accent }) {
 // Mounts fresh every time `xp` changes (key prop on parent), so on profile
 // open the bar fills from 0 and the number counts up from 0 to the current XP.
 function XpProgressBar({ xp, pct, nextArena, accentLo, accentHi, accent, sub, tappable }) {
+  const { t } = useTranslation('club')
   const motionXp = useMotionValue(0)
   const displayXp = useTransform(motionXp, v => Math.round(v))
   useEffect(() => {
@@ -1111,8 +1120,8 @@ function XpProgressBar({ xp, pct, nextArena, accentLo, accentHi, accent, sub, ta
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
         <span style={{ fontSize: 10, fontWeight: 700, color: sub }}>
           {nextArena
-            ? <>Następna arena: <b style={{ color: 'var(--text-primary)', fontWeight: 800 }}>{nextArena.name}</b></>
-            : 'Najwyższa arena'}
+            ? <>{t('xpBar.nextArena')}<b style={{ color: 'var(--text-primary)', fontWeight: 800 }}>{nextArena.name}</b></>
+            : t('xpBar.maxArena')}
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <span style={{ fontSize: 11, fontWeight: 800, color: accent, fontFamily: 'var(--font-display)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
@@ -1167,6 +1176,7 @@ const ARENA_ROAD_THEMES = [
   { glow: '#E8B030', hi: '#FFE090', mid: '#C88820', lo: '#1A1000' }, // Sól tej Ziemi
 ]
 function ArenaRoadSheet({ xp, arenaLevel, onClose }) {
+  const { t } = useTranslation('club')
   const currLevel = arenaLevel ?? 0
   const currXp    = xp ?? 0
 
@@ -1176,9 +1186,9 @@ function ArenaRoadSheet({ xp, arenaLevel, onClose }) {
         fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
         letterSpacing: 1.5, textTransform: 'uppercase', color: C.text,
         marginBottom: 6,
-      }}>Droga Aren</p>
+      }}>{t('arenaRoad.title')}</p>
       <p style={{ fontSize: 11, color: C.sub, marginBottom: 28, fontWeight: 600 }}>
-        Twój postęp w systemie aren HoopConnect
+        {t('arenaRoad.subtitle')}
       </p>
 
       {/* Road — arenas from bottom (highest) to top (lowest) */}
@@ -1266,12 +1276,12 @@ function ArenaRoadSheet({ xp, arenaLevel, onClose }) {
                       fontSize: 8, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase',
                       color: theme.glow, padding: '2px 7px', borderRadius: 99,
                       background: `${theme.glow}18`, border: `1px solid ${theme.glow}40`,
-                    }}>TU JESTEŚ</span>
+                    }}>{t('arenaRoad.youAreHere')}</span>
                   )}
                 </div>
                 <p style={{ fontSize: 11, color: isLocked ? 'rgba(255,255,255,0.22)' : C.sub,
                   fontWeight: 600, marginBottom: isCurrent ? 8 : 0 }}>
-                  {arena.threshold === 0 ? 'Start' : `${arena.threshold} XP`}
+                  {arena.threshold === 0 ? t('arenaRoad.start') : `${arena.threshold} XP`}
                   {nextArena && !isLocked && !isPast ? ` → ${nextArena.threshold} XP` : ''}
                 </p>
                 {isCurrent && nextArena && (
@@ -1293,7 +1303,7 @@ function ArenaRoadSheet({ xp, arenaLevel, onClose }) {
                   </>
                 )}
                 {isCurrent && !nextArena && (
-                  <p style={{ fontSize: 11, color: theme.glow, fontWeight: 800 }}>MAX — Legendarny status 👑</p>
+                  <p style={{ fontSize: 11, color: theme.glow, fontWeight: 800 }}>{t('arenaRoad.maxStatus')}</p>
                 )}
               </div>
             </div>
@@ -1378,6 +1388,7 @@ function usePlayerProfileData(memberId) {
 }
 
 function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, onRemove, onLeave, removing, onOpenClub }) {
+  const { t } = useTranslation('club')
   const { profile: myProfile } = useAuth()
   const { profile, stats, loading } = usePlayerProfileData(member.id)
   const country = COUNTRIES.find(c => c.code === profile?.country) || null
@@ -1389,7 +1400,7 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
   const [flagOk, setFlagOk] = useState(true)
   const [showArenaRoad, setShowArenaRoad] = useState(false)
   useEffect(() => { setFlagOk(true) }, [country?.flagFile])
-  const role = member.isOwner ? 'Kapitan' : 'Zawodnik'
+  const role = member.isOwner ? t('profile.roleCaptain') : t('profile.rolePlayer')
   const showDanger = isSelf || (isOwner && !member.isOwner)
 
   return (
@@ -1445,7 +1456,7 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
         </p>
         {country && (
           <p style={{ fontSize: 12, fontWeight: 600, color: C.sub, margin: '5px 0 0' }}>
-            {country.flag} {country.name}
+            {country.flag} {t(`countries.${country.code}`)}
           </p>
         )}
       </div>
@@ -1483,15 +1494,15 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
 
       {/* ── SECTION 4 — Quick stats (identity-level only, no percentages) ─────── */}
       <div style={{ display: 'flex', gap: 8, margin: '24px 0 26px' }}>
-        <StatTile label="Mecze"    value={loading ? '—' : stats.matches}/>
-        <StatTile label="Wygrane"  value={loading ? '—' : stats.wins}/>
-        <StatTile label="Treningi" value={loading ? '—' : stats.trainings}/>
+        <StatTile label={t('profile.statMatches')}    value={loading ? '—' : stats.matches}/>
+        <StatTile label={t('profile.statWins')}  value={loading ? '—' : stats.wins}/>
+        <StatTile label={t('profile.statTrainings')} value={loading ? '—' : stats.trainings}/>
       </div>
 
       {/* ── SECTION 5 — Trophy showcase ────────────────────────────────────────── */}
       <div style={{ marginBottom: 26 }}>
         <p style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 2.4,
-          textTransform: 'uppercase', color: C.sub, margin: '0 0 10px' }}>Gablota</p>
+          textTransform: 'uppercase', color: C.sub, margin: '0 0 10px' }}>{t('profile.showcase')}</p>
         <div style={{ display: 'flex', gap: 8 }}>
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} style={{
@@ -1510,9 +1521,9 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
       <div style={{ marginTop: 22 }}>
         {isSelf && (
           <>
-            <ActionRow icon="👤" label="Zarządzaj profilem"      soon accent={theme.glow}/>
-            <ActionRow icon="🏆" label="Edytuj gablotę"          soon accent={theme.glow}/>
-            <ActionRow icon="📊" label="Zobacz pełne statystyki" soon accent={theme.glow}/>
+            <ActionRow icon="👤" label={t('profile.actionManageProfile')} soon accent={theme.glow}/>
+            <ActionRow icon="🏆" label={t('profile.actionEditShowcase')}  soon accent={theme.glow}/>
+            <ActionRow icon="📊" label={t('profile.actionFullStats')}     soon accent={theme.glow}/>
           </>
         )}
 
@@ -1520,19 +1531,19 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
           <div style={{ marginTop: isSelf ? 14 : 0 }}>
             <p style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 2.4,
               textTransform: 'uppercase', color: `${C.loss}90`, margin: '0 0 8px' }}>
-              Strefa zagrożenia
+              {t('profile.dangerZone')}
             </p>
             {isSelf ? (
               <motion.button whileTap={{ scale: 0.96 }} onClick={onLeave} disabled={removing}
                 style={destructiveBtnStyle(removing)}>
                 {member.isOwner
-                  ? (removing ? 'Rozwiązywanie…' : '🗑 Rozwiąż klub')
-                  : (removing ? 'Opuszczanie…'   : '🚪 Opuść klub')}
+                  ? (removing ? t('profile.disbanding') : t('profile.disbandClub'))
+                  : (removing ? t('profile.leaving')    : t('profile.leaveClub'))}
               </motion.button>
             ) : (
               <motion.button whileTap={{ scale: 0.96 }} onClick={onRemove} disabled={removing}
                 style={destructiveBtnStyle(removing)}>
-                {removing ? 'Usuwanie…' : '✕ Usuń z klubu'}
+                {removing ? t('profile.removing') : t('profile.removeFromClub')}
               </motion.button>
             )}
           </div>
@@ -1546,6 +1557,7 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
 
 // ── EDIT CLUB SHEET ───────────────────────────────────────────────────────────
 function EditClubSheet({ club, onClose, onSaved }) {
+  const { t } = useTranslation('club')
   const [name,   setName]   = useState(club.name)
   const [abbr,   setAbbr]   = useState(club.abbr)
   const [ctry,   setCtry]   = useState(club.country)
@@ -1561,7 +1573,7 @@ function EditClubSheet({ club, onClose, onSaved }) {
     try {
       await apiUpdateClub(club.id, { name: name.trim(), abbr, country: ctry })
       onSaved({ ...club, name: name.trim(), abbr: abbr.toUpperCase(), country: ctry })
-    } catch { setErr('Nie udało się zapisać.'); setSaving(false) }
+    } catch { setErr(t('errors.saveFailed')); setSaving(false) }
   }
 
   return (
@@ -1572,13 +1584,13 @@ function EditClubSheet({ club, onClose, onSaved }) {
       <Sheet onClose={onClose}>
         <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900,
           fontSize: 22, color: C.text, marginBottom: 18, letterSpacing: -0.3 }}>
-          Edytuj klub
+          {t('editClub.title')}
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[
-            { lbl: 'Nazwa klubu', val: name, set: e => setName(e.target.value), max: 21, sx: {} },
-            { lbl: 'Skrót', val: abbr,
+            { lbl: t('editClub.name'), val: name, set: e => setName(e.target.value), max: 21, sx: {} },
+            { lbl: t('editClub.abbr'), val: abbr,
               set: e => setAbbr(e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)),
               max: 3, sx: { fontSize: 20, fontWeight: 900, letterSpacing: 5, textAlign: 'center',
                 fontFamily: 'var(--font-display)' } },
@@ -1597,7 +1609,7 @@ function EditClubSheet({ club, onClose, onSaved }) {
           ))}
           <div>
             <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2,
-              textTransform: 'uppercase', color: C.sub, marginBottom: 6 }}>Kraj</p>
+              textTransform: 'uppercase', color: C.sub, marginBottom: 6 }}>{t('editClub.country')}</p>
             <button onClick={() => setPicker(true)} style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: 10,
               padding: '13px 15px', background: '#0A1626',
@@ -1605,7 +1617,7 @@ function EditClubSheet({ club, onClose, onSaved }) {
               cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
             }}>
               <span style={{ fontSize: 20 }}>{ctry.flag}</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{ctry.name}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{t(`countries.${ctry.code}`)}</span>
               <svg style={{ marginLeft: 'auto' }} width="15" height="15" viewBox="0 0 24 24"
                 fill="none" stroke={C.sub} strokeWidth="2" strokeLinecap="round">
                 <polyline points="6 9 12 15 18 9"/>
@@ -1627,7 +1639,7 @@ function EditClubSheet({ club, onClose, onSaved }) {
             cursor: valid && !saving ? 'pointer' : 'default', transition: 'all 0.2s',
             boxShadow: valid && !saving ? `0 6px 22px ${C.accentLo}50` : 'none',
           }}>
-          {saving ? 'Zapisywanie…' : 'Zapisz zmiany'}
+          {saving ? t('editClub.saving') : t('editClub.save')}
         </motion.button>
       </Sheet>
     </>
@@ -1636,6 +1648,7 @@ function EditClubSheet({ club, onClose, onSaved }) {
 
 // ── COUNTRY PICKER ────────────────────────────────────────────────────────────
 function CountryPicker({ value, onChange, onClose }) {
+  const { t } = useTranslation('club')
   return createPortal(
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
@@ -1658,7 +1671,7 @@ function CountryPicker({ value, onChange, onClose }) {
         }}>
         <p style={{ fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase',
           color: C.accent, fontWeight: 800, margin: '0 20px 14px', textAlign: 'center' }}>
-          Wybierz kraj
+          {t('countryPicker.title')}
         </p>
         {COUNTRIES.map(c => (
           <button key={c.code} onClick={() => onChange(c)}
@@ -1672,7 +1685,7 @@ function CountryPicker({ value, onChange, onClose }) {
             }}>
             <span style={{ fontSize: 22 }}>{c.flag}</span>
             <span style={{ fontSize: 14, fontWeight: 600,
-              color: value?.code === c.code ? C.accent : C.sub }}>{c.name}</span>
+              color: value?.code === c.code ? C.accent : C.sub }}>{t(`countries.${c.code}`)}</span>
             {value?.code === c.code && (
               <span style={{ marginLeft: 'auto', color: C.accent, fontWeight: 800 }}>✓</span>
             )}
@@ -1694,6 +1707,7 @@ function clubNameSize(name) {
 }
 
 function ClubHeader({ club, isOwner, onEditPress }) {
+  const { t } = useTranslation('club')
   const filled = Object.values(club.members).filter(Boolean).length
   return (
     <div style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 12px', display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -1707,7 +1721,7 @@ function ClubHeader({ club, isOwner, onEditPress }) {
           letterSpacing: 2.5, textTransform: 'uppercase',
           color: 'var(--text-dim)', marginBottom: 3,
         }}>
-          {club.country.flag}&nbsp;{club.country.name}
+          {club.country.flag}&nbsp;{t(`countries.${club.country.code}`)}
         </p>
 
         {/* Club name — display-title style, always uppercase */}
@@ -1762,7 +1776,7 @@ function ClubHeader({ club, isOwner, onEditPress }) {
             letterSpacing: 1.5, textTransform: 'uppercase',
             color: 'var(--text-dim)', margin: 0,
           }}>
-            {filled}/5 graczy
+            {t('membersCount', { count: filled })}
           </p>
         </div>
 
@@ -1778,11 +1792,12 @@ function ClubHeader({ club, isOwner, onEditPress }) {
 // ── MATCH CARD ────────────────────────────────────────────────────────────────
 // Aesthetic divider between "my matches" and other nearby matches.
 function SectionDivider() {
+  const { t } = useTranslation('club')
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 2px 14px' }}>
       <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, rgba(120,180,255,0.18))' }}/>
       <span style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase', color: C.dim }}>
-        Inne mecze
+        {t('otherMatches')}
       </span>
       <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(120,180,255,0.18), transparent)' }}/>
     </div>
@@ -1813,13 +1828,14 @@ function RosterGrid({ players, slots, color, size = 32 }) {
 }
 
 function MatchCard({ match, dist, uid, onPress }) {
+  const { t } = useTranslation('club')
   const slots = MODE_SLOTS[match.mode]
   const homePlayers = match.players.filter(p => p.team === 'home')
   const awayPlayers = match.players.filter(p => p.team === 'away')
   const color = MODE_COLOR[match.mode]
   const isPast = new Date(match.scheduled_at) < new Date()
-  const homeTeamName = match._club?.name || match._club?.abbr || 'Klub'
-  const awayTeamName = match._awayClub?.name || match._awayClub?.abbr || (match.away_club_id ? 'Rywale' : 'Otwarte')
+  const homeTeamName = match._club?.name || match._club?.abbr || t('matchCard.clubFallback')
+  const awayTeamName = match._awayClub?.name || match._awayClub?.abbr || (match.away_club_id ? t('matchCard.rivalsFallback') : t('matchCard.openFallback'))
   const hasTeammate = !!match._hasTeammate
   // Match where the current user has already joined — strongest highlight
   const isParticipating = uid && match.players.some(p => p.user_id === uid)
@@ -1877,7 +1893,7 @@ function MatchCard({ match, dist, uid, onPress }) {
                 display: 'flex', alignItems: 'center', gap: 4,
               }}>
                 <div style={{ width: 5, height: 5, borderRadius: '50%', background: C.accentHi, boxShadow: `0 0 5px ${C.accentHi}` }}/>
-                Grasz
+                {t('matchCard.playing')}
               </div>
             )}
             {!isParticipating && hasTeammate && (
@@ -1889,31 +1905,31 @@ function MatchCard({ match, dist, uid, onPress }) {
                 display: 'flex', alignItems: 'center', gap: 4,
               }}>
                 <div style={{ width: 5, height: 5, borderRadius: '50%', background: C.accent, boxShadow: `0 0 4px ${C.accent}` }}/>
-                Twój team
+                {t('matchCard.yourTeam')}
               </div>
             )}
             {match.status === 'completed' && (
               <div style={{ padding: '2px 7px', borderRadius: 6, background: `${C.win}12`,
                 border: `1px solid ${C.win}30`, fontSize: 9, fontWeight: 700, color: C.win, letterSpacing: 1 }}>
-                {match.walkover ? 'WALKOWER' : 'ZAKOŃCZONY'}
+                {match.walkover ? t('matchCard.walkover') : t('matchCard.finished')}
               </div>
             )}
             {match.status === 'result_pending' && (
               <div style={{ padding: '2px 7px', borderRadius: 6, background: `${C.hoop}12`,
                 border: `1px solid ${C.hoop}35`, fontSize: 9, fontWeight: 700, color: C.hoop, letterSpacing: 1 }}>
-                CZEKA NA POTWIERDZENIE
+                {t('matchCard.pendingConfirmation')}
               </div>
             )}
             {match.status === 'disputed' && (
               <div style={{ padding: '2px 7px', borderRadius: 6, background: `${C.loss}12`,
                 border: `1px solid ${C.loss}35`, fontSize: 9, fontWeight: 700, color: C.loss, letterSpacing: 1 }}>
-                ⚠ SPÓR O WYNIK
+                {t('matchCard.disputed')}
               </div>
             )}
             {match.status === 'full' && (
               <div style={{ padding: '2px 7px', borderRadius: 6, background: `${C.loss}12`,
                 border: `1px solid ${C.loss}30`, fontSize: 9, fontWeight: 700, color: C.loss, letterSpacing: 1 }}>
-                PEŁNY
+                {t('matchCard.full')}
               </div>
             )}
           </div>
@@ -1984,7 +2000,7 @@ function MatchCard({ match, dist, uid, onPress }) {
             fontSize: 11.5, color: 'rgba(224,238,255,0.62)', lineHeight: 1.3,
             maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
-            {match.address || 'Lokalizacja na mapie'}
+            {match.address || t('matchCard.locationOnMap')}
           </span>
         </div>
 
@@ -2003,7 +2019,7 @@ function MatchCard({ match, dist, uid, onPress }) {
               fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10.5, letterSpacing: 1.8,
               textTransform: 'uppercase', color: C.accentHi,
             }}>
-              {isParticipating ? 'Twój mecz · szczegóły' : 'Dołącz do meczu'}
+              {isParticipating ? t('matchCard.yourMatchDetails') : t('matchCard.joinMatch')}
             </span>
             <svg width="7" height="12" viewBox="0 0 12 20" fill="none" stroke={C.accentHi} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 2l8 8-8 8"/>
@@ -2075,6 +2091,7 @@ function MapPicker({ center, onPin, existingPin, flyTo }) {
 
 // ── CREATE MATCH SHEET ────────────────────────────────────────────────────────
 function CreateMatchSheet({ club, uid, onClose, onCreated }) {
+  const { t } = useTranslation('club')
   const [mode,       setMode]       = useState(null)
   const [pin,        setPin]        = useState(null)
   const [addr,       setAddr]       = useState('')
@@ -2148,7 +2165,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
       }
 
       if (validToday.length >= 3) {
-        setErr('Możesz zagrać maksymalnie 3 mecze dziennie.')
+        setErr(t('errors.dailyLimit'))
         setSaving(false); return
       }
 
@@ -2158,7 +2175,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
         return Math.abs(scheduledAt.getTime() - other) < gapMs
       })
       if (conflict) {
-        setErr(`Za mała przerwa między meczami. Odstęp musi wynosić co najmniej ${MODE_GAP[mode] || 75} minut.`)
+        setErr(t('errors.tooSoon', { min: MODE_GAP[mode] || 75 }))
         setSaving(false); return
       }
       // ───────────────────────────────────────────────────────────────────────
@@ -2199,7 +2216,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
             width: 36, height: 4, borderRadius: 2, background: C.dim }}/>
           <p style={{ flex: 1, margin: '6px 0 0', fontSize: 13, fontWeight: 900, letterSpacing: 2.5,
             textTransform: 'uppercase', color: C.text, fontFamily: 'var(--font-display)' }}>
-            Nowy mecz
+            {t('createMatch.title')}
           </p>
           <motion.button whileTap={{ scale: 0.88 }} onClick={onClose}
             style={{ width: 32, height: 32, borderRadius: '50%', border: 'none',
@@ -2216,7 +2233,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 
           {/* Mode selector */}
           <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
-            color: C.dim, margin: '0 0 10px' }}>Tryb gry</p>
+            color: C.dim, margin: '0 0 10px' }}>{t('createMatch.gameMode')}</p>
           <div style={{ display: 'flex', gap: 10, marginBottom: 26 }}>
             {['2v2', '3v3', '5v5'].map(m => {
               const col = MODE_COLOR[m], active = mode === m
@@ -2230,7 +2247,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
                     color: active ? col : C.sub, margin: 0, fontFamily: 'var(--font-display)' }}>{m}</p>
                   <p style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 1,
                     color: active ? `${col}90` : C.dim, margin: '3px 0 0', textTransform: 'uppercase' }}>
-                    {MODE_LABEL[m]}
+                    {t(`modeLabel.${m}`)}
                   </p>
                 </motion.button>
               )
@@ -2239,7 +2256,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 
           {/* Map */}
           <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
-            color: C.dim, margin: '0 0 10px' }}>Lokalizacja</p>
+            color: C.dim, margin: '0 0 10px' }}>{t('createMatch.location')}</p>
           <div style={{ height: 224, borderRadius: 16, overflow: 'hidden', marginBottom: 10,
             border: `1.5px solid ${pin ? `${C.accentLo}60` : `${C.dim}40`}`, position: 'relative' }}>
             <MapPicker center={userLoc} onPin={handlePin} existingPin={pin} flyTo={flyTo}/>
@@ -2254,7 +2271,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
                 justifyContent: 'center', pointerEvents: 'none', background: 'rgba(4,8,15,0.35)', zIndex: 1000 }}>
                 <div style={{ padding: '8px 16px', borderRadius: 10, background: 'rgba(8,17,30,0.85)',
                   border: `1px solid ${C.dim}60` }}>
-                  <p style={{ fontSize: 11, color: C.sub, fontWeight: 600, margin: 0 }}>Stuknij na mapie aby wybrać miejsce</p>
+                  <p style={{ fontSize: 11, color: C.sub, fontWeight: 600, margin: 0 }}>{t('createMatch.tapMapHint')}</p>
                 </div>
               </div>
             )}
@@ -2264,19 +2281,19 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 26 }}>
             <p style={{ flex: 1, fontSize: 10.5, margin: 0,
               color: addr ? C.text : C.dim }}>
-              {addr ? `📍 ${addr}` : 'Wybierz punkt na mapie'}
+              {addr ? `📍 ${addr}` : t('createMatch.selectPointHint')}
             </p>
             <motion.button whileTap={{ scale: 0.93 }} onClick={useMyLocation} disabled={locLoading}
               style={{ padding: '7px 13px', borderRadius: 10, border: 'none', cursor: 'pointer',
                 background: `${C.accent}15`, outline: `1px solid ${C.accent}40`,
                 color: C.accent, fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', opacity: locLoading ? 0.5 : 1 }}>
-              {locLoading ? '…' : '📍 Moja lokalizacja'}
+              {locLoading ? '…' : t('createMatch.myLocation')}
             </motion.button>
           </div>
 
           {/* Date + Time */}
           <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
-            color: C.dim, margin: '0 0 10px' }}>Data i godzina</p>
+            color: C.dim, margin: '0 0 10px' }}>{t('createMatch.dateTime')}</p>
           <div style={{ display: 'flex', gap: 10, marginBottom: 26 }}>
             {[
               { type: 'date', val: date, set: setDate },
@@ -2296,10 +2313,10 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
           {/* Note */}
           <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
             color: C.dim, margin: '0 0 10px' }}>
-            Notatka <span style={{ fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>(opcjonalnie)</span>
+            {t('createMatch.note')} <span style={{ fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>{t('createMatch.optional')}</span>
           </p>
           <input type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={120}
-            placeholder="np. potrzeba 10 graczy, hala na zewnątrz…"
+            placeholder={t('createMatch.notePlaceholder')}
             style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', boxSizing: 'border-box',
               background: C.surface, color: C.text, outline: `1px solid ${C.dim}60`,
               fontSize: 12, marginBottom: 28 }}
@@ -2318,7 +2335,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
               cursor: canCreate && !saving ? 'pointer' : 'default',
               boxShadow: canCreate ? `0 6px 28px ${C.accentLo}55` : 'none',
               transition: 'all 0.2s', opacity: saving ? 0.7 : 1 }}>
-            {saving ? 'Tworzenie…' : 'Stwórz mecz'}
+            {saving ? t('createMatch.creating') : t('createMatch.createMatch')}
           </motion.button>
         </div>
       </motion.div>
@@ -2329,6 +2346,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 
 // ── MATCH DETAIL SHEET ────────────────────────────────────────────────────────
 function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoined, onLeft, onDeleted }) {
+  const { t } = useTranslation('club')
   const { profile, refreshProfile, setProfileData } = useAuth()
   const [local,         setLocal]         = useState(match)
   const [joining,       setJoining]       = useState(false)
@@ -2349,12 +2367,12 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
   const isHomeClubMember = userClubId === local.club_id
   // Away team is locked for 3rd clubs: once a club claims it, only their members can join
   const isAwayLocked = !!(local.away_club_id && local.away_club_id !== userClubId)
-  const homeTeamName = local._club?.name || 'Drużyna A'
+  const homeTeamName = local._club?.name || t('matchDetail.homeFallback')
   // If away is claimed by our club → show our name; if by another → show their name; if free → invite
   const awayIsFree = !local.away_club_id
   const awayDisplayName = local._awayClub?.name
     || (local.away_club_id === userClubId ? userClubName : null)
-    || (awayIsFree ? 'Dołącz' : 'Rywale')
+    || (awayIsFree ? t('matchDetail.joinFallback') : t('matchDetail.rivalsFallback'))
   const awayTeamName = awayDisplayName
   const isCreator = local.created_by === uid
   const awayHasPlayers = local.players.some(p => p.team === 'away')
@@ -2471,7 +2489,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
       if (local._isDemo) {
         const fakePlayer = {
           match_id: local.id, user_id: uid, team, slot: 1,
-          profile: { id: uid, name: profile?.name || 'Ty', equipped_frame: profile?.equipped_frame || 'none' },
+          profile: { id: uid, name: profile?.name || t('matchDetail.youFallback'), equipped_frame: profile?.equipped_frame || 'none' },
         }
         const updated = { ...local, players: [fakePlayer] }
         setLocal(updated)
@@ -2563,10 +2581,10 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                 {local.mode}
               </div>
               {local.status === 'full' && (
-                <span style={{ fontSize: 9, fontWeight: 700, color: C.loss, letterSpacing: 1 }}>PEŁNY</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: C.loss, letterSpacing: 1 }}>{t('matchDetail.full')}</span>
               )}
               {isPast && local.status !== 'completed' && (
-                <span style={{ fontSize: 9, fontWeight: 700, color: C.dim, letterSpacing: 1 }}>ZAKOŃCZONY</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: C.dim, letterSpacing: 1 }}>{t('matchDetail.finished')}</span>
               )}
             </div>
             <div style={{ textAlign: 'right' }}>
@@ -2603,7 +2621,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
               display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 18 }}>
               <div style={{ textAlign: 'center' }}>
                 <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase',
-                  color: `${C.accent}80`, margin: '0 0 4px' }}>Drużyna A</p>
+                  color: `${C.accent}80`, margin: '0 0 4px' }}>{t('matchDetail.resultHomeLabel')}</p>
                 <span style={{ fontSize: 38, fontWeight: 900, fontFamily: 'var(--font-display)', lineHeight: 1,
                   color: local.score_home > local.score_away ? C.win : C.text,
                   textShadow: local.score_home > local.score_away ? `0 0 20px ${C.win}48` : 'none' }}>
@@ -2613,7 +2631,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
               <span style={{ fontSize: 22, fontWeight: 900, color: C.dim }}>:</span>
               <div style={{ textAlign: 'center' }}>
                 <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase',
-                  color: `${C.hoop}80`, margin: '0 0 4px' }}>Drużyna B</p>
+                  color: `${C.hoop}80`, margin: '0 0 4px' }}>{t('matchDetail.resultAwayLabel')}</p>
                 <span style={{ fontSize: 38, fontWeight: 900, fontFamily: 'var(--font-display)', lineHeight: 1,
                   color: local.score_away > local.score_home ? C.win : C.text,
                   textShadow: local.score_away > local.score_home ? `0 0 20px ${C.win}48` : 'none' }}>
@@ -2723,7 +2741,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
               background: 'rgba(255,168,32,0.08)', border: '0.5px solid rgba(255,168,32,0.28)',
               textAlign: 'center' }}>
               <p style={{ margin: 0, fontSize: 12, color: C.hoop, fontWeight: 600, lineHeight: 1.5 }}>
-                Dołącz do klubu, żeby zagrać w meczu
+                {t('matchDetail.joinClubHint')}
               </p>
             </div>
           )}
@@ -2746,8 +2764,8 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                   const isOpenAway = team === 'away' && awayIsFree && !teamFull && !locked
                   const isActive = !disabled
                   const lockedLabel = team === 'home'
-                    ? '🔒 Tylko Twój klub'
-                    : `🔒 ${local._awayClub?.abbr || local._awayClub?.name || 'Inny klub'}`
+                    ? t('matchDetail.lockedHome')
+                    : `🔒 ${local._awayClub?.abbr || local._awayClub?.name || t('matchDetail.lockedAwayOther')}`
 
                   // Hide fully locked teams if there's at least one joinable
                   if (locked && joinable.length > 0) return null
@@ -2786,8 +2804,8 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                         }),
                       }}>
                       {joining ? '…'
-                        : teamFull ? `${team === 'home' ? homeTeamName : awayTeamName} — Pełna`
-                        : `Dołącz — ${team === 'home' ? homeTeamName : awayTeamName}`}
+                        : teamFull ? `${team === 'home' ? homeTeamName : awayTeamName} — ${t('matchDetail.teamFullSuffix')}`
+                        : `${t('matchDetail.joinPrefix')}${team === 'home' ? homeTeamName : awayTeamName}`}
                     </motion.button>
                   )
                 })}
@@ -2802,22 +2820,22 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                 style={{ marginBottom: 12, padding: '16px', borderRadius: 16,
                   background: `${C.loss}0E`, border: `1px solid ${C.loss}40` }}>
                 <p style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: '0 0 6px', textAlign: 'center' }}>
-                  Jesteś ostatnią osobą
+                  {t('matchDetail.lastPlayerTitle')}
                 </p>
                 <p style={{ fontSize: 10.5, color: C.sub, margin: '0 0 14px', textAlign: 'center', lineHeight: 1.5 }}>
-                  Jeśli opuścisz, mecz zostanie usunięty. Na pewno?
+                  {t('matchDetail.lastPlayerBody')}
                 </p>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <motion.button whileTap={{ scale: 0.96 }} onClick={() => setConfirmLeave(false)}
                     style={{ flex: 1, padding: '11px', borderRadius: 12, border: 'none', cursor: 'pointer',
                       background: C.surface, color: C.sub, fontSize: 11, fontWeight: 700 }}>
-                    Anuluj
+                    {t('matchDetail.cancel')}
                   </motion.button>
                   <motion.button whileTap={{ scale: 0.96 }} onClick={() => doLeave(true)}
                     style={{ flex: 1, padding: '11px', borderRadius: 12, border: 'none', cursor: 'pointer',
                       background: `${C.loss}18`, outline: `1px solid ${C.loss}50`,
                       color: C.loss, fontSize: 11, fontWeight: 800 }}>
-                    Usuń mecz
+                    {t('matchDetail.deleteMatch')}
                   </motion.button>
                 </div>
               </motion.div>
@@ -2831,7 +2849,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                 border: `1px solid ${myPlayer.team === 'home' ? C.accent : C.hoop}35` }}>
                 <p style={{ margin: 0, fontSize: 11, fontWeight: 800,
                   color: myPlayer.team === 'home' ? C.accent : C.hoop }}>
-                  {myPlayer.team === 'home' ? homeTeamName : awayTeamName} ✓
+                  {(myPlayer.team === 'home' ? homeTeamName : awayTeamName)} ✓
                 </p>
               </div>
               {!isPast && (
@@ -2839,7 +2857,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                   style={{ padding: '13px 18px', borderRadius: 14, border: 'none', cursor: 'pointer',
                     background: `${C.loss}12`, outline: `1px solid ${C.loss}35`,
                     color: C.loss, fontSize: 11, fontWeight: 700, opacity: leaving ? 0.7 : 1 }}>
-                  {leaving ? '…' : 'Opuść'}
+                  {leaving ? '…' : t('matchDetail.leave')}
                 </motion.button>
               )}
             </div>
@@ -2851,9 +2869,9 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
               style={{ marginTop:10, padding:'12px 14px', borderRadius:12,
                 background:`${C.loss}08`, border:`1px solid ${C.loss}25` }}>
               <p style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.70)',
-                margin:'0 0 4px' }}>Rywale nie stawili się?</p>
+                margin:'0 0 4px' }}>{t('matchDetail.noShowQuestion')}</p>
               <p style={{ fontSize:10, color:C.sub, margin:'0 0 12px', lineHeight:1.5 }}>
-                Walkower — rywale otrzymują L, Ty nie otrzymujesz W.
+                {t('matchDetail.noShowBody')}
               </p>
               <motion.button whileTap={{ scale:0.97 }} onClick={handleNoShow}
                 disabled={noShowSaving}
@@ -2862,7 +2880,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                   color:C.loss, fontSize:11, fontWeight:800, cursor:'pointer',
                   opacity: noShowSaving ? 0.7 : 1,
                   WebkitTapHighlightColor:'transparent' }}>
-                {noShowSaving ? '…' : 'Oznacz niestawienie — walkower'}
+                {noShowSaving ? '…' : t('matchDetail.markWalkover')}
               </motion.button>
             </motion.div>
           )}
@@ -2882,7 +2900,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                     outline:`1px solid ${C.loss}30`,
                     color:`${C.loss}88`, fontSize:10.5, fontWeight:700,
                     letterSpacing:0.5, WebkitTapHighlightColor:'transparent' }}>
-                  {awayHasPlayers ? 'Anuluj mecz' : 'Usuń spotkanie'}
+                  {awayHasPlayers ? t('matchDetail.cancelMatch') : t('matchDetail.deleteMeeting')}
                 </motion.button>
               )}
 
@@ -2893,10 +2911,10 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                   style={{ marginTop:10, padding:'14px', borderRadius:14,
                     background:`${C.loss}0E`, border:`1px solid ${C.loss}50` }}>
                   <p style={{ fontSize:12, fontWeight:800, color:C.loss,
-                    margin:'0 0 6px', textAlign:'center' }}>⚠ Anulowanie &lt; 2h od meczu</p>
+                    margin:'0 0 6px', textAlign:'center' }}>{t('matchDetail.twoHourWarnTitle')}</p>
                   <p style={{ fontSize:10.5, color:C.sub, margin:'0 0 14px',
                     textAlign:'center', lineHeight:1.55 }}>
-                    Anulowanie tak blisko startu skutkuje <strong style={{color:C.loss}}>przegraną (L)</strong> dla Twojej drużyny. Rywale zostaną powiadomieni.
+                    {t('matchDetail.twoHourWarnBody')}
                   </p>
                   {err && <p style={{ fontSize:10, color:C.loss, textAlign:'center', margin:'0 0 10px' }}>{err}</p>}
                   <div style={{ display:'flex', gap:8 }}>
@@ -2905,7 +2923,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                       style={{ flex:1, padding:'11px', borderRadius:10, border:'none',
                         cursor:'pointer', background:C.surface,
                         color:C.sub, fontSize:11, fontWeight:700 }}>
-                      Wróć
+                      {t('matchDetail.back')}
                     </motion.button>
                     <motion.button whileTap={{ scale:0.96 }}
                       onClick={handleCreatorRemove} disabled={deleting}
@@ -2914,7 +2932,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                         outline:`1px solid ${C.loss}50`,
                         color:C.loss, fontSize:11, fontWeight:800,
                         opacity: deleting ? 0.7 : 1 }}>
-                      {deleting ? '…' : 'Anuluj mimo to (L)'}
+                      {deleting ? '…' : t('matchDetail.cancelAnyway')}
                     </motion.button>
                   </div>
                 </motion.div>
@@ -2928,13 +2946,13 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                     background:`${C.loss}0C`, border:`1px solid ${C.loss}35` }}>
                   <p style={{ fontSize:11.5, fontWeight:700, color:C.text,
                     margin:'0 0 4px', textAlign:'center' }}>
-                    {awayHasPlayers ? 'Anulować mecz?' : 'Usunąć spotkanie?'}
+                    {awayHasPlayers ? t('matchDetail.cancelMatchQuestion') : t('matchDetail.deleteMeetingQuestion')}
                   </p>
                   <p style={{ fontSize:10, color:C.sub, margin:'0 0 14px',
                     textAlign:'center', lineHeight:1.5 }}>
                     {awayHasPlayers
-                      ? 'Rywale zostaną powiadomieni. Brak W/L dla obu drużyn.'
-                      : 'Spotkanie zostanie trwale usunięte.'}
+                      ? t('matchDetail.cancelMatchNotice')
+                      : t('matchDetail.deleteMeetingNotice')}
                   </p>
                   {err && <p style={{ fontSize:10, color:C.loss, textAlign:'center',
                     margin:'0 0 10px' }}>{err}</p>}
@@ -2944,7 +2962,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                       style={{ flex:1, padding:'11px', borderRadius:10, border:'none',
                         cursor:'pointer', background:C.surface,
                         color:C.sub, fontSize:11, fontWeight:700 }}>
-                      Wróć
+                      {t('matchDetail.back')}
                     </motion.button>
                     <motion.button whileTap={{ scale:0.96 }}
                       onClick={handleCreatorRemove} disabled={deleting}
@@ -2953,7 +2971,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                         outline:`1px solid ${C.loss}50`,
                         color:C.loss, fontSize:11, fontWeight:800,
                         opacity: deleting ? 0.7 : 1 }}>
-                      {deleting ? '…' : awayHasPlayers ? 'Anuluj mecz' : 'Usuń'}
+                      {deleting ? '…' : awayHasPlayers ? t('matchDetail.cancelMatch') : t('matchDetail.deleteShort')}
                     </motion.button>
                   </div>
                 </motion.div>
@@ -2970,9 +2988,10 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
 // ── RESULT SHEET ──────────────────────────────────────────────────────────────
 // role: 'home' | 'home_only' | 'away_confirm' | 'disputed_home' | 'disputed_away'
 function ResultSheet({ match, role = 'home', onClose, onUpdate }) {
+  const { t } = useTranslation('club')
   const hasAway  = match.players.some(p => p.team === 'away')
-  const homeClub = match._club?.name      || 'Drużyna A'
-  const awayClub = match._awayClub?.name  || 'Drużyna B'
+  const homeClub = match._club?.name      || t('resultSheet.homeFallback')
+  const awayClub = match._awayClub?.name  || t('resultSheet.awayFallback')
 
   const hoursLeft = match.result_submitted_at
     ? Math.max(0, Math.floor(
@@ -3064,25 +3083,25 @@ function ResultSheet({ match, role = 'home', onClose, onUpdate }) {
     return (
       <>
         <p style={{ fontSize:9.5, fontWeight:800, letterSpacing:3.5, textTransform:'uppercase',
-          color:C.dim, textAlign:'center', margin:'0 0 4px' }}>Wpisz wynik</p>
+          color:C.dim, textAlign:'center', margin:'0 0 4px' }}>{t('resultSheet.enterResult')}</p>
         <p style={{ fontSize:11.5, fontWeight:600, color:C.sub, textAlign:'center', margin:'0 0 6px' }}>
           {fmtMatchDate(match.scheduled_at)} · {fmtMatchTime(match.scheduled_at)}
         </p>
         {!autoConfirm && (
           <p style={{ fontSize:10, color:`${C.hoop}88`, textAlign:'center', margin:'0 0 22px', lineHeight:1.5 }}>
-            Kapitan rywali potwierdzi wynik · limit <strong style={{color:C.hoop}}>24h</strong>
+            {t('resultSheet.awayCaptainConfirms')}
           </p>
         )}
         {autoConfirm && (
           <p style={{ fontSize:10, color:`${C.win}77`, textAlign:'center', margin:'0 0 22px' }}>
-            Brak drużyny przeciwnej — wynik zostanie zatwierdzony od razu.
+            {t('resultSheet.noAwayTeam')}
           </p>
         )}
         <ScoreInputs sh={sh} sa={sa} setSh={setSh} setSa={setSa}/>
         {err && <p style={{ fontSize:11, color:C.loss, textAlign:'center', margin:'0 0 10px' }}>{err}</p>}
         <PrimaryBtn active={ok} saving={saving} onClick={submit}
-          label={autoConfirm ? 'Zatwierdź wynik' : 'Zatwierdź i wyślij rywalom'}/>
-        <SecBtn onClick={onClose} label="Wpisz później"/>
+          label={autoConfirm ? t('resultSheet.confirmResult') : t('resultSheet.confirmAndSend')}/>
+        <SecBtn onClick={onClose} label={t('resultSheet.enterLater')}/>
       </>
     )
   }
@@ -3124,7 +3143,7 @@ function ResultSheet({ match, role = 'home', onClose, onUpdate }) {
     return (
       <>
         <p style={{ fontSize:9.5, fontWeight:800, letterSpacing:3.5, textTransform:'uppercase',
-          color:C.hoop, textAlign:'center', margin:'0 0 4px' }}>Potwierdź wynik</p>
+          color:C.hoop, textAlign:'center', margin:'0 0 4px' }}>{t('resultSheet.confirmResultTitle')}</p>
         <p style={{ fontSize:11.5, fontWeight:600, color:C.sub, textAlign:'center', margin:'0 0 18px' }}>
           {fmtMatchDate(match.scheduled_at)} · {fmtMatchTime(match.scheduled_at)}
         </p>
@@ -3154,28 +3173,28 @@ function ResultSheet({ match, role = 'home', onClose, onUpdate }) {
 
         {hoursLeft !== null && (
           <p style={{ fontSize:10, color:C.dim, textAlign:'center', margin:'0 0 16px' }}>
-            Brak potwierdzenia → wynik zatwierdzi się za <strong style={{color:'rgba(255,255,255,0.55)'}}>{hoursLeft}h</strong>
+            {t('resultSheet.autoConfirmHint', { hours: hoursLeft })}
           </p>
         )}
 
         {mode === 'confirm' && (
           <>
             {err && <p style={{ fontSize:11, color:C.loss, textAlign:'center', margin:'0 0 10px' }}>{err}</p>}
-            <PrimaryBtn active saving={saving} onClick={confirm} label="Potwierdzam wynik ✓" color={C.win}/>
-            <SecBtn onClick={() => setMode('dispute')} label="Inny wynik"/>
-            <SecBtn onClick={onClose} label="Wpisz później"/>
+            <PrimaryBtn active saving={saving} onClick={confirm} label={t('resultSheet.confirmExclaim')} color={C.win}/>
+            <SecBtn onClick={() => setMode('dispute')} label={t('resultSheet.differentResult')}/>
+            <SecBtn onClick={onClose} label={t('resultSheet.enterLater')}/>
           </>
         )}
 
         {mode === 'dispute' && (
           <>
             <p style={{ fontSize:10.5, color:C.sub, textAlign:'center', margin:'0 0 14px' }}>
-              Wpisz wynik według Ciebie:
+              {t('resultSheet.enterYourResult')}
             </p>
             <ScoreInputs sh={sh} sa={sa} setSh={setSh} setSa={setSa}/>
             {err && <p style={{ fontSize:11, color:C.loss, textAlign:'center', margin:'0 0 10px' }}>{err}</p>}
-            <PrimaryBtn active={ok} saving={saving} onClick={submitDispute} label="Zatwierdź"/>
-            <SecBtn onClick={() => setMode('confirm')} label="← Wróć"/>
+            <PrimaryBtn active={ok} saving={saving} onClick={submitDispute} label={t('resultSheet.confirm')}/>
+            <SecBtn onClick={() => setMode('confirm')} label={t('resultSheet.backArrow')}/>
           </>
         )}
       </>
@@ -3200,11 +3219,11 @@ function ResultSheet({ match, role = 'home', onClose, onUpdate }) {
     return (
       <>
         <p style={{ fontSize:9.5, fontWeight:800, letterSpacing:3, textTransform:'uppercase',
-          color:C.loss, textAlign:'center', margin:'0 0 6px' }}>⚠ Niezgodny wynik</p>
+          color:C.loss, textAlign:'center', margin:'0 0 6px' }}>{t('resultSheet.mismatchTitle')}</p>
         <p style={{ fontSize:11, color:C.sub, textAlign:'center', margin:'0 0 18px', lineHeight:1.6 }}>
           {isHome
-            ? 'Kapitan rywali wpisał inny wynik. Skontaktujcie się bezpośrednio.'
-            : 'Twój wynik różni się od zgłoszonego. Skontaktujcie się z gospodarzami.'}
+            ? t('resultSheet.mismatchHome')
+            : t('resultSheet.mismatchAway')}
         </p>
         <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:14,
           padding:'12px 20px', marginBottom:14,
@@ -3217,19 +3236,19 @@ function ResultSheet({ match, role = 'home', onClose, onUpdate }) {
             fontFamily:'var(--font-display)' }}>{match.score_away}</span>
         </div>
         <p style={{ fontSize:9.5, color:C.dim, textAlign:'center', margin:'0 0 18px', letterSpacing:1 }}>
-          WYNIK ZGŁOSZONY PRZEZ {homeClub.toUpperCase()}
+          {t('resultSheet.submittedBy', { club: homeClub.toUpperCase() })}
         </p>
         {err && <p style={{ fontSize:11, color:C.loss, textAlign:'center', margin:'0 0 10px' }}>{err}</p>}
         {!isHome && (
           <PrimaryBtn active saving={saving} onClick={confirmHomeScore}
-            label={`Potwierdzam ${match.score_home}:${match.score_away}`} color={C.win}/>
+            label={t('resultSheet.confirmScore', { home: match.score_home, away: match.score_away })} color={C.win}/>
         )}
         {isHome && (
           <p style={{ fontSize:10, color:C.dim, textAlign:'center', margin:'0 0 16px', lineHeight:1.55 }}>
-            Twój wynik zostanie zatwierdzony automatycznie jeśli rywale nie zareagują w ciągu 24h.
+            {t('resultSheet.autoConfirmNotice')}
           </p>
         )}
-        <SecBtn onClick={onClose} label="Zamknij"/>
+        <SecBtn onClick={onClose} label={t('resultSheet.close')}/>
       </>
     )
   }
@@ -3259,12 +3278,13 @@ function ResultSheet({ match, role = 'home', onClose, onUpdate }) {
 
 // ── JOIN SUCCESS MODAL ────────────────────────────────────────────────────────
 function JoinSuccessModal({ match, uid, clubName, playerName, onClose }) {
+  const { t } = useTranslation('club')
   const [sharing, setSharing] = useState(false)
   const color = MODE_COLOR[match.mode] || C.accent
   const modeLabels = { '2v2': '2 na 2', '3v3': '3 na 3', '5v5': '5 na 5' }
   const myPlayer = match.players?.find(p => p.user_id === uid)
   // Always show the user's own club name regardless of which team slot they joined
-  const teamLabel = myPlayer?.team === 'home' ? (match._club?.name || 'Drużyna A') : (clubName || 'Twój klub')
+  const teamLabel = myPlayer?.team === 'home' ? (match._club?.name || t('joinSuccess.homeFallback')) : (clubName || t('joinSuccess.yourClubFallback'))
 
   async function handleShare() {
     setSharing(true)
@@ -3323,14 +3343,14 @@ function JoinSuccessModal({ match, uid, clubName, playerName, onClose }) {
             color: C.text, letterSpacing: 0.5, textTransform: 'uppercase',
             margin: '0 0 4px', lineHeight: 1,
           }}>
-          Jesteś w grze!
+          {t('joinSuccess.inGame')}
         </motion.p>
 
         <motion.p
           initial={{ opacity: 0 }} animate={{ opacity: 1 }}
           transition={{ delay: 0.24 }}
           style={{ fontSize: 12, color: C.sub, margin: '0 0 22px', lineHeight: 1.5 }}>
-          Dołączyłeś do meczu jako{' '}
+          {t('joinSuccess.joinedAs')}{' '}
           <span style={{ color, fontWeight: 700 }}>{teamLabel}</span>
         </motion.p>
 
@@ -3387,7 +3407,7 @@ function JoinSuccessModal({ match, uid, clubName, playerName, onClose }) {
             <polyline points="16 6 12 2 8 6"/>
             <line x1="12" y1="2" x2="12" y2="15"/>
           </svg>
-          {sharing ? 'Generowanie…' : 'Zaproś znajomych'}
+          {sharing ? t('joinSuccess.generating') : t('joinSuccess.inviteFriends')}
         </motion.button>
 
         <motion.button
@@ -3399,7 +3419,7 @@ function JoinSuccessModal({ match, uid, clubName, playerName, onClose }) {
             background: 'transparent', color: C.sub, fontSize: 11, fontWeight: 600,
             cursor: 'pointer',
           }}>
-          Zamknij
+          {t('joinSuccess.close')}
         </motion.button>
       </motion.div>
     </motion.div>,
@@ -3474,6 +3494,7 @@ async function forwardGeocode(city) {
 }
 
 function MatchesPanel({ club, uid, isActive }) {
+  const { t } = useTranslation('club')
   const { profile } = useAuth()
   const [locState, setLocState] = useState('idle')
   const [locError,  setLocError]  = useState(null)   // 'permission' | 'unavailable' | null
@@ -3713,8 +3734,8 @@ function MatchesPanel({ club, uid, isActive }) {
         <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.8, textTransform: 'uppercase',
           color: C.dim, margin: '0 0 10px' }}>
           {cityFallback && profile?.city
-            ? `Mecze w pobliżu · ${profile.city}`
-            : 'Mecze w pobliżu'}
+            ? t('matchesPanel.nearbyMatchesCity', { city: profile.city })
+            : t('matchesPanel.nearbyMatches')}
         </p>
         {/* Radius filter — pills, reloads the list on change */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
@@ -3745,7 +3766,7 @@ function MatchesPanel({ club, uid, isActive }) {
                 color: modeFilter === opt ? C.accentHi : C.sub,
                 transition: 'all 0.15s ease',
               }}>
-              {opt}
+              {opt === 'Wszystkie' ? t('matchesPanel.modeAll') : opt}
             </button>
           ))}
         </div>
@@ -3772,19 +3793,19 @@ function MatchesPanel({ club, uid, isActive }) {
             </svg>
           </div>
           <p style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: '0 0 8px' }}>
-            {locError === 'permission' ? 'Brak dostępu do lokalizacji' : 'Nie można ustalić lokalizacji'}
+            {locError === 'permission' ? t('matchesPanel.noGeoAccess') : t('matchesPanel.noGeoFix')}
           </p>
           <p style={{ fontSize: 10.5, color: C.sub, margin: '0 0 22px', lineHeight: 1.6 }}>
             {locError === 'permission'
-              ? 'Zezwól tej stronie na dostęp\ndo lokalizacji w ustawieniach przeglądarki'
-              : 'Sprawdź czy GPS jest włączony\ni spróbuj ponownie'}
+              ? t('matchesPanel.noGeoAccessBody')
+              : t('matchesPanel.noGeoFixBody')}
           </p>
           <motion.button whileTap={{ scale: 0.95 }}
             onClick={requestGeo}
             style={{ padding: '11px 26px', borderRadius: 12, border: 'none', cursor: 'pointer',
               background: `${C.accent}18`, outline: `1px solid ${C.accent}40`,
               color: C.accent, fontSize: 11, fontWeight: 700 }}>
-            {locError === 'permission' ? 'Spróbuj ponownie' : 'Włącz lokalizację'}
+            {locError === 'permission' ? t('matchesPanel.tryAgain') : t('matchesPanel.enableLocation')}
           </motion.button>
         </div>
       )}
@@ -3815,10 +3836,10 @@ function MatchesPanel({ club, uid, isActive }) {
             <span style={{ fontSize: 18, lineHeight: 1 }}>⚠️</span>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,0.88)', margin: '0 0 4px' }}>
-                Mecz odwołany automatycznie
+                {t('matchesPanel.autoCancelTitle')}
               </p>
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.5 }}>
-                Nikt nie dołączył do Twojego meczu 5 minut przed startem. Spróbuj zaplanować kolejny!
+                {t('matchesPanel.autoCancelBody')}
               </p>
             </div>
             <button
@@ -3839,7 +3860,7 @@ function MatchesPanel({ club, uid, isActive }) {
             return (
               <>
                 <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
-                  color: C.dim, margin: '0 0 10px 2px' }}>Nadchodzące</p>
+                  color: C.dim, margin: '0 0 10px 2px' }}>{t('matchesPanel.upcoming')}</p>
                 {mine.map(m => (
                   <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
                     onPress={() => { setActive(m); setSheet('detail') }}/>
@@ -3858,7 +3879,7 @@ function MatchesPanel({ club, uid, isActive }) {
             return (
               <>
                 <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
-                  color: C.dim, margin: '16px 0 10px 2px' }}>Ostatnie</p>
+                  color: C.dim, margin: '16px 0 10px 2px' }}>{t('matchesPanel.recent')}</p>
                 {mine.map(m => (
                   <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
                     onPress={() => { setActive(m); setSheet('detail') }}/>
@@ -3880,11 +3901,11 @@ function MatchesPanel({ club, uid, isActive }) {
                   filter: 'grayscale(0.3)' }}/>
               <p style={{ fontSize: 13, fontWeight: 700,
                 color: 'rgba(255,255,255,0.70)', margin: '0 0 6px', letterSpacing: 0.2 }}>
-                Brak meczów w pobliżu
+                {t('matchesPanel.noMatchesTitle')}
               </p>
               <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)',
                 lineHeight: 1.65, margin: 0 }}>
-                Żaden klub nie zaplanował meczu{'\n'}w zasięgu {radius} km. Możesz zmienić zasięg powyżej.
+                {t('matchesPanel.noMatchesBody', { km: radius })}
               </p>
             </div>
           )}
@@ -3904,7 +3925,7 @@ function MatchesPanel({ club, uid, isActive }) {
             strokeWidth="3" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          Umów mecz
+          {t('matchesPanel.createMatch')}
         </motion.button>
       )}
 
@@ -3953,9 +3974,11 @@ function MatchesPanel({ club, uid, isActive }) {
 }
 
 // ── PANEL DOTS ────────────────────────────────────────────────────────────────
-const PANEL_LABELS = ['Mecze', 'Boisko', 'Statystyki']
+const PANEL_LABELS = ['Mecze', 'Boisko', 'Statystyki'] // PL fallback; PanelDots uses t('panelLabels', { returnObjects: true })
 
 function PanelDots({ active, onChange }) {
+  const { t } = useTranslation('club')
+  const labels = t('panelLabels', { returnObjects: true })
   return (
     <div style={{ padding: '0 22px 12px' }}>
       {/* Liquid-glass segmented control — same pattern as StatsPage filter */}
@@ -3970,7 +3993,7 @@ function PanelDots({ active, onChange }) {
         padding: 3,
         boxShadow: '0 4px 18px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.05)',
       }}>
-        {PANEL_LABELS.map((label, i) => (
+        {labels.map((label, i) => (
           <motion.button key={i} onClick={() => onChange(i)}
             whileTap={{ scale: 0.94 }}
             style={{
@@ -4007,6 +4030,7 @@ function PanelDots({ active, onChange }) {
 
 // ── STATS PANEL ───────────────────────────────────────────────────────────────
 function StatsPanel({ club }) {
+  const { t } = useTranslation('club')
   const [completed, setCompleted] = useState([])
   const [upcoming,  setUpcoming]  = useState([])
   const [loading,   setLoading]   = useState(true)
@@ -4080,9 +4104,9 @@ function StatsPanel({ club }) {
       {/* W / L / Rate cards */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         {[
-          { val: loading ? '–' : wins,       lbl: 'Wygrane',   col: C.win    },
-          { val: loading ? '–' : losses,     lbl: 'Przegrane', col: C.loss   },
-          { val: loading ? '–' : `${rate}%`, lbl: 'Win rate',  col: C.accent },
+          { val: loading ? '–' : wins,       lbl: t('statsPanel.wins'),    col: C.win    },
+          { val: loading ? '–' : losses,     lbl: t('statsPanel.losses'), col: C.loss   },
+          { val: loading ? '–' : `${rate}%`, lbl: t('statsPanel.winRate'), col: C.accent },
         ].map(({ val, lbl, col }) => (
           <div key={lbl} style={{
             flex: 1, padding: '16px 10px', borderRadius: 16, textAlign: 'center',
@@ -4101,9 +4125,9 @@ function StatsPanel({ club }) {
         background: C.surface, border: '1px solid rgba(255,255,255,0.05)', marginBottom: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5,
-            textTransform: 'uppercase', color: C.sub }}>Skuteczność</span>
+            textTransform: 'uppercase', color: C.sub }}>{t('statsPanel.effectiveness')}</span>
           <span style={{ fontSize: 11, fontWeight: 800, color: C.accent }}>
-            {loading ? '–' : `${wins} / ${total} meczów`}
+            {loading ? '–' : t('statsPanel.matchesCount', { wins, total })}
           </span>
         </div>
         <div style={{ height: 6, borderRadius: 3, background: C.dim, overflow: 'hidden' }}>
@@ -4118,13 +4142,13 @@ function StatsPanel({ club }) {
       {/* Upcoming */}
       <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.8,
         textTransform: 'uppercase', color: C.dim, margin: '0 0 10px 2px' }}>
-        Nadchodzące mecze
+        {t('statsPanel.upcomingMatches')}
       </p>
       <div style={{ borderRadius: 14, background: C.surface,
         border: '1px solid rgba(255,255,255,0.05)', marginBottom: 18, overflow: 'hidden' }}>
         {!loading && upcoming.length === 0 ? (
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-            <p style={{ fontSize: 11, color: C.sub, fontWeight: 500 }}>Brak zaplanowanych meczów</p>
+            <p style={{ fontSize: 11, color: C.sub, fontWeight: 500 }}>{t('statsPanel.noUpcoming')}</p>
           </div>
         ) : upcoming.map((m, i) => (
           <div key={m.id} style={{
@@ -4136,7 +4160,7 @@ function StatsPanel({ club }) {
             <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5,
               textTransform: 'uppercase', color: C.sub }}>{fmtMode(m.mode)}</span>
             <span style={{ fontSize: 10, color: m.status === 'full' ? C.win : C.sub,
-              fontWeight: 600 }}>{m.status === 'full' ? 'Komplet' : 'Otwarte'}</span>
+              fontWeight: 600 }}>{m.status === 'full' ? t('statsPanel.full') : t('statsPanel.open')}</span>
           </div>
         ))}
       </div>
@@ -4144,13 +4168,13 @@ function StatsPanel({ club }) {
       {/* Recent */}
       <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.8,
         textTransform: 'uppercase', color: C.dim, margin: '0 0 10px 2px' }}>
-        Ostatnie mecze
+        {t('statsPanel.recentMatches')}
       </p>
       <div style={{ borderRadius: 14, background: C.surface,
         border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
         {!loading && completed.length === 0 ? (
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-            <p style={{ fontSize: 11, color: C.sub, fontWeight: 500 }}>Brak rozegranych meczów</p>
+            <p style={{ fontSize: 11, color: C.sub, fontWeight: 500 }}>{t('statsPanel.noRecent')}</p>
           </div>
         ) : completed.slice(0, 8).map((m, i) => {
           const isHome   = m.club_id === club.id
@@ -4240,6 +4264,7 @@ function MiniCourt({ club }) {
 
 // ── CLUB PREVIEW SHEET — read-only "view from outside": court, stats, recent matches ──
 function ClubPreviewSheet({ club, onClose }) {
+  const { t } = useTranslation('club')
   return (
     <Sheet onClose={onClose}>
       {/* Header — badge, name, read-only notice */}
@@ -4253,7 +4278,7 @@ function ClubPreviewSheet({ club, onClose }) {
           </p>
           <p style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase',
             color: C.sub, margin: '3px 0 0' }}>
-            {club.country?.flag ? `${club.country.flag} ` : ''}Podgląd klubu
+            {club.country?.flag ? `${club.country.flag} ` : ''}{t('preview.title')}
           </p>
         </div>
         <span style={{
@@ -4261,7 +4286,7 @@ function ClubPreviewSheet({ club, onClose }) {
           color: C.accent, padding: '5px 10px', borderRadius: 99,
           background: `${C.accent}14`, border: `1px solid ${C.accent}38`,
         }}>
-          Tylko podgląd
+          {t('preview.viewOnly')}
         </span>
       </div>
 
@@ -4278,6 +4303,7 @@ function ClubPreviewSheet({ club, onClose }) {
 
 // ── COURT PANEL ───────────────────────────────────────────────────────────────
 function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, swapSrc, swapping, swapError }) {
+  const { t } = useTranslation('club')
   const isOwner = club.ownerId === uid
 
   return (
@@ -4300,9 +4326,9 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
                 color: swapError ? C.loss : swapping ? C.sub : C.swap,
                 wordBreak: 'break-all' }}>
                 {swapError      ? `❌ ${swapError}`
-                  : swapping    ? '⏳ Zapisywanie…'
-                  : swapSrc     ? `Wybierz pozycję docelową dla ${swapSrc}`
-                  : 'Kliknij gracza, którego chcesz przenieść'}
+                  : swapping    ? t('swap.saving')
+                  : swapSrc     ? t('swap.selectTarget', { pos: swapSrc })
+                  : t('swap.selectPlayerToMove')}
               </p>
             </div>
           </motion.div>
@@ -4606,6 +4632,7 @@ function ClubView({ club, onUpdate, uid }) {
 
 // ── JOIN CODE CHIP (in ClubHeader) ────────────────────────────────────────────
 function JoinCodeChip({ code }) {
+  const { t } = useTranslation('club')
   const [copied, setCopied] = useState(false)
   return (
     <motion.button
@@ -4633,11 +4660,11 @@ function JoinCodeChip({ code }) {
         fontFamily: 'var(--font-display)', fontWeight: 900, letterSpacing: 3,
         fontSize: 13, color: copied ? '#00E890' : C.accent,
       }}>
-        {copied ? 'SKOPIOWANO' : code}
+        {copied ? t('joinCodeChip.copied') : code}
       </span>
       {!copied && (
         <span style={{ fontSize: 8, color: `${C.accent}55`, letterSpacing: 1,
-          fontWeight: 700, textTransform: 'uppercase' }}>kod</span>
+          fontWeight: 700, textTransform: 'uppercase' }}>{t('joinCodeChip.codeSuffix')}</span>
       )}
     </motion.button>
   )
@@ -4645,6 +4672,7 @@ function JoinCodeChip({ code }) {
 
 // ── NO-CLUB SCREEN — welcome + create + join by code ─────────────────────────
 function NoClubScreen({ onCreated, profile }) {
+  const { t } = useTranslation('club')
   const { user } = useAuth()
   const [view, setView] = useState('welcome') // 'welcome' | 'create'
 
@@ -4663,7 +4691,7 @@ function NoClubScreen({ onCreated, profile }) {
     setCodeLoading(true); setCodeErr(null); setCodeResult(null); setSelPos(null)
     apiFetchByCode(raw).then(r => {
       setCodeLoading(false)
-      if (!r) { setCodeErr('Nie znaleziono klubu z tym kodem.'); return }
+      if (!r) { setCodeErr(t('errors.codeNotFound')); return }
       setCodeResult(r)
     })
   }, [codeInput])
@@ -4678,7 +4706,7 @@ function NoClubScreen({ onCreated, profile }) {
       const apiFetchResult = await apiFetch(user.id)  // reuse existing fetch
       onCreated(apiFetchResult)
     } catch (e) {
-      setCodeErr(e?.message ?? 'Błąd dołączania.')
+      setCodeErr(e?.message ?? t('errors.joinFailed'))
       setJoining(false)
     }
   }
@@ -4689,20 +4717,20 @@ function NoClubScreen({ onCreated, profile }) {
     {
       num: '01',
       accent: C.accent,
-      title: 'Utwórz klub',
-      body: 'Nadaj nazwę, skrót i kraj. Klub otrzymuje unikalny 5-znakowy kod — wyślij go znajomym, by dołączyli.',
+      title: t('noClub.stepsTitle1'),
+      body: t('noClub.stepsBody1'),
     },
     {
       num: '02',
       accent: C.hoop,
-      title: 'Organizuj mecze',
-      body: 'Twórz spotkania 2v2, 3v3 lub 5v5 w swojej okolicy. Inne kluby odpowiadają na wyzwanie i zajmują wolne miejsca.',
+      title: t('noClub.stepsTitle2'),
+      body: t('noClub.stepsBody2'),
     },
     {
       num: '03',
       accent: '#FFD166',
-      title: 'Rywalizuj w lidze',
-      body: 'Mecze i aktywność przekładają się na punkty ligowe. Ranking tygodniowy resetuje się w każdy poniedziałek o 00:00.',
+      title: t('noClub.stepsTitle3'),
+      body: t('noClub.stepsBody3'),
     },
   ]
 
@@ -4731,10 +4759,10 @@ function NoClubScreen({ onCreated, profile }) {
           fontSize: 34, textTransform: 'uppercase', letterSpacing: 1,
           color: 'var(--text-primary)', margin: '0 0 8px', lineHeight: 1,
         }}>
-          Graj z innymi
+          {t('noClub.title')}
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.6, margin: 0 }}>
-          Dołącz do klubu i rozgrywaj mecze z graczami w pobliżu
+          {t('noClub.subtitle')}
         </p>
       </motion.div>
 
@@ -4786,7 +4814,7 @@ function NoClubScreen({ onCreated, profile }) {
         onClick={() => setView('create')}
         className="btn-primary"
         style={{ marginBottom: 28 }}>
-        Załóż Klub
+        {t('noClub.createClub')}
       </motion.button>
 
       {/* ── Join-by-code section ────────────────────────────────────────── */}
@@ -4799,7 +4827,7 @@ function NoClubScreen({ onCreated, profile }) {
           <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }}/>
           <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: 1.5,
             color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase' }}>
-            mam kod klubu
+            {t('noClub.haveCode')}
           </span>
           <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }}/>
         </div>
@@ -4866,7 +4894,7 @@ function NoClubScreen({ onCreated, profile }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: 2,
                       textTransform: 'uppercase', fontWeight: 700, marginBottom: 2 }}>
-                      {codeResult.club.country_flag}&nbsp;{codeResult.club.country_name}
+                      {codeResult.club.country_flag}&nbsp;{t('countries.' + codeResult.club.country_code)}
                     </p>
                     <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900,
                       fontSize: 18, color: 'var(--text-primary)', margin: 0,
@@ -4877,9 +4905,9 @@ function NoClubScreen({ onCreated, profile }) {
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <p style={{ fontSize: 9, color: '#00E890', letterSpacing: 1,
-                      fontWeight: 700, textTransform: 'uppercase', marginBottom: 1 }}>Znaleziono</p>
+                      fontWeight: 700, textTransform: 'uppercase', marginBottom: 1 }}>{t('noClub.found')}</p>
                     <p style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0 }}>
-                      {codeResult.members.length}/5 graczy
+                      {t('membersCount', { count: codeResult.members.length })}
                     </p>
                   </div>
                 </div>
@@ -4887,7 +4915,7 @@ function NoClubScreen({ onCreated, profile }) {
                 {/* Position picker */}
                 <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2,
                   color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8 }}>
-                  Wybierz pozycję
+                  {t('noClub.selectPosition')}
                 </p>
                 <div style={{ display: 'flex', gap: 6 }}>
                   {POSITIONS.map(pos => {
@@ -4915,7 +4943,7 @@ function NoClubScreen({ onCreated, profile }) {
                         {pos}
                         {taken && (
                           <div style={{ fontSize: 6, color: 'rgba(255,255,255,0.20)',
-                            marginTop: 2, letterSpacing: 0.5 }}>ZAJĘTE</div>
+                            marginTop: 2, letterSpacing: 0.5 }}>{t('noClub.taken')}</div>
                         )}
                       </motion.button>
                     )
@@ -4933,7 +4961,7 @@ function NoClubScreen({ onCreated, profile }) {
                 disabled={!selPos || joining}
                 className="btn-primary"
                 style={{ opacity: selPos && !joining ? 1 : 0.35 }}>
-                {joining ? 'Dołączanie…' : selPos ? `Dołącz jako ${selPos}` : 'Wybierz pozycję'}
+                {joining ? t('noClub.joining') : selPos ? t('noClub.joinAs', { pos: selPos }) : t('noClub.selectPosition')}
               </motion.button>
             </motion.div>
           )}
@@ -4946,6 +4974,7 @@ function NoClubScreen({ onCreated, profile }) {
 
 // ── CREATE CLUB ───────────────────────────────────────────────────────────────
 function CreateClubForm({ onCreated, profile, onBack }) {
+  const { t } = useTranslation('club')
   const [name,   setName]   = useState('')
   const [abbr,   setAbbr]   = useState('')
   const [ctry,   setCtry]   = useState(COUNTRIES[0])
@@ -4996,7 +5025,7 @@ function CreateClubForm({ onCreated, profile, onBack }) {
             stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
-          Wróć
+          {t('createClubForm.back')}
         </button>
       )}
 
@@ -5009,19 +5038,19 @@ function CreateClubForm({ onCreated, profile, onBack }) {
           <Badge abbr={preview} size={80}/>
         </motion.div>
         <div>
-          <p className="section-label" style={{ marginBottom: 4 }}>Nowy klub</p>
+          <p className="section-label" style={{ marginBottom: 4 }}>{t('createClubForm.newClub')}</p>
           <h1 style={{
             fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 42,
             color: 'var(--text-primary)', textTransform: 'uppercase',
             letterSpacing: -0.5, lineHeight: 0.95,
           }}>
-            Załóż<br/>Klub
+            {t('createClubForm.titleLine1')}<br/>{t('createClubForm.titleLine2')}
           </h1>
         </div>
       </div>
 
       <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 28, lineHeight: 1.65 }}>
-        Stwórz drużynę, zaproś znajomych i rywalizujcie razem.
+        {t('createClubForm.subtitle')}
       </p>
 
       {/* Fields */}
@@ -5029,9 +5058,9 @@ function CreateClubForm({ onCreated, profile, onBack }) {
 
         {/* Nazwa */}
         <div>
-          <p className="section-label" style={{ marginBottom: 8 }}>Nazwa klubu</p>
+          <p className="section-label" style={{ marginBottom: 8 }}>{t('createClubForm.name')}</p>
           <input
-            placeholder="np. Warsaw Ballers"
+            placeholder={t('createClubForm.namePlaceholder')}
             value={name} onChange={e => setName(e.target.value)} maxLength={21}
             style={fieldStyle(name.length > 0)}
           />
@@ -5039,7 +5068,7 @@ function CreateClubForm({ onCreated, profile, onBack }) {
 
         {/* Skrót */}
         <div>
-          <p className="section-label" style={{ marginBottom: 8 }}>Skrót (2–3 litery)</p>
+          <p className="section-label" style={{ marginBottom: 8 }}>{t('createClubForm.abbr')}</p>
           <input
             placeholder="WBL"
             value={abbr}
@@ -5055,7 +5084,7 @@ function CreateClubForm({ onCreated, profile, onBack }) {
 
         {/* Kraj */}
         <div>
-          <p className="section-label" style={{ marginBottom: 8 }}>Kraj</p>
+          <p className="section-label" style={{ marginBottom: 8 }}>{t('createClubForm.country')}</p>
           <button onClick={() => setPicker(true)} style={{
             ...fieldStyle(true),
             display: 'flex', alignItems: 'center', gap: 12,
@@ -5063,7 +5092,7 @@ function CreateClubForm({ onCreated, profile, onBack }) {
             textAlign: 'left',
           }}>
             <span style={{ fontSize: 22, lineHeight: 1 }}>{ctry.flag}</span>
-            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', flex: 1 }}>{ctry.name}</span>
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', flex: 1 }}>{t('countries.' + ctry.code)}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="var(--text-dim)" strokeWidth="2" strokeLinecap="round">
               <polyline points="6 9 12 15 18 9"/>
@@ -5084,7 +5113,7 @@ function CreateClubForm({ onCreated, profile, onBack }) {
           opacity: valid && !saving ? 1 : 0.35,
           cursor: valid && !saving ? 'pointer' : 'default',
         }}>
-        {saving ? 'Tworzenie…' : 'Utwórz Klub'}
+        {saving ? t('createClubForm.creating') : t('createClubForm.createClub')}
       </motion.button>
     </div>
   )

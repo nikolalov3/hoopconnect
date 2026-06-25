@@ -1,20 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
-const DAYS_OPTIONS = [
-  { value: 3, label: '3 DNI', sub: 'Lekki start · 3 treningi + 4 odpoczynek', color: '#00E676' },
-  { value: 4, label: '4 DNI', sub: 'Zbalansowany · Polecany dla początkujących', color: '#7ECBFF' },
-  { value: 5, label: '5 DNI', sub: 'Intensywny · Dla zaawansowanych', color: '#5BB8F5' },
-  { value: 6, label: '6 DNI', sub: 'Pro · Tylko jeśli śpisz 9h i dobrze jesz', color: '#FF3D3D' },
-]
+const DAYS_COLORS = ['#00E676', '#7ECBFF', '#5BB8F5', '#FF3D3D']
 
 const STEP_COUNT = 4
 const BLUE = '#5BB8F5'
 
 function WelcomeScreen({ userName, onComplete }) {
+  const { t } = useTranslation('onboarding')
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -76,7 +73,7 @@ function WelcomeScreen({ userName, onComplete }) {
             color: BLUE, fontWeight: 700, marginBottom: 10,
           }}
         >
-          Beta · Wersja limitowana
+          {t('welcome.betaLabel')}
         </motion.p>
 
         {/* Główny nagłówek */}
@@ -91,7 +88,7 @@ function WelcomeScreen({ userName, onComplete }) {
             textShadow: `0 0 40px ${BLUE}2B`,
           }}
         >
-          {userName ? `Cześć,\n${userName}!` : 'Jesteś\nw grze!'}
+          {userName ? t('welcome.titleNamed', { name: userName }) : t('welcome.titleAnon')}
         </motion.h1>
 
         {/* Karta z tekstem — jak karta osiągnięcia */}
@@ -113,13 +110,13 @@ function WelcomeScreen({ userName, onComplete }) {
             fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase',
             color: BLUE, fontWeight: 700, marginBottom: 10,
           }}>
-            Dostęp do bety odblokowany ✓
+            {t('welcome.betaUnlocked')}
           </p>
           <p style={{
             color: 'var(--text-secondary)', fontSize: 14,
             lineHeight: 1.65, fontWeight: 400,
           }}>
-            Zanim HoopConnect trafi do tysięcy zawodników — <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Ty już tu jesteś</span>. Jesteś częścią elitarnej grupy pierwszych, którzy kształtują tę apkę. Twój feedback zmienia grę — dosłownie.
+            {t('welcome.betaTextPrefix')}<span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{t('welcome.betaTextBold')}</span>{t('welcome.betaTextSuffix')}
           </p>
         </motion.div>
 
@@ -146,14 +143,14 @@ function WelcomeScreen({ userName, onComplete }) {
               fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase',
               color: 'rgba(88,101,242,0.90)', fontWeight: 700,
             }}>
-              Dołącz do społeczności
+              {t('welcome.discordLabel')}
             </p>
           </div>
           <p style={{
             color: 'var(--text-secondary)', fontSize: 13,
             lineHeight: 1.60, fontWeight: 400, marginBottom: 14,
           }}>
-            Mamy serwer na Discordzie — rozmawiaj z innymi zawodnikami, pojawiaj się z nami na eventach i pomagaj nam budować HoopConnect.
+            {t('welcome.discordText')}
           </p>
           <a
             href="https://discord.gg/7TwhZAvEzb"
@@ -175,7 +172,7 @@ function WelcomeScreen({ userName, onComplete }) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(160,170,255,0.95)">
               <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
             </svg>
-            Dołącz na Discord
+            {t('welcome.discordButton')}
           </a>
         </motion.div>
 
@@ -194,7 +191,7 @@ function WelcomeScreen({ userName, onComplete }) {
             border: `1px solid ${BLUE}60`,
           }}
         >
-          ZACZYNAM 🏀
+          {t('welcome.cta')}
         </motion.button>
 
       </div>
@@ -203,6 +200,7 @@ function WelcomeScreen({ userName, onComplete }) {
 }
 
 export default function OnboardingPage() {
+  const { t } = useTranslation('onboarding')
   const { user, setProfileData } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
@@ -229,9 +227,9 @@ export default function OnboardingPage() {
   const [showWelcome, setShowWelcome] = useState(false)
 
   async function handleFinish() {
-    if (!name.trim()) { setError('Wpisz swoje imię'); return }
-    if (!birthDay || !birthMonth || !birthYear) { setError('Wybierz datę urodzenia'); return }
-    if (!user?.id) { setError('Brak sesji — odśwież stronę'); return }
+    if (!name.trim()) { setError(t('errors.nameRequired')); return }
+    if (!birthDay || !birthMonth || !birthYear) { setError(t('errors.birthRequired')); return }
+    if (!user?.id) { setError(t('errors.noSession')); return }
     setSaving(true)
     setError('')
 
@@ -270,12 +268,17 @@ export default function OnboardingPage() {
       setSaving(false)
       setShowWelcome(true)
     } catch(e) {
-      setError('Błąd zapisu: ' + e.message)
+      setError(t('errors.saveError', { message: e.message }))
       setSaving(false)
     }
   }
 
   const canNext = step === 0 ? name.trim().length >= 2 : true
+  const dayOptions = t('step2.days', { returnObjects: true }).map((opt, i) => ({
+    value: i + 3, label: opt.label, sub: opt.sub, color: DAYS_COLORS[i],
+  }))
+  const months = t('step1.months', { returnObjects: true })
+  const countries = t('step3.countries', { returnObjects: true })
 
   return (
     <div style={{
@@ -322,18 +325,18 @@ export default function OnboardingPage() {
             initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
             style={{ flex: 1, padding: '40px 26px 0', display: 'flex', flexDirection: 'column' }}
           >
-            <p className="section-label" style={{ marginBottom: 8 }}>Krok 1 z {STEP_COUNT}</p>
-            <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8 }}>
-              Jak masz<br />na imię?
+            <p className="section-label" style={{ marginBottom: 8 }}>{t('stepOf', { n: 1, total: STEP_COUNT })}</p>
+            <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8, whiteSpace: 'pre-line' }}>
+              {t('step0.title')}
             </h1>
             <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 32, letterSpacing: 0.3 }}>
-              Trenerzy NBA znają imię każdego zawodnika. Zacznijmy tak samo.
+              {t('step0.sub')}
             </p>
 
             <input
               className="input-field"
               type="text"
-              placeholder="Twoje imię..."
+              placeholder={t('step0.placeholder')}
               value={name}
               onChange={e => setName(e.target.value)}
               autoFocus
@@ -354,10 +357,10 @@ export default function OnboardingPage() {
                 }}
               >
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--orange)' }}>
-                  Cześć, {name.trim()}! 🏀
+                  {t('step0.greeting', { name: name.trim() })}
                 </p>
                 <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 4 }}>
-                  Dobra decyzja że tu jesteś. Zaczynamy.
+                  {t('step0.greetingSub')}
                 </p>
               </motion.div>
             )}
@@ -370,20 +373,20 @@ export default function OnboardingPage() {
             initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
             style={{ flex: 1, padding: '40px 26px 0', display: 'flex', flexDirection: 'column' }}
           >
-            <p className="section-label" style={{ marginBottom: 8 }}>Krok 2 z {STEP_COUNT}</p>
-            <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8 }}>
-              Kiedy się<br />urodziłeś?
+            <p className="section-label" style={{ marginBottom: 8 }}>{t('stepOf', { n: 2, total: STEP_COUNT })}</p>
+            <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8, whiteSpace: 'pre-line' }}>
+              {t('step1.title')}
             </h1>
             <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 32 }}>
-              Wiek decyduje o intensywności i rodzaju treningów. Mamy specjalny program dla każdego etapu.
+              {t('step1.sub')}
             </p>
 
             {/* Date pickers */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.4fr', gap: 10, marginBottom: 24, alignItems: 'end' }}>
               {[
-                { label: 'Dzień',   value: birthDay,   set: setBirthDay,   options: Array.from({ length: 31 }, (_, i) => ({ val: i+1, label: String(i+1) })) },
-                { label: 'Miesiąc', value: birthMonth, set: setBirthMonth, options: ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'].map((m,i) => ({ val: i+1, label: m })) },
-                { label: 'Rok',     value: birthYear,  set: setBirthYear,  options: Array.from({ length: 21 }, (_, i) => ({ val: currentYear-10-i, label: String(currentYear-10-i) })) },
+                { label: t('step1.day'),   value: birthDay,   set: setBirthDay,   options: Array.from({ length: 31 }, (_, i) => ({ val: i+1, label: String(i+1) })) },
+                { label: t('step1.month'), value: birthMonth, set: setBirthMonth, options: months.map((m,i) => ({ val: i+1, label: m })) },
+                { label: t('step1.year'),  value: birthYear,  set: setBirthYear,  options: Array.from({ length: 21 }, (_, i) => ({ val: currentYear-10-i, label: String(currentYear-10-i) })) },
               ].map(({ label, value, set, options }) => (
                 <div key={label}>
                   <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>{label}</p>
@@ -425,16 +428,10 @@ export default function OnboardingPage() {
                 }}
               >
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--orange)', letterSpacing: 1, marginBottom: 4 }}>
-                  {age} LAT · {age <= 14 ? '🌱 Faza fundamentów' : age <= 16 ? '⚡ Faza rozwoju' : age <= 18 ? '🔥 Faza intensyfikacji' : '🏆 Faza zaawansowana'}
+                  {t('step1.ageLabel', { age })} · {t(`step1.phases.${age <= 14 ? 'foundations' : age <= 16 ? 'development' : age <= 18 ? 'intensification' : 'advanced'}`)}
                 </p>
                 <p style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.5 }}>
-                  {age <= 14
-                    ? 'Skupiamy się na technice i zabawie. Priorytet: fundamenty i miłość do gry.'
-                    : age <= 16
-                    ? 'Czas na budowanie silnika. Technika + atletyzm + zaczątki taktyki.'
-                    : age <= 18
-                    ? 'Okno rekrutacji uczelnianych otwarte. Intensywność rośnie, regeneracja kluczowa.'
-                    : 'Poważny program. Trenujesz jak zawodowiec — z zawodową dyscypliną.'}
+                  {t(`step1.descs.${age <= 14 ? 'foundations' : age <= 16 ? 'development' : age <= 18 ? 'intensification' : 'advanced'}`)}
                 </p>
               </motion.div>
             )}
@@ -447,17 +444,17 @@ export default function OnboardingPage() {
             initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
             style={{ flex: 1, padding: '40px 26px 0', display: 'flex', flexDirection: 'column' }}
           >
-            <p className="section-label" style={{ marginBottom: 8 }}>Krok 4 z {STEP_COUNT}</p>
-            <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8 }}>
-              Skąd<br />jesteś?
+            <p className="section-label" style={{ marginBottom: 8 }}>{t('stepOf', { n: 4, total: STEP_COUNT })}</p>
+            <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8, whiteSpace: 'pre-line' }}>
+              {t('step3.title')}
             </h1>
             <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 28, letterSpacing: 0.3 }}>
-              Pomaga nam pokazywać mecze i drużyny blisko Ciebie, nawet bez GPS.
+              {t('step3.sub')}
             </p>
 
             {/* Kraj */}
             <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>Kraj</p>
+              <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>{t('step3.country')}</p>
               <select
                 value={country}
                 onChange={e => setCountry(e.target.value)}
@@ -475,24 +472,7 @@ export default function OnboardingPage() {
                   boxSizing: 'border-box',
                 }}
               >
-                {[
-                  { code: 'PL', name: 'Polska 🇵🇱' },
-                  { code: 'US', name: 'USA 🇺🇸' },
-                  { code: 'DE', name: 'Niemcy 🇩🇪' },
-                  { code: 'FR', name: 'Francja 🇫🇷' },
-                  { code: 'ES', name: 'Hiszpania 🇪🇸' },
-                  { code: 'IT', name: 'Włochy 🇮🇹' },
-                  { code: 'GB', name: 'Wielka Brytania 🇬🇧' },
-                  { code: 'PT', name: 'Portugalia 🇵🇹' },
-                  { code: 'BR', name: 'Brazylia 🇧🇷' },
-                  { code: 'NG', name: 'Nigeria 🇳🇬' },
-                  { code: 'LT', name: 'Litwa 🇱🇹' },
-                  { code: 'RS', name: 'Serbia 🇷🇸' },
-                  { code: 'HR', name: 'Chorwacja 🇭🇷' },
-                  { code: 'GR', name: 'Grecja 🇬🇷' },
-                  { code: 'AU', name: 'Australia 🇦🇺' },
-                  { code: 'CA', name: 'Kanada 🇨🇦' },
-                ].map(c => (
+                {countries.map(c => (
                   <option key={c.code} value={c.code}>{c.name}</option>
                 ))}
               </select>
@@ -500,11 +480,11 @@ export default function OnboardingPage() {
 
             {/* Miasto */}
             <div>
-              <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>Miasto</p>
+              <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>{t('step3.city')}</p>
               <input
                 className="input-field"
                 type="text"
-                placeholder="np. Warszawa..."
+                placeholder={t('step3.cityPlaceholder')}
                 value={city}
                 onChange={e => setCity(e.target.value)}
                 maxLength={60}
@@ -523,7 +503,7 @@ export default function OnboardingPage() {
                 }}
               >
                 <p style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.55 }}>
-                  Mecze w <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{city.trim()}</span> będą widoczne od razu, gdy GPS jest niedostępny.
+                  {t('step3.citySubPrefix')}<span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{city.trim()}</span>{t('step3.citySubSuffix')}
                 </p>
               </motion.div>
             )}
@@ -540,16 +520,16 @@ export default function OnboardingPage() {
             initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
             style={{ flex: 1, padding: '40px 26px 0', display: 'flex', flexDirection: 'column' }}
           >
-            <p className="section-label" style={{ marginBottom: 8 }}>Krok 3 z {STEP_COUNT}</p>
-            <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8 }}>
-              Ile dni<br />w tygodniu?
+            <p className="section-label" style={{ marginBottom: 8 }}>{t('stepOf', { n: 3, total: STEP_COUNT })}</p>
+            <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8, whiteSpace: 'pre-line' }}>
+              {t('step2.title')}
             </h1>
             <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 24 }}>
-              Więcej nie zawsze lepiej. Regeneracja to część treningu — bez niej nie rośniesz.
+              {t('step2.sub')}
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {DAYS_OPTIONS.map(opt => (
+              {dayOptions.map(opt => (
                 <motion.button key={opt.value} whileTap={{ scale: 0.98 }}
                   onClick={() => setTrainingDays(opt.value)}
                   style={{
@@ -616,7 +596,7 @@ export default function OnboardingPage() {
           <button onClick={() => setStep(s => s - 1)} className="btn-ghost" style={{
             width: 52, height: 52, padding: 0, borderRadius: 'var(--radius-sm)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0,
-          }}>←</button>
+          }}>{t('back')}</button>
         )}
 
         {step < STEP_COUNT - 1 ? (
@@ -625,7 +605,7 @@ export default function OnboardingPage() {
             className="btn-primary"
             style={{ opacity: canNext ? 1 : 0.4, flex: 1 }}
           >
-            DALEJ →
+            {t('next')}
           </button>
         ) : (
           <button
@@ -634,7 +614,7 @@ export default function OnboardingPage() {
             disabled={saving}
             style={{ flex: 1, opacity: saving ? 0.6 : 1 }}
           >
-            {saving ? '...' : `ZACZYNAMY, ${name.trim().toUpperCase()}! 🏀`}
+            {saving ? '...' : t('finishCta', { name: name.trim().toUpperCase() })}
           </button>
         )}
       </div>

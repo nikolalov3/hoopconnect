@@ -1,0 +1,25 @@
+{
+  "medals": {
+    "bronze": "Brąz",
+    "silver": "Srebro",
+    "gold": "Złoto",
+    "diamond": "Diament",
+    "platinum": "Platyna"
+  },
+  "yourScore": "Twój wynik",
+  "close": "Zamknij",
+  "yourCollection": "Twoja kolekcja",
+  "title": "Osiągnięcia",
+  "unlockedCount": "{{unlocked}} z {{total}} odblokowanych",
+  "noAchievements": "Brak osiągnięć",
+  "emptyMessages": [
+    "Każda legenda zaczęła od zera. Twój pierwszy medal jest o jeden trening stąd.",
+    "Puste miejsce nie wypełni się samo. Czas na robotę.",
+    "Żadnych trofeów? Jeszcze. Pierwsze zdobędziesz dziś."
+  ],
+  "dev": {
+    "clearConfirm": "Wyczyścić wszystkie osiągnięcia i logi aktywności?",
+    "unlockAll": "🛠 Odblokuj wszystkie",
+    "clearAccount": "🗑 Wyczyść konto"
+  }
+}

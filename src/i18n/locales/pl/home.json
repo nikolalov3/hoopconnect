@@ -1,0 +1,103 @@
+{
+  "slots": {
+    "morning": "SESJA PORANNA",
+    "main": "SESJA GŁÓWNA",
+    "recovery": "REGENERACJA"
+  },
+  "reportAlt": "Raport za 7 dni",
+  "quote": {
+    "title": "Cytat dnia",
+    "close": "Zamknij"
+  },
+  "achievementToast": {
+    "newAchievement": "Nowe osiągnięcie",
+    "unlocked": "{{label}} odblokowany"
+  },
+  "restDay": {
+    "title": "Dzień odpoczynku",
+    "desc": "Mistrzowie regenerują się tak samo serio jak trenują. Sprawdź co masz dziś do zrobienia w zakładce Regeneracja."
+  },
+  "xpToast": {
+    "weeklyReport": "Raport Tygodniowy",
+    "earnedXp": "Zdobyłeś trwałe XP 🏀"
+  },
+  "arenaUp": {
+    "yourProgress": "Twój postęp",
+    "promoting": "Awansujesz",
+    "promoted": "Awansowałeś",
+    "welcomeTo": "Witaj na",
+    "notRookie": "Nie jesteś już rookie.",
+    "achieved": "Osiągnięto: {{value}}",
+    "start": "Start",
+    "arenaLabel": "Arena {{roman}}",
+    "max": "MAX",
+    "continue": "Kontynuuj",
+    "xpFromWeeklyReport": "+{{xp}} XP z tygodniowego raportu",
+    "arenas": [
+      {
+        "name": "Rozgrzewka",
+        "tagline": "Tu zaczyna się każda legenda.",
+        "desc": "Pierwsze kroki. Zbuduj nawyk, zbierz 500 XP i wejdź na prawdziwe boisko."
+      },
+      {
+        "name": "Street Court",
+        "tagline": "Ulica weryfikuje. Ty zdałeś.",
+        "desc": "Pokazałeś, że jesteś tu na serio. Czas walczyć o jeszcze więcej."
+      },
+      {
+        "name": "City Run",
+        "tagline": "Miasto nigdy nie śpi. Ty też nie zwalniasz.",
+        "desc": "Twoja gra zaczyna robić wrażenie — miasto Cię zauważyło."
+      },
+      {
+        "name": "Golden Reign",
+        "tagline": "Złota era. Rządzisz parkietem.",
+        "desc": "Złoty wiek Twojej kariery. Nieliczni docierają tak wysoko."
+      },
+      {
+        "name": "Ankh Court",
+        "tagline": "Starożytna moc, nowoczesna gra.",
+        "desc": "Arena dla wybranych. Twoja legenda rośnie z każdym meczem."
+      },
+      {
+        "name": "Void Gem",
+        "tagline": "W pustce świecisz najjaśniej.",
+        "desc": "Otoczony pustką, świecisz jak klejnot. Elita elit."
+      },
+      {
+        "name": "Seraphim",
+        "tagline": "Ostatni stopień. Boska forma.",
+        "desc": "Szczyt HoopConnect. Status legendy."
+      }
+    ]
+  },
+  "dayDone": {
+    "labelTop": "Dzień zaliczony",
+    "titleBig": "DZIEŃ ZALICZONY",
+    "sessions": "SESJE",
+    "next": "DALEJ"
+  },
+  "greetingHi": "Cześć, {{name}}",
+  "greetingDefault": "Dzisiaj",
+  "notificationsAria": "Powiadomienia",
+  "report": {
+    "draftScore": "Draft Score",
+    "scoutingReport": "Twój Raport Scoutingowy",
+    "yourProgress": "Twój postęp",
+    "scoreLabels": {
+      "great": "ŚWIETNA REGULARNOŚĆ",
+      "good": "DOBRY POSTĘP",
+      "start": "ZACZNIJ SERIĘ",
+      "training": "TRENUJESZ?"
+    },
+    "devShowArenaUp": "DEV: Pokaż awans areny",
+    "devShowFrame": "Pokaż ramkę",
+    "devNoFrame": "Bez ramki (przed arenami)",
+    "firstReportPrefix": "Twój pierwszy raport będzie gotowy za",
+    "dayOne": "dzień",
+    "dayMany": "dni",
+    "trainMore": "Im więcej trenujesz teraz, tym wyższy wynik.",
+    "sessionsCompletedToday": "{{completed}} / {{total}} SESJI UKOŃCZONYCH DZIŚ",
+    "dayCompleted": "✓ Dzień zaliczony"
+  }
+}

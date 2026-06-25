@@ -1,0 +1,38 @@
+{
+  "title": "Powiadomienia",
+  "empty": "Brak powiadomień",
+  "teamInvite": {
+    "badge": "Zaproszenie do drużyny",
+    "defaultTeamName": "Drużyna",
+    "greeting": {
+      "bothPrefix": "Trener ",
+      "bothMid": " chce dodać Cię do drużyny jako ",
+      "bothSuffix": ".",
+      "nameOnlyPrefix": "Trener ",
+      "nameOnlySuffix": " chce dodać Cię do swojej drużyny.",
+      "labelOnlyPrefix": "Trener chce dodać Cię do drużyny jako ",
+      "labelOnlySuffix": ".",
+      "neither": "Trener chce dodać Cię do swojej drużyny."
+    },
+    "afterAccept": "Po akceptacji będzie widział Twoje statystyki treningowe i wysyłał plan tygodnia.",
+    "accepted": "✓ Dołączyłeś do drużyny {{teamName}}",
+    "declined": "Zaproszenie odrzucone",
+    "revoked": "To zaproszenie zostało wycofane przez trenera",
+    "postpone": "Odłóż",
+    "accepting": "...",
+    "accept": "Akceptuj",
+    "decline": "Odrzuć zaproszenie",
+    "acceptError": "Nie udało się zaakceptować.",
+    "declineError": "Nie udało się odrzucić."
+  },
+  "coachMessage": {
+    "badge": "Wiadomość od trenera"
+  },
+  "teamRemoved": {
+    "badge": "Zmiana w drużynie",
+    "removed": "Trener usunął Cię z drużyny {{teamName}}.",
+    "ok": "OK, rozumiem"
+  },
+  "ok": "OK",
+  "generic": "Powiadomienie"
+}

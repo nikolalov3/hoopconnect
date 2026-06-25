@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AuthPage() {
+  const { t } = useTranslation('auth')
   const { signIn, signUp } = useAuth()
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
@@ -24,7 +26,7 @@ export default function AuthPage() {
       })
       if (error) setError(error.message)
     } catch (e) {
-      setError(e.message || 'Błąd logowania przez Google.')
+      setError(e.message || t('errors.googleGeneric'))
     } finally {
       setOauthLoading(false)
     }
@@ -43,11 +45,11 @@ export default function AuthPage() {
     setSuccess('')
 
     if (mode === 'register' && password !== confirmPassword) {
-      setError('Hasła nie są identyczne.')
+      setError(t('errors.passwordsDontMatch'))
       return
     }
     if (mode === 'register' && password.length < 6) {
-      setError('Hasło musi mieć co najmniej 6 znaków.')
+      setError(t('errors.passwordTooShort'))
       return
     }
 
@@ -55,11 +57,11 @@ export default function AuthPage() {
     try {
       if (mode === 'login') {
         const { error } = await signIn(email, password)
-        if (error) setError('Błędny email lub hasło.')
+        if (error) setError(t('errors.wrongCredentials'))
       } else {
         const { error } = await signUp(email, password)
         if (error) setError(error.message)
-        else setSuccess('Sprawdź skrzynkę email i potwierdź rejestrację!')
+        else setSuccess(t('registerSuccess'))
       }
     } finally {
       setLoading(false)
@@ -206,7 +208,7 @@ export default function AuthPage() {
           letterSpacing: 3.5,
           textTransform: 'uppercase',
         }}>
-          To jest twój czas
+          {t('tagline')}
         </p>
       </div>
 
@@ -240,7 +242,7 @@ export default function AuthPage() {
               boxShadow: mode === m ? '0 4px 16px rgba(91,184,245,0.40), inset 0 1px 0 rgba(180,230,255,0.20)' : 'none',
             }}
           >
-            {m === 'login' ? 'Zaloguj' : 'Rejestracja'}
+            {m === 'login' ? t('login') : t('register')}
           </button>
         ))}
       </div>
@@ -259,7 +261,7 @@ export default function AuthPage() {
           <input
             className="input-field"
             type="email"
-            placeholder="Email"
+            placeholder={t('email')}
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
@@ -268,7 +270,7 @@ export default function AuthPage() {
           <input
             className="input-field"
             type="password"
-            placeholder="Hasło"
+            placeholder={t('password')}
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
@@ -285,7 +287,7 @@ export default function AuthPage() {
               <input
                 className="input-field"
                 type="password"
-                placeholder="Powtórz hasło"
+                placeholder={t('confirmPassword')}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 required
@@ -332,7 +334,7 @@ export default function AuthPage() {
             disabled={loading}
             style={{ marginTop: 6, opacity: loading ? 0.6 : 1 }}
           >
-            {loading ? '…' : mode === 'login' ? 'Zaloguj się' : 'Załóż konto'}
+            {loading ? '…' : mode === 'login' ? t('loginButton') : t('registerButton')}
           </button>
         </motion.form>
       </AnimatePresence>
@@ -341,7 +343,7 @@ export default function AuthPage() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '22px 0 14px' }}>
         <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.10)' }} />
         <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
-          lub
+          {t('or')}
         </span>
         <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.10)' }} />
       </div>
@@ -376,7 +378,7 @@ export default function AuthPage() {
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
           letterSpacing: 0.5, color: '#000',
         }}>
-          {oauthLoading ? '…' : 'Zaloguj przez Google'}
+          {oauthLoading ? '…' : t('googleLogin')}
         </span>
       </motion.button>
 
@@ -390,7 +392,7 @@ export default function AuthPage() {
         marginTop: 'auto',
         paddingTop: 32,
       }}>
-        HoopConnect · Dla koszykarzy
+        {t('footer')}
       </p>
     </div>
   )

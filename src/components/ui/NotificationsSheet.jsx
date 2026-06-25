@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useUI } from '../../context/UIContext'
 import { useNotifications } from '../../context/NotificationsContext'
 
@@ -13,6 +14,7 @@ import { useNotifications } from '../../context/NotificationsContext'
  * just render with an Ok-style dismiss.
  */
 export default function NotificationsSheet() {
+  const { t } = useTranslation('notifications')
   const { notificationsOpen, setNotificationsOpen } = useUI()
   const { items, acceptTeamInvite, declineTeamInvite, markRead, reload } = useNotifications()
   const navigate = useNavigate()
@@ -80,14 +82,14 @@ export default function NotificationsSheet() {
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.5, margin: 0 }}>
-                Powiadomienia
+                {t('title')}
               </h2>
               <button onClick={close} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 22, cursor: 'pointer', padding: 4, lineHeight: 1 }}>×</button>
             </div>
 
             {items.length === 0 ? (
               <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 14 }}>
-                Brak powiadomień
+                {t('empty')}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -113,6 +115,7 @@ export default function NotificationsSheet() {
 }
 
 function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMarkRead, onClose, onAccepted }) {
+  const { t } = useTranslation('notifications')
   const { type, payload } = notification
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -125,25 +128,26 @@ function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMar
 
     // Greeting line — different copy based on what info we have
     const greeting = (() => {
+      const B = ({ children }) => <strong style={{ color: 'var(--text-primary)' }}>{children}</strong>
       if (coachName && coachLabel) {
-        return <>Trener <strong style={{ color: 'var(--text-primary)' }}>{coachName}</strong> chce dodać Cię do drużyny jako <strong style={{ color: 'var(--text-primary)' }}>{coachLabel}</strong>.</>
+        return <>{t('teamInvite.greeting.bothPrefix')}<B>{coachName}</B>{t('teamInvite.greeting.bothMid')}<B>{coachLabel}</B>{t('teamInvite.greeting.bothSuffix')}</>
       }
       if (coachName) {
-        return <>Trener <strong style={{ color: 'var(--text-primary)' }}>{coachName}</strong> chce dodać Cię do swojej drużyny.</>
+        return <>{t('teamInvite.greeting.nameOnlyPrefix')}<B>{coachName}</B>{t('teamInvite.greeting.nameOnlySuffix')}</>
       }
       if (coachLabel) {
-        return <>Trener chce dodać Cię do drużyny jako <strong style={{ color: 'var(--text-primary)' }}>{coachLabel}</strong>.</>
+        return <>{t('teamInvite.greeting.labelOnlyPrefix')}<B>{coachLabel}</B>{t('teamInvite.greeting.labelOnlySuffix')}</>
       }
-      return <>Trener chce dodać Cię do swojej drużyny.</>
+      return <>{t('teamInvite.greeting.neither')}</>
     })()
 
     return (
       <div className="card" style={{ padding: 16 }}>
         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: '#5BB8F5', marginBottom: 6 }}>
-          Zaproszenie do drużyny
+          {t('teamInvite.badge')}
         </div>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 2 }}>
-          {payload?.team_name || 'Drużyna'}
+          {payload?.team_name || t('teamInvite.defaultTeamName')}
         </div>
         {orgLine && (
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
@@ -151,7 +155,7 @@ function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMar
           </div>
         )}
         <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 10, marginBottom: 14 }}>
-          {greeting}{' '}Po akceptacji będzie widział Twoje statystyki treningowe i wysyłał plan tygodnia.
+          {greeting}{' '}{t('teamInvite.afterAccept')}
         </div>
 
         {result?.status === 'accepted' ? (
@@ -159,21 +163,21 @@ function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMar
             padding: '12px 14px', borderRadius: 12, textAlign: 'center', fontSize: 13, fontWeight: 600,
             background: 'rgba(0,230,118,0.10)', border: '1px solid rgba(0,230,118,0.30)', color: '#00E676',
           }}>
-            ✓ Dołączyłeś do drużyny {result.team_name}
+            {t('teamInvite.accepted', { teamName: result.team_name })}
           </div>
         ) : result?.status === 'declined' ? (
           <div style={{
             padding: '12px 14px', borderRadius: 12, textAlign: 'center', fontSize: 13, fontWeight: 600,
             background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-secondary)',
           }}>
-            Zaproszenie odrzucone
+            {t('teamInvite.declined')}
           </div>
         ) : result?.status === 'revoked' || result?.status === 'not_found' ? (
           <div style={{
             padding: '12px 14px', borderRadius: 12, textAlign: 'center', fontSize: 13, fontWeight: 600,
             background: 'rgba(255,168,32,0.10)', border: '1px solid rgba(255,168,32,0.30)', color: '#FFA820',
           }}>
-            To zaproszenie zostało wycofane przez trenera
+            {t('teamInvite.revoked')}
           </div>
         ) : (
           <>
@@ -189,7 +193,7 @@ function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMar
                 disabled={busy}
                 style={{ flex: 1, padding: '11px 14px', fontSize: 13 }}
               >
-                Odłóż
+                {t('teamInvite.postpone')}
               </button>
               <button
                 className="btn-primary"
@@ -201,12 +205,12 @@ function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMar
                     setResult(r)
                     if (r?.status === 'accepted') setTimeout(() => onAccepted?.(), 1200)
                   } catch (e) {
-                    setError(e?.message || 'Nie udało się zaakceptować.')
+                    setError(e?.message || t('teamInvite.acceptError'))
                   } finally { setBusy(false) }
                 }}
                 style={{ flex: 1, padding: '11px 14px', fontSize: 13 }}
               >
-                {busy ? '...' : 'Akceptuj'}
+                {busy ? t('teamInvite.accepting') : t('teamInvite.accept')}
               </button>
             </div>
             <button
@@ -216,7 +220,7 @@ function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMar
                   const r = await onDeclineInvite(payload.invite_id)
                   setResult(r)
                 } catch (e) {
-                  setError(e?.message || 'Nie udało się odrzucić.')
+                  setError(e?.message || t('teamInvite.declineError'))
                 } finally { setBusy(false) }
               }}
               disabled={busy}
@@ -228,7 +232,7 @@ function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMar
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              Odrzuć zaproszenie
+              {t('teamInvite.decline')}
             </button>
           </>
         )}
@@ -240,10 +244,10 @@ function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMar
     return (
       <div className="card" style={{ padding: 16 }}>
         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: '#5BB8F5', marginBottom: 6 }}>
-          Wiadomość od trenera
+          {t('coachMessage.badge')}
         </div>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.4 }}>
-          {payload?.team_name || 'Drużyna'}
+          {payload?.team_name || t('teamInvite.defaultTeamName')}
         </div>
         {payload?.title && (
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginTop: 10 }}>
@@ -263,7 +267,7 @@ function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMar
           onClick={async () => { await onMarkRead(notification.id) }}
           style={{ marginTop: 14, padding: '8px 14px', fontSize: 12 }}
         >
-          OK
+          {t('ok')}
         </button>
       </div>
     )
@@ -273,17 +277,17 @@ function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMar
     return (
       <div className="card" style={{ padding: 16 }}>
         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: '#FFA820', marginBottom: 6 }}>
-          Zmiana w drużynie
+          {t('teamRemoved.badge')}
         </div>
         <div style={{ fontSize: 14, color: 'var(--text-primary)', marginBottom: 12, lineHeight: 1.5 }}>
-          Trener usunął Cię z drużyny <strong>{payload?.team_name || ''}</strong>.
+          {t('teamRemoved.removed', { teamName: payload?.team_name || '' })}
         </div>
         <button
           className="btn-ghost"
           onClick={async () => { await onMarkRead(notification.id) }}
           style={{ padding: '8px 14px', fontSize: 12 }}
         >
-          OK, rozumiem
+          {t('teamRemoved.ok')}
         </button>
       </div>
     )
@@ -293,14 +297,14 @@ function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMar
   return (
     <div className="card" style={{ padding: 16 }}>
       <div style={{ fontSize: 14, color: 'var(--text-primary)', marginBottom: 12 }}>
-        {payload?.title || payload?.message || 'Powiadomienie'}
+        {payload?.title || payload?.message || t('generic')}
       </div>
       <button
         className="btn-ghost"
         onClick={async () => { await onMarkRead(notification.id) }}
         style={{ padding: '8px 14px', fontSize: 12 }}
       >
-        OK
+        {t('ok')}
       </button>
     </div>
   )

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useShootingSession } from '../hooks/useShootingSession'
@@ -18,9 +19,9 @@ import { calendarWeekNumber } from '../lib/week'
 const TODAY = new Date().toISOString().split('T')[0]
 
 const TYPE_CONFIG = {
-  shooting_3pt: { label: 'Trójki', target: 150, shotType: '3pt' },
-  shooting_2pt: { label: 'Dwójki', target: 100, shotType: '2pt' },
-  shooting_ft:  { label: 'Wolne',  target: 100, shotType: 'ft'  },
+  shooting_3pt: { target: 150, shotType: '3pt' },
+  shooting_2pt: { target: 100, shotType: '2pt' },
+  shooting_ft:  { target: 100, shotType: 'ft'  },
 }
 
 const MEDAL_COLORS = {
@@ -32,6 +33,7 @@ const MEDAL_COLORS = {
 }
 
 function SuccessScreen({ made, attempted, target, shotType, onBack, newAchievements = [], playerName }) {
+  const { t } = useTranslation('shooting')
   const pct = calcPct(made, attempted)
   const [sharing, setSharing] = useState(false)
 
@@ -40,8 +42,8 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
     try {
       const blob = await shareSessionCard({ made, attempted, target, shotType, playerName })
       await doShare(blob, 'hoopconnect-sesja.png', {
-        title: `HoopConnect — ${pct}% skuteczność`,
-        text:  `Skuteczność ${pct}% (${made}/${attempted}) 🏀 hoopconnect.pl`,
+        title: t('success.shareTitle', { pct }),
+        text:  t('success.shareText', { pct, made, attempted }),
       })
     } finally {
       setSharing(false)
@@ -52,12 +54,12 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
   // ≥60 emerald, 30-59 amber, <30 warm orange (jak SF crystal w Club).
   const pctColor = pct >= 60 ? '#34D399' : pct >= 30 ? '#FCD34D' : '#FF8830'
   const support =
-    pct === 100 ? 'Perfekcyjna sesja' :
-    pct >= 80   ? 'Elite touch' :
-    pct >= 65   ? 'Świetna robota' :
-    pct >= 50   ? 'Solidnie' :
-    pct >= 30   ? 'Wracaj jutro mocniej' :
-                  'Każdy mistrz miał taki dzień'
+    pct === 100 ? t('success.support.perfect') :
+    pct >= 80   ? t('success.support.elite') :
+    pct >= 65   ? t('success.support.great') :
+    pct >= 50   ? t('success.support.solid') :
+    pct >= 30   ? t('success.support.tryHarder') :
+                  t('success.support.everyChampion')
 
   return (
     <motion.div
@@ -94,13 +96,13 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
           fontFamily: 'var(--font-body)', fontSize: 13, letterSpacing: 0.1,
           color: 'rgba(180,195,220,0.62)', fontWeight: 500, marginBottom: 6,
         }}>
-          {TYPE_CONFIG[shotType]?.label ?? 'Sesja'} · zakończona
+          {(TYPE_CONFIG[shotType] ? t(`types.${shotType}`) : null) ?? t('success.sessionFallback')} · {t('success.finishedSuffix')}
         </p>
         <h1 style={{
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 38,
           color: 'var(--text-primary)', letterSpacing: 0.1, lineHeight: 1.05,
         }}>
-          Trening<br/>zaliczony
+          {t('success.titleLine1')}<br/>{t('success.titleLine2')}
         </h1>
       </div>
 
@@ -138,7 +140,7 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 30, color: '#34D399', lineHeight: 1, letterSpacing: -0.5 }}>
               {made}
             </span>
-            <span style={{ color: 'rgba(180,195,220,0.62)', fontSize: 13, fontWeight: 500 }}>trafione</span>
+            <span style={{ color: 'rgba(180,195,220,0.62)', fontSize: 13, fontWeight: 500 }}>{t('success.madeLabel')}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -148,14 +150,14 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: '#FB7185', lineHeight: 1 }}>
               {missed}
             </span>
-            <span style={{ color: 'rgba(180,195,220,0.55)', fontSize: 13, fontWeight: 500 }}>{missed === 1 ? 'pudło' : 'pudła'}</span>
+            <span style={{ color: 'rgba(180,195,220,0.55)', fontSize: 13, fontWeight: 500 }}>{missed === 1 ? t('success.missOne') : t('success.missOther')}</span>
           </div>
         </div>
         <p style={{
           color: 'rgba(180,195,220,0.45)', fontSize: 12, fontWeight: 400,
           marginTop: 12, letterSpacing: 0.1,
         }}>
-          {attempted} {attempted === 1 ? 'rzut' : attempted < 5 ? 'rzuty' : 'rzutów'} łącznie
+          {attempted} {attempted === 1 ? t('success.totalOne') : attempted < 5 ? t('success.totalFew') : t('success.totalMany')} {t('success.totalSuffix')}
         </p>
 
         {/* Liquid progress line — alive, shimmer */}
@@ -202,7 +204,7 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
             color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 600,
             marginBottom: 8,
           }}>
-            Osiągnięcia odblokowane
+            {t('success.achievementsUnlocked')}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {newAchievements.map((a, i) => {
@@ -228,7 +230,7 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
                       color, textTransform: 'uppercase', letterSpacing: 0.5,
                     }}>{a.title}</p>
                     <p style={{ color: 'var(--text-dim)', fontSize: 11, marginTop: 1 }}>
-                      {a.stage?.description || `${a.stage?.label} odblokowany`} · {a.total} traf.
+                      {a.stage?.description || t('success.unlockedFallback', { label: a.stage?.label })} · {a.total} {t('success.hitsSuffix')}
                     </p>
                   </div>
                   <span style={{
@@ -273,10 +275,10 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
             <polyline points="16 6 12 2 8 6"/>
             <line x1="12" y1="2" x2="12" y2="15"/>
           </svg>
-          {sharing ? 'Generuję...' : 'Udostępnij wyniki'}
+          {sharing ? t('success.generating') : t('success.shareResults')}
         </button>
         <button className="btn-primary" onClick={onBack} style={{ fontSize: 15, padding: '16px' }}>
-          Wróć do planu
+          {t('success.backToPlan')}
         </button>
       </div>
     </motion.div>
@@ -284,6 +286,7 @@ function SuccessScreen({ made, attempted, target, shotType, onBack, newAchieveme
 }
 
 export default function ShootingPage() {
+  const { t } = useTranslation('shooting')
   const { id } = useParams()
   const { state } = useLocation()
   const navigate = useNavigate()
@@ -310,12 +313,14 @@ export default function ShootingPage() {
     ? {
         id: 'freestyle',
         type: freestyleConfigKey,
-        title: `Sesja freestyle — ${TYPE_CONFIG[freestyleConfigKey].label}`,
+        title: t('freestyleTitle', { label: t(`types.${freestyleConfigKey}`) }),
         target_reps: freestyleTarget,
       }
     : state?.training
 
-  const config = TYPE_CONFIG[training?.type] || TYPE_CONFIG.shooting_3pt
+  const configKey = TYPE_CONFIG[training?.type] ? training.type : 'shooting_3pt'
+  const config = TYPE_CONFIG[configKey]
+  const configLabel = t(`types.${configKey}`)
   const target = training?.target_reps || config.target
 
   const { history, addShot, undoShot, clearSession, loaded } = useShootingSession(id)
@@ -648,17 +653,17 @@ export default function ShootingPage() {
                     <p style={{
                       fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
                       textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-primary)',
-                    }}>Wpisz ręcznie</p>
+                    }}>{t('manualModal.title')}</p>
                     <p style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 500 }}>
-                      maks. {target}
+                      {t('manualModal.max', { target })}
                     </p>
                   </div>
 
                   {/* Two rows: Trafione + Pudła — single column, no overflow */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
                     {[
-                      { label: 'Trafione', color: 'var(--green-shot)', val: manualMade, set: setManualMade },
-                      { label: 'Pudła',    color: 'var(--red-shot)',   val: manualMissed, set: setManualMissed },
+                      { label: t('manualModal.made'), color: 'var(--green-shot)', val: manualMade, set: setManualMade },
+                      { label: t('manualModal.missed'),    color: 'var(--red-shot)',   val: manualMissed, set: setManualMissed },
                     ].map(({ label, color, val, set }) => (
                       <div key={label} style={{
                         display: 'flex', alignItems: 'center',
@@ -725,19 +730,19 @@ export default function ShootingPage() {
                   }}>
                     <span style={{ fontFamily: 'var(--font-body)', color: 'var(--text-dim)',
                       fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase',
-                    }}>Suma</span>
+                    }}>{t('manualModal.sum')}</span>
                     <span style={{
                       fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
                       color: overLimit ? 'var(--red-shot)' : total > 0 ? 'var(--text-primary)' : 'var(--text-dim)',
                     }}>
                       {total} / {target}
-                      {overLimit && <span style={{ fontSize: 12, marginLeft: 8 }}>— za dużo!</span>}
+                      {overLimit && <span style={{ fontSize: 12, marginLeft: 8 }}>{t('manualModal.tooMany')}</span>}
                     </span>
                   </div>
 
                   <button onClick={handleManualSubmit} disabled={!canSubmit}
                     className="btn-primary" style={{ opacity: canSubmit ? 1 : 0.32, marginBottom: 24 }}>
-                    Zatwierdź trening
+                    {t('manualModal.submit')}
                   </button>
                 </motion.div>
               </motion.div>
@@ -753,7 +758,7 @@ export default function ShootingPage() {
         padding: 'max(14px, calc(env(safe-area-inset-top, 0px) + 8px)) 20px 12px',
         flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12,
       }}>
-        <button onClick={() => navigate(-1)} aria-label="Wstecz" style={{
+        <button onClick={() => navigate(-1)} aria-label={t('back')} style={{
           background: 'transparent', border: 'none',
           width: 36, height: 36, cursor: 'pointer',
           color: 'var(--text-secondary)', flexShrink: 0,
@@ -767,7 +772,7 @@ export default function ShootingPage() {
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, letterSpacing: 0.2, color: 'rgba(180,195,220,0.65)', fontWeight: 500, marginBottom: 2 }}>
-            {config.label}
+            {configLabel}
           </p>
           <h2 style={{
             fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18,
@@ -785,7 +790,7 @@ export default function ShootingPage() {
             fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: 0.2,
             boxShadow: 'inset 0 1px 0 rgba(180,220,255,0.10)',
           }}>
-            wznowiono
+            {t('resumed')}
           </span>
         )}
         {saving && <div className="spinner" style={{ width: 20, height: 20, flexShrink: 0 }} />}
@@ -803,7 +808,7 @@ export default function ShootingPage() {
               {pct}%
             </span>
             <span style={{ color: 'rgba(180,195,220,0.55)', fontSize: 12, fontWeight: 400, letterSpacing: 0.1 }}>
-              skuteczność
+              {t('accuracy')}
             </span>
           </motion.span>
         </div>
@@ -819,9 +824,9 @@ export default function ShootingPage() {
       {/* Stats row — trafione/pudła/zostało */}
       <div style={{ display: 'flex', gap: 8, padding: '0 20px 10px', flexShrink: 0 }}>
         {([
-          { val: made,              label: 'Trafione', color: '#34D399' },
-          { val: attempted - made,  label: 'Pudła',    color: '#FB7185' },
-          { val: target - attempted,label: 'Zostało',  color: 'rgba(180,195,220,0.55)' },
+          { val: made,              label: t('statLabels.made'), color: '#34D399' },
+          { val: attempted - made,  label: t('statLabels.missed'),    color: '#FB7185' },
+          { val: target - attempted,label: t('statLabels.remaining'),  color: 'rgba(180,195,220,0.55)' },
         ]
         ).map(({ val, label, color }) => (
           <div key={label} style={{ flex: 1, ...glassCard, padding: '12px 6px', textAlign: 'center' }}>
@@ -871,7 +876,7 @@ export default function ShootingPage() {
             <path d="M20 6L9 17l-5-5"/>
           </svg>
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 17, color: '#34D399', letterSpacing: 0.1 }}>
-            Trafione
+            {t('shotButtons.made')}
           </span>
         </motion.button>
 
@@ -908,7 +913,7 @@ export default function ShootingPage() {
             <path d="M18 6L6 18M6 6l12 12"/>
           </svg>
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 17, color: '#FB7185', letterSpacing: 0.1 }}>
-            Pudło
+            {t('shotButtons.missed')}
           </span>
         </motion.button>
       </div>
@@ -917,7 +922,7 @@ export default function ShootingPage() {
       {history.length > 0 && (
         <div style={{ padding: '0 20px 14px', flexShrink: 0 }}>
           <p style={{ color: 'rgba(180,195,220,0.45)', fontSize: 11, fontWeight: 500, letterSpacing: 0.1, marginBottom: 8 }}>
-            Ostatnie rzuty
+            {t('recentShots')}
           </p>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
             {history.slice(-12).map((made, i, arr) => {
@@ -966,7 +971,7 @@ export default function ShootingPage() {
               WebkitBackdropFilter: 'blur(24px)',
             }}
           >
-            Zakończ sesję
+            {t('finishSession')}
           </motion.button>
         )}
         <motion.button
@@ -991,7 +996,7 @@ export default function ShootingPage() {
             <path d="M12 20h9"/>
             <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
           </svg>
-          Wpisz ręcznie
+          {t('enterManually')}
         </motion.button>
         <button onClick={undoShot} disabled={history.length === 0}
           style={{
@@ -1008,10 +1013,10 @@ export default function ShootingPage() {
             <path d="M3 7v6h6"/>
             <path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>
           </svg>
-          Cofnij ostatni
+          {t('undoLast')}
           {history.length > 0 && (
             <span style={{ opacity: 0.65, fontSize: 12 }}>
-              ({history[history.length - 1] ? 'trafione' : 'pudło'})
+              ({history[history.length - 1] ? t('success.madeLabel') : t('success.missOne')})
             </span>
           )}
         </button>

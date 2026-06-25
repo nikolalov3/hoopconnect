@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 
@@ -16,13 +17,6 @@ import { supabase } from '../../lib/supabase'
 const GOLD  = '#FFD166'
 const GOLDD = '#CC8800'
 const GLOW  = 'rgba(255,209,102,0.55)'
-
-// ── rarity map ───────────────────────────────────────────────────────────────
-const RARITY = {
-  legendary: { label: 'LEGENDARNA', color: '#FFD166', glow: 'rgba(255,209,102,0.50)' },
-  rare:      { label: 'RZADKA',     color: '#B9F2FF', glow: 'rgba(185,242,255,0.40)' },
-  common:    { label: 'ZWYKŁA',     color: '#A0B0C8', glow: 'rgba(160,176,200,0.35)' },
-}
 
 // ── stable sparkle positions — tighter orbit for mobile ──────────────────────
 const SPARKS = Array.from({ length: 18 }, (_, i) => {
@@ -82,8 +76,15 @@ function PreviewHex({ initial, framePath, size = 150 }) {
 
 // ── main ─────────────────────────────────────────────────────────────────────
 export default function FrameUnlockPanel({ open, onClose, frameData }) {
+  const { t } = useTranslation('frames')
   const { profile, user } = useAuth()
   const [phase, setPhase] = useState(0)
+
+  const RARITY = {
+    legendary: { label: t('rarity.legendary'), color: '#FFD166', glow: 'rgba(255,209,102,0.50)' },
+    rare:      { label: t('rarity.rare'),       color: '#B9F2FF', glow: 'rgba(185,242,255,0.40)' },
+    common:    { label: t('rarity.common'),     color: '#A0B0C8', glow: 'rgba(160,176,200,0.35)' },
+  }
 
   const initial = profile?.name ? profile.name.trim()[0].toUpperCase() : '?'
   const rarity  = RARITY[frameData?.rarity] || RARITY.legendary
@@ -176,7 +177,7 @@ export default function FrameUnlockPanel({ open, onClose, frameData }) {
                 color: 'rgba(255,209,102,0.65)', fontWeight: 700, marginBottom: 30,
               }}
             >
-              {frameData.sublabel || 'Nowa ramka'}
+              {frameData.sublabel || t('newFrame')}
             </motion.p>
 
             {/* hex + sparks + rings */}
@@ -237,7 +238,7 @@ export default function FrameUnlockPanel({ open, onClose, frameData }) {
                 color: GOLD, fontWeight: 800, marginBottom: 8,
               }}
             >
-              ✦ Ramka odblokowana ✦
+              {t('unlocked')}
             </motion.p>
 
             {/* frame name */}
@@ -312,7 +313,7 @@ export default function FrameUnlockPanel({ open, onClose, frameData }) {
                   boxShadow: `0 -4px 24px ${GOLD}30`,
                 }}
               >
-                Super, dziękuję!
+                {t('thanks')}
               </motion.button>
 
               <motion.button whileTap={{ scale: 0.97 }} onClick={handleClose}
@@ -328,7 +329,7 @@ export default function FrameUnlockPanel({ open, onClose, frameData }) {
                   letterSpacing: 0.5,
                 }}
               >
-                Zamknij
+                {t('close')}
               </motion.button>
             </motion.div>
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 // Predefiniowane ćwiczenia siłowe — hybryda (lista + "Inne" free-text)
 const PRESET_EXERCISES = [
@@ -28,6 +29,7 @@ const PRESET_EXERCISES = [
 // 3 strefy klikalne: 3pt (powyżej łuku), mid-range (między łukiem a trumną),
 // ft/trumna (paint). Każda strefa = pełna kategoria rzutów do trackera.
 function HalfCourtPicker({ onPickZone }) {
+  const { t } = useTranslation('addSession')
   const [hoverZone, setHoverZone] = useState(null)
 
   // Color per zone: 3pt = red (najdalszy/najtrudniejszy), 2pt = orange (mid),
@@ -128,19 +130,19 @@ function HalfCourtPicker({ onPickZone }) {
         <text x="171.5" y="145" textAnchor="middle"
           fontFamily="var(--font-display)" fontSize="22" fontWeight="800"
           fill={hoverZone === '3pt' ? ringColor('3pt') : 'rgba(255,255,255,0.88)'}
-          style={{ pointerEvents: 'none', letterSpacing: 2 }}>TRÓJKI</text>
+          style={{ pointerEvents: 'none', letterSpacing: 2 }}>{t('court.threes')}</text>
         <text x="62" y="340" textAnchor="middle"
           fontFamily="var(--font-display)" fontSize="13" fontWeight="700"
           fill={hoverZone === '2pt' ? ringColor('2pt') : 'rgba(255,255,255,0.78)'}
-          style={{ pointerEvents: 'none', letterSpacing: 1.5 }}>MID</text>
+          style={{ pointerEvents: 'none', letterSpacing: 1.5 }}>{t('court.mid')}</text>
         <text x="281" y="340" textAnchor="middle"
           fontFamily="var(--font-display)" fontSize="13" fontWeight="700"
           fill={hoverZone === '2pt' ? ringColor('2pt') : 'rgba(255,255,255,0.78)'}
-          style={{ pointerEvents: 'none', letterSpacing: 1.5 }}>MID</text>
+          style={{ pointerEvents: 'none', letterSpacing: 1.5 }}>{t('court.mid')}</text>
         <text x="171.5" y="335" textAnchor="middle"
           fontFamily="var(--font-display)" fontSize="13" fontWeight="800"
           fill={hoverZone === 'ft' ? ringColor('ft') : 'rgba(255,255,255,0.88)'}
-          style={{ pointerEvents: 'none', letterSpacing: 1.5 }}>WOLNE</text>
+          style={{ pointerEvents: 'none', letterSpacing: 1.5 }}>{t('court.free')}</text>
       </svg>
     </div>
   )
@@ -175,6 +177,7 @@ function Stepper({ label, value, onChange, min = 1, max = 99 }) {
 
 // ── Strength session builder ────────────────────────────────────────────────
 function StrengthBuilder({ onSave, saving }) {
+  const { t } = useTranslation('addSession')
   const [exercises, setExercises] = useState([{ name: '', custom: '', sets: 3, reps: 10, weight_kg: '' }])
   const [notes, setNotes] = useState('')
 
@@ -231,13 +234,13 @@ function StrengthBuilder({ onSave, saving }) {
             <span style={{
               fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11,
               letterSpacing: 2.5, textTransform: 'uppercase', color: '#5BB8F5',
-            }}>Ćwiczenie {idx + 1}</span>
+            }}>{t('exercise', { n: idx + 1 })}</span>
             {exercises.length > 1 && (
               <button type="button" onClick={() => remove(idx)} style={{
                 background: 'none', border: 'none', color: 'rgba(255,80,80,0.60)',
                 fontSize: 11, cursor: 'pointer', fontFamily: 'var(--font-body)',
                 fontWeight: 500, padding: 0,
-              }}>Usuń</button>
+              }}>{t('remove')}</button>
             )}
           </div>
 
@@ -247,13 +250,13 @@ function StrengthBuilder({ onSave, saving }) {
               value={e.name}
               onChange={ev => update(idx, 'name', ev.target.value)}
               style={fieldStyle}>
-              <option value="">— wybierz ćwiczenie —</option>
+              <option value="">{t('selectExercise')}</option>
               {PRESET_EXERCISES.map(p => <option key={p} value={p}>{p}</option>)}
-              <option value="__custom__">Inne (wpisz własne)</option>
+              <option value="__custom__">{t('customOption')}</option>
             </select>
             {e.name === '__custom__' && (
               <input
-                type="text" placeholder="Nazwa ćwiczenia"
+                type="text" placeholder={t('exerciseNamePlaceholder')}
                 value={e.custom}
                 onChange={ev => update(idx, 'custom', ev.target.value)}
                 style={{ ...fieldStyle, marginTop: 8 }}
@@ -268,16 +271,16 @@ function StrengthBuilder({ onSave, saving }) {
             borderTop: '1px solid rgba(255,255,255,0.05)',
             marginTop: 14,
           }}>
-            <Stepper label="Serie" value={e.sets} onChange={v => update(idx, 'sets', v)} />
+            <Stepper label={t('stepper.sets')} value={e.sets} onChange={v => update(idx, 'sets', v)} />
             <div style={{ width: 1, background: 'rgba(255,255,255,0.06)', alignSelf: 'stretch' }} />
-            <Stepper label="Powtórzenia" value={e.reps} onChange={v => update(idx, 'reps', v)} />
+            <Stepper label={t('stepper.reps')} value={e.reps} onChange={v => update(idx, 'reps', v)} />
           </div>
 
           {/* Weight — optional, pełna szerokość */}
           <div style={{ padding: '0 16px 16px' }}>
             <input
               type="number" inputMode="decimal" min="0"
-              placeholder="Ciężar (kg) — opcjonalny"
+              placeholder={t('weightPlaceholder')}
               value={e.weight_kg}
               onChange={ev => update(idx, 'weight_kg', ev.target.value.replace(/[^0-9.]/g, ''))}
               style={fieldStyle}
@@ -295,11 +298,11 @@ function StrengthBuilder({ onSave, saving }) {
         opacity: exercises.length >= 12 ? 0.35 : 1,
         fontFamily: 'var(--font-display)', textTransform: 'uppercase',
       }}>
-        + Dodaj ćwiczenie
+        {t('addExercise')}
       </button>
 
       <textarea
-        placeholder="Notatka (opcjonalna)"
+        placeholder={t('notePlaceholder')}
         maxLength={200}
         value={notes}
         onChange={ev => setNotes(ev.target.value)}
@@ -311,7 +314,7 @@ function StrengthBuilder({ onSave, saving }) {
 
       <button type="button" onClick={handleSave} disabled={!valid || saving} className="btn-primary"
         style={{ padding: '15px', opacity: (!valid || saving) ? 0.35 : 1, marginTop: 4 }}>
-        {saving ? 'Zapisuję...' : 'Zapisz sesję'}
+        {saving ? t('saving') : t('saveSession')}
       </button>
     </div>
   )
@@ -327,6 +330,7 @@ const inputStyle = {
 
 // ── Main modal ──────────────────────────────────────────────────────────────
 export default function AddSessionModal({ open, onClose, onSaveStrength, saving }) {
+  const { t } = useTranslation('addSession')
   const [tab, setTab] = useState('shooting')
   const [shotTarget, setShotTarget] = useState(20)  // default 20, krok 10, max 150
   const navigate = useNavigate()
@@ -376,7 +380,7 @@ export default function AddSessionModal({ open, onClose, onSaveStrength, saving 
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
               <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20,
                 textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-primary)' }}>
-                Dodaj sesję
+                {t('title')}
               </p>
               <button onClick={onClose} style={{
                 background: 'none', border: 'none', color: 'var(--text-dim)',
@@ -392,12 +396,12 @@ export default function AddSessionModal({ open, onClose, onSaveStrength, saving 
               boxShadow: 'inset 0 1px 0 rgba(200,225,255,0.08)',
             }}>
               {[
-                { key: 'shooting', label: 'Rzuty' },
-                { key: 'strength', label: 'Siła'  },
-              ].map(t => {
-                const active = tab === t.key
+                { key: 'shooting', label: t('tabs.shooting') },
+                { key: 'strength', label: t('tabs.strength')  },
+              ].map(tabItem => {
+                const active = tab === tabItem.key
                 return (
-                  <button key={t.key} onClick={() => setTab(t.key)} style={{
+                  <button key={tabItem.key} onClick={() => setTab(tabItem.key)} style={{
                     flex: 1, padding: '10px 0', borderRadius: 99, border: 'none',
                     background: active ? 'linear-gradient(145deg, rgba(40,130,220,0.70), rgba(16,90,180,0.75))' : 'transparent',
                     color: active ? 'var(--text-primary)' : 'var(--text-dim)',
@@ -406,7 +410,7 @@ export default function AddSessionModal({ open, onClose, onSaveStrength, saving 
                     cursor: 'pointer', fontFamily: 'var(--font-body)',
                     boxShadow: active ? '0 1px 4px rgba(0,0,0,0.20)' : 'none',
                     transition: 'background 0.18s, color 0.18s',
-                  }}>{t.label}</button>
+                  }}>{tabItem.label}</button>
                 )
               })}
             </div>
@@ -415,8 +419,7 @@ export default function AddSessionModal({ open, onClose, onSaveStrength, saving 
             {tab === 'shooting' ? (
               <>
                 <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 12, lineHeight: 1.5 }}>
-                  Wybierz strefę boiska, z której chcesz rzucać. Tracker uruchomi sesję freestyle —
-                  liczy się tylko do statystyk i osiągnięć (zero punktów do rankingu).
+                  {t('shootingDesc')}
                 </p>
                 <HalfCourtPicker onPickZone={pickShootZone} />
                 {/* Suwak liczby rzutów — default 20, krok 10, max 150 */}
@@ -427,7 +430,7 @@ export default function AddSessionModal({ open, onClose, onSaveStrength, saving 
                 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
                     <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: 0.3, color: 'rgba(220,228,242,0.70)' }}>
-                      Liczba rzutów
+                      {t('shotsCount')}
                     </span>
                     <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: '#7ECBFF', lineHeight: 1 }}>
                       {shotTarget}
@@ -448,13 +451,13 @@ export default function AddSessionModal({ open, onClose, onSaveStrength, saving 
                   </div>
                 </div>
                 <p style={{ color: 'rgba(180,195,220,0.55)', fontSize: 11, textAlign: 'center', marginTop: 12 }}>
-                  Tap w strefę = rozpocznij sesję rzutów
+                  {t('tapToStart')}
                 </p>
               </>
             ) : (
               <>
                 <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 14, lineHeight: 1.5 }}>
-                  Dodaj ćwiczenia z dzisiejszej sesji siłowej. Każde z liczbą serii i powtórzeń. Ciężar opcjonalny.
+                  {t('strengthDesc')}
                 </p>
                 <StrengthBuilder onSave={onSaveStrength} saving={saving} />
               </>

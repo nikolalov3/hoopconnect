@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { ARENAS, arenaLevelForXp, arenaProgress } from '../lib/arenas'
+import { useTranslation } from 'react-i18next'
+import { ARENAS as ARENAS_BASE, arenaLevelForXp, arenaProgress } from '../lib/arenas'
 
 // ── Hex badge areny (grafika PNG /arenas/arena-N.png z fallbackiem SVG) ─────────
 function ArenaBadge({ idx, arena, size = 150, locked }) {
@@ -67,6 +68,9 @@ function NoFrameNode({ size = 150, glow }) {
 }
 
 export default function ArenaRoad({ xp = 0, onClose }) {
+  const { t } = useTranslation('arenaRoad')
+  const arenaText = t('arenas', { returnObjects: true })
+  const ARENAS = ARENAS_BASE.map((a, i) => ({ ...a, ...arenaText[i] }))
   const currentIdx = arenaLevelForXp(xp)
   const prog = arenaProgress(xp)
   const currentRef = useRef(null)
@@ -110,7 +114,7 @@ export default function ArenaRoad({ xp = 0, onClose }) {
           <div style={{
             fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800,
             textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-primary)', lineHeight: 1,
-          }}>Droga Aren</div>
+          }}>{t('title')}</div>
           <div style={{ fontSize: 12, color: 'rgba(238,244,255,0.45)', marginTop: 2,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             {xp}<img src="/hoopxp.png" alt="XP" style={{ width: 12, height: 12, objectFit: 'contain' }}/> · {ARENAS[currentIdx]?.name}
@@ -143,23 +147,23 @@ export default function ArenaRoad({ xp = 0, onClose }) {
                       fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800,
                       textTransform: 'uppercase', letterSpacing: 0.3,
                       color: a.secret ? 'rgba(238,244,255,0.4)' : 'var(--text-primary)',
-                    }}>{a.secret ? 'SECRET' : a.name}</span>
+                    }}>{a.secret ? t('secret') : a.name}</span>
                     {isCurrent && (
                       <span style={{
                         fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
                         padding: '2px 7px', borderRadius: 999, background: `${a.glow}33`, color: a.glow,
-                      }}>tu jesteś</span>
+                      }}>{t('youAreHere')}</span>
                     )}
                   </div>
 
                   {a.secret ? (
                     <div style={{ fontSize: 12, color: 'rgba(238,244,255,0.35)' }}>
-                      Odblokujesz po {a.threshold} XP — wkrótce odkryjesz co dalej
+                      {t('secretDesc', { xp: a.threshold })}
                     </div>
                   ) : (
                     <>
                       <div style={{ fontSize: 12, color: 'rgba(238,244,255,0.5)' }}>
-                        {a.threshold === 0 ? 'Start' : `${a.threshold} XP`}{a.tagline ? ` · ${a.tagline}` : ''}
+                        {a.threshold === 0 ? t('start') : `${a.threshold} XP`}{a.tagline ? ` · ${a.tagline}` : ''}
                       </div>
                       {a.desc && (
                         <div style={{ fontSize: 11, color: 'rgba(238,244,255,0.35)', marginTop: 4, marginBottom: isCurrent ? 8 : 0 }}>
@@ -176,7 +180,7 @@ export default function ArenaRoad({ xp = 0, onClose }) {
                             }} />
                           </div>
                           <div style={{ fontSize: 10.5, color: 'rgba(238,244,255,0.4)', marginTop: 4 }}>
-                            Jeszcze {prog.toNext} XP do: {ARENAS[prog.next].name}
+                            {t('toNext', { xp: prog.toNext, name: ARENAS[prog.next].name })}
                           </div>
                         </div>
                       )}
@@ -204,7 +208,7 @@ export default function ArenaRoad({ xp = 0, onClose }) {
             marginTop: 24, textAlign: 'center', color: 'rgba(238,244,255,0.3)',
             fontSize: 12, fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: 2,
           }}>
-            ✦ Więcej aren wkrótce ✦
+            {t('moreSoon')}
           </div>
         </div>
       </div>

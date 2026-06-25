@@ -1,0 +1,26 @@
+{
+  "positions": {
+    "PG": "Point Guard",
+    "SG": "Shooting Guard",
+    "SF": "Small Forward",
+    "C": "Center",
+    "PF": "Power Forward"
+  },
+  "notFound": "Club not found.",
+  "alreadyInOtherClub": "You're already a member of another club.",
+  "oops": "Oops!",
+  "backToApp": "Back to app",
+  "joined": "You joined!",
+  "redirecting": "Redirecting to club…",
+  "invitation": "Club invitation",
+  "playersCount": "{{count}}/5 players",
+  "alreadyMember": "You're already a member of this club",
+  "goToClub": "Go to club",
+  "choosePosition": "Choose a position",
+  "taken": "TAKEN",
+  "joining": "Joining…",
+  "joinAs": "Join as {{pos}}",
+  "selectPosition": "Select a position",
+  "cancel": "Cancel",
+  "defaultPlayerName": "Player"
+}

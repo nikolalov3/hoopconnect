@@ -1,0 +1,30 @@
+{
+  "court": {
+    "threes": "TRÓJKI",
+    "mid": "MID",
+    "free": "WOLNE"
+  },
+  "stepper": {
+    "sets": "Serie",
+    "reps": "Powtórzenia"
+  },
+  "exercise": "Ćwiczenie {{n}}",
+  "remove": "Usuń",
+  "selectExercise": "— wybierz ćwiczenie —",
+  "customOption": "Inne (wpisz własne)",
+  "exerciseNamePlaceholder": "Nazwa ćwiczenia",
+  "weightPlaceholder": "Ciężar (kg) — opcjonalny",
+  "addExercise": "+ Dodaj ćwiczenie",
+  "notePlaceholder": "Notatka (opcjonalna)",
+  "saving": "Zapisuję...",
+  "saveSession": "Zapisz sesję",
+  "title": "Dodaj sesję",
+  "tabs": {
+    "shooting": "Rzuty",
+    "strength": "Siła"
+  },
+  "shootingDesc": "Wybierz strefę boiska, z której chcesz rzucać. Tracker uruchomi sesję freestyle — liczy się tylko do statystyk i osiągnięć (zero punktów do rankingu).",
+  "shotsCount": "Liczba rzutów",
+  "tapToStart": "Tap w strefę = rozpocznij sesję rzutów",
+  "strengthDesc": "Dodaj ćwiczenia z dzisiejszej sesji siłowej. Każde z liczbą serii i powtórzeń. Ciężar opcjonalny."
+}

@@ -1,16 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
-const POS_LABEL = {
-  PG: 'Rozgrywający',
-  SG: 'Rzucający',
-  SF: 'Skrzydłowy',
-  C:  'Środkowy',
-  PF: 'Silny skrzydłowy',
-}
 const POS_COLOR = {
   PG: '#4A80FF', SG: '#00C880', SF: '#FF8830', C: '#9050FF', PF: '#FF4070',
 }
@@ -45,6 +39,7 @@ function Badge({ abbr = '?', size = 72 }) {
 }
 
 export default function JoinClubPage() {
+  const { t }              = useTranslation('joinClub')
   const { clubId }         = useParams()
   const [params]           = useSearchParams()
   const navigate           = useNavigate()
@@ -79,7 +74,7 @@ export default function JoinClubPage() {
         .eq('id', clubId)
         .maybeSingle()
 
-      if (!clubRow) { setError('Nie znaleziono klubu.'); setLoading(false); return }
+      if (!clubRow) { setError(t('notFound')); setLoading(false); return }
 
       const { data: rows } = await supabase
         .from('club_members')
@@ -114,7 +109,7 @@ export default function JoinClubPage() {
       .maybeSingle()
 
     if (existing) {
-      setError('Jesteś już członkiem innego klubu.')
+      setError(t('alreadyInOtherClub'))
       setJoining(false)
       return
     }
@@ -127,7 +122,7 @@ export default function JoinClubPage() {
       .maybeSingle()
 
     if (!prof) {
-      await supabase.from('profiles').insert({ id: user.id, name: user.email?.split('@')[0] ?? 'Gracz' })
+      await supabase.from('profiles').insert({ id: user.id, name: user.email?.split('@')[0] ?? t('defaultPlayerName') })
     }
 
     const { error: insErr } = await supabase
@@ -167,12 +162,12 @@ export default function JoinClubPage() {
             <p style={{ fontSize: 48, marginBottom: 12 }}>🏀</p>
             <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900,
               fontSize: 22, color: 'var(--text-primary)', marginBottom: 8 }}>
-              Ups!
+              {t('oops')}
             </p>
             <p style={{ color: 'var(--text-dim)', fontSize: 14 }}>{error}</p>
             <button className="btn-primary" onClick={() => navigate('/')}
               style={{ marginTop: 24, width: '100%' }}>
-              Wróć do aplikacji
+              {t('backToApp')}
             </button>
           </motion.div>
 
@@ -187,10 +182,10 @@ export default function JoinClubPage() {
             <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900,
               fontSize: 28, color: 'var(--text-primary)', textTransform: 'uppercase',
               letterSpacing: 1 }}>
-              Dołączyłeś!
+              {t('joined')}
             </p>
             <p style={{ color: 'var(--text-dim)', marginTop: 8, fontSize: 13 }}>
-              Przekierowanie do klubu…
+              {t('redirecting')}
             </p>
           </motion.div>
 
@@ -216,7 +211,7 @@ export default function JoinClubPage() {
                 letterSpacing: 2.5, textTransform: 'uppercase',
                 color: 'var(--text-dim)', marginBottom: 14, textAlign: 'center',
               }}>
-                Zaproszenie do klubu
+                {t('invitation')}
               </p>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
@@ -242,7 +237,7 @@ export default function JoinClubPage() {
                     letterSpacing: 1.5, textTransform: 'uppercase',
                     color: 'var(--text-dim)', marginTop: 5,
                   }}>
-                    {Object.keys(members).length}/5 graczy
+                    {t('playersCount', { count: Object.keys(members).length })}
                   </p>
                 </div>
               </div>
@@ -257,11 +252,11 @@ export default function JoinClubPage() {
                   background: 'rgba(0,230,118,0.08)', border: '1px solid rgba(0,230,118,0.22)',
                 }}>
                   <p style={{ fontSize: 13, color: 'var(--green-shot)', fontWeight: 600 }}>
-                    Jesteś już członkiem tego klubu
+                    {t('alreadyMember')}
                   </p>
                   <button className="btn-primary" onClick={() => navigate('/club')}
                     style={{ marginTop: 12, width: '100%' }}>
-                    Przejdź do klubu
+                    {t('goToClub')}
                   </button>
                 </div>
               ) : (
@@ -271,7 +266,7 @@ export default function JoinClubPage() {
                     letterSpacing: 2, textTransform: 'uppercase',
                     color: 'var(--text-dim)', marginBottom: 10,
                   }}>
-                    Wybierz pozycję
+                    {t('choosePosition')}
                   </p>
 
                   {/* Position picker */}
@@ -314,11 +309,11 @@ export default function JoinClubPage() {
                               fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 800,
                               color: active ? col : taken ? 'var(--text-dim)' : 'var(--text-primary)',
                               margin: 0,
-                            }}>{POS_LABEL[pos]}</p>
+                            }}>{t(`positions.${pos}`)}</p>
                           </div>
                           {taken && (
                             <span style={{ fontSize: 10, color: 'var(--text-dim)',
-                              fontWeight: 600, letterSpacing: 1 }}>ZAJĘTE</span>
+                              fontWeight: 600, letterSpacing: 1 }}>{t('taken')}</span>
                           )}
                           {active && !taken && (
                             <motion.div
@@ -342,7 +337,7 @@ export default function JoinClubPage() {
                     disabled={!selPos || joining}
                     className="btn-primary"
                     style={{ opacity: selPos && !joining ? 1 : 0.35 }}>
-                    {joining ? 'Dołączanie…' : selPos ? `Dołącz jako ${selPos}` : 'Wybierz pozycję'}
+                    {joining ? t('joining') : selPos ? t('joinAs', { pos: selPos }) : t('selectPosition')}
                   </motion.button>
                 </>
               )}
@@ -354,7 +349,7 @@ export default function JoinClubPage() {
                 color: 'var(--text-dim)', fontSize: 13, cursor: 'pointer',
                 fontFamily: 'var(--font-body)',
               }}>
-              Anuluj
+              {t('cancel')}
             </button>
           </motion.div>
         )}

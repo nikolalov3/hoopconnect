@@ -1,0 +1,65 @@
+{
+  "logoAlt": "Liga HoopConnect First Season",
+  "season": {
+    "badge": "◆ Season 01 · Connect All",
+    "title": "Pierwszy sezon HoopConnect w Polsce.",
+    "descPrefix": "Rywalizuj co tydzień — treningi, mecze i osiągnięcia przekładają się na punkty ligowe. Liga resetuje się każdy poniedziałek o 00:00. Aby dołączyć, musisz być aktywny przez ",
+    "descBold": "minimum 7 dni",
+    "descSuffix": " — wchodzisz wtedy od startu kolejnego tygodnia."
+  },
+  "status": {
+    "active": "Aktywny uczestnik",
+    "weekLabel": "Tydzień · {{weekLabel}}",
+    "waitingTitle": "Gotowy — start od następnego tygodnia",
+    "waitingBodyPrefix": "Twoje punkty liczą się od ",
+    "notEligibleTitleDays": "Kwalifikacja za {{days}} dni",
+    "notEligibleTitleTomorrow": "Kwalifikacja jutro",
+    "notEligibleBody": "Potrzebujesz pierwszego raportu tygodniowego — bądź aktywny przez 7 dni, by dołączyć do ligi."
+  },
+  "countdown": {
+    "waiting": "— punkty startują za —",
+    "reset": "— reset ligi za —",
+    "days": "dni",
+    "hours": "godz",
+    "minutes": "min",
+    "seconds": "sek",
+    "start": "START",
+    "close": "ZAMKNIĘCIE"
+  },
+  "prizes": {
+    "title": "Nagrody za sezon",
+    "placeholder": "Grafika nagrody",
+    "first": "Koszulka NBA",
+    "firstDesc": "Oryginalna koszulka do wyboru · miejsce 1.",
+    "coupon": "Kupon 150 zł",
+    "shop": "Sklep koszykarski"
+  },
+  "tiersTitle": "Poziomy ligowe",
+  "tiers": [
+    { "label": "Brąz", "desc": "Punkt startowy każdego gracza.", "sub": "Zacznij trenować i zbieraj punkty do wyższej ligi." },
+    { "label": "Srebro", "desc": "Budujesz regularny nawyk treningowy.", "sub": "Utrzymaj aktywność przez kilka tygodni." },
+    { "label": "Złoto", "desc": "Zaangażowany gracz realizujący plan.", "sub": "Co najmniej 70% zaplanowanych treningów tygodniowo." },
+    { "label": "Platyna", "desc": "Doświadczony zawodnik — wysoka konsekwencja.", "sub": "Regularny udział w sesjach i spotkaniach klubowych." },
+    { "label": "Diament", "desc": "Absolutna elita sezonu.", "sub": "Tylko dla graczy z pełnym zaangażowaniem każdego tygodnia." }
+  ],
+  "pointsTitle": "Źródła punktów",
+  "pointsLabel": "PKT",
+  "leagueMultiplier": "liga {{weight}}",
+  "pointSources": [
+    { "label": "Mecz klubowy", "sub": "Zagrany i potwierdzony mecz drużynowy · maks. 3 dziennie" },
+    { "label": "Sesja rzutów", "sub": "Ukończona sesja rejestrowana w aplikacji" },
+    { "label": "Osiągnięcia", "sub": "Brąz +20 · Srebro +30 · Złoto +50 · Platyna +75 · Diament +100" },
+    { "label": "Trening (100% planu)", "sub": "Wszystkie ćwiczenia dnia oznaczone jako wykonane" },
+    { "label": "Seria tygodniowa", "sub": "Bonus za każdy kolejny tydzień aktywności bez przerwy" }
+  ],
+  "rulesTitle": "Zasady ligi",
+  "rules": [
+    { "title": "Liga tygodniowa", "body": "Pon–niedz, reset w poniedziałek 00:00" },
+    { "title": "7 dni stażu", "body": "Musisz mieć pierwszy raport tygodniowy, by dołączyć do ligi" },
+    { "title": "Start od pon.", "body": "Wchodzisz zawsze od początku nowego tygodnia — nie w trakcie" },
+    { "title": "Fair play", "body": "Treningi liczą się z mnożnikiem ×0.5 · mecze i rzuty ×1.0" },
+    { "title": "Limit meczów", "body": "Maks. 3 mecze dziennie · punkty naliczane po potwierdzeniu wyniku" },
+    { "title": "Przerwa meczowa", "body": "3v3 / 5v5 — min. 75 min odstępu · 2v2 — min. 45 min odstępu" }
+  ],
+  "cta": "RANKING — AKTUALNY TYDZIEŃ"
+}

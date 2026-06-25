@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { getCache, setCache } from '../lib/queryCache'
@@ -8,8 +9,6 @@ import { shareStatsCard, doShare } from '../lib/shareCard'
 import { pct as calcPct } from '../lib/pct'
 import AddSessionModal from '../components/ui/AddSessionModal'
 import { onTableChange } from '../lib/realtimeManager'
-
-const SHOT_LABELS = { '3pt': 'Trójki', '2pt': 'Dwójki', ft: 'Wolne' }
 
 const BLUE = '#5BB8F5'
 
@@ -33,12 +32,6 @@ const IconOverall = () => (
 const IconThree = () => <NumIcon n="3" />
 const IconMid   = () => <NumIcon n="2" />
 const IconFT    = () => <NumIcon n="1" />
-
-const FILTERS = [
-  { key: '7d',  label: '7 dni' },
-  { key: '30d', label: '30 dni' },
-  { key: 'all', label: 'Wszystko' },
-]
 
 // Liquid-glass material — Apple iOS-26 vibe.
 // Krawędzie powstają z luminancji (jasny top-edge + ciemniejszy dół) zamiast
@@ -81,6 +74,7 @@ function StatTile({ label, value, sub, accent }) {
 }
 
 function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, filterLabel, snapAlign, hero }) {
+  const { t } = useTranslation('stats')
   const pctColor = accent || (pct >= 50 ? 'var(--green-shot)' : pct >= 35 ? 'var(--orange)' : pct === 0 ? 'var(--text-dim)' : 'var(--red-shot)')
   return (
     <div
@@ -122,10 +116,10 @@ function ScrollStatCard({ icon, label, pct, made, attempted, sessions, accent, f
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <p style={{ color: 'rgba(180,195,220,0.62)', fontSize: 12, fontWeight: 500 }}>
-            {made} / {attempted} rzutów
+            {made} / {attempted} {t('shotsMadeAttempted')}
           </p>
           <p style={{ color: 'rgba(180,195,220,0.55)', fontSize: 12 }}>
-            {sessions} {sessions === 1 ? 'sesja' : sessions < 5 ? 'sesje' : 'sesji'}
+            {sessions} {t('session', { count: sessions })}
           </p>
         </div>
       </div>
@@ -142,6 +136,7 @@ const sessionCardStyle = {
 }
 
 function StrengthCard({ session }) {
+  const { t, i18n } = useTranslation('stats')
   const exList = session.exercises || []
   const summary = exList
     .map(e => `${e.sets}×${e.reps}${e.weight_kg ? ` @${e.weight_kg}kg` : ''}`)
@@ -164,7 +159,7 @@ function StrengthCard({ session }) {
             fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: 0.5,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
-            {exList.length} {exList.length === 1 ? 'ćwiczenie' : exList.length < 5 ? 'ćwiczenia' : 'ćwiczeń'}
+            {exList.length} {t('exercise', { count: exList.length })}
           </p>
           <p style={{ color: 'var(--text-dim)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {exList.map(e => e.name).join(' · ')}
@@ -174,7 +169,7 @@ function StrengthCard({ session }) {
           )}
         </div>
         <p style={{ color: 'var(--text-dim)', fontSize: 12, flexShrink: 0 }}>
-          {new Date(session.date).toLocaleDateString('pl-PL')}
+          {new Date(session.date).toLocaleDateString(i18n.language === 'pl' ? 'pl-PL' : 'en-US')}
         </p>
       </div>
       {session.notes && (
@@ -195,6 +190,7 @@ function filterByDate(sessions, range) {
 }
 
 export default function StatsPage() {
+  const { t, i18n } = useTranslation('stats')
   const { profile } = useAuth()
   const navigate = useNavigate()
   const [sessions, setSessions] = useState([])
@@ -233,7 +229,7 @@ export default function StatsPage() {
         .eq('user_id', profile.id)
         .eq('date', today)
       if ((count || 0) >= 3) {
-        alert('Limit 3 sesji siłowych dziennie został osiągnięty.')
+        alert(t('strengthLimitAlert'))
         return
       }
       const { error } = await supabase.from('strength_sessions').insert({
@@ -241,7 +237,7 @@ export default function StatsPage() {
       })
       if (error) {
         console.error('[strength insert]', error)
-        alert('Nie udało się zapisać sesji: ' + error.message)
+        alert(t('saveErrorAlert', { error: error.message }))
         return
       }
       setAddOpen(false)
@@ -304,7 +300,7 @@ export default function StatsPage() {
   const totalAttempted = filtered.reduce((a, s) => a + s.attempted, 0)
   const totalPct       = calcPct(totalMade, totalAttempted)
 
-  const filterLabel = filter === '7d' ? 'ostatnie 7 dni' : filter === '30d' ? 'ostatnie 30 dni' : 'wszystkie'
+  const filterLabel = filter === '7d' ? t('filterLabelRecent7') : filter === '30d' ? t('filterLabelRecent30') : t('filterLabelAll')
 
   const [sharing, setSharing] = useState(false)
   async function handleShare() {
@@ -312,21 +308,28 @@ export default function StatsPage() {
     try {
       const blob = await shareStatsCard({ sessions: filtered, profile, filter })
       await doShare(blob, 'hoopconnect-statystyki.png', {
-        title: 'HoopConnect — moje statystyki',
-        text:  'Mój postęp na HoopConnect 🏀 hoopconnect.pl',
+        title: t('shareTitle'),
+        text:  t('shareText'),
       })
     } finally {
       setSharing(false)
     }
   }
 
+  const FILTERS = [
+    { key: '7d',  label: t('filters.7d') },
+    { key: '30d', label: t('filters.30d') },
+    { key: 'all', label: t('filters.all') },
+  ]
+  const SHOT_LABELS = t('shotLabels', { returnObjects: true })
+
   // OGÓLNIE wyciągnięte poza scroll — to jest hero metryka, dostaje
   // dedykowaną pełnoszerokościową kartę. W scrollu zostają tylko typy rzutów.
-  const HERO_CARD = { key: 'all', icon: <IconOverall />, label: 'Ogólnie', type: null }
+  const HERO_CARD = { key: 'all', icon: <IconOverall />, label: t('overall'), type: null }
   const SCROLL_CARDS = [
-    { key: '3pt', icon: <IconThree />,   label: 'Trójki',    type: '3pt' },
-    { key: '2pt', icon: <IconMid />,     label: 'Mid-Range', type: '2pt' },
-    { key: 'ft',  icon: <IconFT />,      label: 'Wolne',     type: 'ft'  },
+    { key: '3pt', icon: <IconThree />,   label: SHOT_LABELS['3pt'], type: '3pt' },
+    { key: '2pt', icon: <IconMid />,     label: t('midRange'), type: '2pt' },
+    { key: 'ft',  icon: <IconFT />,      label: SHOT_LABELS.ft, type: 'ft'  },
   ]
   const heroData = { made: totalMade, attempted: totalAttempted, sessions: filtered.length }
   const heroPct = calcPct(heroData.made, heroData.attempted)
@@ -341,16 +344,16 @@ export default function StatsPage() {
         onSaveStrength={handleSaveStrength}
         saving={savingStrength}
       />
-      <p className="section-label" style={{ marginBottom: 4 }}>Twoje wyniki</p>
+      <p className="section-label" style={{ marginBottom: 4 }}>{t('yourResults')}</p>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-        <h1 className="display-title" style={{ fontSize: 38 }}>Statystyki</h1>
+        <h1 className="display-title" style={{ fontSize: 38 }}>{t('title')}</h1>
         {/* Icon row — bare icon buttons, no background */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {/* + Add session */}
           <motion.button
             whileTap={{ scale: 0.82 }}
             onClick={() => setAddOpen(true)}
-            aria-label="Dodaj sesję"
+            aria-label={t('addSessionAria')}
             style={{
               width: 40, height: 40,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -472,8 +475,8 @@ export default function StatsPage() {
 
       {/* ── SERIA / SESJE (mini kafelki) ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-        <StatTile label="Seria"  value={profile?.streak || 0} sub="dni z rzędu" />
-        <StatTile label="Sesje"  value={filtered.length}      sub={filterLabel} accent="var(--text-secondary)" />
+        <StatTile label={t('streak')}  value={profile?.streak || 0} sub={t('streakSub')} />
+        <StatTile label={t('sessionsLabel')}  value={filtered.length}      sub={filterLabel} accent="var(--text-secondary)" />
       </div>
 
       {/* ── SCROLL KART RZUTOWYCH (3pt / 2pt / ft) ── */}
@@ -511,7 +514,7 @@ export default function StatsPage() {
 
 
       {/* ── OSTATNIE SESJE ── */}
-      <p className="section-label" style={{ marginBottom: 14 }}>Sesje ({filtered.length})</p>
+      <p className="section-label" style={{ marginBottom: 14 }}>{t('sessionsHeader', { count: filtered.length })}</p>
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
           <div className="spinner" />
@@ -520,7 +523,7 @@ export default function StatsPage() {
         <div style={{ ...glassCard, textAlign: 'center', padding: 32 }}>
           <img src="/brokelogo.png" alt="" style={{ width: 56, height: 56, objectFit: 'contain', opacity: 0.7 }}/>
           <p style={{ color: 'var(--text-secondary)', marginTop: 8, fontFamily: 'var(--font-display)', fontSize: 16, textTransform: 'uppercase', letterSpacing: 1 }}>
-            Brak sesji – zacznij trening!
+            {t('noSessions')}
           </p>
         </div>
       ) : (
@@ -565,7 +568,7 @@ export default function StatsPage() {
                     {s.trainings?.title || SHOT_LABELS[s.shot_type]}
                   </p>
                   <p style={{ color: 'var(--text-dim)', fontSize: 12 }}>
-                    {s.made}/{s.attempted} · {new Date(s.session_date).toLocaleDateString('pl-PL')}
+                    {s.made}/{s.attempted} · {new Date(s.session_date).toLocaleDateString(i18n.language === 'pl' ? 'pl-PL' : 'en-US')}
                   </p>
                 </div>
                 <span className={`badge ${s.shot_type === '3pt' ? 'badge-orange' : s.shot_type === '2pt' ? 'badge-green' : 'badge-gray'}`}>
@@ -581,7 +584,7 @@ export default function StatsPage() {
       {filteredStrength.length > 0 && (
         <>
           <p className="section-label" style={{ marginBottom: 14, marginTop: 24 }}>
-            Siłownia ({filteredStrength.length})
+            {t('gymHeader', { count: filteredStrength.length })}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 32 }}>
             {filteredStrength.map(s => <StrengthCard key={s.id} session={s} />)}
