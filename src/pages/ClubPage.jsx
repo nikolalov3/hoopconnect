@@ -3722,8 +3722,10 @@ function MatchesPanel({ club, uid, isActive }) {
   const upcoming = sortByTeam(
     modeFiltered.filter(m => m.status !== 'completed' && new Date(m.scheduled_at) > new Date())
   )
+  // Completed matches already have results — don't clutter the join/browse
+  // list with them (full history lives in the Stats tab).
   const past = sortByTeam(
-    modeFiltered.filter(m => m.status === 'completed' || new Date(m.scheduled_at) <= new Date())
+    modeFiltered.filter(m => m.status !== 'completed' && new Date(m.scheduled_at) <= new Date())
   )
 
   return (
