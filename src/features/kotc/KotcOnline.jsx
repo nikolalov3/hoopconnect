@@ -31,6 +31,9 @@ function HexBadge({ abbr, size = 30 }) {
   )
 }
 
+const introSeen = () => { try { return localStorage.getItem('hc_kotc_intro_seen') === '1' } catch { return false } }
+const markIntroSeen = () => { try { localStorage.setItem('hc_kotc_intro_seen', '1') } catch {} }
+
 export default function KotcOnline({ onClose, initialSessionId = null }) {
   const [view, setView] = useState('home')
   const [sessionId, setSessionId] = useState(initialSessionId)
@@ -48,7 +51,7 @@ export default function KotcOnline({ onClose, initialSessionId = null }) {
             <img src="/kotklogo.png" alt="" style={{ width: 110, height: 110, objectFit: 'contain', display: 'block', margin: '10px auto 18px', filter: 'drop-shadow(0 6px 20px rgba(91,184,245,0.35))' }} />
             <p style={{ textAlign: 'center', color: MUTED, fontSize: 14, marginBottom: 26 }}>Pickup 3v3 · 4-6 klubów · wygrany zostaje · do 90 pkt</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <button style={btnPrimary} onClick={() => setView('create')}>👑 Utwórz sesję</button>
+              <button style={btnPrimary} onClick={() => setView(introSeen() ? 'create' : 'intro')}>👑 Utwórz sesję</button>
               <button style={btnGhost} onClick={() => setView('join')}>Dołącz kodem</button>
             </div>
           </>
@@ -56,6 +59,7 @@ export default function KotcOnline({ onClose, initialSessionId = null }) {
         {view === 'create' && <Create onErr={setErr} onCreated={setSessionId} onBack={() => setView('home')} />}
         {view === 'join' && <Join onErr={setErr} onJoined={setSessionId} onBack={() => setView('home')} />}
       </div>
+      {view === 'intro' && <KotcIntro onDone={() => { markIntroSeen(); setView('create') }} onSkip={() => { markIntroSeen(); setView('create') }} />}
     </div>
   )
 }
@@ -276,6 +280,44 @@ function Finished({ state, onExit, onClose }) {
           ))}
         </div>
         <button style={{ ...btnPrimary, width: '100%', marginTop: 'auto' }} onClick={onExit}>Zamknij</button>
+      </div>
+    </div>
+  )
+}
+
+// ── Onboarding (stories) — pokazane przed utworzeniem sesji ───────────────────
+const INTRO_SLIDES = [
+  { img: '/kotklogo.png', title: 'King of the Court', text: 'Turniej pickup 3v3. Kluby dołączają kodem — od 4 do 6 drużyn. Gracie o punkty, XP i koronę.' },
+  { icon: '🔄', title: 'Wygrany zostaje', text: 'Wygrany zostaje na boisku, przegrany schodzi. Po 3 wygranych z rzędu król oddaje koronę. Pierwszy klub do 90 pkt wygrywa sesję.' },
+  { icon: '🗳️', title: 'Kto wygrał? Głosujecie', text: 'Po każdej gierce uczestnicy głosują na zwycięzcę. Gdy zbierze się tyle głosów, ile ustawi host — wynik zatwierdzony. Potem 2:30 przerwy.' },
+  { icon: '🏆', title: 'Nagrody', text: 'Każdy gracz dostaje XP za grę, zwycięzca sesji bonus. Na koniec ranking i Król boiska z hexem klubu.' },
+]
+function KotcIntro({ onDone, onSkip }) {
+  const [i, setI] = useState(0)
+  const last = i === INTRO_SLIDES.length - 1
+  const s = INTRO_SLIDES[i]
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(3,6,12,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 9500 }}>
+      <div style={{ width: '100%', maxWidth: 360, background: '#0B1424', border: `1px solid ${LINE}`, borderRadius: 22, padding: '14px 18px 22px', boxShadow: '0 24px 70px rgba(0,0,0,0.55)' }}>
+        <div style={{ display: 'flex', gap: 5, marginBottom: 12 }}>
+          {INTRO_SLIDES.map((_, idx) => (
+            <div key={idx} style={{ flex: 1, height: 3, borderRadius: 2, background: idx <= i ? BLUE : 'rgba(255,255,255,0.15)', transition: 'background .2s' }} />
+          ))}
+        </div>
+        <div style={{ textAlign: 'right', marginBottom: 2 }}>
+          <button onClick={onSkip} style={{ background: 'transparent', border: 'none', color: MUTED, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>Pomiń</button>
+        </div>
+        <div style={{ textAlign: 'center', minHeight: 210, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          {s.img
+            ? <img src={s.img} alt="" style={{ width: 92, height: 92, objectFit: 'contain', marginBottom: 12, filter: 'drop-shadow(0 6px 18px rgba(91,184,245,0.35))' }} />
+            : <div style={{ fontSize: 52, marginBottom: 12 }}>{s.icon}</div>}
+          <h3 style={{ ...h1, fontSize: 24, marginBottom: 10 }}>{s.title}</h3>
+          <p style={{ color: 'rgba(238,244,255,0.72)', fontSize: 15, lineHeight: 1.55 }}>{s.text}</p>
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+          {i > 0 && <button onClick={() => setI(i - 1)} style={{ ...btnGhost, flex: '0 0 auto', padding: '13px 18px' }}>←</button>}
+          <button onClick={() => (last ? onDone() : setI(i + 1))} style={{ ...btnPrimary, flex: 1 }}>{last ? 'Zaczynamy 🏀' : 'Dalej'}</button>
+        </div>
       </div>
     </div>
   )
