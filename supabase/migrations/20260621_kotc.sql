@@ -24,9 +24,10 @@ CREATE TABLE IF NOT EXISTS public.kotc_sessions (
   confirm_votes    INT NOT NULL DEFAULT 6,   -- ile głosów łącznie potwierdza zwycięzcę gierki
   vote_cooldown_sec INT NOT NULL DEFAULT 150, -- 2:30 blokady głosowania po każdym potwierdzeniu
   last_confirmed_at TIMESTAMPTZ,             -- kiedy ostatnio potwierdzono wynik (gate cooldownu)
-  -- stan rozgrywki
+  -- stan rozgrywki (kolejka = tablica team_id, 1:1 z engine.js)
   king_team_id  UUID REFERENCES public.teams(id),
   streak        INT  NOT NULL DEFAULT 0,
+  queue         UUID[] NOT NULL DEFAULT '{}',
   winner_team_id UUID REFERENCES public.teams(id),
   created_at    TIMESTAMPTZ DEFAULT NOW(),
   ended_at      TIMESTAMPTZ
