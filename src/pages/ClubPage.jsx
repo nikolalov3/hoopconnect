@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import KotcOnline from '../features/kotc/KotcOnline'
+import { getMyActiveSession as kotcActiveSession } from '../features/kotc/api'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, useDragControls, useMotionValue, useTransform, animate } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
@@ -4459,6 +4461,13 @@ function ClubView({ club, onUpdate, uid }) {
   const [swapError, setSwapError] = useState(null)
   const [removing, setRemoving] = useState(false)
 
+  // ── King of the Court — wejście + status na żywo ─────────────────────────────
+  const [kotcOpen, setKotcOpen]   = useState(false)
+  const [kotcSid,  setKotcSid]    = useState(null)
+  const [kotcLive, setKotcLive]   = useState(null)
+  const reloadKotc = useCallback(() => { kotcActiveSession().then(setKotcLive).catch(() => {}) }, [])
+  useEffect(() => { reloadKotc() }, [reloadKotc])
+
   // ── Touch swipe (direction-aware — won't steal vertical scroll) ──────────────
   const touchRef = useRef(null)
   function handleTouchStart(e) {
@@ -4557,6 +4566,33 @@ function ClubView({ club, onUpdate, uid }) {
       {/* ── Fixed header — stays put while panels slide ── */}
       <ClubHeader club={club} isOwner={isOwner} onEditPress={() => setSheet('edit')}/>
       <PanelDots active={panel} onChange={setPanel}/>
+
+      {/* ── King of the Court — wejście / status na żywo ── */}
+      <div style={{ padding: '0 16px 10px' }}>
+        <button
+          onClick={() => { setKotcSid(kotcLive?.id || null); setKotcOpen(true) }}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px',
+            borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit', color: '#EEF4FF',
+            border: `1px solid ${kotcLive ? 'rgba(91,184,245,0.5)' : 'rgba(255,255,255,0.08)'}`,
+            background: kotcLive ? 'rgba(91,184,245,0.12)' : 'rgba(255,255,255,0.04)',
+          }}>
+          <img src="/kotklogo.png" alt="" style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }}/>
+          <div style={{ flex: 1, textAlign: 'left' }}>
+            <div style={{ fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', letterSpacing: 0.3, fontSize: 16 }}>King of the Court</div>
+            <div style={{ fontSize: 12, color: kotcLive ? '#5BB8F5' : 'rgba(238,244,255,0.5)' }}>
+              {kotcLive ? '🔴 Sesja na żywo — wejdź' : 'Pickup 3v3 · utwórz lub dołącz'}
+            </div>
+          </div>
+          <span style={{ color: 'rgba(238,244,255,0.4)', fontSize: 18 }}>›</span>
+        </button>
+      </div>
+      {kotcOpen && (
+        <KotcOnline
+          initialSessionId={kotcSid}
+          onClose={() => { setKotcOpen(false); setKotcSid(null); reloadKotc() }}
+        />
+      )}
 
       {/* ── Sliding content area only ── */}
       <div

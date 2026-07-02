@@ -17,9 +17,9 @@ const btnPrimary = { border: 'none', borderRadius: 14, padding: '15px', fontSize
   background: GRAD, cursor: 'pointer', fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', letterSpacing: 1, boxShadow: '0 10px 26px rgba(91,184,245,0.32)' }
 const btnGhost = { border: `1px solid ${LINE}`, borderRadius: 14, padding: '14px', fontSize: 15, fontWeight: 700, color: TXT, background: CARD, cursor: 'pointer', fontFamily: 'inherit' }
 
-export default function KotcOnline({ onClose }) {
+export default function KotcOnline({ onClose, initialSessionId = null }) {
   const [view, setView] = useState('home')   // home | create | join
-  const [sessionId, setSessionId] = useState(null)
+  const [sessionId, setSessionId] = useState(initialSessionId)
   const [err, setErr] = useState('')
 
   if (sessionId) return <Session sessionId={sessionId} onExit={() => { setSessionId(null); setView('home') }} onClose={onClose} />
