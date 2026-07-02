@@ -62,15 +62,24 @@ export default function KotcOnline({ onClose, initialSessionId = null }) {
 
 function Create({ onErr, onCreated, onBack }) {
   const [busy, setBusy] = useState(false)
+  const [votes, setVotes] = useState(6)
   const go = async () => {
     setBusy(true); onErr('')
-    try { const s = await api.createSession(); onCreated(s.id) }
+    try { const s = await api.createSession({ confirmVotes: votes }); onCreated(s.id) }
     catch (e) { onErr(e.message || 'Nie udało się utworzyć sesji') } finally { setBusy(false) }
   }
   return (
     <div>
       <h2 style={{ ...h1, fontSize: 24, marginBottom: 8 }}>Nowa sesja</h2>
-      <p style={{ color: MUTED, fontSize: 14, marginBottom: 20 }}>Utworzysz sesję i dostaniesz <b>kod</b>. Kluby (4-6) dołączają tym kodem. Ty startujesz grę.</p>
+      <p style={{ color: MUTED, fontSize: 14, marginBottom: 18 }}>Utworzysz sesję i dostaniesz <b>kod</b>. Kluby (4-6) dołączają tym kodem. Ty startujesz grę.</p>
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: BLUE, marginBottom: 8 }}>Głosy do potwierdzenia wyniku</div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+        {[1, 2, 3, 6].map(n => (
+          <button key={n} onClick={() => setVotes(n)}
+            style={{ flex: 1, ...btnGhost, padding: '12px 0', textAlign: 'center', borderColor: votes === n ? BLUE : LINE, background: votes === n ? 'rgba(91,184,245,0.12)' : CARD }}>{n}</button>
+        ))}
+      </div>
+      <div style={{ fontSize: 11, color: MUTED, marginBottom: 18 }}>Na test wybierz 1. Docelowo 6.</div>
       <button style={{ ...btnPrimary, width: '100%', opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={go}>{busy ? 'Tworzę…' : 'Utwórz sesję 🏀'}</button>
       <button style={{ ...btnGhost, width: '100%', marginTop: 10 }} onClick={onBack}>Wróć</button>
     </div>
