@@ -5,6 +5,13 @@ import * as api from './api'
 const NAVY = '#060B16', BLUE = '#5BB8F5', CARD = 'rgba(255,255,255,0.05)'
 const LINE = 'rgba(255,255,255,0.08)', TXT = '#EEF4FF', MUTED = 'rgba(238,244,255,0.5)'
 const GRAD = `linear-gradient(120deg, ${BLUE}, #2272C3)`
+// Apple-ish liquid glass 2026: translucent + blur + subtle top highlight
+const glass = {
+  background: 'rgba(255,255,255,0.06)',
+  backdropFilter: 'blur(22px) saturate(1.4)', WebkitBackdropFilter: 'blur(22px) saturate(1.4)',
+  border: '1px solid rgba(255,255,255,0.14)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20), 0 8px 30px rgba(0,0,0,0.22)',
+}
 
 const shell = {
   position: 'fixed', inset: 0, maxWidth: 460, margin: '0 auto',
@@ -14,7 +21,7 @@ const shell = {
 }
 const h1 = { fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', fontWeight: 900, letterSpacing: 0.5 }
 const btnPrimary = { border: 'none', borderRadius: 14, padding: '15px', fontSize: 16, fontWeight: 800, color: NAVY, background: GRAD, cursor: 'pointer', fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', letterSpacing: 1, boxShadow: '0 10px 26px rgba(91,184,245,0.32)' }
-const btnGhost = { border: `1px solid ${LINE}`, borderRadius: 14, padding: '14px', fontSize: 15, fontWeight: 700, color: TXT, background: CARD, cursor: 'pointer', fontFamily: 'inherit' }
+const btnGhost = { ...glass, borderRadius: 14, padding: '14px', fontSize: 15, fontWeight: 700, color: TXT, cursor: 'pointer', fontFamily: 'inherit' }
 
 // hexagon klubu ze skrótem
 function HexBadge({ abbr, size = 30 }) {
@@ -75,15 +82,16 @@ function Create({ onErr, onCreated, onBack }) {
   return (
     <div>
       <h2 style={{ ...h1, fontSize: 24, marginBottom: 8 }}>Nowa sesja</h2>
-      <p style={{ color: MUTED, fontSize: 14, marginBottom: 18 }}>Utworzysz sesję i dostaniesz <b>kod</b>. Kluby (4-6) dołączają tym kodem. Ty startujesz grę.</p>
-      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: BLUE, marginBottom: 8 }}>Głosy do potwierdzenia wyniku</div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
-        {[1, 2, 3, 6].map(n => (
-          <button key={n} onClick={() => setVotes(n)}
-            style={{ flex: 1, ...btnGhost, padding: '12px 0', textAlign: 'center', borderColor: votes === n ? BLUE : LINE, background: votes === n ? 'rgba(91,184,245,0.12)' : CARD }}>{n}</button>
-        ))}
+      <p style={{ color: MUTED, fontSize: 14, marginBottom: 18 }}>Dostaniesz <b>kod</b> — kluby dołączają nim do gry. Ty startujesz sesję.</p>
+      <div style={{ ...glass, borderRadius: 18, padding: '16px 18px 18px', marginBottom: 18 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: MUTED }}>Ile osób musi potwierdzić wynik</div>
+        <div style={{ ...h1, fontSize: 48, color: BLUE, textAlign: 'center', margin: '4px 0 2px', textShadow: '0 4px 18px rgba(91,184,245,0.4)' }}>{votes}</div>
+        <input type="range" min={1} max={6} value={votes} onChange={e => setVotes(+e.target.value)}
+          style={{ width: '100%', accentColor: BLUE, height: 26, cursor: 'pointer' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: MUTED, marginTop: 2 }}>
+          <span>1 · szybki test (od 2 klubów)</span><span>6 · pełny tryb</span>
+        </div>
       </div>
-      <div style={{ fontSize: 11, color: MUTED, marginBottom: 18 }}>Na test wybierz 1 (wtedy start już od 2 klubów). Docelowo 6 (min 4 kluby).</div>
       <button style={{ ...btnPrimary, width: '100%', opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={go}>{busy ? 'Tworzę…' : 'Utwórz sesję 🏀'}</button>
       <button style={{ ...btnGhost, width: '100%', marginTop: 10 }} onClick={onBack}>Wróć</button>
     </div>
@@ -289,8 +297,8 @@ function Finished({ state, onExit, onClose }) {
 const INTRO_SLIDES = [
   { img: '/kotklogo.png', title: 'King of the Court', text: 'Turniej pickup 3v3. Kluby dołączają kodem — od 4 do 6 drużyn. Gracie o punkty, XP i koronę.' },
   { icon: '🔄', title: 'Wygrany zostaje', text: 'Wygrany zostaje na boisku, przegrany schodzi. Po 3 wygranych z rzędu król oddaje koronę. Pierwszy klub do 90 pkt wygrywa sesję.' },
-  { icon: '🗳️', title: 'Kto wygrał? Głosujecie', text: 'Po każdej gierce uczestnicy głosują na zwycięzcę. Gdy zbierze się tyle głosów, ile ustawi host — wynik zatwierdzony. Potem 2:30 przerwy.' },
-  { icon: '🏆', title: 'Nagrody', text: 'Każdy gracz dostaje XP za grę, zwycięzca sesji bonus. Na koniec ranking i Król boiska z hexem klubu.' },
+  { icon: '🗳️', title: 'Kto wygrał? Wy decydujecie', text: 'Po każdej gierce gracze zatwierdzają, kto wygrał. Host ustala, ile osób musi kliknąć potwierdzenie — dopiero wtedy wynik liczy się oficjalnie. Zero sędziego, decyduje boisko.' },
+  { icon: '🔥', title: 'Grasz = zgarniasz', text: 'Każda gierka to XP na konto. Weźmiesz sesję → grubszy bonus i korona 👑. Na koniec tabela pokazuje kto tu król, a kto tło. Flex w pełni zasłużony.' },
 ]
 function KotcIntro({ onDone, onSkip }) {
   const [i, setI] = useState(0)
@@ -298,7 +306,7 @@ function KotcIntro({ onDone, onSkip }) {
   const s = INTRO_SLIDES[i]
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(3,6,12,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 9500 }}>
-      <div style={{ width: '100%', maxWidth: 360, background: '#0B1424', border: `1px solid ${LINE}`, borderRadius: 22, padding: '14px 18px 22px', boxShadow: '0 24px 70px rgba(0,0,0,0.55)' }}>
+      <div style={{ width: '100%', maxWidth: 360, background: 'rgba(14,22,38,0.66)', backdropFilter: 'blur(28px) saturate(1.5)', WebkitBackdropFilter: 'blur(28px) saturate(1.5)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 26, padding: '14px 18px 22px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.22), 0 24px 70px rgba(0,0,0,0.55)' }}>
         <div style={{ display: 'flex', gap: 5, marginBottom: 12 }}>
           {INTRO_SLIDES.map((_, idx) => (
             <div key={idx} style={{ flex: 1, height: 3, borderRadius: 2, background: idx <= i ? BLUE : 'rgba(255,255,255,0.15)', transition: 'background .2s' }} />
