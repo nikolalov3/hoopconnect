@@ -47,7 +47,7 @@ function Setup({ onStart }) {
         fontSize: 32, fontWeight: 900, textAlign: 'center', letterSpacing: 0.5, lineHeight: 1,
       }}>King of the Court</h1>
       <p style={{ textAlign: 'center', color: MUTED, fontSize: 14, margin: '8px 0 26px' }}>
-        3v3 · wygrany zostaje · król schodzi po 3 · do 90 pkt
+        3v3 · wygrany zostaje · po 3 wygranych schodzi · do 90 pkt
       </p>
 
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: BLUE, marginBottom: 10 }}>
@@ -207,7 +207,7 @@ function Results({ session, onReset }) {
   return (
     <div style={{ padding: '40px 22px', flex: 1, display: 'flex', flexDirection: 'column' }}>
       <div style={{ textAlign: 'center', fontSize: 60 }}>👑</div>
-      <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: BLUE }}>Król boiska</div>
+      <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: BLUE }}>King of the Court</div>
       <h1 style={{
         fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', fontWeight: 900,
         fontSize: 40, textAlign: 'center', lineHeight: 1, margin: '6px 0 4px',
