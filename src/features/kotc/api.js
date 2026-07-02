@@ -1,27 +1,24 @@
 import { supabase } from '../../lib/supabase'
 
-// ── King of the Court — warstwa danych (RPC + realtime) ───────────────────────
+// ── King of the Court — warstwa danych (RPC + realtime), na KLUBACH ──────────
 
-// Drużyny, którymi user może dołączyć (trener LUB zawodnik) + liczność składu.
-export async function getMyTeams() {
+// Kluby, którymi user może dołączyć (właściciel LUB członek) + liczba graczy.
+export async function getMyClubs() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
-  // drużyny gdzie jestem trenerem
-  const { data: coached } = await supabase.from('teams').select('id, name').eq('coach_id', user.id)
-  // drużyny gdzie jestem zawodnikiem
+  const { data: owned } = await supabase.from('clubs').select('id, name, abbr').eq('owner_id', user.id)
   const { data: memberOf } = await supabase
-    .from('team_members').select('team_id, teams(id, name)').eq('player_id', user.id)
+    .from('club_members').select('club_id, clubs(id, name, abbr)').eq('user_id', user.id)
   const map = new Map()
-  ;(coached || []).forEach(t => map.set(t.id, { id: t.id, name: t.name }))
-  ;(memberOf || []).forEach(r => r.teams && map.set(r.teams.id, { id: r.teams.id, name: r.teams.name }))
-  const teams = [...map.values()]
-  // dolicz liczbę graczy w składzie
-  await Promise.all(teams.map(async (t) => {
-    const { count } = await supabase.from('team_members')
-      .select('*', { count: 'exact', head: true }).eq('team_id', t.id)
-    t.roster = count || 0
+  ;(owned || []).forEach(c => map.set(c.id, { id: c.id, name: c.name, abbr: c.abbr }))
+  ;(memberOf || []).forEach(r => r.clubs && map.set(r.clubs.id, { id: r.clubs.id, name: r.clubs.name, abbr: r.clubs.abbr }))
+  const clubs = [...map.values()]
+  await Promise.all(clubs.map(async (c) => {
+    const { count } = await supabase.from('club_members')
+      .select('*', { count: 'exact', head: true }).eq('club_id', c.id).not('user_id', 'is', null)
+    c.roster = count || 0
   }))
-  return teams
+  return clubs
 }
 
 export async function createSession(config = {}) {
@@ -39,8 +36,8 @@ export async function createSession(config = {}) {
   return data
 }
 
-export async function joinByCode(code, teamId) {
-  const { data, error } = await supabase.rpc('kotc_join', { p_code: code, p_team_id: teamId })
+export async function joinByCode(code, clubId) {
+  const { data, error } = await supabase.rpc('kotc_join', { p_code: code, p_team_id: clubId })
   if (error) throw error
   return data
 }
@@ -51,8 +48,8 @@ export async function startSession(sessionId) {
   return data
 }
 
-export async function castVote(gameId, teamId) {
-  const { data, error } = await supabase.rpc('kotc_cast_vote', { p_game_id: gameId, p_voted_team_id: teamId })
+export async function castVote(gameId, clubId) {
+  const { data, error } = await supabase.rpc('kotc_cast_vote', { p_game_id: gameId, p_voted_team_id: clubId })
   if (error) throw error
   return data
 }
@@ -64,11 +61,11 @@ export async function findSessionByCode(code) {
   return data
 }
 
-// Pełny stan sesji: sesja + drużyny (z nazwami) + aktualna gierka + głosy.
+// Pełny stan sesji: sesja + kluby (nazwa+skrót) + aktualna gierka + głosy.
 export async function getSessionState(sessionId) {
   const [{ data: session }, { data: teams }, { data: games }] = await Promise.all([
     supabase.from('kotc_sessions').select('*').eq('id', sessionId).single(),
-    supabase.from('kotc_session_teams').select('*, teams(id, name)').eq('session_id', sessionId),
+    supabase.from('kotc_session_teams').select('*, clubs(id, name, abbr)').eq('session_id', sessionId),
     supabase.from('kotc_games').select('*').eq('session_id', sessionId).order('created_at', { ascending: false }),
   ])
   const currentGame = (games || []).find(g => g.status === 'voting') || null
@@ -78,11 +75,10 @@ export async function getSessionState(sessionId) {
     votes = v || []
   }
   const teamsById = {}
-  ;(teams || []).forEach(t => { teamsById[t.team_id] = { ...t, name: t.teams?.name } })
+  ;(teams || []).forEach(t => { teamsById[t.team_id] = { ...t, name: t.clubs?.name, abbr: t.clubs?.abbr } })
   return { session, teams: teams || [], teamsById, currentGame, votes, games: games || [] }
 }
 
-// Realtime: reaguj na zmiany sesji/drużyn/gierek/głosów danej sesji.
 export function subscribeSession(sessionId, onChange) {
   const ch = supabase
     .channel(`kotc-${sessionId}`)
@@ -98,13 +94,12 @@ export function subscribeSession(sessionId, onChange) {
 export async function getMyActiveSession() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  // drużyny, w których jestem (zawodnik lub trener)
-  const { data: memberRows } = await supabase.from('team_members').select('team_id').eq('player_id', user.id)
-  const { data: coachRows } = await supabase.from('teams').select('id').eq('coach_id', user.id)
-  const teamIds = [...new Set([...(memberRows || []).map(r => r.team_id), ...(coachRows || []).map(r => r.id)])]
-  if (teamIds.length === 0) return null
+  const { data: memberRows } = await supabase.from('club_members').select('club_id').eq('user_id', user.id)
+  const { data: ownRows } = await supabase.from('clubs').select('id').eq('owner_id', user.id)
+  const clubIds = [...new Set([...(memberRows || []).map(r => r.club_id), ...(ownRows || []).map(r => r.id)])]
+  if (clubIds.length === 0) return null
   const { data: st } = await supabase.from('kotc_session_teams')
-    .select('session_id, kotc_sessions(*)').in('team_id', teamIds)
+    .select('session_id, kotc_sessions(*)').in('team_id', clubIds)
   const active = (st || []).map(r => r.kotc_sessions).find(s => s && (s.status === 'lobby' || s.status === 'live'))
   return active || null
 }
