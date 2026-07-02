@@ -65,7 +65,7 @@ function Create({ onErr, onCreated, onBack }) {
   const [votes, setVotes] = useState(6)
   const go = async () => {
     setBusy(true); onErr('')
-    try { const s = await api.createSession({ confirmVotes: votes }); onCreated(s.id) }
+    try { const s = await api.createSession({ confirmVotes: votes, minTeams: votes < 6 ? 2 : 4 }); onCreated(s.id) }
     catch (e) { onErr(e.message || 'Nie udało się utworzyć sesji') } finally { setBusy(false) }
   }
   return (
@@ -79,7 +79,7 @@ function Create({ onErr, onCreated, onBack }) {
             style={{ flex: 1, ...btnGhost, padding: '12px 0', textAlign: 'center', borderColor: votes === n ? BLUE : LINE, background: votes === n ? 'rgba(91,184,245,0.12)' : CARD }}>{n}</button>
         ))}
       </div>
-      <div style={{ fontSize: 11, color: MUTED, marginBottom: 18 }}>Na test wybierz 1. Docelowo 6.</div>
+      <div style={{ fontSize: 11, color: MUTED, marginBottom: 18 }}>Na test wybierz 1 (wtedy start już od 2 klubów). Docelowo 6 (min 4 kluby).</div>
       <button style={{ ...btnPrimary, width: '100%', opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={go}>{busy ? 'Tworzę…' : 'Utwórz sesję 🏀'}</button>
       <button style={{ ...btnGhost, width: '100%', marginTop: 10 }} onClick={onBack}>Wróć</button>
     </div>
