@@ -4567,26 +4567,6 @@ function ClubView({ club, onUpdate, uid }) {
       <ClubHeader club={club} isOwner={isOwner} onEditPress={() => setSheet('edit')}/>
       <PanelDots active={panel} onChange={setPanel}/>
 
-      {/* ── King of the Court — wejście / status na żywo ── */}
-      <div style={{ padding: '0 16px 10px' }}>
-        <button
-          onClick={() => { setKotcSid(kotcLive?.id || null); setKotcOpen(true) }}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px',
-            borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit', color: '#EEF4FF',
-            border: `1px solid ${kotcLive ? 'rgba(91,184,245,0.5)' : 'rgba(255,255,255,0.08)'}`,
-            background: kotcLive ? 'rgba(91,184,245,0.12)' : 'rgba(255,255,255,0.04)',
-          }}>
-          <img src="/kotklogo.png" alt="" style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }}/>
-          <div style={{ flex: 1, textAlign: 'left' }}>
-            <div style={{ fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', letterSpacing: 0.3, fontSize: 16 }}>King of the Court</div>
-            <div style={{ fontSize: 12, color: kotcLive ? '#5BB8F5' : 'rgba(238,244,255,0.5)' }}>
-              {kotcLive ? '🔴 Sesja na żywo — wejdź' : 'Pickup 3v3 · utwórz lub dołącz'}
-            </div>
-          </div>
-          <span style={{ color: 'rgba(238,244,255,0.4)', fontSize: 18 }}>›</span>
-        </button>
-      </div>
       {kotcOpen && (
         <KotcOnline
           initialSessionId={kotcSid}
@@ -4609,6 +4589,26 @@ function ClubView({ club, onUpdate, uid }) {
 
           {/* Panel 0 — Mecze */}
           <div style={{ width: '33.333%', height: '100%', overflowY: 'auto' }}>
+            {/* ── King of the Court — wejście / status na żywo ── */}
+            <div style={{ padding: '12px 16px 4px' }}>
+              <button
+                onClick={() => { setKotcSid(kotcLive?.id || null); setKotcOpen(true) }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px',
+                  borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit', color: '#EEF4FF',
+                  border: `1px solid ${kotcLive ? 'rgba(91,184,245,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                  background: kotcLive ? 'rgba(91,184,245,0.12)' : 'rgba(255,255,255,0.04)',
+                }}>
+                <img src="/kotklogo.png" alt="" style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }}/>
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <div style={{ fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', letterSpacing: 0.3, fontSize: 16 }}>King of the Court</div>
+                  <div style={{ fontSize: 12, color: kotcLive ? '#5BB8F5' : 'rgba(238,244,255,0.5)' }}>
+                    {kotcLive ? '🔴 Sesja na żywo — wejdź' : 'Pickup 3v3 · utwórz lub dołącz'}
+                  </div>
+                </div>
+                <span style={{ color: 'rgba(238,244,255,0.4)', fontSize: 18 }}>›</span>
+              </button>
+            </div>
             <MatchesPanel club={club} uid={uid} isActive={panel === 0}/>
           </div>
 
