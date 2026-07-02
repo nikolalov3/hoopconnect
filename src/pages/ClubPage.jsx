@@ -382,6 +382,10 @@ async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds 
   // Window: -7 dni do +60 dni od dziś. Stare mecze są bezużyteczne na liście,
   // a bez okna przy 5k userów łatwo o tabelę z dziesiątkami tysięcy wierszy.
   const now = new Date()
+
+  // Sprzątanie: usuń mecze, do których nikt nie dołączył, godzinę po terminie
+  await supabase.rpc('cleanup_stale_matches').catch(() => {})
+
   const from = new Date(now.getTime() - 7  * 86400000).toISOString()
   const to   = new Date(now.getTime() + 60 * 86400000).toISOString()
 
@@ -395,10 +399,13 @@ async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds 
     .limit(500)  // hard cap — jeśli kiedyś przekroczymy, dodamy paginację
   if (error) throw error
 
-  // Always include own club's matches + matches within radius
+  // Own club's matches + matches within radius; ukryj mecze bez przeciwnika
+  // starsze niż 1h po terminie (są sprzątane w tle przez cleanup_stale_matches)
+  const staleBefore = now.getTime() - 3600000
   const visible = (matches || []).filter(m =>
-    (myClubId && (m.club_id === myClubId || m.away_club_id === myClubId)) ||
-    haversineKm(userLat, userLng, m.lat, m.lng) <= radiusKm
+    !(!m.away_club_id && new Date(m.scheduled_at).getTime() < staleBefore) &&
+    ((myClubId && (m.club_id === myClubId || m.away_club_id === myClubId)) ||
+      haversineKm(userLat, userLng, m.lat, m.lng) <= radiusKm)
   )
   if (!visible.length) return []
 
@@ -3699,9 +3706,9 @@ function MatchesPanel({ club, uid, isActive }) {
       // standard: match time passed → home captain enters score
       if (new Date(m.scheduled_at) > now) continue
       if (uid !== homeLeadId) continue
-      const hasAway = away.length > 0
+      if (away.length === 0) continue   // nikt nie dołączył → brak wpisywania wyniku
       setPending(m)
-      setPendingRole(hasAway ? 'home' : 'home_only')
+      setPendingRole('home')
       setSheet('result'); break
     }
   }
