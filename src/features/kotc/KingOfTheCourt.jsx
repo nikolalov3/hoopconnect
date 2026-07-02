@@ -41,7 +41,10 @@ function Setup({ onStart }) {
 
   return (
     <div style={{ padding: '28px 22px 40px', flex: 1 }}>
-      <div style={{ textAlign: 'center', marginBottom: 6, fontSize: 44 }}>👑</div>
+      <img src="/kotklogo.png" alt="King of the Court" style={{
+        display: 'block', width: 120, height: 120, objectFit: 'contain', margin: '0 auto 4px',
+        filter: 'drop-shadow(0 6px 20px rgba(91,184,245,0.35))',
+      }} />
       <h1 style={{
         fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase',
         fontSize: 32, fontWeight: 900, textAlign: 'center', letterSpacing: 0.5, lineHeight: 1,
@@ -206,7 +209,10 @@ function Results({ session, onReset }) {
   const king = teamById(session, session.sessionWinner)
   return (
     <div style={{ padding: '40px 22px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ textAlign: 'center', fontSize: 60 }}>👑</div>
+      <img src="/kotklogo.png" alt="King of the Court" style={{
+        display: 'block', width: 150, height: 150, objectFit: 'contain', margin: '0 auto',
+        filter: 'drop-shadow(0 8px 26px rgba(91,184,245,0.4))',
+      }} />
       <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: BLUE }}>King of the Court</div>
       <h1 style={{
         fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', fontWeight: 900,
