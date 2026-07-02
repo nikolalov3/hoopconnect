@@ -20,8 +20,10 @@ CREATE TABLE IF NOT EXISTS public.kotc_sessions (
   streak3_bonus INT  NOT NULL DEFAULT 5,
   min_teams     INT  NOT NULL DEFAULT 4,
   max_teams     INT  NOT NULL DEFAULT 6,
-  confirm_mode  TEXT NOT NULL DEFAULT 'captains'      -- 'host' | 'captains' | 'players'
-                  CHECK (confirm_mode IN ('host','captains','players')),
+  -- potwierdzanie wyniku: głosowanie uczestników sesji
+  confirm_votes    INT NOT NULL DEFAULT 6,   -- ile głosów łącznie potwierdza zwycięzcę gierki
+  vote_cooldown_sec INT NOT NULL DEFAULT 150, -- 2:30 blokady głosowania po każdym potwierdzeniu
+  last_confirmed_at TIMESTAMPTZ,             -- kiedy ostatnio potwierdzono wynik (gate cooldownu)
   -- stan rozgrywki
   king_team_id  UUID REFERENCES public.teams(id),
   streak        INT  NOT NULL DEFAULT 0,
@@ -135,7 +137,11 @@ END; $$;
 --   • kotc_create_session(config)          → tworzy sesję + kod
 --   • kotc_join(code, team_id)             → dołącza drużynę (walidacja 4-6, kapitan)
 --   • kotc_start(session_id)               → lobby → live, ustawia pierwszą parę
---   • kotc_cast_vote(game_id, team_id)     → głos; gdy próg → confirm + przejście silnika
---     (silnik = engine.js: winner stays, rotacja po 3, punkty, cel → finished + XP)
+--   • kotc_cast_vote(game_id, team_id)     → głos uczestnika sesji (dowolny z rosteru drużyn w sesji)
+--       - wymóg: głosować można dopiero gdy now() >= last_confirmed_at + vote_cooldown_sec (2:30)
+--       - gdy drużyna zbierze `confirm_votes` (6) głosów → confirm wyniku:
+--           ustaw winner, przesuń silnik (winner stays / rotacja po 3 / punkty / cel → finished + XP),
+--           ustaw last_confirmed_at = now(), utwórz kolejną gierkę
+--     (silnik = engine.js)
 --   • kotc_vote_mvp(session_id, player_id) → głos MVP
 -- ============================================================================
