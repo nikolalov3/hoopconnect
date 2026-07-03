@@ -226,39 +226,60 @@ function Live({ state, me, reload, onClose }) {
         {err && <ErrBox msg={err} />}
         {g ? (
           <>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: MUTED, textAlign: 'center', marginBottom: 12 }}>Na boisku · kto wygrał?</div>
-            {[g.team_a, g.team_b].map(id => {
-              const isKing = s.king_team_id === id
-              const vf = votesFor(id)
-              const mine = myVote === id
-              return (
-                <button key={id} disabled={busy || locked} onClick={() => vote(id)}
-                  style={{ width: '100%', marginBottom: 10, textAlign: 'left', borderRadius: 14, padding: '13px 14px',
-                    border: `1.5px solid ${mine ? BLUE : LINE}`, background: mine ? 'rgba(91,184,245,0.12)' : CARD,
-                    color: TXT, cursor: (busy || locked) ? 'default' : 'pointer', opacity: locked ? 0.6 : 1,
-                    display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <HexBadge abbr={t(id)?.abbr} size={30} />
-                  <b style={{ flex: 1 }}>{t(id)?.name}{isKing ? ' 👑' : ''}{isKing && s.streak > 1 ? ` · seria ${s.streak}` : ''}</b>
-                  <span style={{ fontSize: 13, color: vf >= s.confirm_votes ? BLUE : MUTED }}>{vf}/{s.confirm_votes} 🗳️</span>
-                </button>
-              )
-            })}
-            {locked && <div style={{ textAlign: 'center', color: '#E5A93C', fontSize: 13, marginTop: 4 }}>⏱️ Głosowanie za {Math.floor(secsLeft / 60)}:{String(secsLeft % 60).padStart(2, '0')}</div>}
-            {myVote && !locked && <div style={{ textAlign: 'center', color: MUTED, fontSize: 12, marginTop: 4 }}>Zagłosowałeś. Trzeba {s.confirm_votes} głosów, by potwierdzić.</div>}
+            <div style={{ ...glass, borderRadius: 18, padding: '16px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: MUTED, textAlign: 'center', marginBottom: 14 }}>Kto wygrał gierkę?</div>
+              {[g.team_a, g.team_b].map((id, idx) => {
+                const isKing = s.king_team_id === id
+                const vf = votesFor(id)
+                const mine = myVote === id
+                const pct = Math.min(100, (vf / s.confirm_votes) * 100)
+                return (
+                  <button key={id} disabled={busy || locked} onClick={() => vote(id)}
+                    style={{ width: '100%', marginBottom: idx === 0 ? 10 : 0, textAlign: 'left', borderRadius: 14, padding: '12px 14px',
+                      border: `1.5px solid ${mine ? BLUE : 'rgba(255,255,255,0.10)'}`,
+                      background: mine ? 'rgba(91,184,245,0.14)' : 'rgba(255,255,255,0.04)',
+                      color: TXT, cursor: (busy || locked) ? 'default' : 'pointer', opacity: locked ? 0.55 : 1, fontFamily: 'inherit' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <HexBadge abbr={t(id)?.abbr} size={36} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: 16 }}>{t(id)?.name}{isKing ? ' 👑' : ''}</div>
+                        {isKing && s.streak > 1 && <div style={{ fontSize: 11, color: BLUE }}>seria {s.streak}</div>}
+                      </div>
+                      <div style={{ ...h1, fontSize: 20, color: vf >= s.confirm_votes ? BLUE : TXT }}>{vf}<span style={{ color: MUTED, fontSize: 13 }}>/{s.confirm_votes}</span></div>
+                    </div>
+                    <div style={{ height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.09)', marginTop: 10, overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: GRAD, transition: 'width .3s' }} />
+                    </div>
+                  </button>
+                )
+              })}
+              <div style={{ textAlign: 'center', marginTop: 12, fontSize: 12 }}>
+                {locked
+                  ? <span style={{ color: '#E5A93C' }}>🔒 Za chwilę można głosować ({Math.floor(secsLeft / 60)}:{String(secsLeft % 60).padStart(2, '0')})</span>
+                  : myVote
+                    ? <span style={{ color: MUTED }}>Zagłosowałeś ✓ — czekamy na {s.confirm_votes} głosów</span>
+                    : <span style={{ color: MUTED }}>Tapnij klub, który wygrał</span>}
+              </div>
+            </div>
           </>
         ) : <div style={{ color: MUTED, textAlign: 'center' }}>Czekam na kolejną gierkę…</div>}
 
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: MUTED, margin: '22px 0 8px' }}>Tabela</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {ranked.map((tm, i) => (
-            <div key={tm.team_id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: CARD, border: `1px solid ${LINE}`, borderRadius: 10 }}>
-              <span style={{ width: 14, color: MUTED, fontWeight: 700 }}>{i + 1}</span>
-              <HexBadge abbr={t(tm.team_id)?.abbr} size={24} />
-              <span style={{ flex: 1, fontWeight: 600 }}>{t(tm.team_id)?.name}{s.king_team_id === tm.team_id ? ' 👑' : ''}</span>
-              <span style={{ fontSize: 12, color: MUTED }}>{tm.wins}W</span>
-              <span style={{ ...h1, fontSize: 18, color: BLUE, minWidth: 34, textAlign: 'right' }}>{tm.score}</span>
-            </div>
-          ))}
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: MUTED, margin: '22px 0 10px' }}>Tabela</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          {ranked.map((tm, i) => {
+            const isKing = s.king_team_id === tm.team_id
+            return (
+              <div key={tm.team_id} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 13px', ...glass,
+                borderRadius: 13, border: `1px solid ${isKing ? 'rgba(255,201,64,0.4)' : 'rgba(255,255,255,0.12)'}`,
+                background: isKing ? 'rgba(255,201,64,0.08)' : 'rgba(255,255,255,0.05)' }}>
+                <span style={{ ...h1, width: 16, color: MUTED, fontSize: 16 }}>{i + 1}</span>
+                <HexBadge abbr={t(tm.team_id)?.abbr} size={26} />
+                <span style={{ flex: 1, fontWeight: 600 }}>{t(tm.team_id)?.name}{isKing ? ' 👑' : ''}</span>
+                <span style={{ fontSize: 12, color: MUTED }}>{tm.wins}W</span>
+                <span style={{ ...h1, fontSize: 19, color: BLUE, minWidth: 34, textAlign: 'right' }}>{tm.score}</span>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
@@ -299,7 +320,7 @@ const INTRO_SLIDES = [
   { img: '/kotklogo.png', title: 'King of the Court', text: 'Turniej pickup 3v3. Kluby dołączają kodem — od 4 do 6 drużyn. Gracie o punkty, XP i koronę.' },
   { icon: '🔄', title: 'Wygrany zostaje', text: 'Wygrany zostaje na boisku, przegrany schodzi. Po 3 wygranych z rzędu król oddaje koronę. Pierwszy klub do 90 pkt wygrywa sesję.' },
   { icon: '🗳️', title: 'Kto wygrał? Wy decydujecie', text: 'Po każdej gierce gracze zatwierdzają, kto wygrał. Host ustala, ile osób musi kliknąć potwierdzenie — dopiero wtedy wynik liczy się oficjalnie. Zero sędziego, decyduje boisko.' },
-  { icon: '🔥', title: 'Grasz = zgarniasz', text: 'Każda gierka to XP na konto. Weźmiesz sesję → grubszy bonus i korona 👑. Na koniec tabela pokazuje kto tu król, a kto tło. Flex w pełni zasłużony.' },
+  { icon: '🔥', title: 'Grasz = zgarniasz', text: 'Każda gierka to XP na konto. Weźmiesz sesję → grubszy bonus i korona 👑. Na koniec pełna tabela — widać kto rządził boiskiem. Flex w pełni zasłużony.' },
 ]
 function KotcIntro({ onDone, onSkip }) {
   const [i, setI] = useState(0)
@@ -318,10 +339,10 @@ function KotcIntro({ onDone, onSkip }) {
         </div>
         <div style={{ textAlign: 'center', minHeight: 210, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           {s.img
-            ? <img src={s.img} alt="" style={{ width: 92, height: 92, objectFit: 'contain', marginBottom: 12, filter: 'drop-shadow(0 6px 18px rgba(91,184,245,0.35))' }} />
-            : <div style={{ fontSize: 52, marginBottom: 12 }}>{s.icon}</div>}
-          <h3 style={{ ...h1, fontSize: 24, marginBottom: 10 }}>{s.title}</h3>
-          <p style={{ color: 'rgba(238,244,255,0.72)', fontSize: 15, lineHeight: 1.55 }}>{s.text}</p>
+            ? <img src={s.img} alt="" style={{ width: 96, height: 96, objectFit: 'contain', marginBottom: 16, filter: 'drop-shadow(0 8px 20px rgba(91,184,245,0.28))' }} />
+            : <div style={{ ...glass, width: 88, height: 88, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, marginBottom: 16 }}>{s.icon}</div>}
+          <h3 style={{ ...h1, fontSize: 25, marginBottom: 12 }}>{s.title}</h3>
+          <p style={{ color: 'rgba(238,244,255,0.66)', fontSize: 15, lineHeight: 1.6, maxWidth: 300 }}>{s.text}</p>
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           {i > 0 && <button onClick={() => setI(i - 1)} style={{ ...btnGhost, flex: '0 0 auto', padding: '13px 18px' }}>←</button>}
