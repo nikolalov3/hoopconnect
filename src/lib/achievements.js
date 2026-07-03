@@ -1,4 +1,17 @@
 import { supabase } from './supabase'
+import i18n from '../i18n'
+
+// Lokalizacja osiągnięć: katalog ma kolumny title_en/description_en (+ w stage).
+// Self-contained (bez zależności od i18nDb), żeby działać także bez modułu tłumaczeń.
+function localizeAchievement(a) {
+  if (!a || i18n.language !== 'en') return a
+  return {
+    ...a,
+    title: a.title_en || a.title,
+    description: a.description_en || a.description,
+    stages: (a.stages || []).map(s => ({ ...s, description: s.description_en || s.description })),
+  }
+}
 
 // ── POBIERZ KATALOG Z BAZY ────────────────────────────────────────────────────
 // Zastępuje hardkodowany ACHIEVEMENTS_CATALOG — teraz dane żyją w Supabase.
@@ -8,7 +21,7 @@ let _catalogCache = null
 let _trainingCategoryCache = null  // { recovery: Set<id>, shooting: Set<id> } — globalne, nigdy nie zmienia się per user
 
 export async function fetchAchievementsCatalog() {
-  if (_catalogCache) return _catalogCache
+  if (_catalogCache) return _catalogCache.map(localizeAchievement)
 
   const { data, error } = await supabase
     .from('achievements_catalog')
@@ -21,8 +34,8 @@ export async function fetchAchievementsCatalog() {
     return []
   }
 
-  _catalogCache = data || []
-  return _catalogCache
+  _catalogCache = data || []  // cache surowe (PL+EN); lokalizacja przy każdym odczycie
+  return _catalogCache.map(localizeAchievement)
 }
 
 /**

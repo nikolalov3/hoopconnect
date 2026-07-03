@@ -217,11 +217,12 @@ function Live({ state, me, reload, onClose }) {
     <div style={shell}>
       <Header title="King of the Court" onClose={onClose} />
       <div style={{ padding: '16px 18px', flex: 1 }}>
-        <div style={{ textAlign: 'center', fontSize: 12, color: MUTED }}>
-          Lider: <b style={{ color: BLUE }}>{t(leader?.team_id)?.name}</b> · {leader?.score}/{s.target} pkt
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+          <span style={{ fontSize: 12.5, color: MUTED }}>👑 Lider: <b style={{ color: TXT }}>{t(leader?.team_id)?.name}</b></span>
+          <span style={{ ...h1, fontSize: 15, color: BLUE }}>{leader?.score}<span style={{ color: MUTED, fontSize: 12, fontWeight: 400 }}> / {s.target}</span></span>
         </div>
-        <div style={{ height: 6, borderRadius: 999, background: 'rgba(255,255,255,0.08)', margin: '10px 0 20px', overflow: 'hidden' }}>
-          <div style={{ width: `${Math.min(100, (leader?.score / s.target) * 100)}%`, height: '100%', background: `linear-gradient(90deg, ${BLUE}, #FFC940)` }} />
+        <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: 20 }}>
+          <div style={{ width: `${Math.min(100, (leader?.score / s.target) * 100)}%`, height: '100%', borderRadius: 999, background: GRAD, boxShadow: '0 0 14px rgba(91,184,245,0.45)', transition: 'width .4s' }} />
         </div>
         {err && <ErrBox msg={err} />}
         {g ? (
