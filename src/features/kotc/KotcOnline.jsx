@@ -20,7 +20,7 @@ const shell = {
   overflowY: 'auto', paddingTop: 'env(safe-area-inset-top, 0px)', zIndex: 9000,
 }
 const h1 = { fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', fontWeight: 900, letterSpacing: 0.5 }
-const btnPrimary = { border: 'none', borderRadius: 14, padding: '15px', fontSize: 16, fontWeight: 800, color: NAVY, background: GRAD, cursor: 'pointer', fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', letterSpacing: 1, boxShadow: '0 10px 26px rgba(91,184,245,0.32)' }
+const btnPrimary = { border: '1px solid rgba(255,255,255,0.22)', borderRadius: 14, padding: '15px', fontSize: 16, fontWeight: 800, color: NAVY, background: GRAD, cursor: 'pointer', fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', letterSpacing: 1, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 5px 16px rgba(34,114,195,0.20)' }
 const btnGhost = { ...glass, borderRadius: 14, padding: '14px', fontSize: 15, fontWeight: 700, color: TXT, cursor: 'pointer', fontFamily: 'inherit' }
 
 // hexagon klubu ze skrótem
@@ -50,15 +50,16 @@ export default function KotcOnline({ onClose, initialSessionId = null }) {
 
   return (
     <div style={shell}>
-      <Header title="King of the Court" onClose={onClose} />
+      <Header title={view === 'home' ? '' : 'King of the Court'} onClose={onClose} />
       <div style={{ padding: '24px 22px', flex: 1 }}>
         {err && <ErrBox msg={err} />}
         {view === 'home' && (
           <>
-            <img src="/kotklogo.png" alt="" style={{ width: 110, height: 110, objectFit: 'contain', display: 'block', margin: '10px auto 18px', filter: 'drop-shadow(0 6px 20px rgba(91,184,245,0.35))' }} />
-            <p style={{ textAlign: 'center', color: MUTED, fontSize: 14, marginBottom: 26 }}>Pickup 3v3 · 4-6 klubów · wygrany zostaje · do 90 pkt</p>
+            <img src="/kotklogo.png" alt="" style={{ width: 118, height: 118, objectFit: 'contain', display: 'block', margin: '36px auto 16px', filter: 'drop-shadow(0 8px 22px rgba(91,184,245,0.22))' }} />
+            <h1 style={{ ...h1, fontSize: 30, textAlign: 'center', lineHeight: 1 }}>King of the Court</h1>
+            <p style={{ textAlign: 'center', color: MUTED, fontSize: 13.5, margin: '12px 0 36px' }}>Pickup 3v3 · 4-6 klubów · wygrany zostaje · do 90 pkt</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <button style={btnPrimary} onClick={() => setView(introSeen() ? 'create' : 'intro')}>👑 Utwórz sesję</button>
+              <button style={btnPrimary} onClick={() => setView(introSeen() ? 'create' : 'intro')}>Utwórz sesję</button>
               <button style={btnGhost} onClick={() => setView('join')}>Dołącz kodem</button>
             </div>
           </>
@@ -83,13 +84,13 @@ function Create({ onErr, onCreated, onBack }) {
     <div>
       <h2 style={{ ...h1, fontSize: 24, marginBottom: 8 }}>Nowa sesja</h2>
       <p style={{ color: MUTED, fontSize: 14, marginBottom: 18 }}>Dostaniesz <b>kod</b> — kluby dołączają nim do gry. Ty startujesz sesję.</p>
-      <div style={{ ...glass, borderRadius: 18, padding: '16px 18px 18px', marginBottom: 18 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: MUTED }}>Ile osób musi potwierdzić wynik</div>
-        <div style={{ ...h1, fontSize: 48, color: BLUE, textAlign: 'center', margin: '4px 0 2px', textShadow: '0 4px 18px rgba(91,184,245,0.4)' }}>{votes}</div>
+      <div style={{ ...glass, borderRadius: 20, padding: '24px 22px 22px', marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: MUTED, textAlign: 'center' }}>Ile osób musi potwierdzić wynik</div>
+        <div style={{ ...h1, fontSize: 54, color: BLUE, textAlign: 'center', margin: '12px 0 10px', textShadow: '0 2px 10px rgba(91,184,245,0.16)' }}>{votes}</div>
         <input type="range" min={1} max={6} value={votes} onChange={e => setVotes(+e.target.value)}
           style={{ width: '100%', accentColor: BLUE, height: 26, cursor: 'pointer' }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: MUTED, marginTop: 2 }}>
-          <span>1 · szybki test (od 2 klubów)</span><span>6 · pełny tryb</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: MUTED, marginTop: 10 }}>
+          <span>1 · szybki test</span><span>6 · pełny tryb</span>
         </div>
       </div>
       <button style={{ ...btnPrimary, width: '100%', opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={go}>{busy ? 'Tworzę…' : 'Utwórz sesję 🏀'}</button>
@@ -333,9 +334,9 @@ function KotcIntro({ onDone, onSkip }) {
 
 function Header({ title, onClose }) {
   return (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 18px', borderBottom: `1px solid ${LINE}`, flexShrink: 0 }}>
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 18px', borderBottom: title ? `1px solid ${LINE}` : 'none', flexShrink: 0, minHeight: 54 }}>
       {onClose && <button onClick={onClose} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: TXT, fontSize: 22, cursor: 'pointer' }}>←</button>}
-      <div style={{ ...h1, fontSize: 20 }}>{title}</div>
+      {title && <div style={{ ...h1, fontSize: 20 }}>{title}</div>}
     </div>
   )
 }
