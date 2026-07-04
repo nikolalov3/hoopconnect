@@ -17,13 +17,13 @@ VALUES
  'Wygrałeś sesję King of the Court. Zdobywaj wielokrotnie!',
  'You won a King of the Court session. Earn it again and again!',
  '👑', 'repeatable',
- '[{"medal":"gold","threshold":1,"image":"/kotklogo.png","description":"Wygrana sesja King of the Court","description_en":"Won a King of the Court session"}]'::jsonb,
+ '[{"medal":"gold","threshold":1,"image":"/kotc0726.png","description":"Wygrana sesja King of the Court","description_en":"Won a King of the Court session"}]'::jsonb,
  1, true),
 ('kotc_play_july', 'Gracz King of the Court · Lipiec', 'King of the Court Player · July',
  'Zagrałeś w sesji King of the Court. Stackuj kolejne występy (x2, x3, x5…)!',
  'You played a King of the Court session. Stack your appearances (x2, x3, x5…)!',
  '🏀', 'repeatable',
- '[{"medal":"diamond","threshold":1,"image":"/kotklogo.png","description":"Udział w sesji King of the Court","description_en":"Played a King of the Court session"}]'::jsonb,
+ '[{"medal":"silver","threshold":1,"image":"/kotklogo.png","description":"Udział w sesji King of the Court","description_en":"Played a King of the Court session"}]'::jsonb,
  1, true)
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title, title_en = EXCLUDED.title_en,
