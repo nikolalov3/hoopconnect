@@ -11,24 +11,24 @@ ALTER TABLE public.achievements_catalog ADD COLUMN IF NOT EXISTS title_en TEXT;
 ALTER TABLE public.achievements_catalog ADD COLUMN IF NOT EXISTS description_en TEXT;
 
 -- katalog osiągnięć KotC
-INSERT INTO public.achievements_catalog (id, title, title_en, description, description_en, icon, type, stages, threshold, is_active)
+INSERT INTO public.achievements_catalog (id, title, title_en, description, description_en, type, stages, threshold, is_active)
 VALUES
 ('kotc_win_july', 'King of the Court · Lipiec', 'King of the Court · July',
  'Wygrałeś sesję King of the Court. Zdobywaj wielokrotnie!',
  'You won a King of the Court session. Earn it again and again!',
- '👑', 'repeatable',
+ 'repeatable',
  '[{"medal":"gold","threshold":1,"image":"/kotc0726.png","description":"Wygrana sesja King of the Court","description_en":"Won a King of the Court session"}]'::jsonb,
  1, true),
 ('kotc_play_july', 'Gracz King of the Court · Lipiec', 'King of the Court Player · July',
  'Zagrałeś w sesji King of the Court. Stackuj kolejne występy (x2, x3, x5…)!',
  'You played a King of the Court session. Stack your appearances (x2, x3, x5…)!',
- '🏀', 'repeatable',
+ 'repeatable',
  '[{"medal":"silver","threshold":1,"image":"/kotklogo.png","description":"Udział w sesji King of the Court","description_en":"Played a King of the Court session"}]'::jsonb,
  1, true)
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title, title_en = EXCLUDED.title_en,
   description = EXCLUDED.description, description_en = EXCLUDED.description_en,
-  icon = EXCLUDED.icon, type = EXCLUDED.type, stages = EXCLUDED.stages,
+  type = EXCLUDED.type, stages = EXCLUDED.stages,
   threshold = EXCLUDED.threshold, is_active = true;
 
 -- kotc_award_xp — jak w 20260622_kotc_clubs.sql + przyznanie osiągnięć
