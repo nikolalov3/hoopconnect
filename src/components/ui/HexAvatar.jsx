@@ -10,6 +10,7 @@
  * Drop PNGs into:  public/frames/default.png  etc.
  */
 import { useId } from 'react'
+import { FRAME_CATALOG } from '../../lib/frames'
 
 // ── Avatar hex coordinates (90×90 space) ─────────────────────────────────────
 const AVATAR   = "45,6 82,32 82,58 45,84 8,58 8,32"
@@ -24,19 +25,18 @@ const GLOWS = {
 }
 
 // ── Frame PNG paths per variant ──────────────────────────────────────────────
-// earlyaccess.png = ramka bazowa (wszyscy użytkownicy od teraz)
-// ramka.png       = zarezerwowana (nieużywana aktywnie)
-// ramkas1diax.png = Diamond S1 (nagroda, przyznawana 24.08.2026)
-// null            = brak ramki (variant 'none' lub 'default' bez equipped_frame)
+// Ramki realne (early_access, diamond_s1, ff, ...) budowane z jednego
+// katalogu w lib/frames.js — nowa ramka tam = automatycznie renderuje się tu.
+// default/betatester/beta/gold to legacy aliasy sprzed uporządkowania nazw,
+// wszystkie wskazywały na Early Access — zostają dla starych equipped_frame w bazie.
+// null = brak ramki (variant 'none').
 const FRAME_PATHS = {
   none:         null,
   default:      '/earlyaccess.png',
   betatester:   '/earlyaccess.png',
   beta:         '/earlyaccess.png',
   gold:         '/earlyaccess.png',
-  early_access: '/earlyaccess.png',
-  diamond_s1:   '/ramkas1diax.png',
-  ff:           '/ff.png',
+  ...Object.fromEntries(FRAME_CATALOG.map(f => [f.id, f.path])),
 }
 
 // Ramki które wymagają obrotu SVG (gdy PNG nie jest w orientacji pointy-top).
