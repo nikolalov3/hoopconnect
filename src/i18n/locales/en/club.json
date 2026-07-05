@@ -101,6 +101,7 @@
     "tapMapHint": "Tap on the map to pick a location",
     "selectPointHint": "Select a point on the map",
     "myLocation": "📍 My location",
+    "next": "Next",
     "dateTime": "Date and time",
     "note": "Note",
     "optional": "(optional)",

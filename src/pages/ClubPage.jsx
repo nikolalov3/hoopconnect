@@ -2064,7 +2064,7 @@ function MapPicker({ center, onPin, existingPin, flyTo }) {
     // Ciemny motyw (CARTO Dark Matter, darmowe kafelki bez klucza API) —
     // pasuje do ciemnego UI apki, zamiast domyślnych jasnych kafelków OSM.
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      subdomains: 'abcd', maxZoom: 20,
+      subdomains: 'abcd', maxZoom: 20, className: 'map-tiles-dark',
     }).addTo(map)
     L.control.zoom({ position: 'bottomright' }).addTo(map)
 
@@ -2131,6 +2131,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
   const [locLoading, setLocLoading] = useState(false)
   const [userLoc,    setUserLoc]    = useState(null)
   const [flyTo,      setFlyTo]      = useState(null)
+  const [mapOpen,    setMapOpen]    = useState(false)
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
@@ -2282,42 +2283,74 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
             })}
           </div>
 
-          {/* Map */}
+          {/* Location — compact field, same style as date/time; opens map on tap */}
           <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
             color: C.dim, margin: '0 0 10px' }}>{t('createMatch.location')}</p>
-          <div style={{ height: 224, borderRadius: 16, overflow: 'hidden', marginBottom: 10,
-            border: `1.5px solid ${pin ? `${C.accentLo}60` : `${C.dim}40`}`, position: 'relative' }}>
-            <MapPicker center={userLoc} onPin={handlePin} existingPin={pin} flyTo={flyTo}/>
-            {/* Dark overlay — pointer-events:none keeps map fully interactive */}
-            <div style={{
-              position: 'absolute', inset: 0, zIndex: 500,
-              background: 'rgba(4,9,20,0.45)',
-              pointerEvents: 'none',
-            }} />
-            {!pin && (
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
-                justifyContent: 'center', pointerEvents: 'none', background: 'rgba(4,8,15,0.35)', zIndex: 1000 }}>
-                <div style={{ padding: '8px 16px', borderRadius: 10, background: 'rgba(8,17,30,0.85)',
-                  border: `1px solid ${C.dim}60` }}>
-                  <p style={{ fontSize: 11, color: C.sub, fontWeight: 600, margin: 0 }}>{t('createMatch.tapMapHint')}</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Address + my location */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 26 }}>
-            <p style={{ flex: 1, fontSize: 10.5, margin: 0,
-              color: addr ? C.text : C.dim }}>
+          <motion.button whileTap={{ scale: 0.98 }} onClick={() => setMapOpen(true)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+              padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer',
+              background: C.surface, boxSizing: 'border-box', marginBottom: 26,
+              outline: `1px solid ${pin ? `${C.accentLo}60` : `${C.dim}60`}` }}>
+            <span style={{ fontSize: 13, flex: 1, textAlign: 'left', fontWeight: 700,
+              color: addr ? C.text : C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {addr ? `📍 ${addr}` : t('createMatch.selectPointHint')}
-            </p>
-            <motion.button whileTap={{ scale: 0.93 }} onClick={useMyLocation} disabled={locLoading}
-              style={{ padding: '7px 13px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                background: `${C.accent}15`, outline: `1px solid ${C.accent}40`,
-                color: C.accent, fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', opacity: locLoading ? 0.5 : 1 }}>
-              {locLoading ? '…' : t('createMatch.myLocation')}
-            </motion.button>
-          </div>
+            </span>
+            <svg width="7" height="12" viewBox="0 0 12 20" fill="none" stroke={C.dim} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 2l8 8-8 8"/>
+            </svg>
+          </motion.button>
+
+          {mapOpen && (
+            <div style={{
+              position: 'fixed', inset: 0, zIndex: 900,
+              background: 'rgba(2,5,10,0.92)',
+              display: 'flex', flexDirection: 'column',
+              padding: 'max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom))',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
+                  color: C.dim, margin: 0 }}>{t('createMatch.location')}</p>
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setMapOpen(false)}
+                  style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                    background: C.surface, color: C.sub, fontSize: 15, lineHeight: 1 }}>✕</motion.button>
+              </div>
+
+              <div style={{ flex: 1, borderRadius: 16, overflow: 'hidden', position: 'relative',
+                border: `1.5px solid ${pin ? `${C.accentLo}60` : `${C.dim}40`}` }}>
+                <MapPicker center={userLoc} onPin={handlePin} existingPin={pin} flyTo={flyTo}/>
+                {!pin && (
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', pointerEvents: 'none', background: 'rgba(4,8,15,0.25)', zIndex: 1000 }}>
+                    <div style={{ padding: '8px 16px', borderRadius: 10, background: 'rgba(8,17,30,0.85)',
+                      border: `1px solid ${C.dim}60` }}>
+                      <p style={{ fontSize: 11, color: C.sub, fontWeight: 600, margin: 0 }}>{t('createMatch.tapMapHint')}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '14px 0' }}>
+                <p style={{ flex: 1, fontSize: 11, margin: 0, color: addr ? C.text : C.dim,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {addr ? `📍 ${addr}` : t('createMatch.selectPointHint')}
+                </p>
+                <motion.button whileTap={{ scale: 0.93 }} onClick={useMyLocation} disabled={locLoading}
+                  style={{ padding: '7px 13px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                    background: `${C.accent}15`, outline: `1px solid ${C.accent}40`,
+                    color: C.accent, fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', opacity: locLoading ? 0.5 : 1 }}>
+                  {locLoading ? '…' : t('createMatch.myLocation')}
+                </motion.button>
+              </div>
+
+              <motion.button whileTap={{ scale: 0.97 }} disabled={!pin} onClick={() => setMapOpen(false)}
+                style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', cursor: pin ? 'pointer' : 'default',
+                  background: pin ? C.accent : C.surface, color: pin ? '#04101f' : C.dim,
+                  fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, letterSpacing: 0.5,
+                  opacity: pin ? 1 : 0.6 }}>
+                {t('createMatch.next')}
+              </motion.button>
+            </div>
+          )}
 
           {/* Date + Time */}
           <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
