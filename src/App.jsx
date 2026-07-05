@@ -74,6 +74,10 @@ function AppShell() {
       id: 'diamond_s1', path: '/ramkas1diax.png', rarity: 'legendary',
       label: t('diamondS1.label'), sublabel: t('diamondS1.sublabel'), description: t('diamondS1.description'),
     },
+    ff: {
+      id: 'ff', path: '/ff.png', rarity: 'legendary',
+      label: t('ff.label'), sublabel: t('ff.sublabel'), description: t('ff.description'),
+    },
   }
 
   // ── Frame reward — load pending frame into UIContext (shows red dot) ─────────

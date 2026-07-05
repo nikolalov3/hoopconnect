@@ -13,5 +13,10 @@
     "label": "Diament · Sezon 1",
     "sublabel": "Koniec Sezonu 1 · 24.08.2026",
     "description": "Nagroda za osiągnięcie rangi Diament w pierwszym sezonie HoopConnect. Tylko dla elity."
+  },
+  "ff": {
+    "label": "Friends & Family",
+    "sublabel": "Ekipa HoopConnect",
+    "description": "Dla tych, którzy byli przy tym od samego początku."
   }
 }
