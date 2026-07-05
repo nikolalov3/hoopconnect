@@ -13,6 +13,7 @@ import { calendarWeekNumber } from '../lib/week'
 import { shareMatchCard, doShare } from '../lib/shareCard'
 import HexAvatar, { HexFrameOnly } from '../components/ui/HexAvatar'
 import { ARENAS as ARENA_THEMES } from '../lib/arenas'
+import { KRAKOW_COURTS } from '../lib/krakowCourts'
 import L from 'leaflet'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2060,7 +2061,11 @@ function MapPicker({ center, onPin, existingPin, flyTo }) {
     const map = L.map(elRef.current, { zoomControl: false, attributionControl: false })
       .setView(center ? [center.lat, center.lng] : [52.0, 20.0], center ? 13 : 6)
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
+    // Ciemny motyw (CARTO Dark Matter, darmowe kafelki bez klucza API) —
+    // pasuje do ciemnego UI apki, zamiast domyślnych jasnych kafelków OSM.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd', maxZoom: 20,
+    }).addTo(map)
     L.control.zoom({ position: 'bottomright' }).addTo(map)
 
     const pinIcon = L.divIcon({
@@ -2068,16 +2073,30 @@ function MapPicker({ center, onPin, existingPin, flyTo }) {
       className: '', iconSize: [22, 22], iconAnchor: [11, 11],
     })
 
+    function placePin(lat, lng) {
+      if (markerRef.current) markerRef.current.setLatLng([lat, lng])
+      else markerRef.current = L.marker([lat, lng], { icon: pinIcon }).addTo(map)
+      onPin(lat, lng)
+    }
+
     if (existingPin) {
       markerRef.current = L.marker([existingPin.lat, existingPin.lng], { icon: pinIcon }).addTo(map)
     }
 
-    map.on('click', e => {
-      const { lat, lng } = e.latlng
-      if (markerRef.current) markerRef.current.setLatLng([lat, lng])
-      else markerRef.current = L.marker([lat, lng], { icon: pinIcon }).addTo(map)
-      onPin(lat, lng)
+    // Znane boiska (na razie Kraków, statyczna lista z OSM) — klikalne kropki,
+    // wybór ustawia pin tak samo jak kliknięcie w wolne miejsce na mapie.
+    // Wolny pin nadal działa (fallback dla boisk, których nie mamy w bazie).
+    const courtIcon = L.divIcon({
+      html: `<div style="width:14px;height:14px;background:rgba(255,159,10,0.85);border-radius:50%;border:2px solid rgba(255,255,255,0.75);box-shadow:0 0 8px rgba(255,159,10,0.6)"></div>`,
+      className: '', iconSize: [14, 14], iconAnchor: [7, 7],
     })
+    KRAKOW_COURTS.forEach(([lat, lng]) => {
+      L.marker([lat, lng], { icon: courtIcon, zIndexOffset: -100 })
+        .addTo(map)
+        .on('click', () => placePin(lat, lng))
+    })
+
+    map.on('click', e => placePin(e.latlng.lat, e.latlng.lng))
 
     mapRef.current = map
     return () => { map.remove(); mapRef.current = null; markerRef.current = null }
