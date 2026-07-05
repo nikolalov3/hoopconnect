@@ -16,13 +16,13 @@ const MEDAL_STYLE = {
   diamond:  { glow: 'rgba(91,184,245,0.29)'  },  // highest tier
 }
 
-function titleFontSize(title) {
-  const len = title.length
-  if (len <= 7)  return 12
-  if (len <= 11) return 11
-  if (len <= 16) return 10
-  return 9
-}
+// Stały rozmiar dla wszystkich tytułów — różne rozmiary w tym samym rzędzie
+// grida wyglądały nierówno. Długie tytuły (np. "King of the Court · Park
+// Jordana · Lipiec") zawijają się do 2 linii w TITLE_MIN_HEIGHT, reszta
+// centruje się w tej samej zarezerwowanej wysokości.
+const TITLE_FONT_SIZE = 10
+const TITLE_LINE_HEIGHT = 1.3
+const TITLE_MIN_HEIGHT = TITLE_FONT_SIZE * TITLE_LINE_HEIGHT * 2
 
 function AchievementModal({ achievement, onClose }) {
   const { t } = useTranslation('achievements')
@@ -132,7 +132,6 @@ function AchievementModal({ achievement, onClose }) {
 // ── KOMÓRKA OSIĄGNIĘCIA ───────────────────────────────────────────────────────
 function AchievementCell({ achievement, onPress, isNew }) {
   const { title, currentStage } = achievement
-  const fs = titleFontSize(title)
   const medal = MEDAL_STYLE[currentStage.medal]
 
   return (
@@ -161,10 +160,12 @@ function AchievementCell({ achievement, onPress, isNew }) {
         )}
       </div>
       <p style={{
-        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: fs,
+        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: TITLE_FONT_SIZE,
         color: 'var(--text-primary)', textAlign: 'center',
         textTransform: 'uppercase', letterSpacing: 0.8,
-        lineHeight: 1.3, wordBreak: 'break-word', width: '100%', margin: 0,
+        lineHeight: TITLE_LINE_HEIGHT, wordBreak: 'break-word', width: '100%', margin: 0,
+        minHeight: TITLE_MIN_HEIGHT,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         {title}
       </p>

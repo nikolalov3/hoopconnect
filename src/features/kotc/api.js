@@ -23,7 +23,7 @@ export async function getMyClubs() {
 
 export async function createSession(config = {}) {
   const { data, error } = await supabase.rpc('kotc_create_session', {
-    p_target: config.target ?? 90,
+    p_target: config.target ?? 67,
     p_rotate_after: config.rotateAfter ?? 3,
     p_win_pts: config.winPts ?? 15,
     p_streak3_bonus: config.streak3Bonus ?? 5,
