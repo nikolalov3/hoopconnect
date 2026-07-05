@@ -9,6 +9,7 @@ import BottomNav from './components/ui/BottomNav'
 import LeaderboardDrawer from './components/ui/LeaderboardDrawer'
 import FrameUnlockPanel from './components/ui/FrameUnlockPanel'
 import NotificationsSheet from './components/ui/NotificationsSheet'
+import { FRAME_CATALOG, frameSeenKey } from './lib/frames'
 
 // ── Frame reward configs ──────────────────────────────────────────────────────
 const SEASON_1_END = new Date('2026-08-24T00:00:00')
@@ -65,20 +66,12 @@ function AppShell() {
   const { leaderboardOpen, frameUnlockOpen, setFrameUnlockOpen, frameUnlockData, setFrameUnlockData } = useUI()
   const location = useLocation()
 
-  const FRAMES = {
-    early_access: {
-      id: 'early_access', path: '/earlyaccess.png', rarity: 'rare',
-      label: t('earlyAccess.label'), sublabel: t('earlyAccess.sublabel'), description: t('earlyAccess.description'),
-    },
-    diamond_s1: {
-      id: 'diamond_s1', path: '/ramkas1diax.png', rarity: 'legendary',
-      label: t('diamondS1.label'), sublabel: t('diamondS1.sublabel'), description: t('diamondS1.description'),
-    },
-    ff: {
-      id: 'ff', path: '/ff.png', rarity: 'legendary',
-      label: t('ff.label'), sublabel: t('ff.sublabel'), description: t('ff.description'),
-    },
-  }
+  // Dane dla FrameUnlockPanel — budowane z FRAME_CATALOG (lib/frames.js),
+  // tylko tłumaczenia dociągane tutaj (t() nie działa poza komponentem).
+  const FRAMES = Object.fromEntries(FRAME_CATALOG.map(f => [f.id, {
+    id: f.id, path: f.path, rarity: f.rarity,
+    label: t(`${f.i18nKey}.label`), sublabel: t(`${f.i18nKey}.sublabel`), description: t(`${f.i18nKey}.description`),
+  }]))
 
   // ── Frame reward — load pending frame into UIContext (shows red dot) ─────────
   // Panel opens only when user taps the notification dot (in HomePage header).
@@ -90,7 +83,7 @@ function AppShell() {
     // 1. Early Access — every registered user gets it immediately on first login.
     //    Once they open the panel (FrameUnlockPanel.onClose → localStorage mark),
     //    the dot disappears permanently.
-    const seenEA = `hc_frame_seen_early_access_${user.id}`
+    const seenEA = frameSeenKey('early_access', user.id)
     if (!localStorage.getItem(seenEA)) {
       setFrameUnlockData(FRAMES.early_access)
       return
@@ -98,7 +91,7 @@ function AppShell() {
 
     // 2. Diamond S1 — shown from Aug 24 to players who reached Diamond avg
     if (now >= SEASON_1_END) {
-      const seenD = `hc_frame_seen_diamond_s1_${user.id}`
+      const seenD = frameSeenKey('diamond_s1', user.id)
       if (!localStorage.getItem(seenD)) {
         if ((profile.weekly_points || 0) >= DIAMOND_MIN) {
           setFrameUnlockData(FRAMES.diamond_s1)
@@ -106,12 +99,17 @@ function AppShell() {
       }
     }
 
-    // 3. Friends & Family — granted manually in the DB (no unlock-panel flow).
-    //    Mark it "seen" as soon as we ever observe it equipped, so it stays
-    //    selectable in the Settings frame picker even after switching away.
-    const seenFF = `hc_frame_seen_ff_${user.id}`
-    if (profile.equipped_frame === 'ff' && !localStorage.getItem(seenFF)) {
-      localStorage.setItem(seenFF, '1')
+    // 3. autoGrantSilent frames (np. Friends & Family) — przyznawane ręcznie
+    //    w bazie, bez ekranu unlock. Mark "seen" jak tylko raz zaobserwujemy
+    //    equipped_frame === id, żeby zostały wybieralne w Ustawieniach na stałe,
+    //    nawet po przełączeniu na inną ramkę. Nowa ramka z autoGrantSilent:true
+    //    w katalogu dostaje to za darmo, bez zmian w tym pliku.
+    for (const f of FRAME_CATALOG) {
+      if (!f.autoGrantSilent) continue
+      const seenKey = frameSeenKey(f.id, user.id)
+      if (profile.equipped_frame === f.id && !localStorage.getItem(seenKey)) {
+        localStorage.setItem(seenKey, '1')
+      }
     }
   }, [profile?.id, profile?.equipped_frame]) // run once when profile loads + when frame changes
   const path = location.pathname

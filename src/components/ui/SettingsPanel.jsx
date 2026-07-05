@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import HexAvatar from './HexAvatar'
+import { FRAME_CATALOG, frameSeenKey } from '../../lib/frames'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 // Bardziej szary, przygaszone baby-blue ramki
@@ -359,21 +360,21 @@ function WeekPicker({ trainingDays }) {
 // ── Frame picker ──────────────────────────────────────────────────────────────
 function FramePicker({ current, uid, profile, onPick }) {
   const { t } = useTranslation('settings')
+  // Lista + "unlocked" budowane z FRAME_CATALOG (lib/frames.js) — nowa ramka
+  // w katalogu pojawia się tu automatycznie, zero zmian w tym pliku.
   const ALL_FRAMES = [
-    { id: 'none',         label: t('frames.none') },
-    { id: 'early_access', label: t('frames.early_access') },
-    { id: 'diamond_s1',   label: t('frames.diamond_s1') },
-    { id: 'ff',           label: t('frames.ff') },
+    { id: 'none', label: t('frames.none') },
+    ...FRAME_CATALOG.map(f => ({ id: f.id, label: t(`frames.${f.id}`) })),
   ]
   const unlocked = useMemo(() => {
     const frames = new Set(['none'])
-    if (uid && localStorage.getItem(`hc_frame_seen_early_access_${uid}`)) frames.add('early_access')
-    if (uid && localStorage.getItem(`hc_frame_seen_diamond_s1_${uid}`))   frames.add('diamond_s1')
-    // ff (Friends & Family) jest przyznawane recznie w bazie — flaga w
-    // localStorage (ustawiana w App.jsx przy pierwszym wykryciu equipped_frame
-    // === 'ff') trzyma ja odblokowana na stale, nawet po zmianie na inna ramke.
-    // current === 'ff' to fallback na sam start, zanim ta flaga zdazy sie zapisac.
-    if (current === 'ff' || (uid && localStorage.getItem(`hc_frame_seen_ff_${uid}`))) frames.add('ff')
+    for (const f of FRAME_CATALOG) {
+      // current === f.id: fallback na sam start, zanim flaga w localStorage
+      // zdąży się zapisać (np. tuż po ręcznym przyznaniu ramki w bazie).
+      if (current === f.id || (uid && localStorage.getItem(frameSeenKey(f.id, uid)))) {
+        frames.add(f.id)
+      }
+    }
     return frames
   }, [uid, profile?.username, current])
 
