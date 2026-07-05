@@ -385,7 +385,10 @@ async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds 
   const now = new Date()
 
   // Sprzątanie: usuń mecze, do których nikt nie dołączył, godzinę po terminie
-  await supabase.rpc('cleanup_stale_matches').catch(() => {})
+  // (try/catch, nie .catch() — builder z supabase-js jest "thenable" ale nie
+  // ma metody .catch(), wiec .catch() na nim rzuca TypeError i wywala cala
+  // funkcje przed jakimkolwiek zapytaniem o mecze)
+  try { await supabase.rpc('cleanup_stale_matches') } catch {}
 
   const from = new Date(now.getTime() - 7  * 86400000).toISOString()
   const to   = new Date(now.getTime() + 60 * 86400000).toISOString()
