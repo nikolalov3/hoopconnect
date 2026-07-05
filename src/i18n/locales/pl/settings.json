@@ -1,6 +1,6 @@
 {
   "dayShort": ["Nd", "Pon", "Wt", "Śr", "Czw", "Pt", "Sob"],
-  "frames": { "none": "Brak", "early_access": "Early Access", "diamond_s1": "Diament S1" },
+  "frames": { "none": "Brak", "early_access": "Early Access", "diamond_s1": "Diament S1", "ff": "Friends & Family" },
   "defaultPlayerName": "Gracz",
   "beta": "Beta · {{date}}",
   "edit": "Edytuj",

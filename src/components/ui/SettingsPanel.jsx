@@ -363,13 +363,17 @@ function FramePicker({ current, uid, profile, onPick }) {
     { id: 'none',         label: t('frames.none') },
     { id: 'early_access', label: t('frames.early_access') },
     { id: 'diamond_s1',   label: t('frames.diamond_s1') },
+    { id: 'ff',           label: t('frames.ff') },
   ]
   const unlocked = useMemo(() => {
     const frames = new Set(['none'])
     if (uid && localStorage.getItem(`hc_frame_seen_early_access_${uid}`)) frames.add('early_access')
     if (uid && localStorage.getItem(`hc_frame_seen_diamond_s1_${uid}`))   frames.add('diamond_s1')
+    // ff (Friends & Family) jest przyznawane recznie w bazie, bez ekranu
+    // unlock/localStorage flagi — odblokuj w pickerze jesli jest juz zalozone.
+    if (current === 'ff') frames.add('ff')
     return frames
-  }, [uid, profile?.username])
+  }, [uid, profile?.username, current])
 
   return (
     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
