@@ -193,7 +193,7 @@
     "noMatchesBody": "Żaden klub nie zaplanował meczu\nw zasięgu {{km}} km. Możesz zmienić zasięg powyżej.",
     "createMatch": "Umów mecz"
   },
-  "panelLabels": ["Mecze", "Boisko", "Statystyki"],
+  "panelLabels": ["Mecze", "Skład", "Statystyki"],
   "statsPanel": {
     "wins": "Wygrane",
     "losses": "Przegrane",

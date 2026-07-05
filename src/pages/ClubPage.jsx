@@ -914,7 +914,7 @@ function EmptySlotSheet({ club, posKey, onClose }) {
         {t('emptySlot.title')}
       </p>
 
-      {/* Tab switcher — same style as Boisko/Mecze/Statystyki */}
+      {/* Tab switcher — same style as Mecze/Skład/Statystyki */}
       <div style={{
         display: 'flex', gap: 4, padding: '4px',
         background: 'rgba(0,0,0,0.35)',
@@ -3985,7 +3985,7 @@ function MatchesPanel({ club, uid, isActive }) {
 }
 
 // ── PANEL DOTS ────────────────────────────────────────────────────────────────
-const PANEL_LABELS = ['Mecze', 'Boisko', 'Statystyki'] // PL fallback; PanelDots uses t('panelLabels', { returnObjects: true })
+const PANEL_LABELS = ['Mecze', 'Skład', 'Statystyki'] // PL fallback; PanelDots uses t('panelLabels', { returnObjects: true })
 
 function PanelDots({ active, onChange }) {
   const { t } = useTranslation('club')
@@ -4458,7 +4458,7 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
 
 // ── CLUB VIEW (panel switcher) ────────────────────────────────────────────────
 function ClubView({ club, onUpdate, uid }) {
-  const [panel,    setPanel]    = useState(1) // 0=Mecze 1=Boisko(default) 2=Statystyki
+  const [panel,    setPanel]    = useState(1) // 0=Mecze 1=Skład(default) 2=Statystyki
   const [sheet,    setSheet]    = useState(null) // 'empty'|'player'|'edit'|null
   const [sheetPos, setSheetPos] = useState(null)
   const [clubPreviewOpen, setClubPreviewOpen] = useState(false)
@@ -4619,7 +4619,7 @@ function ClubView({ club, onUpdate, uid }) {
             <MatchesPanel club={club} uid={uid} isActive={panel === 0}/>
           </div>
 
-          {/* Panel 1 — Boisko */}
+          {/* Panel 1 — Skład */}
           <div style={{ width: '33.333%', height: '100%', overflowY: 'auto' }}>
             <CourtPanel
               club={club} uid={uid} onUpdate={onUpdate}
