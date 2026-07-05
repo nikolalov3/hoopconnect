@@ -369,9 +369,11 @@ function FramePicker({ current, uid, profile, onPick }) {
     const frames = new Set(['none'])
     if (uid && localStorage.getItem(`hc_frame_seen_early_access_${uid}`)) frames.add('early_access')
     if (uid && localStorage.getItem(`hc_frame_seen_diamond_s1_${uid}`))   frames.add('diamond_s1')
-    // ff (Friends & Family) jest przyznawane recznie w bazie, bez ekranu
-    // unlock/localStorage flagi — odblokuj w pickerze jesli jest juz zalozone.
-    if (current === 'ff') frames.add('ff')
+    // ff (Friends & Family) jest przyznawane recznie w bazie — flaga w
+    // localStorage (ustawiana w App.jsx przy pierwszym wykryciu equipped_frame
+    // === 'ff') trzyma ja odblokowana na stale, nawet po zmianie na inna ramke.
+    // current === 'ff' to fallback na sam start, zanim ta flaga zdazy sie zapisac.
+    if (current === 'ff' || (uid && localStorage.getItem(`hc_frame_seen_ff_${uid}`))) frames.add('ff')
     return frames
   }, [uid, profile?.username, current])
 
