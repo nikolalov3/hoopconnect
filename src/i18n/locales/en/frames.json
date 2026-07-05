@@ -13,5 +13,10 @@
     "label": "Diamond · Season 1",
     "sublabel": "End of Season 1 · 08.24.2026",
     "description": "Reward for reaching Diamond rank in HoopConnect's first season. For the elite only."
+  },
+  "ff": {
+    "label": "Friends & Family",
+    "sublabel": "HoopConnect crew",
+    "description": "For the ones who were here from the very start."
   }
 }

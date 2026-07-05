@@ -36,6 +36,7 @@ const FRAME_PATHS = {
   gold:         '/earlyaccess.png',
   early_access: '/earlyaccess.png',
   diamond_s1:   '/ramkas1diax.png',
+  ff:           '/ff.png',
 }
 
 // Ramki które wymagają obrotu SVG (gdy PNG nie jest w orientacji pointy-top).
