@@ -5,7 +5,7 @@
 // Logika 1:1 jak symulacja z Obsidian [[Król boiska — spec]] (sekcja 4e/9b).
 
 export const KOTC_DEFAULTS = {
-  target: 90,        // pkt do wygrania sesji
+  target: 67,        // pkt do wygrania sesji
   rotateAfter: 3,    // po ilu obronach król schodzi
   winPts: 15,        // pkt za wygraną gierkę
   streak3Bonus: 5,   // bonus gdy seria === rotateAfter
