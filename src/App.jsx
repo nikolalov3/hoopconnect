@@ -105,7 +105,15 @@ function AppShell() {
         }
       }
     }
-  }, [profile?.id]) // run once when profile loads
+
+    // 3. Friends & Family — granted manually in the DB (no unlock-panel flow).
+    //    Mark it "seen" as soon as we ever observe it equipped, so it stays
+    //    selectable in the Settings frame picker even after switching away.
+    const seenFF = `hc_frame_seen_ff_${user.id}`
+    if (profile.equipped_frame === 'ff' && !localStorage.getItem(seenFF)) {
+      localStorage.setItem(seenFF, '1')
+    }
+  }, [profile?.id, profile?.equipped_frame]) // run once when profile loads + when frame changes
   const path = location.pathname
   const isTabRoute  = TAB_PATHS.has(path)
   const inShooting   = path.startsWith('/shooting')
