@@ -4,23 +4,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel Trenera — HoopConnect</title>
-  <meta name="description" content="HoopConnect zamienia treningi koszykówki w grę. Panel dla trenera: frekwencja, postępy zawodników, komunikacja z rodzicami i gamifikacja, która sprawia, że dzieci same chcą trenować." />
+  <meta name="description" content="HoopConnect pomaga trenerowi prowadzić nowoczesną drużynę: treningi i zadania z panelu, powiadomienia w aplikacji, XP i areny za aktywność, frekwencja i postępy w jednym miejscu." />
   <link rel="icon" href="/hoop.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --blue:      #2272C3;
+      --blue:       #2272C3;
       --blue-bright:#5BB8F5;
-      --blue-deep: #0D4A8A;
-      --navy:      #0B1220;
-      --ink:       #14202E;
-      --muted:     #5A6B7D;
-      --line:      #E4ECF4;
-      --bg:        #FFFFFF;
-      --bg-soft:   #F5F9FD;
-      --grad:      linear-gradient(120deg, #5BB8F5 0%, #2272C3 55%, #0D4A8A 100%);
+      --blue-deep:  #0D4A8A;
+      --gold:       #FFC940;
+      --navy:       #060B16;
+      --card:       #101B2E;
+      --card-soft:  #0B1420;
+      --ink:        #EAF2FF;
+      --muted:      #90A9C4;
+      --line:       rgba(145,190,230,0.14);
+      --line-hi:    rgba(91,184,245,0.35);
+      --bg:         var(--navy);
+      --bg-soft:    var(--card-soft);
+      --grad:       linear-gradient(120deg, #5BB8F5 0%, #2272C3 55%, #0D4A8A 100%);
+      --grad-gold:  linear-gradient(90deg,#5BB8F5,#FFC940);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
@@ -38,41 +43,43 @@
     /* ── NAV ── */
     .nav {
       position: sticky; top: 0; z-index: 50;
-      background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
+      background: rgba(6,11,22,0.85); backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--line);
     }
     .nav-in { display: flex; align-items: center; justify-content: space-between; height: 66px; }
     .brand { display: flex; align-items: center; gap: 10px; }
     .brand img { width: 34px; height: 34px; }
     .brand b { font-family: 'Barlow Condensed', sans-serif; font-size: 21px; font-weight: 800;
-      text-transform: uppercase; letter-spacing: 0.5px; color: var(--navy); }
+      text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink); }
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
       font-weight: 700; font-size: 15px; padding: 12px 22px; border-radius: 11px;
       cursor: pointer; border: none; transition: transform .15s, box-shadow .15s; white-space: nowrap;
     }
-    .btn-primary { background: var(--grad); color: #fff; box-shadow: 0 8px 22px rgba(34,114,195,0.32); }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(34,114,195,0.42); }
-    .btn-ghost { background: #fff; color: var(--blue); border: 1.5px solid var(--line); }
-    .btn-ghost:hover { border-color: var(--blue-bright); }
+    .btn-primary { background: var(--grad); color: #04101f; box-shadow: 0 8px 24px rgba(91,184,245,0.28); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(91,184,245,0.4); }
+    .btn-ghost { background: rgba(255,255,255,0.04); color: var(--blue-bright); border: 1.5px solid var(--line-hi); }
+    .btn-ghost:hover { background: rgba(91,184,245,0.08); }
     .nav .btn { padding: 9px 18px; font-size: 14px; }
 
     /* ── HERO ── */
     .hero { padding: 72px 0 60px; position: relative; overflow: hidden; }
     .hero::before {
       content: ''; position: absolute; top: -200px; right: -180px; width: 620px; height: 620px;
-      background: radial-gradient(circle, rgba(91,184,245,0.16), transparent 62%); z-index: 0;
+      background: radial-gradient(circle, rgba(91,184,245,0.14), transparent 62%); z-index: 0;
     }
     .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; position: relative; z-index: 1; }
     .eyebrow {
       display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700;
-      letter-spacing: 1.5px; text-transform: uppercase; color: var(--blue);
-      background: var(--bg-soft); border: 1px solid var(--line); padding: 6px 13px; border-radius: 999px; margin-bottom: 20px;
+      letter-spacing: 1.5px; text-transform: uppercase; color: var(--blue-bright);
+      background: rgba(91,184,245,0.08); border: 1px solid var(--line-hi); padding: 6px 13px; border-radius: 999px; margin-bottom: 20px;
     }
     .hero h1 { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase;
-      font-size: clamp(40px, 6vw, 62px); font-weight: 900; line-height: 0.96; color: var(--navy); letter-spacing: -1px; }
+      font-size: clamp(38px, 5.6vw, 58px); font-weight: 900; line-height: 0.98; color: var(--ink); letter-spacing: -1px; }
     .hero h1 span { background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-    .hero p.lead { font-size: 18.5px; color: var(--muted); margin: 22px 0 30px; max-width: 520px; }
+    .hero p.lead { font-size: 18.5px; color: var(--muted); margin: 22px 0 14px; max-width: 540px; }
+    .hero .soften { font-size: 14.5px; color: var(--muted); margin-bottom: 26px; }
+    .hero .soften b { color: var(--ink); }
     .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; }
     .trust { margin-top: 22px; font-size: 13.5px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
     .trust b { color: var(--ink); }
@@ -80,13 +87,13 @@
     /* ── PHONE MOCK ── */
     .phone-stage { display: flex; justify-content: center; }
     .phone {
-      width: 270px; height: 545px; border-radius: 38px; background: #060B16;
-      padding: 12px; box-shadow: 0 30px 70px rgba(11,18,32,0.28), 0 0 0 1px rgba(11,18,32,0.06);
+      width: 270px; height: 545px; border-radius: 38px; background: #030710;
+      padding: 12px; box-shadow: 0 30px 70px rgba(0,0,0,0.5), 0 0 0 1px rgba(91,184,245,0.10);
       position: relative;
     }
     .phone-screen {
       width: 100%; height: 100%; border-radius: 28px; overflow: hidden;
-      background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(91,184,245,0.14), transparent 60%), #060B16;
+      background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(91,184,245,0.16), transparent 60%), #060B16;
       padding: 20px 16px; color: #EEF4FF; display: flex; flex-direction: column;
     }
     .ps-head { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-weight: 800;
@@ -94,13 +101,13 @@
     .ps-sub { text-align: center; font-size: 11px; color: rgba(238,244,255,0.45); margin-bottom: 20px; }
     .ps-badge { width: 112px; height: 112px; margin: 0 auto 14px; border-radius: 50%;
       background: var(--grad); display: flex; align-items: center; justify-content: center;
-      font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 40px; color: #fff;
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 40px; color: #04101f;
       box-shadow: 0 0 34px rgba(91,184,245,0.55); clip-path: polygon(50% 2%, 95% 26%, 95% 74%, 50% 98%, 5% 74%, 5% 26%); }
     .ps-arena { text-align: center; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase;
       font-weight: 800; font-size: 19px; letter-spacing: 0.3px; }
     .ps-tag { text-align: center; font-size: 11px; color: rgba(238,244,255,0.5); margin: 3px 0 16px; }
     .ps-bar { height: 9px; border-radius: 999px; background: rgba(255,255,255,0.09); overflow: hidden; }
-    .ps-bar > div { width: 68%; height: 100%; border-radius: 999px; background: linear-gradient(90deg,#5BB8F5,#FFC940); }
+    .ps-bar > div { width: 68%; height: 100%; border-radius: 999px; background: var(--grad-gold); }
     .ps-bar-label { font-size: 10.5px; color: rgba(238,244,255,0.4); margin-top: 6px; text-align: center; }
     .ps-row { display: flex; gap: 8px; margin-top: auto; }
     .ps-chip { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07);
@@ -109,68 +116,111 @@
     .ps-chip span { font-size: 9.5px; color: rgba(238,244,255,0.45); text-transform: uppercase; letter-spacing: 0.5px; }
 
     /* ── SECTION SHELL ── */
-    section { padding: 70px 0; }
+    section { padding: 68px 0; }
     .soft { background: var(--bg-soft); }
-    .sec-head { text-align: center; max-width: 640px; margin: 0 auto 48px; }
-    .sec-head .kicker { font-size: 13px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: var(--blue); }
+    .sec-head { text-align: center; max-width: 640px; margin: 0 auto 46px; }
+    .sec-head .kicker { font-size: 13px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: var(--blue-bright); }
     .sec-head h2 { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-weight: 800;
-      font-size: clamp(30px, 4.5vw, 44px); line-height: 1; color: var(--navy); margin: 10px 0 12px; letter-spacing: -0.5px; }
-    .sec-head p { color: var(--muted); font-size: 17px; }
+      font-size: clamp(28px, 4.2vw, 42px); line-height: 1.02; color: var(--ink); margin: 10px 0 12px; letter-spacing: -0.5px; }
+    .sec-head p { color: var(--muted); font-size: 16.5px; }
 
     /* ── PROBLEM ── */
-    .prob-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
-    .prob-card { padding: 30px; border-radius: 18px; border: 1px solid var(--line); background: #fff; }
-    .prob-card.bad { background: #fff; }
-    .prob-card.good { background: var(--navy); color: #EEF4FF; border-color: var(--navy); }
-    .prob-card h3 { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-size: 22px; font-weight: 800; margin-bottom: 16px; }
-    .prob-card.good h3 { color: #fff; }
+    .prob-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    .prob-card { padding: 30px; border-radius: 18px; border: 1px solid var(--line); background: var(--card); }
+    .prob-card.good { background: linear-gradient(160deg, rgba(91,184,245,0.10), rgba(13,74,138,0.16)); border-color: var(--line-hi); }
+    .prob-card h3 { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-size: 21px; font-weight: 800; margin-bottom: 16px; color: var(--ink); }
     .prob-card ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
-    .prob-card li { display: flex; gap: 11px; font-size: 15.5px; align-items: flex-start; }
+    .prob-card li { display: flex; gap: 11px; font-size: 15.5px; align-items: flex-start; color: rgba(234,242,255,0.82); }
     .prob-card li .ic { flex-shrink: 0; width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; margin-top: 1px; }
-    .bad .ic { background: #FDECEC; color: #D9534F; }
+    .bad .ic { background: rgba(217,83,79,0.16); color: #FF6B65; }
     .good .ic { background: rgba(91,184,245,0.2); color: #5BB8F5; }
-    .prob-card.good li { color: rgba(238,244,255,0.85); }
+
+    /* ── PROBLEM lead paragraph ── */
+    .lead-quote { max-width: 720px; margin: 0 auto 42px; text-align: center; font-size: 19px; color: rgba(234,242,255,0.86); font-style: normal; }
+
+    /* ── FLOW / JAK TO DZIAŁA ── */
+    .flow-top { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 44px; flex-wrap: wrap; }
+    .flow-node { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); font-weight: 700; font-size: 14.5px; }
+    .flow-node .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--grad); }
+    .flow-arrow { color: var(--muted); font-size: 20px; }
+    .flow-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 16px; position: relative; }
+    .flow-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 18px; position: relative; }
+    .flow-tag { font-size: 10px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; display: inline-block; margin-bottom: 12px; }
+    .flow-tag.panel { background: rgba(91,184,245,0.16); color: var(--blue-bright); }
+    .flow-tag.app { background: rgba(255,201,64,0.16); color: var(--gold); }
+    .flow-n { font-family: 'Barlow Condensed', sans-serif; font-size: 30px; font-weight: 900; color: rgba(234,242,255,0.25); line-height: 1; margin-bottom: 6px; }
+    .flow-card h3 { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-size: 16.5px; font-weight: 800; color: var(--ink); margin-bottom: 6px; letter-spacing: 0; }
+    .flow-card p { color: var(--muted); font-size: 13.5px; }
+    .flow-card:not(:last-child)::after {
+      content: '→'; position: absolute; right: -20px; top: 50%; transform: translateY(-50%);
+      color: rgba(145,190,230,0.4); font-size: 18px; z-index: 2;
+    }
+
+    /* ── PRODUCT SHOT (panel / app checklist) ── */
+    .shot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+    .shot-frame { background: var(--grad); padding: 10px; border-radius: 20px; box-shadow: 0 24px 60px rgba(13,74,138,0.35); }
+    .shot-frame img { display: block; width: 100%; height: auto; border-radius: 12px; }
+    .shot-check { list-style: none; display: flex; flex-direction: column; gap: 13px; }
+    .shot-check li { display: flex; gap: 11px; align-items: flex-start; font-size: 15.5px; color: rgba(234,242,255,0.88); }
+    .shot-check li .ic { flex: none; width: 22px; height: 22px; border-radius: 7px; background: rgba(91,184,245,0.14); border: 1px solid var(--line-hi); display: flex; align-items: center; justify-content: center; color: var(--blue-bright); font-weight: 800; font-size: 12px; margin-top: 1px; }
 
     /* ── FEATURES ── */
-    .feat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 22px; }
+    .feat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
     .feat {
-      padding: 28px 26px; border-radius: 18px; background: #fff; border: 1px solid var(--line);
+      padding: 26px 24px; border-radius: 18px; background: var(--card); border: 1px solid var(--line);
       transition: transform .18s, box-shadow .18s, border-color .18s;
     }
-    .feat:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(11,18,32,0.09); border-color: rgba(91,184,245,0.5); }
-    .feat .ico { width: 50px; height: 50px; border-radius: 14px; background: var(--bg-soft);
-      display: flex; align-items: center; justify-content: center; font-size: 25px; margin-bottom: 16px;
+    .feat:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(0,0,0,0.35); border-color: var(--line-hi); }
+    .feat .ico { width: 48px; height: 48px; border-radius: 13px; background: rgba(91,184,245,0.08);
+      display: flex; align-items: center; justify-content: center; font-size: 23px; margin-bottom: 15px;
       border: 1px solid var(--line); }
-    .feat h3 { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-size: 20px; font-weight: 800; color: var(--navy); margin-bottom: 7px; }
-    .feat p { color: var(--muted); font-size: 15px; }
+    .feat h3 { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-size: 19px; font-weight: 800; color: var(--ink); margin-bottom: 7px; }
+    .feat p { color: var(--muted); font-size: 14.5px; }
 
-    /* ── STEPS ── */
-    .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; counter-reset: s; }
-    .step { padding: 30px 26px; border-radius: 18px; background: #fff; border: 1px solid var(--line); position: relative; }
-    .step .n { font-family: 'Barlow Condensed', sans-serif; font-size: 46px; font-weight: 900; line-height: 1;
+    /* ── STEPS (wdrożenie) ── */
+    .steps { display: grid; grid-template-columns: repeat(5,1fr); gap: 18px; }
+    .step { padding: 26px 20px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); position: relative; }
+    .step .n { font-family: 'Barlow Condensed', sans-serif; font-size: 38px; font-weight: 900; line-height: 1;
       background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-    .step h3 { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-size: 21px; font-weight: 800; color: var(--navy); margin-bottom: 7px; }
-    .step p { color: var(--muted); font-size: 15px; }
+    .step h3 { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-size: 17.5px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
+    .step p { color: var(--muted); font-size: 13.8px; }
 
     /* ── HIGHLIGHT (gamification) ── */
-    .hl { background: var(--navy); color: #EEF4FF; border-radius: 26px; padding: 56px; position: relative; overflow: hidden; }
+    .hl { background: linear-gradient(150deg, rgba(91,184,245,0.14), rgba(6,11,22,0.4) 55%), var(--card); border: 1px solid var(--line-hi); border-radius: 26px; padding: 54px; position: relative; overflow: hidden; }
     .hl::before { content:''; position:absolute; right:-120px; top:-120px; width:420px; height:420px;
-      background: radial-gradient(circle, rgba(91,184,245,0.22), transparent 62%); }
+      background: radial-gradient(circle, rgba(91,184,245,0.28), transparent 62%); }
     .hl-in { position: relative; z-index: 1; max-width: 640px; }
     .hl .kicker { color: var(--blue-bright); font-size: 13px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; }
     .hl h2 { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-weight: 900;
-      font-size: clamp(30px, 4.5vw, 46px); line-height: 1; margin: 12px 0 16px; }
+      font-size: clamp(28px, 4.2vw, 44px); line-height: 1.02; margin: 12px 0 16px; color: var(--ink); }
     .hl h2 span { color: var(--blue-bright); }
-    .hl p { color: rgba(238,244,255,0.8); font-size: 17px; margin-bottom: 26px; }
+    .hl p { color: rgba(238,244,255,0.78); font-size: 16.5px; margin-bottom: 26px; }
+
+    /* ── RODZIC ── */
+    .parent-card { max-width: 780px; margin: 0 auto; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 40px 44px; text-align: center; }
+    .parent-card .kicker { font-size: 13px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: var(--blue-bright); margin-bottom: 12px; }
+    .parent-card h2 { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-weight: 800; font-size: clamp(24px,3.4vw,32px); color: var(--ink); margin-bottom: 14px; }
+    .parent-card p { color: var(--muted); font-size: 16px; max-width: 560px; margin: 0 auto; }
+
+    /* ── FAQ ── */
+    .faq { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+    .faq details { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 4px 22px; }
+    .faq details[open] { border-color: var(--line-hi); }
+    .faq summary { list-style: none; cursor: pointer; padding: 18px 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; font-weight: 700; font-size: 16px; color: var(--ink); }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq summary .chev { flex: none; width: 22px; height: 22px; border-radius: 50%; background: rgba(91,184,245,0.12); color: var(--blue-bright); display: flex; align-items: center; justify-content: center; font-size: 13px; transition: transform .2s; }
+    .faq details[open] summary .chev { transform: rotate(45deg); }
+    .faq .a { padding: 0 0 20px; color: var(--muted); font-size: 15px; max-width: 620px; }
 
     /* ── CTA ── */
     .cta { text-align: center; }
     .cta h2 { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-weight: 900;
-      font-size: clamp(32px, 5vw, 52px); line-height: 1; color: var(--navy); }
-    .cta p { color: var(--muted); font-size: 18px; margin: 16px auto 30px; max-width: 520px; }
+      font-size: clamp(30px, 4.6vw, 48px); line-height: 1.02; color: var(--ink); }
+    .cta p { color: var(--muted); font-size: 17.5px; margin: 16px auto 30px; max-width: 540px; }
     .cta .hero-cta { justify-content: center; }
+    .cta .fine { margin-top: 18px; font-size: 13.5px; color: var(--muted); }
     .contact-line { margin-top: 26px; font-size: 15px; color: var(--muted); }
-    .contact-line a { color: var(--blue); font-weight: 700; }
+    .contact-line a { color: var(--blue-bright); font-weight: 700; }
 
     /* ── FOOTER ── */
     footer { border-top: 1px solid var(--line); padding: 30px 0; }
@@ -178,11 +228,18 @@
     .foot-in .brand b { font-size: 18px; }
 
     @media (max-width: 880px) {
-      .hero-grid, .prob-grid, .feat-grid, .steps { grid-template-columns: 1fr; }
+      .hero-grid, .prob-grid, .feat-grid, .shot-grid { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: repeat(2,1fr); }
+      .flow-grid { grid-template-columns: 1fr; }
+      .flow-card:not(:last-child)::after { content: '↓'; right: 50%; top: auto; bottom: -20px; transform: translateX(50%); }
       .hero { padding: 48px 0 40px; }
       .phone-stage { margin-top: 30px; }
-      .hl { padding: 38px 26px; }
+      .hl { padding: 36px 24px; }
+      .parent-card { padding: 32px 26px; }
       .nav .btn-text { display: none; }
+    }
+    @media (max-width: 560px) {
+      .steps { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -201,11 +258,12 @@
     <div class="wrap hero-grid">
       <div>
         <span class="eyebrow">🏀 Panel Trenera</span>
-        <h1>Zamień treningi<br>w grę, w którą<br><span>dzieci chcą grać</span></h1>
-        <p class="lead">HoopConnect to aplikacja, która gamifikuje treningi koszykówki — a dla Ciebie, trenera, jest panelem do ogarnięcia całej drużyny w jednym miejscu. Frekwencja, postępy, motywacja i kontakt z rodzicami bez chaosu.</p>
+        <h1>Panel trenera,<br>który motywuje<br><span>zawodników poza salą</span></h1>
+        <p class="lead">Tworzysz trening w panelu, zawodnicy dostają powiadomienie w aplikacji, zdobywają XP za aktywność i awansują po arenach. Ty widzisz frekwencję, postępy i zaangażowanie całej drużyny w jednym miejscu.</p>
+        <p class="soften">Możesz zacząć od <b>jednej grupy treningowej</b>. Bez wdrażania całego klubu od razu.</p>
         <div class="hero-cta">
           <a class="btn btn-primary" href="#kontakt">Umów bezpłatne demo</a>
-          <a class="btn btn-ghost" href="#jak">Zobacz jak działa</a>
+          <a class="btn btn-ghost" href="#jak">Zobacz, jak działa HoopConnect</a>
         </div>
         <div class="trust">⚡ <span><b>15 minut</b> demo · bez zobowiązań · pokażę na żywo na Twojej drużynie</span></div>
       </div>
@@ -232,111 +290,223 @@
     </div>
   </header>
 
-  <!-- PROBLEM / SOLUTION -->
+  <!-- PROBLEM -->
   <section class="soft">
     <div class="wrap">
       <div class="sec-head">
         <div class="kicker">Znasz to?</div>
-        <h2>Trening to nie tylko boisko</h2>
-        <p>Excele z obecnością, dzieci tracące zapał, rodzice pytający „jak sobie radzi?". HoopConnect bierze to na siebie.</p>
+        <h2>Trening to nie tylko sala</h2>
       </div>
+      <p class="lead-quote">Najtrudniejsze nie jest samo poprowadzenie treningu. Najtrudniejsze jest utrzymanie regularności, motywacji i rytmu u zawodników wtedy, gdy nie ma ich na sali.</p>
       <div class="prob-grid">
         <div class="prob-card bad">
           <h3>Bez HoopConnect</h3>
           <ul>
-            <li><span class="ic">✕</span> Obecności w zeszycie albo w głowie</li>
-            <li><span class="ic">✕</span> Dzieci tracą motywację po kilku tygodniach</li>
-            <li><span class="ic">✕</span> Rodzice nie widzą postępów dziecka</li>
-            <li><span class="ic">✕</span> Brak danych, kto się rozwija, a kto odpada</li>
+            <li><span class="ic">✕</span> Zawodnicy tracą motywację między treningami</li>
+            <li><span class="ic">✕</span> Nie widzisz, kto naprawdę pracuje poza salą</li>
+            <li><span class="ic">✕</span> Frekwencja rozproszona w notatkach, Excelu, wiadomościach</li>
+            <li><span class="ic">✕</span> Rodzice pytają o postępy, trudno pokazać konkretne dane</li>
+            <li><span class="ic">✕</span> Zawodnicy nie mają jasnego celu — tylko kolejny trening</li>
           </ul>
         </div>
         <div class="prob-card good">
           <h3>Z HoopConnect</h3>
           <ul>
-            <li><span class="ic">✓</span> Frekwencja jednym tapnięciem</li>
-            <li><span class="ic">✓</span> Dzieci same chcą trenować — bo zbierają XP i areny</li>
-            <li><span class="ic">✓</span> Rodzice widzą progres w aplikacji</li>
-            <li><span class="ic">✓</span> Ty masz dane o całej drużynie w jednym panelu</li>
+            <li><span class="ic">✓</span> Treningi i drużyna w jednym panelu</li>
+            <li><span class="ic">✓</span> Powiadomienia w aplikacji gracza — zero rozproszonych wiadomości</li>
+            <li><span class="ic">✓</span> XP i areny za aktywność, także poza salą</li>
+            <li><span class="ic">✓</span> Frekwencja i postępy widoczne od ręki</li>
+            <li><span class="ic">✓</span> Zawodnik ma jasną ścieżkę, nie tylko „kolejny trening"</li>
           </ul>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- PRODUCT SHOT -->
-  <section>
+  <!-- JAK TO DZIAŁA (flow) -->
+  <section id="jak">
     <div class="wrap">
-      <div class="prob-grid" style="align-items:center;gap:48px;">
+      <div class="sec-head">
+        <div class="kicker">Jak to działa</div>
+        <h2>Panel trenera ↔ aplikacja gracza</h2>
+        <p>Jedna pętla, która łączy to, co robisz w panelu, z tym, co zawodnik widzi na telefonie.</p>
+      </div>
 
-        <!-- LEFT: screenshot w ramce baby-blue gradient -->
-        <div style="background:var(--grad);padding:10px;border-radius:20px;box-shadow:0 24px 60px rgba(34,114,195,0.30);">
-          <div style="border-radius:12px;overflow:hidden;background:#fff;line-height:0;">
-            <img src="/oferta/panel.jpg" alt="Panel trenera HoopConnect — pulpit drużyny" loading="lazy" style="display:block;width:100%;height:auto;" />
-          </div>
+      <div class="flow-top">
+        <div class="flow-node"><span class="dot"></span>Panel trenera</div>
+        <span class="flow-arrow">⇄</span>
+        <div class="flow-node"><span class="dot"></span>Aplikacja gracza</div>
+      </div>
+
+      <div class="flow-grid">
+        <div class="flow-card">
+          <span class="flow-tag panel">Panel</span>
+          <div class="flow-n">01</div>
+          <h3>Trener dodaje trening</h3>
+          <p>Tworzysz trening lub zadanie dla drużyny albo pojedynczego zawodnika.</p>
         </div>
-
-        <!-- RIGHT: treść -->
-        <div>
-          <div style="font-size:13px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--blue);">Tak to wygląda</div>
-          <h2 class="display" style="font-size:clamp(30px,4.5vw,44px);font-weight:800;line-height:1;color:var(--navy);margin:10px 0 14px;">Panel trenera w akcji</h2>
-          <p style="color:var(--muted);font-size:17px;margin-bottom:22px;">Pulpit, który trener widzi po zalogowaniu — wszystko o drużynie w jednym miejscu, bez exceli i zeszytów.</p>
-          <ul style="list-style:none;display:flex;flex-direction:column;gap:13px;">
-            <li style="display:flex;gap:11px;align-items:flex-start;font-size:15.5px;color:var(--ink);"><span style="flex:none;width:22px;height:22px;border-radius:7px;background:var(--bg-soft);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--blue);font-weight:800;font-size:12px;margin-top:1px;">✓</span>Liczba zawodników i frekwencja od razu na wierzchu</li>
-            <li style="display:flex;gap:11px;align-items:flex-start;font-size:15.5px;color:var(--ink);"><span style="flex:none;width:22px;height:22px;border-radius:7px;background:var(--bg-soft);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--blue);font-weight:800;font-size:12px;margin-top:1px;">✓</span>Wykres aktywności drużyny tydzień po tygodniu</li>
-            <li style="display:flex;gap:11px;align-items:flex-start;font-size:15.5px;color:var(--ink);"><span style="flex:none;width:22px;height:22px;border-radius:7px;background:var(--bg-soft);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--blue);font-weight:800;font-size:12px;margin-top:1px;">✓</span>Plan najbliższych treningów z miejscem i godziną</li>
-            <li style="display:flex;gap:11px;align-items:flex-start;font-size:15.5px;color:var(--ink);"><span style="flex:none;width:22px;height:22px;border-radius:7px;background:var(--bg-soft);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--blue);font-weight:800;font-size:12px;margin-top:1px;">✓</span>Wszystko w jednym czytelnym pulpicie</li>
-          </ul>
+        <div class="flow-card">
+          <span class="flow-tag app">Aplikacja</span>
+          <div class="flow-n">02</div>
+          <h3>Zawodnik dostaje powiadomienie</h3>
+          <p>Informacja trafia od razu do aplikacji gracza — bez grup na WhatsAppie.</p>
         </div>
-
+        <div class="flow-card">
+          <span class="flow-tag app">Aplikacja</span>
+          <div class="flow-n">03</div>
+          <h3>Zawodnik zdobywa XP</h3>
+          <p>Przychodzi na trening albo wykonuje zadanie indywidualne — i dostaje XP.</p>
+        </div>
+        <div class="flow-card">
+          <span class="flow-tag app">Aplikacja</span>
+          <div class="flow-n">04</div>
+          <h3>Progres i areny</h3>
+          <p>XP odblokowuje kolejne areny — widoczny, konkretny cel do gonienia.</p>
+        </div>
+        <div class="flow-card">
+          <span class="flow-tag panel">Panel</span>
+          <div class="flow-n">05</div>
+          <h3>Trener widzi całość</h3>
+          <p>Frekwencja, aktywność i rozwój całej drużyny — w jednym miejscu.</p>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- FEATURES -->
+  <!-- PANEL TRENERA (product shot) -->
+  <section class="soft">
+    <div class="wrap">
+      <div class="shot-grid">
+        <div class="shot-frame">
+          <img src="/oferta/panel.jpg" alt="Panel trenera HoopConnect — pulpit drużyny" loading="lazy" />
+        </div>
+        <div>
+          <div class="eyebrow" style="margin-bottom:14px;">Panel trenera</div>
+          <h2 class="display" style="font-size:clamp(28px,4.2vw,42px);font-weight:800;line-height:1.02;color:var(--ink);margin-bottom:14px;">Wszystko, czego trener potrzebuje do prowadzenia drużyny</h2>
+          <p style="color:var(--muted);font-size:16.5px;margin-bottom:24px;">Zamiast rozproszonych wiadomości, notatek i arkuszy — jedno miejsce, w którym widzisz, co dzieje się z drużyną.</p>
+          <ul class="shot-check">
+            <li><span class="ic">✓</span>Lista zawodników i zarządzanie drużyną</li>
+            <li><span class="ic">✓</span>Planowanie treningów i zadań</li>
+            <li><span class="ic">✓</span>Powiadomienia o treningach prosto do aplikacji gracza</li>
+            <li><span class="ic">✓</span>Frekwencja jednym tapnięciem</li>
+            <li><span class="ic">✓</span>Podgląd aktywności i postępów zawodników</li>
+            <li><span class="ic">✓</span>Praca z jedną grupą albo kilkoma naraz</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- APLIKACJA GRACZA -->
   <section>
     <div class="wrap">
       <div class="sec-head">
-        <div class="kicker">Co dostajesz</div>
-        <h2>Wszystko, czego trener potrzebuje</h2>
-        <p>Jedno narzędzie zamiast pięciu. Mniej papierologii, więcej trenowania.</p>
+        <div class="kicker">Aplikacja gracza</div>
+        <h2>Dla zawodnika trening zaczyna wyglądać jak progres</h2>
+        <p>Zawodnik widzi, że każdy trening coś znaczy. Zamiast abstrakcyjnego „rób postępy" — dostaje konkretną ścieżkę: zadania, XP, areny i cele do odblokowania.</p>
       </div>
       <div class="feat-grid">
-        <div class="feat"><div class="ico">🎮</div><h3>Gamifikacja</h3><p>Areny, poziomy XP i rankingi sprawiają, że dzieci traktują trening jak grę i wracają na kolejny.</p></div>
-        <div class="feat"><div class="ico">✅</div><h3>Frekwencja</h3><p>Sprawdzasz obecność w sekundy. Historia każdego zawodnika zawsze pod ręką.</p></div>
-        <div class="feat"><div class="ico">📈</div><h3>Postępy zawodnika</h3><p>Statystyki, treningi i rozwój każdego dziecka w czytelnej karcie zawodnika.</p></div>
-        <div class="feat"><div class="ico">👨‍👩‍👧</div><h3>Kontakt z rodzicami</h3><p>Rodzice widzą postępy i zaangażowanie dziecka — bez setki pytań do Ciebie.</p></div>
-        <div class="feat"><div class="ico">🏆</div><h3>Rywalizacja</h3><p>Rankingi i wyzwania motywują całą grupę. Zdrowa rywalizacja, która napędza progres.</p></div>
-        <div class="feat"><div class="ico">📋</div><h3>Panel drużyny</h3><p>Cała drużyna w jednym miejscu. Zarządzaj zawodnikami, zadaniami i treningami z telefonu.</p></div>
+        <div class="feat"><div class="ico">⚡</div><h3>XP za aktywność</h3><p>Każdy trening, zadanie i sesja indywidualna dokłada punkty do postępu zawodnika.</p></div>
+        <div class="feat"><div class="ico">🏔️</div><h3>Areny</h3><p>Kolejne etapy rozwoju — od Rozgrzewki po Seraphim. Widoczny, konkretny cel do gonienia.</p></div>
+        <div class="feat"><div class="ico">🎯</div><h3>Cele indywidualne</h3><p>Nie tylko trening drużynowy — jasne zadania dla pojedynczego zawodnika.</p></div>
+        <div class="feat"><div class="ico">🏀</div><h3>Trening indywidualny</h3><p>Zawodnik może trenować i zdobywać XP także poza zajęciami z drużyną.</p></div>
+        <div class="feat"><div class="ico">🔥</div><h3>Motywacja do regularności</h3><p>Seria treningów i systematyczność są widoczne i nagradzane — nie giną w pamięci.</p></div>
+        <div class="feat"><div class="ico">👤</div><h3>Profil zawodnika</h3><p>Cały progres — treningi, XP, areny — w jednym, czytelnym miejscu.</p></div>
       </div>
     </div>
   </section>
 
-  <!-- HIGHLIGHT -->
+  <!-- HIGHLIGHT (gamifikacja) -->
   <section class="soft">
     <div class="wrap">
       <div class="hl">
         <div class="hl-in">
-          <div class="kicker">Czego nie ma nikt inny</div>
-          <h2>Dziecko, które zdobywa <span>areny</span>, samo prosi o trening</h2>
-          <p>HoopConnect zamienia powtarzalne ćwiczenia w drogę przez kolejne areny — od Rozgrzewki po Seraphim. Każdy rzut, każda obecność i każdy trening to XP. To nie kolejna apka do obecności — to powód, dla którego dzieciak nie chce opuścić treningu.</p>
+          <div class="kicker">Wyróżnik, nie jedyny argument</div>
+          <h2>Zawodnik, który zdobywa <span>areny</span>, sam prosi o trening</h2>
+          <p>HoopConnect zamienia powtarzalne ćwiczenia w drogę przez kolejne areny. Każdy trening, każda sesja indywidualna i każda obecność to XP. To nie zabawa zamiast treningu — to gra, która pomaga utrzymać motywację między treningami, kiedy Cię tam nie ma.</p>
           <a class="btn btn-primary" href="#kontakt">Pokaż mi to na żywo</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- STEPS -->
-  <section id="jak">
+  <!-- RODZIC -->
+  <section>
+    <div class="wrap">
+      <div class="parent-card">
+        <div class="kicker">Dla rodzica</div>
+        <h2>Rodzic widzi więcej niż tylko wynik meczu</h2>
+        <p>Rozwój zawodnika to nie tylko mecz w weekend — to frekwencja, regularność, treningi indywidualne i małe postępy, które budują większy efekt. Rodzic nie potrzebuje osobnego konta — to, co dziecko widzi w swojej aplikacji (frekwencja, XP, postępy), może zobaczyć razem z nim. Jaśniejszy obraz niż samo „jak poszło na treningu".</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- WDROŻENIE (steps) -->
+  <section class="soft">
     <div class="wrap">
       <div class="sec-head">
-        <div class="kicker">Jak zaczynamy</div>
-        <h2>Od rozmowy do drużyny w grze</h2>
-        <p>Bez instalacji serwerów, bez szkoleń na cały dzień. Ruszasz w jeden tydzień.</p>
+        <div class="kicker">Wdrożenie</div>
+        <h2>Zaczynasz od jednej grupy, nie od całego klubu</h2>
+        <p>Nie musisz wdrażać wszystkiego pierwszego dnia. Pokazujemy działanie na realnym przykładzie i dopiero później rozszerzamy.</p>
       </div>
       <div class="steps">
-        <div class="step"><div class="n">01</div><h3>Bezpłatne demo</h3><p>15 minut — pokazuję panel na przykładzie Twojej drużyny. Bez zobowiązań.</p></div>
-        <div class="step"><div class="n">02</div><h3>Dodajemy zawodników</h3><p>Wgrywamy Twoją grupę. Dzieci dostają aplikację, Ty dostajesz panel trenera.</p></div>
-        <div class="step"><div class="n">03</div><h3>Pierwszy trening w grze</h3><p>Od pierwszych zajęć dzieci zbierają XP, Ty masz frekwencję i dane. Działa.</p></div>
+        <div class="step"><div class="n">01</div><h3>Demo</h3><p>Umawiasz bezpłatne, 15-minutowe demo.</p></div>
+        <div class="step"><div class="n">02</div><h3>Pokaz na żywo</h3><p>Pokazujemy panel na przykładzie Twojej drużyny.</p></div>
+        <div class="step"><div class="n">03</div><h3>Grupa testowa</h3><p>Wybierasz jedną grupę treningową do startu.</p></div>
+        <div class="step"><div class="n">04</div><h3>Pierwszy trening</h3><p>Dodajesz pierwszy trening w systemie.</p></div>
+        <div class="step"><div class="n">05</div><h3>Start</h3><p>Zawodnicy zaczynają korzystać z aplikacji.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kicker">Pytania</div>
+        <h2>Zanim zapytasz</h2>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Czy muszę wdrażać cały klub? <span class="chev">+</span></summary>
+          <div class="a">Nie. Możesz zacząć od jednej grupy treningowej i rozszerzać w swoim tempie, kiedy zobaczysz, że działa.</div>
+        </details>
+        <details>
+          <summary>Czy mogę zacząć od jednej drużyny? <span class="chev">+</span></summary>
+          <div class="a">Tak, to standardowy sposób startu. Większość trenerów zaczyna od jednej grupy, żeby przetestować system na żywo.</div>
+        </details>
+        <details>
+          <summary>Czy zawodnicy muszą mieć aplikację? <span class="chev">+</span></summary>
+          <div class="a">Tak — powiadomienia o treningach, XP i areny działają w aplikacji gracza. Instalacja i dołączenie do drużyny zajmują kilka minut.</div>
+        </details>
+        <details>
+          <summary>Czy rodzice mają dostęp do informacji? <span class="chev">+</span></summary>
+          <div class="a">Nie ma osobnego logowania dla rodzica, ale to, co zawodnik widzi w swojej aplikacji — frekwencję, XP, postępy — rodzic może zobaczyć razem z nim.</div>
+        </details>
+        <details>
+          <summary>Czy trener może zarządzać kilkoma grupami? <span class="chev">+</span></summary>
+          <div class="a">Tak. Panel pozwala prowadzić kilka drużyn i przełączać się między nimi z jednego konta.</div>
+        </details>
+        <details>
+          <summary>Ile trwa wdrożenie? <span class="chev">+</span></summary>
+          <div class="a">Pierwsza grupa może ruszyć w ciągu kilku dni od demo — dodanie zawodników i pierwszego treningu zajmuje niewiele czasu.</div>
+        </details>
+        <details>
+          <summary>Czy HoopConnect jest dla klubów czy trenerów indywidualnych? <span class="chev">+</span></summary>
+          <div class="a">Dla obu. Działa zarówno dla pojedynczego trenera prowadzącego jedną grupę, jak i dla klubu z wieloma drużynami.</div>
+        </details>
+        <details>
+          <summary>Czy zawodnik może trenować indywidualnie? <span class="chev">+</span></summary>
+          <div class="a">Tak. Poza zajęciami drużynowymi zawodnik ma dostęp do treningów i zadań indywidualnych, za które też zdobywa XP.</div>
+        </details>
+        <details>
+          <summary>Jak działają XP i areny? <span class="chev">+</span></summary>
+          <div class="a">Za każdy trening, zadanie i sesję indywidualną zawodnik zdobywa XP. XP odblokowuje kolejne areny — widoczną, rosnącą ścieżkę rozwoju.</div>
+        </details>
+        <details>
+          <summary>Czy demo jest darmowe? <span class="chev">+</span></summary>
+          <div class="a">Tak, w pełni bezpłatne i bez zobowiązań. 15 minut, pokazane na przykładzie Twojej drużyny.</div>
+        </details>
       </div>
     </div>
   </section>
@@ -344,12 +514,13 @@
   <!-- CTA -->
   <section class="soft" id="kontakt">
     <div class="wrap cta">
-      <h2>Zobacz to na swojej drużynie</h2>
-      <p>Umów bezpłatne, 15-minutowe demo. Pokażę na żywo, jak HoopConnect zmienia trening w grę — i ile czasu oszczędza Tobie.</p>
+      <h2>Zobacz HoopConnect na przykładzie swojej drużyny</h2>
+      <p>W 15 minut pokażemy Ci, jak może wyglądać panel trenera, aplikacja gracza, powiadomienia, XP, areny i pierwszy trening w systemie.</p>
       <div class="hero-cta">
         <a class="btn btn-primary" href="mailto:kontakt@hoopconnect.pl?subject=Demo%20Panelu%20Trenera%20HoopConnect">Napisz: kontakt@hoopconnect.pl</a>
         <a class="btn btn-ghost" href="tel:+48607118228">Zadzwoń: 607 118 228</a>
       </div>
+      <div class="fine">Bez zobowiązań. Możemy zacząć od jednej grupy treningowej.</div>
       <div class="contact-line">Mikołaj Kretowicz · założyciel HoopConnect · <a href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a></div>
     </div>
   </section>
@@ -358,7 +529,7 @@
   <footer>
     <div class="wrap foot-in">
       <a class="brand" href="#top"><img src="/hoop.svg" alt="HoopConnect" style="width:26px;height:26px" /><b>HoopConnect</b></a>
-      <div>© 2026 HoopConnect · Trening, który wciąga jak gra</div>
+      <div>© 2026 HoopConnect · System, do którego zawodnicy chcą wracać</div>
     </div>
   </footer>
 
