@@ -145,7 +145,7 @@
       position: relative;
     }
     .phone-screen {
-      width: 100%; height: 100%; border-radius: 28px; overflow: hidden;
+      width: 100%; height: 100%; border-radius: 28px; overflow: hidden; position: relative;
       background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(91,184,245,0.16), transparent 60%), #060B16;
       padding: 20px 16px; color: #EEF4FF; display: flex; flex-direction: column;
     }
@@ -155,13 +155,43 @@
     .ps-badge { width: 112px; height: 112px; margin: 0 auto 14px; border-radius: 50%;
       background: var(--grad); display: flex; align-items: center; justify-content: center;
       font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 40px; color: #04101f;
-      box-shadow: 0 0 34px rgba(91,184,245,0.55); clip-path: polygon(50% 2%, 95% 26%, 95% 74%, 50% 98%, 5% 74%, 5% 26%); }
+      box-shadow: 0 0 34px rgba(91,184,245,0.55); clip-path: polygon(50% 2%, 95% 26%, 95% 74%, 50% 98%, 5% 74%, 5% 26%);
+      transition: transform .3s ease; }
+    .ps-badge.level-up { animation: psLevelUp .9s cubic-bezier(.34,1.56,.64,1); }
+    .ps-swap { animation: psSwap .5s ease; }
+    .ps-toast {
+      position: absolute; left: 50%; top: 30%; transform: translate(-50%, 8px) scale(.85);
+      background: var(--grad-gold); color: #04101f; font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900; font-size: 12.5px; letter-spacing: .5px; text-transform: uppercase;
+      padding: 5px 15px; border-radius: 999px; opacity: 0; pointer-events: none; white-space: nowrap;
+      box-shadow: 0 8px 22px rgba(255,201,64,0.45); z-index: 3;
+    }
+    .ps-toast.show { animation: psToast 1.7s ease forwards; }
+    @keyframes psLevelUp {
+      0% { transform: scale(1); box-shadow: 0 0 34px rgba(91,184,245,0.55); }
+      45% { transform: scale(1.16); box-shadow: 0 0 58px rgba(91,184,245,0.9), 0 0 100px rgba(255,201,64,0.55); }
+      100% { transform: scale(1); box-shadow: 0 0 34px rgba(91,184,245,0.55); }
+    }
+    @keyframes psSwap {
+      0% { opacity: .25; transform: translateY(5px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes psToast {
+      0% { opacity: 0; transform: translate(-50%, 8px) scale(.85); }
+      18% { opacity: 1; transform: translate(-50%, -8px) scale(1); }
+      78% { opacity: 1; transform: translate(-50%, -16px) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -30px) scale(.92); }
+    }
     .ps-arena { text-align: center; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase;
       font-weight: 800; font-size: 19px; letter-spacing: 0.3px; }
     .ps-tag { text-align: center; font-size: 11px; color: rgba(238,244,255,0.5); margin: 3px 0 16px; }
     .ps-bar { height: 9px; border-radius: 999px; background: rgba(255,255,255,0.09); overflow: hidden; }
-    .ps-bar > div { width: 68%; height: 100%; border-radius: 999px; background: var(--grad-gold); }
+    .ps-bar > div { width: 15%; height: 100%; border-radius: 999px; background: var(--grad-gold);
+      transition: width 2.3s cubic-bezier(.4,0,.2,1); }
     .ps-bar-label { font-size: 10.5px; color: rgba(238,244,255,0.4); margin-top: 6px; text-align: center; }
+    @media (prefers-reduced-motion: reduce) {
+      .ps-badge, .ps-swap, .ps-toast, .ps-bar > div { animation: none !important; transition: none !important; }
+    }
     .ps-row { display: flex; gap: 8px; margin-top: auto; }
     .ps-chip { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07);
       border-radius: 12px; padding: 9px 6px; text-align: center; }
@@ -210,9 +240,18 @@
     }
 
     /* ── PRODUCT SHOT (panel / app checklist) ── */
-    .shot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
-    .shot-frame { background: var(--grad); padding: 10px; border-radius: 20px; box-shadow: 0 24px 60px rgba(13,74,138,0.35); }
-    .shot-frame img { display: block; width: 100%; height: auto; border-radius: 12px; }
+    .shot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; perspective: 1400px; }
+    .shot-frame {
+      background: var(--grad); padding: 10px; border-radius: 20px; box-shadow: 0 24px 60px rgba(13,74,138,0.35);
+      opacity: 0; transform: translateY(46px) rotateX(8deg); transform-style: preserve-3d;
+      transition: opacity .9s cubic-bezier(.2,.8,.2,1), transform .9s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease;
+      will-change: transform;
+    }
+    .shot-frame.in-view { opacity: 1; transform: translateY(0) rotateX(0deg); }
+    .shot-frame img { display: block; width: 100%; height: auto; border-radius: 12px; pointer-events: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .shot-frame { transition: opacity .3s ease; transform: none !important; opacity: 1; }
+    }
     .shot-check { list-style: none; display: flex; flex-direction: column; gap: 13px; }
     .shot-check li { display: flex; gap: 11px; align-items: flex-start; font-size: 15.5px; color: var(--ink-soft); }
     .shot-check li .ic { flex: none; width: 22px; height: 22px; border-radius: 7px; background: rgba(91,184,245,0.14); border: 1px solid var(--line-hi); display: flex; align-items: center; justify-content: center; color: var(--blue-bright); font-weight: 800; font-size: 12px; margin-top: 1px; }
@@ -333,6 +372,7 @@
           <div class="phone-screen">
             <div class="ps-head">Droga Aren</div>
             <div class="ps-sub">2 340 XP · Golden Reign</div>
+            <div class="ps-toast">Awans!</div>
             <div class="ps-badge">4</div>
             <div class="ps-arena">Golden Reign</div>
             <div class="ps-tag">Twój moment zaczyna błyszczeć</div>
@@ -437,7 +477,7 @@
     <div class="wrap">
       <div class="shot-grid">
         <div class="shot-frame">
-          <img src="/oferta/panel.jpg" alt="Panel trenera HoopConnect — pulpit drużyny" loading="lazy" />
+          <img src="/oferta/panel.jpg" alt="Panel trenera HoopConnect — pulpit drużyny" loading="lazy" width="1024" height="625" />
         </div>
         <div>
           <div class="eyebrow" style="margin-bottom:14px;">Panel trenera</div>
@@ -598,6 +638,93 @@
       document.documentElement.dataset.theme = next;
       localStorage.setItem('hc-theme', next);
     });
+  </script>
+
+  <script>
+    // Arena/XP loop w telefonie hero — pokazuje mechanikę "trening -> XP -> awans"
+    (function () {
+      var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var badge = document.querySelector('.ps-badge');
+      var arenaName = document.querySelector('.ps-arena');
+      var barFill = document.querySelector('.ps-bar > div');
+      var barLabel = document.querySelector('.ps-bar-label');
+      var toast = document.querySelector('.ps-toast');
+      if (reduceMotion || !badge || !arenaName || !barFill || !barLabel || !toast) return;
+
+      var arenas = [
+        { n: 4, name: 'Golden Reign', next: 'Ankh Court' },
+        { n: 5, name: 'Ankh Court', next: 'Seraphim' },
+        { n: 6, name: 'Seraphim', next: 'Golden Reign' }
+      ];
+      var i = 0;
+
+      function swap(el) {
+        el.classList.remove('ps-swap');
+        void el.offsetWidth;
+        el.classList.add('ps-swap');
+      }
+
+      function cycle() {
+        var cur = arenas[i];
+        barFill.style.width = '12%';
+        barLabel.textContent = 'Jeszcze ' + (Math.floor(Math.random() * 150) + 250) + ' XP do: ' + cur.next;
+
+        setTimeout(function () { barFill.style.width = '100%'; }, 500);
+
+        setTimeout(function () {
+          badge.classList.add('level-up');
+          toast.classList.remove('show');
+          void toast.offsetWidth;
+          toast.classList.add('show');
+
+          i = (i + 1) % arenas.length;
+          var nxt = arenas[i];
+          badge.textContent = nxt.n;
+          swap(badge);
+          arenaName.textContent = nxt.name;
+          swap(arenaName);
+
+          setTimeout(function () { badge.classList.remove('level-up'); }, 900);
+        }, 2900);
+
+        setTimeout(cycle, 6600);
+      }
+
+      setTimeout(cycle, 1200);
+    })();
+
+    // Zrzut panelu trenera — "unosi się" gdy wjeżdża w viewport + delikatny tilt pod kursorem
+    (function () {
+      var frame = document.querySelector('.shot-frame');
+      if (!frame) return;
+
+      if ('IntersectionObserver' in window) {
+        var obs = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              frame.classList.add('in-view');
+              obs.unobserve(frame);
+            }
+          });
+        }, { threshold: 0.25 });
+        obs.observe(frame);
+      } else {
+        frame.classList.add('in-view');
+      }
+
+      var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduceMotion) {
+        frame.addEventListener('mousemove', function (e) {
+          var r = frame.getBoundingClientRect();
+          var px = (e.clientX - r.left) / r.width - 0.5;
+          var py = (e.clientY - r.top) / r.height - 0.5;
+          frame.style.transform = 'translateY(0) rotateX(' + (-py * 6) + 'deg) rotateY(' + (px * 8) + 'deg) scale(1.015)';
+        });
+        frame.addEventListener('mouseleave', function () {
+          frame.style.transform = '';
+        });
+      }
+    })();
   </script>
 
 </body>
