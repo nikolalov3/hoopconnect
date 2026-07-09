@@ -10,37 +10,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script>
-    document.documentElement.dataset.theme = localStorage.getItem('hc-theme') || 'dark';
+    document.documentElement.dataset.theme = localStorage.getItem('hc-theme') || 'light';
   </script>
   <style>
-    :root, :root[data-theme="dark"] {
-      --blue:       #2272C3;
-      --blue-bright:#5BB8F5;
-      --blue-deep:  #0D4A8A;
-      --gold:       #FFC940;
-      --card:       #101B2E;
-      --card-soft:  #0B1420;
-      --ink:        #EAF2FF;
-      --ink-soft:   rgba(234,242,255,0.84);
-      --ink-ghost:  rgba(234,242,255,0.25);
-      --muted:      #90A9C4;
-      --line:       rgba(145,190,230,0.14);
-      --line-hi:    rgba(91,184,245,0.35);
-      --bg:         #060B16;
-      --bg-soft:    #0B1420;
-      --nav-bg:     rgba(6,11,22,0.85);
-      --ghost-bg:   rgba(255,255,255,0.04);
-      --ghost-bg-hover: rgba(91,184,245,0.08);
-      --good-grad:  linear-gradient(160deg, rgba(91,184,245,0.10), rgba(13,74,138,0.16));
-      --hl-bg:      linear-gradient(150deg, rgba(91,184,245,0.14), rgba(6,11,22,0.4) 55%), #101B2E;
-      --glow:       rgba(91,184,245,0.14);
-      --glow-strong:rgba(91,184,245,0.28);
-      --grad:       linear-gradient(120deg, #5BB8F5 0%, #2272C3 55%, #0D4A8A 100%);
-      --grad-text:  linear-gradient(120deg, #5BB8F5 0%, #2272C3 55%, #0D4A8A 100%);
-      --grad-gold:  linear-gradient(90deg,#5BB8F5,#FFC940);
-      --btn-primary-text: #04101f;
-    }
-    :root[data-theme="light"] {
+    :root, :root[data-theme="light"] {
       --blue:       #2272C3;
       --blue-bright:#2272C3;
       --blue-deep:  #0D4A8A;
@@ -65,6 +38,33 @@
       --grad:       linear-gradient(120deg, #5BB8F5 0%, #2272C3 55%, #0D4A8A 100%);
       --grad-text:  linear-gradient(120deg, #2272C3 0%, #0D4A8A 100%);
       --grad-gold:  linear-gradient(90deg,#2272C3,#B8720A);
+      --btn-primary-text: #04101f;
+    }
+    :root[data-theme="dark"] {
+      --blue:       #2272C3;
+      --blue-bright:#5BB8F5;
+      --blue-deep:  #0D4A8A;
+      --gold:       #FFC940;
+      --card:       #101B2E;
+      --card-soft:  #0B1420;
+      --ink:        #EAF2FF;
+      --ink-soft:   rgba(234,242,255,0.84);
+      --ink-ghost:  rgba(234,242,255,0.25);
+      --muted:      #90A9C4;
+      --line:       rgba(145,190,230,0.14);
+      --line-hi:    rgba(91,184,245,0.35);
+      --bg:         #060B16;
+      --bg-soft:    #0B1420;
+      --nav-bg:     rgba(6,11,22,0.85);
+      --ghost-bg:   rgba(255,255,255,0.04);
+      --ghost-bg-hover: rgba(91,184,245,0.08);
+      --good-grad:  linear-gradient(160deg, rgba(91,184,245,0.10), rgba(13,74,138,0.16));
+      --hl-bg:      linear-gradient(150deg, rgba(91,184,245,0.14), rgba(6,11,22,0.4) 55%), #101B2E;
+      --glow:       rgba(91,184,245,0.14);
+      --glow-strong:rgba(91,184,245,0.28);
+      --grad:       linear-gradient(120deg, #5BB8F5 0%, #2272C3 55%, #0D4A8A 100%);
+      --grad-text:  linear-gradient(120deg, #5BB8F5 0%, #2272C3 55%, #0D4A8A 100%);
+      --grad-gold:  linear-gradient(90deg,#5BB8F5,#FFC940);
       --btn-primary-text: #04101f;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
