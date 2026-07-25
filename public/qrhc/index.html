@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Hoop Connect — Graj lokalnie. Rywalizuj globalnie.</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<title>Hoop Connect — Jak daleko zajdziesz?</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -12,6 +12,7 @@ html, body { height: 100%; }
   --blue: #3BB8F0;
   --blue-dark: #1565A8;
   --ink: #071424;
+  --gold: #FFC940;
 }
 body {
   font-family: 'Barlow', sans-serif;
@@ -34,15 +35,14 @@ body {
 }
 .page { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
 
-/* HERO */
+/* ── HERO ── */
 .hero {
   width: 100%; max-width: 420px;
-  padding: 52px 28px 44px;
+  padding: 46px 28px 40px;
   display: flex; flex-direction: column; align-items: center;
   text-align: center;
 }
-
-.logo-wrap { position: relative; margin-bottom: 24px; animation: fadeDown 0.6s ease both; }
+.logo-wrap { position: relative; margin-bottom: 18px; animation: fadeDown 0.6s ease both; }
 .logo-glow {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
   width: 140px; height: 140px; border-radius: 50%;
@@ -50,7 +50,7 @@ body {
   pointer-events: none;
 }
 .logo-img {
-  width: 88px; height: 88px; object-fit: contain;
+  width: 80px; height: 80px; object-fit: contain;
   filter: drop-shadow(0 0 20px rgba(59,184,240,0.55)) drop-shadow(0 0 6px rgba(59,184,240,0.3));
   animation: floatY 3.5s ease-in-out infinite;
 }
@@ -58,62 +58,75 @@ body {
 
 .brand {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 32px; font-weight: 900; letter-spacing: 0.06em;
+  font-size: 30px; font-weight: 900; letter-spacing: 0.06em;
   animation: fadeDown 0.6s 0.08s ease both;
 }
 .brand .c { color: var(--blue); }
-
 .brand-sub {
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 10px; font-weight: 700; letter-spacing: 0.38em;
   color: rgba(255,255,255,0.4);
-  margin-top: 5px; margin-bottom: 32px;
+  margin-top: 5px; margin-bottom: 26px;
   animation: fadeDown 0.6s 0.12s ease both;
 }
 
-/* Badge — EARLY ACCESS */
-.badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(59,184,240,0.1);
-  border: 1px solid rgba(59,184,240,0.3);
-  border-radius: 20px;
-  padding: 6px 14px;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.25em;
-  color: var(--blue); text-transform: uppercase;
-  margin-bottom: 22px;
-  animation: fadeUp 0.7s 0.15s ease both;
+/* Scan toast — instant reward */
+.scan-toast {
+  display: inline-flex; align-items: center; gap: 9px;
+  background: rgba(59,184,240,0.10);
+  border: 1px solid rgba(59,184,240,0.35);
+  border-radius: 12px;
+  padding: 11px 18px;
+  margin-bottom: 24px;
+  opacity: 0; transform: translateY(10px) scale(0.96);
+  animation: toastIn 0.55s 0.7s cubic-bezier(.34,1.56,.64,1) both;
 }
-.badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); animation: blink 1.4s ease-in-out infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.scan-check {
+  width: 22px; height: 22px; border-radius: 50%; flex: none;
+  background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900; color: #fff;
+  box-shadow: 0 0 14px rgba(59,184,240,0.6);
+}
+.scan-txt {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--blue);
+}
+.scan-txt small { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; color: rgba(255,255,255,0.45); margin-top: 1px; }
+@keyframes toastIn {
+  0% { opacity: 0; transform: translateY(10px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 .headline {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: clamp(36px, 11vw, 52px);
-  font-weight: 900; line-height: 1.02; letter-spacing: -0.01em;
-  margin-bottom: 14px;
+  font-size: clamp(42px, 13vw, 58px);
+  font-weight: 900; line-height: 0.98; letter-spacing: -0.01em;
+  margin-bottom: 16px;
   animation: fadeUp 0.7s 0.2s ease both;
+  text-transform: uppercase;
 }
 .headline .accent { color: var(--blue); display: block; }
 
 .sub {
   font-size: 15px; font-weight: 300; line-height: 1.7;
   color: rgba(255,255,255,0.62);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   animation: fadeUp 0.7s 0.25s ease both;
 }
+.sub b { font-weight: 700; color: #fff; }
 
-.launch-note {
+.sub-hook {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 13px; font-weight: 700; letter-spacing: 0.12em;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
   color: rgba(255,255,255,0.38);
-  margin-bottom: 32px;
-  text-transform: uppercase;
+  margin-bottom: 30px;
   animation: fadeUp 0.7s 0.28s ease both;
 }
-.launch-note span { color: var(--blue); }
+.sub-hook span { color: var(--gold); }
 
-/* CTA — only once */
+/* CTA */
 .cta {
   display: block; width: 100%;
   background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
@@ -132,57 +145,183 @@ body {
   0%,100%{box-shadow:0 8px 32px rgba(59,184,240,0.32),0 2px 8px rgba(0,0,0,0.3)}
   50%{box-shadow:0 8px 44px rgba(59,184,240,0.58),0 2px 8px rgba(0,0,0,0.3)}
 }
-
 .cta-note {
   font-size: 12px; font-weight: 300; letter-spacing: 0.05em;
   color: rgba(255,255,255,0.3);
   margin-top: 12px;
   animation: fadeUp 0.7s 0.4s ease both;
 }
-
-/* DIVIDER */
-.sep {
-  width: calc(100% - 56px); max-width: 364px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(59,184,240,0.18), transparent);
+.scroll-hint {
+  margin-top: 30px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  animation: fadeUp 0.7s 0.5s ease both;
 }
+.scroll-hint::after {
+  content: '↓'; display: block; text-align: center; font-size: 16px; margin-top: 6px;
+  color: var(--blue); animation: bounceY 1.6s ease-in-out infinite;
+}
+@keyframes bounceY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
 
-/* FEATURES */
-.features {
+/* ── ARENA ROAD ── */
+.road {
   width: 100%; max-width: 420px;
-  padding: 36px 28px 48px;
-  display: flex; flex-direction: column; gap: 14px;
+  padding: 40px 28px 30px;
 }
-
-.feat-label {
+.road-label {
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 10px; font-weight: 700; letter-spacing: 0.38em;
   color: var(--blue); text-transform: uppercase;
-  text-align: center;
-  margin-bottom: 6px;
+  text-align: center; margin-bottom: 6px;
   display: flex; align-items: center; gap: 10px; justify-content: center;
 }
-.feat-label::before, .feat-label::after { content:''; flex:1; max-width:36px; height:1px; background:rgba(59,184,240,0.28); }
-
-.feat-title {
+.road-label::before, .road-label::after { content:''; flex:1; max-width:36px; height:1px; background:rgba(59,184,240,0.28); }
+.road-title {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 24px; font-weight: 800; text-align: center;
-  margin-bottom: 20px; line-height: 1.15;
+  font-size: 26px; font-weight: 800; text-align: center;
+  margin-bottom: 6px; line-height: 1.1; text-transform: uppercase;
+}
+.road-sub {
+  text-align: center; font-size: 13px; font-weight: 300; color: rgba(255,255,255,0.5);
+  margin-bottom: 28px;
 }
 
-.feat {
-  display: flex; align-items: center; gap: 14px;
+.arena-list { position: relative; display: flex; flex-direction: column; gap: 14px; }
+.arena-list::before {
+  content: ''; position: absolute; left: 27px; top: 30px; bottom: 30px; width: 2px;
+  background: linear-gradient(180deg, rgba(59,184,240,0.5), rgba(59,184,240,0.08));
+}
+
+.arena {
+  position: relative;
+  display: flex; align-items: center; gap: 15px;
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(59,184,240,0.1);
-  border-radius: 12px;
-  padding: 15px 16px;
+  border-radius: 14px;
+  padding: 14px 16px;
+  opacity: 0.35;
+  filter: grayscale(0.8);
+  transform: translateY(12px);
+  transition: opacity 0.7s ease, filter 0.7s ease, transform 0.7s ease, border-color 0.7s ease, box-shadow 0.7s ease;
 }
-.feat-icon { font-size: 22px; flex-shrink: 0; }
-.feat-t {
+.arena.lit {
+  opacity: 1;
+  filter: grayscale(0);
+  transform: translateY(0);
+}
+.arena.current {
+  border-color: rgba(59,184,240,0.5);
+  background: rgba(59,184,240,0.07);
+}
+.arena.current.lit { box-shadow: 0 0 26px rgba(59,184,240,0.18); }
+
+.arena-badge {
+  width: 54px; height: 54px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900;
+  clip-path: polygon(50% 2%, 95% 26%, 95% 74%, 50% 98%, 5% 74%, 5% 26%);
+  position: relative; z-index: 1;
+}
+.arena-img {
+  width: 62px; height: 62px; flex: none; object-fit: contain;
+  position: relative; z-index: 1;
+}
+.arena.lit .arena-img { filter: drop-shadow(0 0 14px var(--g)); }
+.arena-info { min-width: 0; }
+.arena-name {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 16px; font-weight: 700; margin-bottom: 2px;
+  font-size: 18px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+  line-height: 1.1;
 }
-.feat-d { font-size: 12px; font-weight: 300; line-height: 1.5; color: rgba(255,255,255,0.5); }
+.arena-tag { font-size: 11.5px; font-weight: 300; color: rgba(255,255,255,0.5); margin-top: 2px; line-height: 1.4; }
+.arena-xp {
+  margin-left: auto; flex: none; align-self: flex-start;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.35);
+  white-space: nowrap; padding-top: 2px;
+}
+.arena.current .arena-xp { color: var(--blue); }
+.arena-lock { font-size: 11px; opacity: 0.7; }
+
+.you-are-here {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--blue); margin-top: 4px;
+}
+.you-are-here::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--blue); animation: blink 1.4s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.more-soon {
+  text-align: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  padding: 20px 0 4px;
+}
+
+/* ── EARLY ACCESS / FRAME ── */
+.frame-sec {
+  width: 100%; max-width: 420px;
+  padding: 26px 28px 40px;
+}
+.frame-card {
+  position: relative; overflow: hidden;
+  background: linear-gradient(150deg, rgba(59,184,240,0.13), rgba(7,20,36,0.4) 60%), rgba(255,255,255,0.03);
+  border: 1px solid rgba(59,184,240,0.35);
+  border-radius: 18px;
+  padding: 26px 22px;
+  text-align: center;
+}
+.frame-card::before {
+  content: ''; position: absolute; right: -70px; top: -70px; width: 220px; height: 220px;
+  background: radial-gradient(circle, rgba(59,184,240,0.25), transparent 65%);
+  pointer-events: none;
+}
+.frame-badge-lbl {
+  display: inline-block;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--gold);
+  background: rgba(255,201,64,0.1);
+  border: 1px solid rgba(255,201,64,0.35);
+  border-radius: 999px;
+  padding: 5px 13px; margin-bottom: 14px;
+}
+.frame-img {
+  width: 130px; height: 126px; margin: 0 auto 12px; display: block;
+  object-fit: contain;
+  animation: hexPulse 3s ease-in-out infinite;
+  position: relative; z-index: 1;
+}
+@keyframes hexPulse { 0%,100%{filter:drop-shadow(0 0 12px rgba(59,184,240,0.5))} 50%{filter:drop-shadow(0 0 26px rgba(59,184,240,0.85))} }
+.frame-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.03em;
+  line-height: 1.1; margin-bottom: 8px;
+  position: relative; z-index: 1;
+}
+.frame-desc {
+  font-size: 13.5px; font-weight: 300; line-height: 1.65; color: rgba(255,255,255,0.6);
+  max-width: 300px; margin: 0 auto;
+  position: relative; z-index: 1;
+}
+.frame-desc b { color: #fff; font-weight: 700; }
+
+/* ── FINAL CTA ── */
+.final {
+  width: 100%; max-width: 420px;
+  padding: 8px 28px 52px;
+  text-align: center;
+}
+.final-t {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 27px; font-weight: 900; text-transform: uppercase; line-height: 1.06;
+  margin-bottom: 18px;
+}
+.final-t span { color: var(--blue); }
 
 /* FOOTER */
 .foot {
@@ -196,6 +335,11 @@ body {
 
 @keyframes fadeDown { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+  .arena { opacity: 1; filter: none; transform: none; }
+  .scan-toast { opacity: 1; transform: none; }
+}
 </style>
 <!-- Umami analytics (qrhc landing) -->
 <script defer src="https://cloud.umami.is/script.js" data-website-id="a7d4cc36-01ca-4b44-b767-133919650fcb"></script>
@@ -205,6 +349,7 @@ body {
 <div class="bg-grid"></div>
 
 <div class="page">
+  <!-- HERO -->
   <div class="hero">
     <div class="logo-wrap">
       <div class="logo-glow"></div>
@@ -214,57 +359,122 @@ body {
     <div class="brand"><span>HOOP</span><span class="c">CONNECT</span></div>
     <div class="brand-sub">Dla koszykarzy</div>
 
-    <div class="badge"><span class="badge-dot"></span>Early Access · Czerwiec 2026</div>
+    <div class="scan-toast">
+      <span class="scan-check">✓</span>
+      <span class="scan-txt">Skan zaliczony<small>Twoja droga właśnie się zaczęła</small></span>
+    </div>
 
     <h1 class="headline">
-      Graj lokalnie.<br>
-      <span class="accent">Rywalizuj globalnie.</span>
+      Jak daleko<br>
+      <span class="accent">zajdziesz?</span>
     </h1>
 
     <p class="sub">
-      Właśnie skanujesz jako jeden z pierwszych. Liga z nagrodami ruszy już niedługo — a Ty masz przewagę startową.
+      <b>7 aren.</b> Każdy trening, mecz i wyzwanie daje XP.
+      Większość graczy nigdy nie zobaczy ostatniej.
     </p>
 
-    <div class="launch-note">Wystartowaliśmy <span>czerwiec 2026</span> · Bądź pierwszy</div>
+    <div class="sub-hook">Ostatnia arena: <span>Seraphim</span> · szczyt świata HC</div>
 
-    <a href="https://www.hoopconnect.pl/" class="cta">Sprawdź Hoop Connect →</a>
-    <div class="cta-note">Darmowe · iOS & Android</div>
+    <a href="https://www.hoopconnect.pl/" class="cta">Zacznij swoją drogę →</a>
+    <div class="cta-note">Darmowa · iOS & Android</div>
+
+    <div class="scroll-hint">Zobacz całą drogę</div>
   </div>
 
-  <div class="sep"></div>
+  <!-- ARENA ROAD -->
+  <div class="road">
+    <div class="road-label">Droga Aren</div>
+    <div class="road-title">7 aren. Jedna droga.</div>
+    <div class="road-sub">Prawdziwa mapa progresu z aplikacji — to po niej będziesz się wspinać.</div>
 
-  <div class="features">
-    <div class="feat-label">Co tu znajdziesz</div>
-    <div class="feat-title">Wszystko czego<br>potrzebujesz do gry</div>
+    <div class="arena-list">
+      <div class="arena current" style="--g:#8899CC">
+        <div class="arena-badge" style="background:linear-gradient(160deg,#AABBD8,#5566AA);color:#0C0E22;box-shadow:0 0 20px rgba(136,153,204,0.5)">1</div>
+        <div class="arena-info">
+          <div class="arena-name">Rozgrzewka</div>
+          <div class="arena-tag">Każda historia zaczyna się tutaj.</div>
+          <div class="you-are-here">Tu zaczynasz</div>
+        </div>
+        <div class="arena-xp">START</div>
+      </div>
 
-    <div class="feat">
-      <div class="feat-icon">🏀</div>
-      <div>
-        <div class="feat-t">Organizuj mecze i turnieje</div>
-        <div class="feat-d">Umawiaj ekipę, śledź wyniki, graj w 3x3.</div>
+      <div class="arena" style="--g:#FF8C30">
+        <img class="arena-img" src="/arenas/arena-1.png" alt="Street Court" loading="lazy" width="62" height="62">
+        <div class="arena-info">
+          <div class="arena-name">Street Court</div>
+          <div class="arena-tag">Pierwsze boisko. Pierwszy progres.</div>
+        </div>
+        <div class="arena-xp"><span class="arena-lock">🔒</span> 500 XP</div>
+      </div>
+
+      <div class="arena" style="--g:#E8B030">
+        <img class="arena-img" src="/arenas/arena-2.png" alt="City Run" loading="lazy" width="62" height="62">
+        <div class="arena-info">
+          <div class="arena-name">City Run</div>
+          <div class="arena-tag">Miasto jest w ruchu.</div>
+        </div>
+        <div class="arena-xp"><span class="arena-lock">🔒</span> 1500 XP</div>
+      </div>
+
+      <div class="arena" style="--g:#FFC940">
+        <img class="arena-img" src="/arenas/arena-3.png" alt="Golden Reign" loading="lazy" width="62" height="62">
+        <div class="arena-info">
+          <div class="arena-name">Golden Reign</div>
+          <div class="arena-tag">Twój moment zaczyna błyszczeć.</div>
+        </div>
+        <div class="arena-xp"><span class="arena-lock">🔒</span> 2700 XP</div>
+      </div>
+
+      <div class="arena" style="--g:#2DD4BF">
+        <img class="arena-img" src="/arenas/arena-4.png" alt="Ankh Court" loading="lazy" width="62" height="62">
+        <div class="arena-info">
+          <div class="arena-name">Ankh Court</div>
+          <div class="arena-tag">Zostaw po sobie ślad.</div>
+        </div>
+        <div class="arena-xp"><span class="arena-lock">🔒</span> 3900 XP</div>
+      </div>
+
+      <div class="arena" style="--g:#A855F7">
+        <img class="arena-img" src="/arenas/arena-5.png" alt="Void Gem" loading="lazy" width="62" height="62">
+        <div class="arena-info">
+          <div class="arena-name">Void Gem</div>
+          <div class="arena-tag">Inny poziom gry.</div>
+        </div>
+        <div class="arena-xp"><span class="arena-lock">🔒</span> 5500 XP</div>
+      </div>
+
+      <div class="arena" style="--g:#FDE68A">
+        <img class="arena-img" src="/arenas/arena-6.png" alt="Seraphim" loading="lazy" width="62" height="62">
+        <div class="arena-info">
+          <div class="arena-name">Seraphim</div>
+          <div class="arena-tag">Szczyt świata HC. Tylko dla tych, którzy przeszli całą drogę.</div>
+        </div>
+        <div class="arena-xp"><span class="arena-lock">🔒</span> 7500 XP</div>
       </div>
     </div>
-    <div class="feat">
-      <div class="feat-icon">📊</div>
-      <div>
-        <div class="feat-t">Twoje statystyki</div>
-        <div class="feat-d">Punkty, asysty, zbiórki — śledź swój progres.</div>
-      </div>
+
+    <div class="more-soon">✦ Więcej aren wkrótce ✦</div>
+  </div>
+
+  <!-- EARLY ACCESS FRAME -->
+  <div class="frame-sec">
+    <div class="frame-card">
+      <div class="frame-badge-lbl">Tylko teraz</div>
+      <img class="frame-img" src="/qrhc/earlyaccess-sm.png" alt="Ramka Early Access" loading="lazy" width="130" height="126">
+      <div class="frame-title">Ramka Early Access</div>
+      <p class="frame-desc">
+        Gracze, którzy dołączą <b>na starcie</b>, dostają ekskluzywną ramkę profilu.
+        Później <b>nie będzie już do zdobycia</b> — zostaje na zawsze tylko u pierwszych.
+      </p>
     </div>
-    <div class="feat">
-      <div class="feat-icon">🏆</div>
-      <div>
-        <div class="feat-t">Liga z nagrodami — już wkrótce</div>
-        <div class="feat-d">Rywalizuj z graczami z całego kraju. Pierwsi mają przewagę.</div>
-      </div>
-    </div>
-    <div class="feat">
-      <div class="feat-icon">🤝</div>
-      <div>
-        <div class="feat-t">Społeczność graczy</div>
-        <div class="feat-d">Znajdź rywali na swoim poziomie w swoim mieście.</div>
-      </div>
-    </div>
+  </div>
+
+  <!-- FINAL CTA -->
+  <div class="final">
+    <div class="final-t">Pierwszy krok masz<br>za sobą. <span>Zrób następny.</span></div>
+    <a href="https://www.hoopconnect.pl/" class="cta">Odbierz swoją ramkę →</a>
+    <div class="cta-note">Darmowa apka · iOS & Android · 2 minuty i grasz</div>
   </div>
 
   <div class="foot">
@@ -272,5 +482,29 @@ body {
     <span class="foot-text">Hoop Connect · Dla koszykarzy</span>
   </div>
 </div>
+
+<script>
+  // Areny "odblokowują się" podczas przewijania — strona zachowuje się jak gra
+  (function () {
+    var arenas = document.querySelectorAll('.arena');
+    if (!('IntersectionObserver' in window)) {
+      arenas.forEach(function (a) { a.classList.add('lit'); });
+      return;
+    }
+    var delay = 0;
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          var el = entry.target;
+          setTimeout(function () { el.classList.add('lit'); }, delay);
+          delay += 120;
+          setTimeout(function () { delay = Math.max(0, delay - 120); }, 400);
+          obs.unobserve(el);
+        }
+      });
+    }, { threshold: 0.35 });
+    arenas.forEach(function (a) { obs.observe(a); });
+  })();
+</script>
 </body>
 </html>
