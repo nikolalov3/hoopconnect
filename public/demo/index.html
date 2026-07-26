@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel trenera — demo | HoopConnect</title>
+<meta name="description" content="Otwarte demo panelu trenera HoopConnect. Przykładowa drużyna U-14: frekwencja, harmonogram treningów, aktywność zawodników. Bez zakładania konta." />
+<meta name="robots" content="index,follow" />
+<link rel="icon" href="/hoop.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   DEMO PANELU TRENERA — strona całkowicie samodzielna.
+   Bez Reacta, bez Supabase, bez logowania, bez żadnego połączenia z bazą.
+   Wszystkie dane poniżej są zmyślone i zapisane na stałe w tym pliku.
+   Nie współdzieli ani jednej linijki kodu z prawdziwym panelem trenera,
+   więc nie ma technicznej możliwości, żeby pokazała czyjekolwiek dane.
+   ══════════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#F6F8FB;--surface:#FFFFFF;--text:#1A2233;--text-soft:#4D5C73;--text-muted:#8A9AB0;
+  --border:#E6ECF3;--border-strong:#D4DDE8;
+  --accent:#5591CD;--accent-soft:#E8F1FA;--accent-strong:#3D78B5;
+  --navy:#1E3A5F;--navy-soft:#E2E8F1;
+  --success:#3FA86A;--success-soft:#E2F4EB;--warning:#E5A93C;--warning-soft:#FCF2DE;
+  --danger:#D85546;--danger-soft:#FCE5E2;
+  --sh-sm:0 1px 2px rgba(20,35,60,.06);
+  --sh-md:0 4px 16px -4px rgba(20,35,60,.10);
+  --sh-lg:0 18px 48px -18px rgba(20,35,60,.22);
+  --r:14px;--r-lg:18px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',system-ui,sans-serif;
+  font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,.cond{font-family:'Barlow Condensed',sans-serif;font-weight:800;letter-spacing:-.01em;line-height:1.08}
+a{color:inherit;text-decoration:none}
+
+/* ── PASEK DEMO ── */
+.demobar{position:sticky;top:0;z-index:80;background:var(--navy);color:#fff;
+  padding:11px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.demobar .l{display:flex;align-items:center;gap:11px;font-size:14.5px}
+.demobar .tag{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);
+  padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.demobar .l span{color:rgba(255,255,255,.82)}
+.demobar .r{display:flex;gap:9px;align-items:center}
+.dbtn{padding:8px 16px;border-radius:10px;font-weight:600;font-size:14px;transition:.18s;white-space:nowrap}
+.dbtn-solid{background:#fff;color:var(--navy)}
+.dbtn-solid:hover{transform:translateY(-1px);box-shadow:0 8px 20px -8px rgba(0,0,0,.5)}
+.dbtn-line{border:1px solid rgba(255,255,255,.35);color:#fff}
+.dbtn-line:hover{background:rgba(255,255,255,.1)}
+
+/* ── UKŁAD ── */
+.app{display:grid;grid-template-columns:236px 1fr;min-height:calc(100vh - 46px)}
+.side{background:var(--surface);border-right:1px solid var(--border);padding:22px 16px;
+  display:flex;flex-direction:column;gap:26px;position:sticky;top:46px;height:calc(100vh - 46px)}
+.brand{display:flex;align-items:center;gap:9px;font-family:'Barlow Condensed',sans-serif;
+  font-weight:800;font-size:20px;padding:0 6px}
+.brand img{width:26px;height:26px}
+.teamsel{background:var(--navy-soft);border:1px solid var(--border-strong);border-radius:var(--r);padding:12px 14px}
+.teamsel .lbl{font-size:10.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px}
+.teamsel .nm{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:18px;color:var(--navy)}
+.teamsel .sub{font-size:12.5px;color:var(--text-soft)}
+.navlist{display:flex;flex-direction:column;gap:3px}
+.navlist a{display:flex;align-items:center;gap:11px;padding:10px 13px;border-radius:11px;
+  font-size:14.5px;font-weight:500;color:var(--text-soft);transition:.16s}
+.navlist a:hover{background:var(--bg);color:var(--text)}
+.navlist a.on{background:var(--accent-soft);color:var(--accent-strong);font-weight:600}
+.navlist .ic{width:18px;text-align:center;flex-shrink:0}
+.side-foot{margin-top:auto;font-size:12.5px;color:var(--text-muted);padding:0 6px}
+
+.main{padding:30px 34px 60px;min-width:0}
+.phead{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:26px}
+.phead h1{font-size:31px}
+.phead .sub{color:var(--text-muted);font-size:14.5px;margin-top:2px}
+.pill{background:var(--success-soft);color:var(--success);font-weight:600;font-size:13px;
+  padding:6px 13px;border-radius:999px;border:1px solid rgba(63,168,106,.2)}
+
+/* ── KAFLE ── */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:24px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:19px 20px;box-shadow:var(--sh-sm)}
+.tile .lbl{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:9px}
+.tile .val{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:34px;line-height:1;color:var(--text)}
+.tile .val.ok{color:var(--success)}
+.tile .val.ac{color:var(--accent-strong)}
+.tile .note{font-size:12.5px;color:var(--text-muted);margin-top:7px}
+
+.cols{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;margin-bottom:18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:22px;box-shadow:var(--sh-sm)}
+.card h3{font-size:19px;margin-bottom:3px}
+.card .csub{font-size:13px;color:var(--text-muted);margin-bottom:18px}
+
+/* ── WYKRES ── */
+.chart{display:flex;align-items:flex-end;gap:12px;height:150px;padding-top:8px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end}
+.bar .fill{width:100%;max-width:46px;background:linear-gradient(180deg,var(--accent),var(--accent-strong));
+  border-radius:7px 7px 3px 3px;position:relative;transition:height .8s cubic-bezier(.2,.8,.3,1)}
+.bar .fill span{position:absolute;top:-21px;left:50%;transform:translateX(-50%);font-size:12.5px;
+  font-weight:700;color:var(--text-soft)}
+.bar .wk{font-size:11.5px;color:var(--text-muted);white-space:nowrap}
+
+/* ── LISTY ── */
+.prow{display:flex;align-items:center;gap:13px;padding:11px 0;border-bottom:1px solid var(--border)}
+.prow:last-child{border-bottom:none}
+.num{width:31px;height:31px;border-radius:9px;background:var(--navy-soft);color:var(--navy);
+  display:grid;place-items:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14.5px;flex-shrink:0}
+.pname{flex:1;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.b-ok{background:var(--success-soft);color:var(--success)}
+.b-late{background:var(--warning-soft);color:var(--warning)}
+.b-no{background:var(--danger-soft);color:var(--danger)}
+.trow{display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid var(--border)}
+.trow:last-child{border-bottom:none}
+.tdate{width:52px;text-align:center;flex-shrink:0}
+.tdate b{display:block;font-family:'Barlow Condensed',sans-serif;font-size:21px;line-height:1;color:var(--navy)}
+.tdate span{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)}
+.tinfo{flex:1;min-width:0}
+.tinfo b{display:block;font-weight:600;font-size:14.5px}
+.tinfo span{font-size:12.5px;color:var(--text-muted)}
+.ttime{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;color:var(--accent-strong)}
+
+.scroll{max-height:340px;overflow-y:auto;margin:-4px -6px 0;padding:4px 6px 0}
+.scroll::-webkit-scrollbar{width:6px}
+.scroll::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:99px}
+
+/* ── STOPKA CTA ── */
+.endcta{background:var(--navy);color:#fff;border-radius:var(--r-lg);padding:30px 32px;
+  display:flex;align-items:center;justify-content:space-between;gap:22px;flex-wrap:wrap;margin-top:22px}
+.endcta h3{font-size:25px;margin-bottom:5px;color:#fff}
+.endcta p{color:rgba(255,255,255,.76);font-size:14.5px;max-width:460px}
+.endcta .acts{display:flex;gap:10px;flex-wrap:wrap}
+
+@media(max-width:1080px){.tiles{grid-template-columns:repeat(2,1fr)}.cols{grid-template-columns:1fr}}
+@media(max-width:860px){
+  .app{grid-template-columns:1fr}
+  .side{position:static;height:auto;flex-direction:row;align-items:center;gap:14px;
+    overflow-x:auto;padding:12px 16px;border-right:none;border-bottom:1px solid var(--border)}
+  .side .brand,.side .side-foot{display:none}
+  .teamsel{flex-shrink:0;padding:8px 13px}
+  .teamsel .lbl{display:none}
+  .navlist{flex-direction:row;gap:5px}
+  .navlist a{padding:8px 13px;white-space:nowrap}
+  .navlist .ic{display:none}
+  .main{padding:20px 16px 48px}
+  .phead h1{font-size:26px}
+}
+@media(max-width:560px){
+  body{font-size:15px}
+  .tiles{grid-template-columns:repeat(2,1fr);gap:11px}
+  .tile{padding:15px 15px}
+  .tile .val{font-size:27px}
+  .demobar{padding:10px 14px}
+  .demobar .l span{display:none}
+  .demobar .r{width:100%}
+  .dbtn{flex:1;text-align:center}
+  .chart{height:120px;gap:8px}
+  .endcta{padding:22px 20px;text-align:center;justify-content:center}
+  .endcta .acts{width:100%}
+  .endcta .acts .dbtn{flex:1}
+}
+</style>
+</head>
+<body>
+
+<div class="demobar">
+  <div class="l">
+    <span class="tag">Tryb demo</span>
+    <span>Przykładowa drużyna. Dane zmyślone, nic tu nie jest niczyje.</span>
+  </div>
+  <div class="r">
+    <a class="dbtn dbtn-line" href="/oferta">Wróć do oferty</a>
+    <a class="dbtn dbtn-solid" href="tel:+48607118228">Zadzwoń: 607 118 228</a>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><img src="/hoop.svg" alt="" />HoopConnect</div>
+    <div class="teamsel">
+      <div class="lbl">Zespół</div>
+      <div class="nm">UKS Basket U-14</div>
+      <div class="sub">chłopcy · 14 zawodników</div>
+    </div>
+    <nav class="navlist">
+      <a class="on" href="#"><span class="ic">▦</span>Pulpit</a>
+      <a href="#"><span class="ic">👥</span>Drużyna</a>
+      <a href="#"><span class="ic">🗓</span>Harmonogram</a>
+      <a href="#"><span class="ic">🔔</span>Powiadomienia</a>
+      <a href="#"><span class="ic">⚙</span>Ustawienia</a>
+    </nav>
+    <div class="side-foot">Demo bez logowania<br />HoopConnect</div>
+  </aside>
+
+  <main class="main">
+    <div class="phead">
+      <div>
+        <h1>Pulpit drużyny</h1>
+        <div class="sub" id="today">Ostatnie 4 tygodnie</div>
+      </div>
+      <div class="pill">● Wszystko na bieżąco</div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><div class="lbl">Zawodnicy</div><div class="val">14</div><div class="note">2 zaproszenia czekają</div></div>
+      <div class="tile"><div class="lbl">Frekwencja</div><div class="val ok">90%</div><div class="note">↑ 6 pkt m/m</div></div>
+      <div class="tile"><div class="lbl">Treningi / 4 tyg.</div><div class="val ac">10</div><div class="note">2,5 tygodniowo</div></div>
+      <div class="tile"><div class="lbl">Praca własna</div><div class="val ac">63</div><div class="note">zadania odhaczone w apce</div></div>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <h3>Aktywność drużyny</h3>
+        <div class="csub">Obecności na treningach, tydzień po tygodniu</div>
+        <div class="chart" id="chart"></div>
+      </div>
+      <div class="card">
+        <h3>Nadchodzące treningi</h3>
+        <div class="csub">Najbliższe cztery</div>
+        <div id="upcoming"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Zawodnicy</h3>
+      <div class="csub">Frekwencja z ostatnich czterech tygodni</div>
+      <div class="scroll" id="roster"></div>
+    </div>
+
+    <div class="endcta">
+      <div>
+        <h3>Tak wyglądałby panel Twojej drużyny</h3>
+        <p>Konfigurację robimy razem w kwadrans, zawodnicy dołączają kodem QR na treningu. Pierwszy miesiąc bez opłat.</p>
+      </div>
+      <div class="acts">
+        <a class="dbtn dbtn-solid" href="mailto:kontakt@hoopconnect.pl?subject=HoopConnect%20—%20pilota%C5%BC%20w%20klubie">Napisz do mnie</a>
+        <a class="dbtn dbtn-line" href="tel:+48607118228">607 118 228</a>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* Dane wyłącznie zmyślone i lokalne. Zero zapytań sieciowych. */
+(function(){
+  var ZAWODNICY=[
+    ['Kacper','Nowak',7,100],['Jan','Kowalski',4,92],['Szymon','Wiśniewski',11,100],
+    ['Antoni','Wójcik',5,83],['Filip','Kamiński',23,92],['Mikołaj','Lewandowski',8,100],
+    ['Aleksander','Zieliński',12,75],['Jakub','Szymański',3,92],['Franciszek','Woźniak',9,100],
+    ['Wojciech','Dąbrowski',15,83],['Adam','Kozłowski',6,92],['Igor','Jankowski',21,58],
+    ['Tymon','Mazur',10,100],['Leon','Krawczyk',14,92]
+  ];
+  var TYG=[
+    ['4 tyg. temu',22,28],['3 tyg. temu',36,42],['2 tyg. temu',25,28],['w zeszłym',38,42]
+  ];
+  var DNI=['niedz.','pon.','wt.','śr.','czw.','pt.','sob.'];
+  var MIES=['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
+  var TRENINGI=[
+    [2,'Trening','Hala SP nr 2','18:00'],[5,'Rzuty + gra','Hala SP nr 2','18:00'],
+    [8,'Obrona','Hala MOSiR','19:00'],[11,'Kondycja','Hala SP nr 2','18:00']
+  ];
+
+  // wykres
+  var max=Math.max.apply(null,TYG.map(function(t){return t[1];}));
+  document.getElementById('chart').innerHTML=TYG.map(function(t){
+    var pct=Math.round(t[1]/t[2]*100);
+    return '<div class="bar"><div class="fill" style="height:0" data-h="'+(t[1]/max*100)+'">'+
+      '<span>'+pct+'%</span></div><div class="wk">'+t[0]+'</div></div>';
+  }).join('');
+  setTimeout(function(){
+    [].forEach.call(document.querySelectorAll('.fill'),function(f){f.style.height=f.dataset.h+'%';});
+  },90);
+
+  // nadchodzące treningi
+  var now=new Date();
+  document.getElementById('upcoming').innerHTML=TRENINGI.map(function(t){
+    var d=new Date(now.getTime()+t[0]*86400000);
+    return '<div class="trow"><div class="tdate"><b>'+d.getDate()+'</b><span>'+MIES[d.getMonth()]+'</span></div>'+
+      '<div class="tinfo"><b>'+t[1]+'</b><span>'+DNI[d.getDay()]+' · '+t[2]+'</span></div>'+
+      '<div class="ttime">'+t[3]+'</div></div>';
+  }).join('');
+
+  // roster
+  document.getElementById('roster').innerHTML=ZAWODNICY.map(function(z){
+    var f=z[3], cls=f>=90?'b-ok':(f>=75?'b-late':'b-no');
+    return '<div class="prow"><div class="num">'+z[2]+'</div>'+
+      '<div class="pname">'+z[0]+' '+z[1]+'</div>'+
+      '<span class="badge '+cls+'">'+f+'%</span></div>';
+  }).join('');
+
+  // podpis okresu
+  var od=new Date(now.getTime()-28*86400000);
+  document.getElementById('today').textContent=
+    'Okres: '+od.getDate()+' '+MIES[od.getMonth()]+' – '+now.getDate()+' '+MIES[now.getMonth()]+' '+now.getFullYear();
+})();
+</script>
+</body>
+</html>
