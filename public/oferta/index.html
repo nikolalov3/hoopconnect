@@ -87,9 +87,12 @@ section{padding:96px 0}
 .hero::before{content:"";position:absolute;top:-30%;left:50%;transform:translateX(-50%);width:1100px;height:700px;
   background:radial-gradient(ellipse at center,var(--glow),transparent 68%);pointer-events:none}
 .hero-in{position:relative;max-width:900px}
-.hero h1{font-size:clamp(42px,7.6vw,86px);margin-bottom:6px}
-.hero .h1-b{font-size:clamp(42px,7.6vw,86px);font-family:'Barlow Condensed',sans-serif;font-weight:900;
-  line-height:1.02;letter-spacing:-.015em;margin-bottom:30px;display:block}
+.hero h1{font-size:clamp(31px,5.2vw,58px);margin-bottom:0;color:var(--ink-soft);font-weight:700}
+.hero h1 .grad{font-weight:800}
+.hero .h1-b{font-size:clamp(38px,7vw,80px);font-family:'Barlow Condensed',sans-serif;font-weight:900;
+  line-height:1.0;letter-spacing:-.02em;margin-bottom:30px;display:block;color:var(--ink)}
+.n163{background:var(--grad-text);-webkit-background-clip:text;background-clip:text;color:transparent;
+  font-size:1.3em;letter-spacing:-.045em;line-height:.85;display:inline-block;vertical-align:-.04em}
 .hero-lead{font-size:clamp(17.5px,2.1vw,21px);color:var(--ink-soft);max-width:640px;margin-bottom:34px}
 .hero-cta{display:flex;gap:13px;flex-wrap:wrap;margin-bottom:20px}
 .trust{display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--muted)}
@@ -103,10 +106,19 @@ section{padding:96px 0}
 .wk-title span{display:block;font-family:'Barlow',sans-serif;font-weight:400;font-size:14.5px;color:var(--muted);
   letter-spacing:0;margin-top:3px}
 .grid168{display:grid;grid-template-columns:repeat(24,1fr);gap:3px}
-.cell{aspect-ratio:1;border-radius:2.5px;background:var(--cell-off);transition:background .5s ease,transform .5s ease}
+.cell{aspect-ratio:1;border-radius:2.5px;background:var(--cell-off);
+  opacity:0;transform:scale(.35);
+  transition:background .45s ease,box-shadow .45s ease,opacity .34s ease,transform .34s cubic-bezier(.2,1.3,.4,1)}
+.grid168.lit .cell{opacity:1;transform:none}
 .cell.train{background:var(--blue);box-shadow:0 0 0 1px var(--blue)}
 .cell.extra{background:var(--cell-off)}
-.on .cell.extra{background:var(--cell-mid)}
+.on .cell.extra{background:var(--cell-mid);box-shadow:0 0 0 1px var(--cell-mid)}
+/* licznik godzin poza zasięgiem */
+.wk-count{display:flex;align-items:baseline;gap:10px;flex-shrink:0}
+.wk-count b{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:44px;line-height:1;
+  background:var(--grad-text);-webkit-background-clip:text;background-clip:text;color:transparent;
+  font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.wk-count i{font-style:normal;font-size:13.5px;color:var(--muted);max-width:120px;line-height:1.32}
 .wk-legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:22px;font-size:14px;color:var(--muted)}
 .wk-legend span{display:inline-flex;align-items:center;gap:8px}
 .wk-legend i{width:11px;height:11px;border-radius:3px;flex-shrink:0}
@@ -203,8 +215,15 @@ footer{padding:44px 0;border-top:1px solid var(--line);background:var(--bg-soft)
 /* wejścia */
 .rv{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.3,1),transform .7s cubic-bezier(.2,.7,.3,1)}
 .rv.in{opacity:1;transform:none}
-@media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}
-  .cell{transition:none}html{scroll-behavior:auto}}
+@media (prefers-reduced-motion:reduce){
+  .rv{opacity:1;transform:none;transition:none}
+  /* kratki startują z opacity:0 — bez tego byłyby tu niewidoczne */
+  .cell{opacity:1!important;transform:none!important;transition:none!important;transition-delay:0s!important}
+  html{scroll-behavior:auto}
+}
+/* czytelny focus dla klawiatury */
+a:focus-visible,button:focus-visible,summary:focus-visible{
+  outline:2px solid var(--blue-bright);outline-offset:3px;border-radius:10px}
 
 @media(max-width:940px){
   .auth{grid-template-columns:1fr}
@@ -213,16 +232,33 @@ footer{padding:44px 0;border-top:1px solid var(--line);background:var(--bg-soft)
 }
 @media(max-width:680px){
   body{font-size:16.5px}
-  section{padding:70px 0}
+  section{padding:64px 0}
+  .sec-head{margin-bottom:34px}
   .stats{grid-template-columns:1fr}
   .loop,.feats{grid-template-columns:1fr}
   .founder{grid-template-columns:1fr;text-align:center;justify-items:center}
   .fmark{margin:0 auto}
   .fcontact{justify-content:center}
-  .grid168{grid-template-columns:repeat(12,1fr)}
+  .hero{padding-top:38px}
+  .hero .eyebrow{margin-bottom:18px}
+  .hero-lead{margin-bottom:26px}
+  .hero-cta .btn{flex:1;min-width:100%;padding:15px 20px}
+  .weekcard{margin-top:36px;border-radius:18px}
+  .wk-top{margin-bottom:18px}
+  .wk-top .btn{width:100%}
+  .grid168{grid-template-columns:repeat(12,1fr);gap:2.5px}
+  .wk-legend{gap:12px;font-size:13px;margin-top:16px}
+  .wk-foot{margin-top:18px;padding-top:16px;flex-direction:column-reverse;align-items:flex-start;gap:12px}
+  .wk-count b{font-size:38px}
+  .wk-count i{max-width:none}
   .dock{display:flex}
   footer{padding-bottom:88px}
   .nav-actions .btn-full{display:none}
+}
+@media(max-width:380px){
+  .grid168{gap:2px}
+  .hero h1{font-size:29px}
+  .hero .h1-b{font-size:36px}
 }
 </style>
 </head>
@@ -246,7 +282,7 @@ footer{padding:44px 0;border-top:1px solid var(--line);background:var(--bg-soft)
   <div class="wrap hero-in">
     <span class="eyebrow">Panel trenera + aplikacja zawodnika</span>
     <h1>Masz go na sali <span class="grad">4,5 godziny</span> w tygodniu.</h1>
-    <span class="h1-b">Zawodnika buduje pozostałe 163.</span>
+    <span class="h1-b">Zawodnika buduje pozostałe <span class="n163">163</span>.</span>
     <p class="hero-lead">Trening kończy się o 19:30. To, czy z tego dzieciaka coś będzie, rozstrzyga się między treningami — tam, gdzie dziś nie masz ani wglądu, ani wpływu. HoopConnect daje ci jedno i drugie.</p>
     <div class="hero-cta">
       <a class="btn btn-primary" href="/demo">Wejdź do panelu demo →</a>
@@ -268,6 +304,7 @@ footer{padding:44px 0;border-top:1px solid var(--line);background:var(--bg-soft)
       </div>
       <div class="wk-foot">
         <div class="wk-msg" id="wkMsg"><b>Trzy treningi w tygodniu to 4,5 godziny.</b> Przez pozostałe 163 nie wiesz, czy ktokolwiek dotknął piłki.</div>
+        <div class="wk-count"><b id="wkNum">163</b><i id="wkCap">godziny poza twoim zasięgiem</i></div>
       </div>
     </div>
   </div>
@@ -365,6 +402,7 @@ footer{padding:44px 0;border-top:1px solid var(--line);background:var(--bg-soft)
         <div class="role">Założyciel HoopConnect</div>
         <p>Buduję to sam i sam wdrażam. To znaczy, że nie trafisz na dział obsługi klienta — konfigurację twojej pierwszej grupy przeprowadzę z tobą osobiście, a jak coś nie zadziała, dzwonisz do mnie i odbieram.</p>
         <p style="font-size:15.5px;color:var(--muted)">Szukam teraz <b style="color:var(--ink)">trzech klubów w Małopolsce</b>, z którymi dopracuję to do końca. Pierwszy miesiąc bez opłat — w zamian proszę o szczery feedback, także ten niewygodny.</p>
+        <p style="font-size:15.5px;color:var(--muted);margin-top:-6px">Teraz jest na to najlepszy moment w roku: <b style="color:var(--ink)">wchodzimy przed startem sezonu</b>, a nie w środku rozkręconych rozgrywek.</p>
         <div class="fcontact">
           <a href="tel:+48607118228">607 118 228</a>
           <a href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a>
@@ -428,24 +466,51 @@ footer{padding:44px 0;border-top:1px solid var(--line);background:var(--bg-soft)
   // 3 treningi x 1,5h = 4,5h -> 5 pelnych kratek. 168 - 5 = 163, liczba z naglowka.
   var TREN=[/* wt */ 24+18, 24+19, /* czw */ 72+18, 72+19, /* sob */ 120+10];
   var EXTRA=[/* pn */ 17, /* śr */ 48+17, 48+20, /* pt */ 96+18, /* nd */ 144+11, 144+16, 24+21, 72+20];
+  var REDUCE=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   var g=document.getElementById('grid168');
   if(g){
     var f=document.createDocumentFragment();
     for(var i=0;i<168;i++){
       var d=document.createElement('div');
       d.className='cell'+(TREN.indexOf(i)>-1?' train':(EXTRA.indexOf(i)>-1?' extra':''));
+      // kaskada: kratki zapalają się rzędami, trening na końcu (żeby rzucał się w oczy)
+      if(!REDUCE)d.style.transitionDelay=(Math.floor(i/24)*46+(i%24)*7)+'ms';
       f.appendChild(d);
     }
     g.appendChild(f);
+    if('IntersectionObserver' in window && !REDUCE){
+      var gio=new IntersectionObserver(function(es){
+        es.forEach(function(e){if(e.isIntersecting){g.classList.add('lit');gio.disconnect();}});
+      },{threshold:.18});
+      gio.observe(g);
+    } else { g.classList.add('lit'); }
   }
-  var btn=document.getElementById('wkBtn'),card=document.getElementById('weekcard'),msg=document.getElementById('wkMsg'),on=false;
+
+  // licznik godzin — animowane przeliczanie przy przełączeniu
+  function countTo(el,from,to,ms){
+    if(REDUCE||!el){el&&(el.textContent=to);return;}
+    var t0=performance.now();
+    (function step(now){
+      var p=Math.min(1,(now-t0)/ms);
+      var e=1-Math.pow(1-p,3);                    // ease-out
+      el.textContent=Math.round(from+(to-from)*e);
+      if(p<1)requestAnimationFrame(step);
+    })(t0);
+  }
+
+  var btn=document.getElementById('wkBtn'),card=document.getElementById('weekcard'),
+      msg=document.getElementById('wkMsg'),num=document.getElementById('wkNum'),
+      cap=document.getElementById('wkCap'),on=false;
   btn&&btn.addEventListener('click',function(){
     on=!on;
     card.classList.toggle('on',on);
     btn.textContent=on?'Wróć do stanu obecnego':'Pokaż, co zmienia HoopConnect';
+    btn.setAttribute('aria-pressed',on?'true':'false');
     msg.innerHTML=on
       ? '<b>Te same trzy treningi — plus osiem godzin pracy własnej, o której wiesz.</b> Nie dlatego, że kazałeś. Dlatego, że zawodnik ma cel, który widzi.'
       : '<b>Trzy treningi w tygodniu to 4,5 godziny.</b> Przez pozostałe 163 nie wiesz, czy ktokolwiek dotknął piłki.';
+    countTo(num,on?163:155,on?155:163,520);
+    if(cap)cap.textContent=on?'godzin poza zasięgiem — o osiem mniej':'godziny poza twoim zasięgiem';
   });
 
   // wejścia przy scrollu
