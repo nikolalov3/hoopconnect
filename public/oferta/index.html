@@ -4,261 +4,254 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Panel Trenera — HoopConnect</title>
-<meta name="description" content="Trening trwa 90 minut. Zawodnika buduje reszta tygodnia. HoopConnect daje trenerowi wgląd i wpływ na to, co dzieje się między treningami — zadania, frekwencja, realna motywacja zawodnika." />
+<meta name="description" content="Trening trwa półtorej godziny. Zawodnika buduje reszta tygodnia. HoopConnect daje trenerowi wgląd i wpływ na to, co dzieje się między treningami — zadania, frekwencja, realna motywacja zawodnika." />
 <link rel="icon" href="/hoop.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script>document.documentElement.dataset.theme = localStorage.getItem('hc-theme') || 'light';</script>
 <style>
+/* ═══════════ TOKENY ═══════════ */
 :root,:root[data-theme="light"]{
-  --blue:#2272C3;--blue-bright:#2272C3;--blue-deep:#0D4A8A;--gold:#B8720A;
-  --card:#FFFFFF;--card-soft:#F5F9FD;--ink:#12202F;--ink-soft:rgba(18,32,47,.76);
-  --muted:#5A6B7D;--line:#E4ECF4;--line-hi:rgba(34,114,195,.3);
-  --bg:#FFFFFF;--bg-soft:#F5F9FD;--nav-bg:rgba(255,255,255,.85);
-  --ghost-bg:rgba(13,74,138,.04);--ghost-bg-hover:rgba(34,114,195,.08);
-  --grad:linear-gradient(120deg,#5BB8F5 0%,#2272C3 55%,#0D4A8A 100%);
-  --grad-text:linear-gradient(120deg,#2272C3 0%,#0D4A8A 100%);
-  --glow:rgba(34,114,195,.10);--glow-strong:rgba(34,114,195,.16);
-  --cell-off:rgba(18,32,47,.07);--cell-mid:rgba(34,114,195,.28);
-  --shadow:0 1px 2px rgba(18,32,47,.04),0 12px 40px -16px rgba(18,32,47,.16);
-  --shadow-lg:0 30px 80px -30px rgba(13,74,138,.35);
-  --btn-primary-text:#fff;
+  --ink:#101A26; --ink-2:#3A4A5C; --ink-3:#697C91; --ink-4:#94A4B6;
+  --paper:#FFFFFF; --paper-2:#F7F9FC; --paper-3:#EFF3F8;
+  --rule:#E2E9F1; --rule-2:#CBD7E4;
+  --blue:#1F6FC4; --blue-ink:#12508F;
+  --navy:#152B45;
+  --sel:#1F6FC4;
+  --cell-0:#E4EAF1; --cell-1:#1F6FC4; --cell-2:#9CC2E8;
+  --shadow:0 1px 1px rgba(16,26,38,.04),0 8px 24px -14px rgba(16,26,38,.20);
+  --shadow-up:0 24px 64px -32px rgba(16,26,38,.34);
+  --on-blue:#fff;
 }
 :root[data-theme="dark"]{
-  --blue:#2272C3;--blue-bright:#5BB8F5;--blue-deep:#0D4A8A;--gold:#FFC940;
-  --card:#101B2E;--card-soft:#0B1420;--ink:#EAF2FF;--ink-soft:rgba(234,242,255,.84);
-  --muted:#90A9C4;--line:rgba(145,190,230,.14);--line-hi:rgba(91,184,245,.35);
-  --bg:#060B16;--bg-soft:#0B1420;--nav-bg:rgba(6,11,22,.85);
-  --ghost-bg:rgba(255,255,255,.04);--ghost-bg-hover:rgba(91,184,245,.08);
-  --grad:linear-gradient(120deg,#5BB8F5 0%,#2272C3 55%,#0D4A8A 100%);
-  --grad-text:linear-gradient(120deg,#5BB8F5 0%,#2272C3 100%);
-  --glow:rgba(91,184,245,.12);--glow-strong:rgba(91,184,245,.2);
-  --cell-off:rgba(234,242,255,.07);--cell-mid:rgba(91,184,245,.3);
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 40px -16px rgba(0,0,0,.6);
-  --shadow-lg:0 30px 80px -30px rgba(0,0,0,.8);
-  --btn-primary-text:#04101f;
+  --ink:#EDF3FA; --ink-2:#B6C6D8; --ink-3:#8296AC; --ink-4:#5E7288;
+  --paper:#0F1723; --paper-2:#0A111B; --paper-3:#16202E;
+  --rule:#1F2C3D; --rule-2:#2C3D53;
+  --blue:#54A0EA; --blue-ink:#8CC0F4;
+  --navy:#0A111B;
+  --sel:#54A0EA;
+  --cell-0:#1C2939; --cell-1:#54A0EA; --cell-2:#2E5678;
+  --shadow:0 1px 1px rgba(0,0,0,.5),0 8px 24px -14px rgba(0,0,0,.8);
+  --shadow-up:0 24px 64px -32px rgba(0,0,0,.9);
+  --on-blue:#06121F;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--ink);font-family:'Barlow',system-ui,sans-serif;
-  font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
-h1,h2,h3,.cond{font-family:'Barlow Condensed',sans-serif;font-weight:800;line-height:1.02;letter-spacing:-.01em}
-a{color:inherit}
-.grad{background:var(--grad-text);-webkit-background-clip:text;background-clip:text;color:transparent}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--paper);color:var(--ink);font-family:'Barlow',system-ui,sans-serif;
+  font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  font-variant-numeric:tabular-nums}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+h1,h2,h3,h4{font-family:'Barlow Condensed',sans-serif;font-weight:800;line-height:1.04;letter-spacing:-.015em}
+a{color:inherit;text-decoration:none}
+svg{display:block}
+::selection{background:var(--sel);color:var(--on-blue)}
 
-/* NAV */
-.nav{position:sticky;top:0;z-index:60;background:var(--nav-bg);backdrop-filter:blur(16px);
-  -webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
-.nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
-.brand{display:flex;align-items:center;gap:9px;text-decoration:none;font-family:'Barlow Condensed',sans-serif;
-  font-weight:800;font-size:21px;letter-spacing:.01em}
-.brand img{width:28px;height:28px}
-.nav-actions{display:flex;align-items:center;gap:10px}
-.theme-toggle{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--ghost-bg);
-  color:var(--ink-soft);cursor:pointer;display:grid;place-items:center;transition:.2s}
-.theme-toggle:hover{border-color:var(--line-hi);color:var(--blue-bright)}
-.theme-toggle svg{width:17px;height:17px}
-:root[data-theme="light"] .ic-sun{display:none}
-:root[data-theme="dark"] .ic-moon{display:none}
+/* ═══════════ PRZYCISKI ═══════════ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  height:52px;padding:0 26px;border-radius:8px;border:1px solid transparent;
+  font-family:'Barlow',sans-serif;font-weight:600;font-size:16px;
+  cursor:pointer;white-space:nowrap;transition:background .16s ease,border-color .16s ease,color .16s ease}
+.btn svg{width:17px;height:17px;flex-shrink:0}
+.btn-pri{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn-pri:hover{background:var(--blue-ink);border-color:var(--blue-ink);color:#fff}
+:root[data-theme="dark"] .btn-pri{background:var(--blue);color:var(--on-blue);border-color:var(--blue)}
+:root[data-theme="dark"] .btn-pri:hover{background:var(--blue-ink);border-color:var(--blue-ink);color:var(--on-blue)}
+.btn-sec{background:transparent;border-color:var(--rule-2);color:var(--ink)}
+.btn-sec:hover{border-color:var(--ink);background:var(--paper-2)}
+.btn-sm{height:42px;padding:0 18px;font-size:15px}
+.btn-lt{background:#fff;color:#101A26;border-color:#fff}
+.btn-lt:hover{background:#E8EEF5;border-color:#E8EEF5}
+.btn-ol{background:transparent;color:#fff;border-color:rgba(255,255,255,.32)}
+.btn-ol:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.5)}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--sel);outline-offset:3px}
 
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:14px 24px;border-radius:13px;
-  font-family:'Barlow',sans-serif;font-weight:600;font-size:15.5px;text-decoration:none;border:1px solid transparent;
-  cursor:pointer;transition:transform .18s,box-shadow .18s,background .18s;white-space:nowrap}
-.btn-primary{background:var(--grad);color:var(--btn-primary-text);box-shadow:0 10px 30px -10px var(--glow-strong)}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 18px 40px -12px var(--glow-strong)}
-.btn-ghost{background:var(--ghost-bg);border-color:var(--line);color:var(--ink)}
-.btn-ghost:hover{background:var(--ghost-bg-hover);border-color:var(--line-hi)}
-.btn-sm{padding:10px 18px;font-size:14.5px;border-radius:11px}
+/* ═══════════ NAWIGACJA ═══════════ */
+.nav{position:sticky;top:0;z-index:60;background:var(--paper);border-bottom:1px solid var(--rule)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:66px}
+.brand{display:flex;align-items:center;gap:10px;font-family:'Barlow Condensed',sans-serif;
+  font-weight:800;font-size:21px}
+.brand img{width:27px;height:27px}
+.nav-r{display:flex;align-items:center;gap:10px}
+.icobtn{width:42px;height:42px;border-radius:8px;border:1px solid var(--rule);background:transparent;
+  color:var(--ink-2);cursor:pointer;display:grid;place-items:center;transition:.16s}
+.icobtn:hover{border-color:var(--rule-2);color:var(--ink)}
+.icobtn svg{width:17px;height:17px}
+:root[data-theme="light"] .i-sun{display:none}
+:root[data-theme="dark"] .i-moon{display:none}
 
-.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--blue-bright);background:var(--ghost-bg);border:1px solid var(--line);
-  padding:7px 14px;border-radius:999px;margin-bottom:26px}
+/* ═══════════ RYTM SEKCJI ═══════════ */
+section{padding:104px 0}
+.tint{background:var(--paper-2);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.kicker{display:block;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-4);margin-bottom:18px}
+.h2{font-size:clamp(29px,4.1vw,44px);max-width:19ch}
+.lede{color:var(--ink-2);font-size:19px;max-width:56ch;margin-top:16px}
 
-section{padding:96px 0}
-.soft{background:var(--bg-soft);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.sec-head{max-width:720px;margin-bottom:52px}
-.sec-head h2{font-size:clamp(30px,4.6vw,46px);margin-bottom:16px}
-.sec-head p{color:var(--muted);font-size:18px}
+/* ═══════════ HERO ═══════════ */
+.hero{padding:clamp(48px,7vw,88px) 0 0}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:26px}
+.hero-eyebrow::before{content:"";width:26px;height:1px;background:var(--rule-2)}
+.hero h1{font-size:clamp(30px,4.6vw,52px);font-weight:700;color:var(--ink-2);letter-spacing:-.01em}
+.hero h1 em{font-style:normal;color:var(--ink);font-weight:800}
+.hero .payoff{display:block;font-family:'Barlow Condensed',sans-serif;font-weight:900;
+  font-size:clamp(42px,8.4vw,96px);line-height:.94;letter-spacing:-.03em;color:var(--ink);margin-top:6px}
+.hero .payoff u{text-decoration:none;color:var(--blue)}
+.hero-lede{font-size:clamp(17px,1.9vw,20px);color:var(--ink-2);max-width:60ch;margin-top:28px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:34px}
+.hero-note{display:flex;align-items:center;gap:9px;margin-top:18px;font-size:15px;color:var(--ink-3)}
+.hero-note svg{width:15px;height:15px;color:var(--blue);flex-shrink:0}
 
-/* ── HERO ── */
-.hero{padding:clamp(56px,9vw,104px) 0 clamp(60px,8vw,96px);position:relative;overflow:hidden}
-.hero::before{content:"";position:absolute;top:-30%;left:50%;transform:translateX(-50%);width:1100px;height:700px;
-  background:radial-gradient(ellipse at center,var(--glow),transparent 68%);pointer-events:none}
-.hero-in{position:relative;max-width:900px}
-.hero h1{font-size:clamp(31px,5.2vw,58px);margin-bottom:0;color:var(--ink-soft);font-weight:700}
-.hero h1 .grad{font-weight:800}
-.hero .h1-b{font-size:clamp(38px,7vw,80px);font-family:'Barlow Condensed',sans-serif;font-weight:900;
-  line-height:1.0;letter-spacing:-.02em;margin-bottom:30px;display:block;color:var(--ink)}
-.n163{background:var(--grad-text);-webkit-background-clip:text;background-clip:text;color:transparent;
-  font-size:1.3em;letter-spacing:-.045em;line-height:.85;display:inline-block;vertical-align:-.04em}
-.hero-lead{font-size:clamp(17.5px,2.1vw,21px);color:var(--ink-soft);max-width:640px;margin-bottom:34px}
-.hero-cta{display:flex;gap:13px;flex-wrap:wrap;margin-bottom:20px}
-.trust{display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--muted)}
-.trust b{color:var(--ink)}
+/* ═══════════ KARTA TYGODNIA ═══════════ */
+.week{margin-top:64px;background:var(--paper);border:1px solid var(--rule);border-radius:12px;
+  box-shadow:var(--shadow-up);overflow:hidden}
+.week-hd{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  padding:24px 28px;border-bottom:1px solid var(--rule)}
+.week-hd h3{font-size:21px}
+.week-hd p{font-size:14.5px;color:var(--ink-3);margin-top:3px}
+.week-bd{padding:28px}
+.g168{display:grid;grid-template-columns:repeat(24,1fr);gap:3px}
+.cl{aspect-ratio:1;border-radius:2px;background:var(--cell-0);opacity:0;transform:scale(.3);
+  transition:background .4s ease,opacity .3s ease,transform .3s cubic-bezier(.2,1.2,.4,1)}
+.g168.lit .cl{opacity:1;transform:none}
+.cl.t{background:var(--cell-1)}
+.on .cl.x{background:var(--cell-2)}
+.week-ft{display:flex;align-items:center;justify-content:space-between;gap:26px;flex-wrap:wrap;
+  padding:22px 28px;border-top:1px solid var(--rule);background:var(--paper-2)}
+.legend{display:flex;gap:20px;flex-wrap:wrap;font-size:14px;color:var(--ink-3)}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend i{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.tally{display:flex;align-items:baseline;gap:11px;flex-shrink:0}
+.tally b{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:42px;line-height:1;
+  color:var(--ink);letter-spacing:-.03em}
+.tally i{font-style:normal;font-size:14px;color:var(--ink-3);max-width:112px;line-height:1.3}
+.week-msg{padding:20px 28px;font-size:15.5px;color:var(--ink-2);border-top:1px solid var(--rule)}
+.week-msg b{color:var(--ink);font-weight:600}
 
-/* ── SIATKA TYGODNIA (bohater wizualny) ── */
-.weekcard{margin-top:56px;background:var(--card);border:1px solid var(--line);border-radius:24px;
-  padding:clamp(22px,3.4vw,38px);box-shadow:var(--shadow-lg);position:relative}
-.wk-top{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:26px}
-.wk-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:23px;letter-spacing:-.01em}
-.wk-title span{display:block;font-family:'Barlow',sans-serif;font-weight:400;font-size:14.5px;color:var(--muted);
-  letter-spacing:0;margin-top:3px}
-.grid168{display:grid;grid-template-columns:repeat(24,1fr);gap:3px}
-.cell{aspect-ratio:1;border-radius:2.5px;background:var(--cell-off);
-  opacity:0;transform:scale(.35);
-  transition:background .45s ease,box-shadow .45s ease,opacity .34s ease,transform .34s cubic-bezier(.2,1.3,.4,1)}
-.grid168.lit .cell{opacity:1;transform:none}
-.cell.train{background:var(--blue);box-shadow:0 0 0 1px var(--blue)}
-.cell.extra{background:var(--cell-off)}
-.on .cell.extra{background:var(--cell-mid);box-shadow:0 0 0 1px var(--cell-mid)}
-/* licznik godzin poza zasięgiem */
-.wk-count{display:flex;align-items:baseline;gap:10px;flex-shrink:0}
-.wk-count b{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:44px;line-height:1;
-  background:var(--grad-text);-webkit-background-clip:text;background-clip:text;color:transparent;
-  font-variant-numeric:tabular-nums;letter-spacing:-.03em}
-.wk-count i{font-style:normal;font-size:13.5px;color:var(--muted);max-width:120px;line-height:1.32}
-.wk-legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:22px;font-size:14px;color:var(--muted)}
-.wk-legend span{display:inline-flex;align-items:center;gap:8px}
-.wk-legend i{width:11px;height:11px;border-radius:3px;flex-shrink:0}
-.wk-foot{margin-top:26px;padding-top:22px;border-top:1px solid var(--line);display:flex;
-  align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
-.wk-msg{font-size:15.5px;color:var(--ink-soft);max-width:520px}
-.wk-msg b{color:var(--ink)}
+/* ═══════════ SEKCJA REDAKCYJNA ═══════════ */
+.ed{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start}
+.ed-quote{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(26px,3.5vw,38px);
+  line-height:1.12;letter-spacing:-.015em;border-left:3px solid var(--blue);padding-left:24px}
+.ed-body p{color:var(--ink-2);margin-bottom:18px}
+.ed-body p:last-child{margin-bottom:0}
+.ed-body b{color:var(--ink);font-weight:600}
 
-/* ── LICZBY ── */
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px 26px;box-shadow:var(--shadow)}
-.stat .n{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(38px,5.4vw,58px);
-  line-height:1;background:var(--grad-text);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:10px}
-.stat p{color:var(--muted);font-size:15.5px}
+/* ═══════════ PĘTLA ═══════════ */
+.loop{border-top:1px solid var(--rule)}
+.lp{display:grid;grid-template-columns:64px 1fr 1fr;gap:32px;align-items:baseline;
+  padding:30px 0;border-bottom:1px solid var(--rule)}
+.lp-n{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:19px;color:var(--ink-4);letter-spacing:.04em}
+.lp h3{font-size:23px}
+.lp .who{display:block;font-family:'Barlow',sans-serif;font-weight:600;font-size:12px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:7px}
+.lp p{color:var(--ink-2);font-size:16px}
 
-/* ── PĘTLA ── */
-.loop{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;counter-reset:s}
-.lstep{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 24px;position:relative;
-  box-shadow:var(--shadow)}
-.lstep::before{counter-increment:s;content:"0" counter(s);font-family:'Barlow Condensed',sans-serif;font-weight:900;
-  font-size:15px;color:var(--blue-bright);letter-spacing:.1em;display:block;margin-bottom:14px}
-.lstep h3{font-size:21px;margin-bottom:9px}
-.lstep p{font-size:15.5px;color:var(--muted)}
-.lstep .who{position:absolute;top:24px;right:22px;font-size:11px;font-weight:700;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--muted);opacity:.7}
+/* ═══════════ ZASADA ═══════════ */
+.creed{max-width:800px}
+.creed .q{font-family:'Barlow Condensed',sans-serif;font-weight:900;
+  font-size:clamp(30px,4.6vw,50px);line-height:1.06;letter-spacing:-.02em;margin-bottom:26px}
+.creed p{color:var(--ink-2);font-size:18px;margin-bottom:16px}
+.creed b{color:var(--ink);font-weight:600}
 
-/* ── CYTAT / ZASADA ── */
-.creed{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:20px;
-  padding:clamp(30px,4.4vw,52px);box-shadow:var(--shadow);max-width:860px;margin:0 auto}
-.creed .q{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(27px,4vw,40px);
-  line-height:1.1;margin-bottom:18px}
-.creed p{color:var(--ink-soft);font-size:17.5px}
+/* ═══════════ PZKOSZ ═══════════ */
+.map{border-top:1px solid var(--rule);margin-top:8px}
+.map-r{display:grid;grid-template-columns:1fr 30px 1fr;gap:20px;align-items:center;
+  padding:20px 0;border-bottom:1px solid var(--rule);font-size:16px}
+.map-r .a{color:var(--ink-3)}
+.map-r .b{font-weight:600}
+.map-r .arr{color:var(--blue);display:grid;place-items:center}
+.map-r .arr svg{width:18px;height:18px}
 
-/* ── PZKOSZ ── */
-.auth{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
-.auth-map{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow)}
-.amrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;padding:17px 22px;
-  border-bottom:1px solid var(--line);font-size:15px}
-.amrow:last-child{border-bottom:none}
-.amrow .l{color:var(--muted)}
-.amrow .r{font-weight:600}
-.amrow .ar{color:var(--blue-bright);font-weight:700}
+/* ═══════════ FUNKCJE ═══════════ */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);
+  border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+.ft{background:var(--paper);padding:30px 26px}
+.ft-ic{width:32px;height:32px;color:var(--blue);margin-bottom:16px}
+.ft-ic svg{width:100%;height:100%}
+.ft h3{font-size:20px;margin-bottom:8px}
+.ft p{font-size:15.5px;color:var(--ink-2)}
 
-/* ── PANEL SHOT ── */
-.shot{border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow-lg);background:var(--card)}
+.shot{border:1px solid var(--rule);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:32px}
 .shot img{width:100%;height:auto;display:block}
-.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:34px}
-.feat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 22px}
-.feat h3{font-size:19px;margin-bottom:7px}
-.feat p{font-size:15px;color:var(--muted)}
-.feat .ico{font-size:22px;margin-bottom:12px;display:block}
 
-/* ── ZAŁOŻYCIEL ── */
-.founder{display:grid;grid-template-columns:auto 1fr;gap:30px;align-items:center;background:var(--card);
-  border:1px solid var(--line);border-radius:22px;padding:clamp(26px,3.6vw,40px);box-shadow:var(--shadow);max-width:880px;margin:0 auto}
-.fmark{width:96px;height:96px;border-radius:50%;background:var(--grad);display:grid;place-items:center;
-  font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:36px;color:#fff;flex-shrink:0}
-.founder h3{font-size:24px;margin-bottom:4px}
-.founder .role{font-size:14px;color:var(--blue-bright);font-weight:600;letter-spacing:.06em;
-  text-transform:uppercase;margin-bottom:14px}
-.founder p{color:var(--ink-soft);font-size:16.5px;margin-bottom:16px}
-.fcontact{display:flex;gap:20px;flex-wrap:wrap;font-size:15.5px;font-weight:600}
-.fcontact a{color:var(--blue-bright);text-decoration:none}
-.fcontact a:hover{text-decoration:underline}
+/* ═══════════ ZAŁOŻYCIEL ═══════════ */
+.fdr{display:grid;grid-template-columns:auto 1fr;gap:34px;align-items:start;max-width:840px}
+.fdr-mk{width:78px;height:78px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;
+  font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:29px;flex-shrink:0}
+:root[data-theme="dark"] .fdr-mk{background:var(--blue);color:var(--on-blue)}
+.fdr h3{font-size:26px}
+.fdr .role{font-size:12.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-4);margin:5px 0 18px}
+.fdr p{color:var(--ink-2);margin-bottom:15px}
+.fdr b{color:var(--ink);font-weight:600}
+.fdr-c{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
 
-/* ── FAQ ── */
-.faq{max-width:820px;margin:0 auto}
-details{background:var(--card);border:1px solid var(--line);border-radius:15px;margin-bottom:12px;overflow:hidden}
-details[open]{border-color:var(--line-hi)}
-summary{padding:20px 24px;cursor:pointer;font-weight:600;font-size:17px;list-style:none;
-  display:flex;justify-content:space-between;align-items:center;gap:16px}
+/* ═══════════ FAQ ═══════════ */
+.faq{max-width:820px;border-top:1px solid var(--rule)}
+details{border-bottom:1px solid var(--rule)}
+summary{padding:22px 0;cursor:pointer;font-weight:600;font-size:17.5px;list-style:none;
+  display:flex;justify-content:space-between;align-items:center;gap:20px}
 summary::-webkit-details-marker{display:none}
-summary::after{content:"+";font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;
-  color:var(--blue-bright);transition:transform .25s;flex-shrink:0}
-details[open] summary::after{transform:rotate(45deg)}
-details p{padding:0 24px 22px;color:var(--muted);font-size:16px}
+.chev{width:16px;height:16px;color:var(--ink-4);flex-shrink:0;transition:transform .22s ease}
+details[open] .chev{transform:rotate(180deg);color:var(--blue)}
+details p{padding:0 0 24px;color:var(--ink-2);font-size:16.5px;max-width:64ch}
 
-/* ── CTA ── */
-.final{text-align:center;max-width:720px;margin:0 auto}
-.final h2{font-size:clamp(32px,5.2vw,54px);margin-bottom:16px}
-.final .lead{color:var(--ink-soft);font-size:18.5px;margin-bottom:32px}
-.final .hero-cta{justify-content:center}
-.fine{font-size:14.5px;color:var(--muted);margin-top:18px}
+/* ═══════════ FINAŁ ═══════════ */
+.fin{background:var(--navy);border-radius:12px;padding:clamp(38px,5.6vw,68px);text-align:center}
+.fin h2{font-size:clamp(30px,4.6vw,48px);color:#fff;margin-bottom:16px;max-width:none}
+.fin p{color:rgba(255,255,255,.74);font-size:18px;max-width:52ch;margin:0 auto 32px}
+.fin-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.fin-note{margin-top:22px;font-size:15px;color:rgba(255,255,255,.56)}
+.fin-note a{color:#fff;font-weight:600;border-bottom:1px solid rgba(255,255,255,.35)}
 
-footer{padding:44px 0;border-top:1px solid var(--line);background:var(--bg-soft)}
+footer{padding:46px 0;border-top:1px solid var(--rule)}
 .foot{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;
-  font-size:14.5px;color:var(--muted)}
+  font-size:14.5px;color:var(--ink-3)}
 
-/* pasek mobilny */
-.dock{position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--nav-bg);backdrop-filter:blur(16px);
-  -webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:11px 16px;display:none;gap:10px}
-.dock .btn{flex:1;padding:13px 12px;font-size:15px}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--paper);
+  border-top:1px solid var(--rule);padding:10px 16px;display:none;gap:10px}
+.dock .btn{flex:1;height:48px;padding:0 14px}
 
-/* wejścia */
-.rv{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.3,1),transform .7s cubic-bezier(.2,.7,.3,1)}
+.rv{opacity:0;transform:translateY(18px);transition:opacity .62s cubic-bezier(.2,.7,.3,1),transform .62s cubic-bezier(.2,.7,.3,1)}
 .rv.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){
   .rv{opacity:1;transform:none;transition:none}
-  /* kratki startują z opacity:0 — bez tego byłyby tu niewidoczne */
-  .cell{opacity:1!important;transform:none!important;transition:none!important;transition-delay:0s!important}
+  .cl{opacity:1!important;transform:none!important;transition:none!important;transition-delay:0s!important}
   html{scroll-behavior:auto}
 }
-/* czytelny focus dla klawiatury */
-a:focus-visible,button:focus-visible,summary:focus-visible{
-  outline:2px solid var(--blue-bright);outline-offset:3px;border-radius:10px}
 
-@media(max-width:940px){
-  .auth{grid-template-columns:1fr}
-  .loop{grid-template-columns:repeat(2,1fr)}
-  .feats{grid-template-columns:repeat(2,1fr)}
+@media(max-width:920px){
+  .ed{grid-template-columns:1fr;gap:36px}
+  .grid3{grid-template-columns:1fr 1fr}
+  .lp{grid-template-columns:44px 1fr;gap:18px}
+  .lp-p{grid-column:2}
 }
 @media(max-width:680px){
-  body{font-size:16.5px}
-  section{padding:64px 0}
-  .sec-head{margin-bottom:34px}
-  .stats{grid-template-columns:1fr}
-  .loop,.feats{grid-template-columns:1fr}
-  .founder{grid-template-columns:1fr;text-align:center;justify-items:center}
-  .fmark{margin:0 auto}
-  .fcontact{justify-content:center}
-  .hero{padding-top:38px}
-  .hero .eyebrow{margin-bottom:18px}
-  .hero-lead{margin-bottom:26px}
-  .hero-cta .btn{flex:1;min-width:100%;padding:15px 20px}
-  .weekcard{margin-top:36px;border-radius:18px}
-  .wk-top{margin-bottom:18px}
-  .wk-top .btn{width:100%}
-  .grid168{grid-template-columns:repeat(12,1fr);gap:2.5px}
-  .wk-legend{gap:12px;font-size:13px;margin-top:16px}
-  .wk-foot{margin-top:18px;padding-top:16px;flex-direction:column-reverse;align-items:flex-start;gap:12px}
-  .wk-count b{font-size:38px}
-  .wk-count i{max-width:none}
+  .wrap{padding:0 20px}
+  section{padding:68px 0}
+  .hero{padding-top:34px}
+  .hero-cta{flex-direction:column;align-items:stretch}
+  .hero-cta .btn{width:100%}
+  .week{margin-top:38px}
+  .week-hd,.week-bd,.week-ft,.week-msg{padding-left:18px;padding-right:18px}
+  .week-hd{flex-direction:column;align-items:flex-start;gap:14px}
+  .week-hd .btn{width:100%}
+  .g168{grid-template-columns:repeat(12,1fr);gap:2.5px}
+  .week-ft{flex-direction:column-reverse;align-items:flex-start;gap:18px}
+  .grid3{grid-template-columns:1fr}
+  .map-r{grid-template-columns:1fr;gap:6px;padding:16px 0}
+  .map-r .arr{display:none}
+  .map-r .a{font-size:14.5px}
+  .fdr{grid-template-columns:1fr;gap:22px}
   .dock{display:flex}
-  footer{padding-bottom:88px}
-  .nav-actions .btn-full{display:none}
+  footer{padding-bottom:86px}
+  .nav-r .lbl-full{display:none}
+  .nav-r .lbl-sm{display:inline!important}
 }
 @media(max-width:380px){
-  .grid168{gap:2px}
-  .hero h1{font-size:29px}
-  .hero .h1-b{font-size:36px}
+  .g168{gap:2px}
+  .tally b{font-size:36px}
 }
 </style>
 </head>
@@ -266,265 +259,278 @@ a:focus-visible,button:focus-visible,summary:focus-visible{
 
 <nav class="nav">
   <div class="wrap nav-in">
-    <a class="brand" href="#top"><img src="/hoop.svg" alt="" /><b>HoopConnect</b></a>
-    <div class="nav-actions">
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Przełącz motyw">
-        <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-        <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <a class="brand" href="#top"><img src="/hoop.svg" alt="" />HoopConnect</a>
+    <div class="nav-r">
+      <button class="icobtn" id="themeBtn" type="button" aria-label="Przełącz motyw">
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 13.2A8.4 8.4 0 1 1 10.8 3.5a6.6 6.6 0 0 0 9.7 9.7z"/></svg>
       </button>
-      <a class="btn btn-primary btn-sm" href="#kontakt"><span class="btn-full">Zobacz panel demo</span><span class="btn-short">Demo</span></a>
+      <a class="btn btn-pri btn-sm" href="/demo"><span class="lbl-full">Zobacz panel demo</span><span class="lbl-sm" style="display:none">Demo</span></a>
     </div>
   </div>
 </nav>
 
-<!-- ══ HERO ══ -->
+<!-- ═══ HERO ═══ -->
 <header class="hero" id="top">
-  <div class="wrap hero-in">
-    <span class="eyebrow">Panel trenera + aplikacja zawodnika</span>
-    <h1>Masz go na sali <span class="grad">4,5 godziny</span> w tygodniu.</h1>
-    <span class="h1-b">Zawodnika buduje pozostałe <span class="n163">163</span>.</span>
-    <p class="hero-lead">Trening kończy się o 19:30. To, czy z tego dzieciaka coś będzie, rozstrzyga się między treningami — tam, gdzie dziś nie masz ani wglądu, ani wpływu. HoopConnect daje ci jedno i drugie.</p>
+  <div class="wrap">
+    <span class="hero-eyebrow">Panel trenera i aplikacja zawodnika</span>
+    <h1>Masz go na sali <em>cztery i pół godziny</em> w tygodniu.</h1>
+    <span class="payoff">Reszta to <u>163 godziny</u><br>bez ciebie.</span>
+    <p class="hero-lede">Trening kończy się o wpół do ósmej. To, czy z tego dzieciaka coś będzie, rozstrzyga się później — w godzinach, których nie widzisz i na które nie masz wpływu. HoopConnect daje ci jedno i drugie.</p>
     <div class="hero-cta">
-      <a class="btn btn-primary" href="/demo">Wejdź do panelu demo →</a>
-      <a class="btn btn-ghost" href="#petla">Zobacz, jak to działa</a>
+      <a class="btn btn-pri" href="/demo">Wejdź do panelu demo
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <a class="btn btn-sec" href="#petla">Zobacz, jak to działa</a>
     </div>
-    <div class="trust">⚡ <span><b>Bez konta i bez zapisów</b> — klikasz i jesteś w środku</span></div>
+    <p class="hero-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      Otwarte demo. Bez zakładania konta i bez zostawiania maila.
+    </p>
 
-    <!-- siatka 168 godzin -->
-    <div class="weekcard rv" id="weekcard">
-      <div class="wk-top">
-        <div class="wk-title">Tydzień zawodnika<span>168 godzin. Każdy kwadrat to jedna.</span></div>
-        <button class="btn btn-ghost btn-sm" id="wkBtn" type="button">Pokaż, co zmienia HoopConnect</button>
+    <div class="week rv" id="week">
+      <div class="week-hd">
+        <div>
+          <h3>Tydzień zawodnika</h3>
+          <p>168 godzin. Każdy kwadrat to jedna.</p>
+        </div>
+        <button class="btn btn-sec btn-sm" id="wkBtn" type="button" aria-pressed="false">Pokaż, co zmienia HoopConnect</button>
       </div>
-      <div class="grid168" id="grid168"></div>
-      <div class="wk-legend">
-        <span><i style="background:var(--blue)"></i>Trening z tobą</span>
-        <span><i style="background:var(--cell-mid)"></i>Praca własna, którą widzisz</span>
-        <span><i style="background:var(--cell-off)"></i>Poza twoim zasięgiem</span>
+      <div class="week-bd"><div class="g168" id="g168"></div></div>
+      <div class="week-ft">
+        <div class="legend">
+          <span><i style="background:var(--cell-1)"></i>Trening z tobą</span>
+          <span><i style="background:var(--cell-2)"></i>Praca własna, o której wiesz</span>
+          <span><i style="background:var(--cell-0)"></i>Poza twoim zasięgiem</span>
+        </div>
+        <div class="tally"><b id="wkNum">163</b><i id="wkCap">godziny poza twoim zasięgiem</i></div>
       </div>
-      <div class="wk-foot">
-        <div class="wk-msg" id="wkMsg"><b>Trzy treningi w tygodniu to 4,5 godziny.</b> Przez pozostałe 163 nie wiesz, czy ktokolwiek dotknął piłki.</div>
-        <div class="wk-count"><b id="wkNum">163</b><i id="wkCap">godziny poza twoim zasięgiem</i></div>
-      </div>
+      <p class="week-msg" id="wkMsg"><b>Trzy treningi w tygodniu to cztery i pół godziny.</b> Przez pozostałe 163 nie wiesz, czy ktokolwiek dotknął piłki.</p>
     </div>
   </div>
 </header>
 
-<!-- ══ KOSZT ══ -->
-<section class="soft">
+<!-- ═══ KOSZT ═══ -->
+<section class="tint" style="margin-top:96px">
   <div class="wrap">
-    <div class="sec-head rv">
-      <h2>Dowiadujesz się w marcu, kto pracował we wrześniu</h2>
-      <p>Różnica między zawodnikiem, który rzucał w wakacje, a tym, który nie rzucał, jest widoczna dopiero wtedy, gdy nie da się już nic nadrobić.</p>
-    </div>
-    <div class="stats">
-      <div class="stat rv"><div class="n">163</div><p>godziny tygodniowo, w których zawodnik jest poza twoim zasięgiem — i w których naprawdę się rozstrzyga, kim będzie za dwa lata.</p></div>
-      <div class="stat rv"><div class="n">1 z 3</div><p>tyle mniej więcej dzieciaków rzuca koszykówkę w wieku 13–15 lat. Rzadko dlatego, że brakuje talentu — częściej dlatego, że przestaje być ciekawie.</p></div>
-      <div class="stat rv"><div class="n">0</div><p>tyle informacji masz dziś o tym, co robi twoja drużyna między wtorkiem a czwartkiem. Zgadujesz albo pytasz i wierzysz na słowo.</p></div>
+    <span class="kicker rv">Co się dzieje bez tego</span>
+    <div class="ed">
+      <div class="ed-quote rv">Widzisz różnicę dopiero wtedy, kiedy nie da się już nic nadrobić.</div>
+      <div class="ed-body rv">
+        <p>Zawodnik, który przez miesiąc nie dotknął piłki poza treningiem, wraca inny. Poznajesz to po rzucie, po kondycji, po tym, jak szybko odpuszcza w kontakcie. <b>Tylko że wtedy okres przygotowawczy jest już za wami.</b></p>
+        <p>Przez te wszystkie tygodnie nie miałeś jak tego zauważyć. Nie dlatego, że nie chciałeś — po prostu nie ma jak. Pytasz na treningu „rzucaliście coś w domu?", wszyscy kiwają głowami i tyle wiesz.</p>
+        <p>A różnica między dzieciakiem, który pracował sam, a tym, który nie pracował, <b>rzadko bierze się z talentu</b>. Częściej z tego, czy ktoś dał mu powód i czy ktokolwiek to widział.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- ══ PĘTLA ══ -->
+<!-- ═══ PĘTLA ═══ -->
 <section id="petla">
   <div class="wrap">
-    <div class="sec-head rv">
-      <h2>Jedna pętla, cztery kroki</h2>
-      <p>Nie zmieniasz sposobu prowadzenia treningu. Dokładasz do niego tydzień, którego wcześniej nie było widać.</p>
-    </div>
+    <span class="kicker rv">Jak to działa</span>
+    <h2 class="h2 rv">Jedna pętla, cztery kroki</h2>
+    <p class="lede rv" style="margin-bottom:52px">Nie zmieniasz sposobu prowadzenia treningu. Dokładasz do niego tydzień, którego wcześniej nie było widać.</p>
     <div class="loop">
-      <div class="lstep rv"><span class="who">Ty</span><h3>Wrzucasz zadanie</h3><p>Trening, seria rzutów, praca nad słabszą ręką. Trzydzieści sekund w panelu, dla całej grupy albo dla jednego zawodnika.</p></div>
-      <div class="lstep rv"><span class="who">Zawodnik</span><h3>Dostaje je w telefonie</h3><p>Powiadomienie trafia prosto do niego. Nie ginie w grupowym czacie razem z ustaleniami rodziców.</p></div>
-      <div class="lstep rv"><span class="who">Zawodnik</span><h3>Robi je i odhacza</h3><p>Za wykonaną pracę dostaje XP i pnie się po arenach. To jest ten mechanizm, dzięki któremu wychodzi na boisko bez twojego przypominania.</p></div>
-      <div class="lstep rv"><span class="who">Ty</span><h3>Widzisz, kto pracuje</h3><p>Frekwencja, systematyczność i progres całej drużyny w jednym miejscu. W listopadzie, nie w marcu.</p></div>
+      <div class="lp rv"><span class="lp-n">01</span>
+        <div><span class="who">Ty</span><h3>Wrzucasz zadanie</h3></div>
+        <p class="lp-p">Seria rzutów, praca nad słabszą ręką, trening dodatkowy. Trzydzieści sekund w panelu — dla całej grupy albo dla jednego zawodnika.</p></div>
+      <div class="lp rv"><span class="lp-n">02</span>
+        <div><span class="who">Zawodnik</span><h3>Dostaje je w telefonie</h3></div>
+        <p class="lp-p">Powiadomienie trafia prosto do niego. Nie ginie w grupowym czacie między ustaleniami rodziców o dojazdach.</p></div>
+      <div class="lp rv"><span class="lp-n">03</span>
+        <div><span class="who">Zawodnik</span><h3>Robi je i odhacza</h3></div>
+        <p class="lp-p">Za wykonaną pracę dostaje punkty i pnie się po kolejnych poziomach. To jest ten mechanizm, dzięki któremu wychodzi na boisko bez twojego przypominania.</p></div>
+      <div class="lp rv"><span class="lp-n">04</span>
+        <div><span class="who">Ty</span><h3>Widzisz, kto pracuje</h3></div>
+        <p class="lp-p">Frekwencja, systematyczność i postęp całej drużyny w jednym miejscu. W listopadzie, a nie po sezonie.</p></div>
     </div>
   </div>
 </section>
 
-<!-- ══ ZASADA ══ -->
-<section class="soft">
+<!-- ═══ ZASADA ═══ -->
+<section class="tint">
   <div class="wrap">
     <div class="creed rv">
-      <div class="q">„Phone down, game up”</div>
-      <p>Wiem, jak to brzmi: kolejna aplikacja dla dzieciaków, które i tak siedzą w telefonach. Dlatego zbudowałem HoopConnect wokół jednej zasady, przez którą przepuszczam każdą funkcję: <b>czy to wyciąga zawodnika na boisko, czy przykuwa go do ekranu?</b></p>
-      <p style="margin-top:14px">Jeśli przykuwa — nie wchodzi. Ta aplikacja żyje na krawędzi boiska, jak kreda: kto następny, jaki wynik, co dziś robisz. Zawodnik otwiera ją na trzydzieści sekund, żeby wyjść i zagrać.</p>
+      <span class="kicker">Zasada, na której to stoi</span>
+      <div class="q">Telefon w dół,<br>gra w górę.</div>
+      <p>Wiem, jak to brzmi: kolejna aplikacja dla dzieciaków, które i tak nie odkładają telefonu. Dlatego każda funkcja przechodzi u mnie przez jedno pytanie — <b>czy to wyciąga zawodnika na boisko, czy przykuwa go do ekranu?</b></p>
+      <p>Jeśli przykuwa, nie powstaje. Ta aplikacja żyje na krawędzi boiska, jak kreda: kto następny, jaki wynik, co dziś robisz. Zawodnik otwiera ją na trzydzieści sekund, żeby wyjść i zagrać.</p>
     </div>
   </div>
 </section>
 
-<!-- ══ PZKOSZ ══ -->
+<!-- ═══ PZKOSZ ═══ -->
 <section>
   <div class="wrap">
-    <div class="sec-head rv">
-      <h2>To nie jest fanaberia. To kierunek, który wyznaczył związek</h2>
-      <p>Strategia Polskiego Związku Koszykówki na lata 2025–2028 opisuje narzędzia, których polska koszykówka potrzebuje. Zbudowałem dokładnie te punkty.</p>
+    <span class="kicker rv">Skąd wiem, że to potrzebne</span>
+    <h2 class="h2 rv">To nie jest mój pomysł na produkt. To kierunek, który wyznaczył związek</h2>
+    <p class="lede rv">Strategia Polskiego Związku Koszykówki na lata 2025–2028 opisuje narzędzia, których polska koszykówka potrzebuje. Zbudowałem dokładnie te punkty.</p>
+    <div class="map rv" style="margin-top:44px">
+      <div class="map-r"><span class="a">2.1.6 — gamifikacja, gry mobilne angażujące młodzież</span>
+        <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        <span class="b">Aplikacja zawodnika, punkty i poziomy</span></div>
+      <div class="map-r"><span class="a">2.2.6 — system mierzenia postępów i raporty</span>
+        <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        <span class="b">Frekwencja i postęp w panelu</span></div>
+      <div class="map-r"><span class="a">1.2 — wsparcie trenerów nowoczesnymi narzędziami</span>
+        <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        <span class="b">Panel trenera</span></div>
     </div>
-    <div class="auth">
-      <div class="auth-map rv">
-        <div class="amrow"><span class="l">2.1.6 — gamifikacja, gry mobilne angażujące młodzież</span><span class="ar">→</span><span class="r">Aplikacja zawodnika, XP i areny</span></div>
-        <div class="amrow"><span class="l">2.2.6 — system mierzenia postępów i raporty</span><span class="ar">→</span><span class="r">Frekwencja i progres w panelu</span></div>
-        <div class="amrow"><span class="l">1.2 — wsparcie trenerów nowoczesnymi narzędziami</span><span class="ar">→</span><span class="r">Panel trenera</span></div>
-      </div>
-      <div class="rv">
-        <p style="font-size:17.5px;color:var(--ink-soft);margin-bottom:18px">Ten dokument to w dużej mierze lista rzeczy, które <b>dopiero trzeba stworzyć</b>. Kiedy go czytałem, miałem już połowę z nich działającą.</p>
-        <p style="color:var(--muted)">Nie twierdzę, że jestem jedyny na świecie — narzędzia do zarządzania drużyną istnieją. Żadne z nich nie jest zbudowane pod polską młodzież, pod to, jak pracują tutejsze kluby, i pod to, żeby dzieciak sam chciał wyjść potrenować.</p>
-      </div>
-    </div>
+    <p class="rv" style="margin-top:34px;font-size:17px;color:var(--ink-3);max-width:64ch">Ten dokument to w dużej mierze lista rzeczy, które <b style="color:var(--ink-2);font-weight:600">dopiero trzeba stworzyć</b>. Nie twierdzę, że jestem jedyny na świecie — narzędzia do zarządzania drużyną istnieją. Żadne z nich nie jest robione pod polską młodzież ani pod to, żeby dzieciak sam chciał wyjść potrenować.</p>
   </div>
 </section>
 
-<!-- ══ PANEL ══ -->
-<section class="soft">
+<!-- ═══ PANEL ═══ -->
+<section class="tint">
   <div class="wrap">
-    <div class="sec-head rv">
-      <h2>Twoja strona ekranu</h2>
-      <p>Zawodnik widzi grę. Ty widzisz drużynę.</p>
-    </div>
+    <span class="kicker rv">Twoja strona ekranu</span>
+    <h2 class="h2 rv" style="margin-bottom:44px">Zawodnik widzi grę. Ty widzisz drużynę.</h2>
     <div class="shot rv"><img src="/oferta/panel.jpg" alt="Panel trenera HoopConnect — pulpit drużyny" loading="lazy" width="1024" height="625" /></div>
-    <div class="feats">
-      <div class="feat rv"><span class="ico">📋</span><h3>Frekwencja bez zeszytu</h3><p>Kto był, kogo nie było, kto znika od trzech tygodni. Widoczne, zanim rodzic zadzwoni.</p></div>
-      <div class="feat rv"><span class="ico">🎯</span><h3>Zadania indywidualne</h3><p>Inna praca dla rozgrywającego, inna dla podkoszowego. Wysyłasz w kilka sekund.</p></div>
-      <div class="feat rv"><span class="ico">📣</span><h3>Komunikaty do drużyny</h3><p>Zmiana godziny treningu dociera do wszystkich, nie tylko do tych, którzy akurat czytali czat.</p></div>
-      <div class="feat rv"><span class="ico">📈</span><h3>Progres zawodnika</h3><p>Systematyczność i rozwój w czasie — konkretna rzecz do pokazania rodzicowi na rozmowie.</p></div>
-      <div class="feat rv"><span class="ico">👥</span><h3>Wiele zespołów</h3><p>U-12, U-14, seniorzy — osobne roster, jedno logowanie.</p></div>
-      <div class="feat rv"><span class="ico">🗓️</span><h3>Harmonogram</h3><p>Treningi i mecze w kalendarzu, który zawodnik ma w telefonie.</p></div>
+    <div class="grid3">
+      <div class="ft rv"><div class="ft-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3.5h6a1 1 0 0 1 1 1v1H8v-1a1 1 0 0 1 1-1z"/><path d="M16 5.5h2a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1h2"/><path d="m9 12.5 2 2 4-4"/></svg></div>
+        <h3>Frekwencja bez zeszytu</h3><p>Kto był, kogo nie było, kto znika od trzech tygodni. Widoczne, zanim zadzwoni rodzic.</p></div>
+      <div class="ft rv"><div class="ft-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.1"/></svg></div>
+        <h3>Zadania indywidualne</h3><p>Inna praca dla rozgrywającego, inna dla podkoszowego. Wysyłasz w kilka sekund.</p></div>
+      <div class="ft rv"><div class="ft-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3l5 3.5v-12L7 9.5H4z"/><path d="M16.5 9a4.5 4.5 0 0 1 0 6"/><path d="M19.3 6.2a8.5 8.5 0 0 1 0 11.6"/></svg></div>
+        <h3>Komunikaty do drużyny</h3><p>Zmiana godziny treningu dociera do wszystkich, nie tylko do tych, którzy akurat czytali czat.</p></div>
+      <div class="ft rv"><div class="ft-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 19.5V4.5"/><path d="M4.5 19.5h15"/><path d="m7.5 15.5 3.5-4 3 2.5 5.5-6.5"/></svg></div>
+        <h3>Postęp zawodnika</h3><p>Systematyczność i rozwój w czasie — konkret do pokazania rodzicowi na rozmowie.</p></div>
+      <div class="ft rv"><div class="ft-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3.3"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"/><path d="M15.8 5.9a3.3 3.3 0 0 1 0 5.2"/><path d="M18.5 19.5a5.4 5.4 0 0 0-2.6-4.6"/></svg></div>
+        <h3>Wiele zespołów</h3><p>U-12, U-14, seniorzy — osobne rostery, jedno logowanie.</p></div>
+      <div class="ft rv"><div class="ft-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="1.8"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3"/></svg></div>
+        <h3>Harmonogram</h3><p>Treningi i mecze w kalendarzu, który zawodnik ma w telefonie.</p></div>
     </div>
   </div>
 </section>
 
-<!-- ══ ZAŁOŻYCIEL ══ -->
+<!-- ═══ ZAŁOŻYCIEL ═══ -->
 <section>
   <div class="wrap">
-    <div class="founder rv">
-      <div class="fmark">MK</div>
+    <div class="fdr rv">
+      <div class="fdr-mk">MK</div>
       <div>
         <h3>Mikołaj Kretowicz</h3>
         <div class="role">Założyciel HoopConnect</div>
-        <p>Buduję to sam i sam wdrażam. To znaczy, że nie trafisz na dział obsługi klienta — konfigurację twojej pierwszej grupy przeprowadzę z tobą osobiście, a jak coś nie zadziała, dzwonisz do mnie i odbieram.</p>
-        <p style="font-size:15.5px;color:var(--muted)">Szukam teraz <b style="color:var(--ink)">trzech klubów w Małopolsce</b>, z którymi dopracuję to do końca. Pierwszy miesiąc bez opłat — w zamian proszę o szczery feedback, także ten niewygodny.</p>
-        <p style="font-size:15.5px;color:var(--muted);margin-top:-6px">Teraz jest na to najlepszy moment w roku: <b style="color:var(--ink)">wchodzimy przed startem sezonu</b>, a nie w środku rozkręconych rozgrywek.</p>
-        <div class="fcontact">
-          <a href="tel:+48607118228">607 118 228</a>
-          <a href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a>
+        <p>Buduję to sam i sam wdrażam. To znaczy, że nie trafisz na dział obsługi klienta — konfigurację pierwszej grupy przeprowadzę z tobą osobiście, a jak coś nie zadziała, dzwonisz i odbieram.</p>
+        <p>Szukam teraz <b>trzech klubów w Małopolsce</b>, z którymi dopracuję to do końca. Pierwszy miesiąc bez opłat, w zamian proszę o szczery feedback — także ten niewygodny.</p>
+        <p>Teraz jest na to najlepszy moment w roku: <b>wchodzimy przed startem sezonu</b>, a nie w środku rozkręconych rozgrywek.</p>
+        <div class="fdr-c">
+          <a class="btn btn-sec btn-sm" href="tel:+48607118228">607 118 228</a>
+          <a class="btn btn-sec btn-sm" href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ══ FAQ ══ -->
-<section class="soft">
+<!-- ═══ FAQ ═══ -->
+<section class="tint">
   <div class="wrap">
-    <div class="sec-head rv" style="margin:0 auto 46px;text-align:center"><h2>Zanim zapytasz</h2></div>
+    <span class="kicker rv">Zanim zapytasz</span>
+    <h2 class="h2 rv" style="margin-bottom:44px">Pytania, które słyszę najczęściej</h2>
     <div class="faq">
-      <details class="rv"><summary>Czy to nie kolejny ekran dla dzieciaków?</summary><p>To jest pytanie, które sam sobie zadałem, zanim napisałem pierwszą linijkę. Każda funkcja przechodzi przez filtr „czy to wyciąga na boisko" — jeśli nie wyciąga, nie powstaje. Zawodnik wchodzi na chwilę, żeby zobaczyć, co ma zrobić, i wychodzi grać.</p></details>
-      <details class="rv"><summary>Ile to kosztuje?</summary><p>Pierwszy miesiąc pilotażu jest bezpłatny. Potem 10 zł miesięcznie za zawodnika, który faktycznie korzysta. Bez opłaty wdrożeniowej i bez umowy na rok.</p></details>
-      <details class="rv"><summary>Muszę wdrożyć cały klub?</summary><p>Nie. Zaczynasz od jednej grupy treningowej. Jeśli po miesiącu nie widzisz różnicy, kończymy i nic nie płacisz.</p></details>
-      <details class="rv"><summary>Ile czasu zajmuje wdrożenie?</summary><p>Konfigurację robimy razem w kwadrans. Zawodnicy dołączają, skanując kod QR na treningu — bez zakładania kont przez rodziców.</p></details>
-      <details class="rv"><summary>A dane dzieci i RODO?</summary><p>Zbieram minimum: imię, kategorię i aktywność treningową. Zgody rodziców pozostają po stronie klubu, tak jak przy każdej innej działalności. Umowa pilotażowa mieści się na jednej stronie.</p></details>
-      <details class="rv"><summary>Co, jeśli zawodnicy nie będą tego używać?</summary><p>To jest właśnie ryzyko, które biorę na siebie w pierwszym miesiącu. Jeśli po czterech tygodniach zainteresowanie padnie, to jest moja porażka i chcę o niej wiedzieć — dlatego szukam klubów gotowych powiedzieć mi wprost, co nie działa.</p></details>
+      <details class="rv"><summary>Czy to nie kolejny ekran dla dzieciaków?<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><p>To pytanie zadałem sobie, zanim napisałem pierwszą linijkę. Każda funkcja przechodzi przez filtr „czy to wyciąga na boisko" — jeśli nie wyciąga, nie powstaje. Zawodnik wchodzi na chwilę, żeby zobaczyć, co ma zrobić, i wychodzi grać.</p></details>
+      <details class="rv"><summary>Ile to kosztuje?<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><p>Pierwszy miesiąc pilotażu jest bezpłatny. Potem 10 zł miesięcznie za zawodnika, który faktycznie korzysta. Bez opłaty wdrożeniowej i bez umowy na rok.</p></details>
+      <details class="rv"><summary>Muszę wdrożyć cały klub?<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><p>Nie. Zaczynasz od jednej grupy treningowej. Jeśli po miesiącu nie widzisz różnicy, kończymy i nic nie płacisz.</p></details>
+      <details class="rv"><summary>Ile czasu zajmuje wdrożenie?<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><p>Konfigurację robimy razem w kwadrans. Zawodnicy dołączają, skanując kod QR na treningu — bez zakładania kont przez rodziców.</p></details>
+      <details class="rv"><summary>A dane dzieci i RODO?<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><p>Zbieram minimum: imię, kategorię i aktywność treningową. Zgody rodziców zostają po stronie klubu, tak jak przy każdej innej działalności. Umowa pilotażowa mieści się na jednej stronie. Dane każdej drużyny są odseparowane — trener widzi wyłącznie swoje zespoły.</p></details>
+      <details class="rv"><summary>Co, jeśli zawodnicy nie będą tego używać?<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><p>To jest ryzyko, które biorę na siebie w pierwszym miesiącu. Jeśli po czterech tygodniach zainteresowanie padnie, to jest moja porażka i chcę o niej wiedzieć — dlatego szukam klubów gotowych powiedzieć mi wprost, co nie działa.</p></details>
     </div>
   </div>
 </section>
 
-<!-- ══ CTA ══ -->
-<section id="kontakt">
-  <div class="wrap final">
-    <h2 class="rv">Zajrzyj do panelu, zanim ze mną porozmawiasz</h2>
-    <p class="lead rv">Tryb demo jest otwarty — czternastu zawodników, frekwencja, wykres aktywności. Bez zakładania konta, bez zostawiania maila. Klikasz i oceniasz sam.</p>
-    <div class="hero-cta rv">
-      <a class="btn btn-primary" href="/demo">Wejdź do panelu demo →</a>
-      <a class="btn btn-ghost" href="mailto:kontakt@hoopconnect.pl?subject=HoopConnect%20—%20pilota%C5%BC%20w%20klubie">Napisz do mnie</a>
+<!-- ═══ FINAŁ ═══ -->
+<section>
+  <div class="wrap">
+    <div class="fin rv">
+      <h2>Zajrzyj do panelu, zanim ze mną porozmawiasz</h2>
+      <p>Demo jest otwarte — czternastu zawodników, frekwencja, harmonogram, wykres aktywności. Bez konta, bez maila. Klikasz i oceniasz sam.</p>
+      <div class="fin-cta">
+        <a class="btn btn-lt" href="/demo">Wejdź do panelu demo
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn-ol" href="mailto:kontakt@hoopconnect.pl?subject=HoopConnect%20—%20pilota%C5%BC%20w%20klubie">Napisz do mnie</a>
+      </div>
+      <p class="fin-note">Albo po prostu zadzwoń: <a href="tel:+48607118228">607 118 228</a></p>
     </div>
-    <div class="fine rv">Albo po prostu zadzwoń: <a href="tel:+48607118228" style="color:var(--blue-bright);font-weight:600">607 118 228</a></div>
   </div>
 </section>
 
 <footer>
   <div class="wrap foot">
-    <a class="brand" href="#top" style="font-size:18px"><img src="/hoop.svg" alt="" style="width:24px;height:24px" /><b>HoopConnect</b></a>
+    <a class="brand" href="#top" style="font-size:18px"><img src="/hoop.svg" alt="" style="width:23px;height:23px" />HoopConnect</a>
     <span>Mikołaj Kretowicz · kontakt@hoopconnect.pl · 607 118 228</span>
   </div>
 </footer>
 
 <div class="dock">
-  <a class="btn btn-primary" href="/demo">Panel demo</a>
-  <a class="btn btn-ghost" href="tel:+48607118228">Zadzwoń</a>
+  <a class="btn btn-pri" href="/demo">Panel demo</a>
+  <a class="btn btn-sec" href="tel:+48607118228">Zadzwoń</a>
 </div>
 
 <script>
 (function(){
-  // motyw
-  var t=document.getElementById('themeToggle');
-  t&&t.addEventListener('click',function(){
+  var REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  var tb=document.getElementById('themeBtn');
+  tb&&tb.addEventListener('click',function(){
     var n=document.documentElement.dataset.theme==='dark'?'light':'dark';
     document.documentElement.dataset.theme=n;
     try{localStorage.setItem('hc-theme',n);}catch(e){}
   });
 
-  // siatka 168 godzin — 3 treningi po 1,5h (zaokrąglone do pełnych godzin)
-  // 3 treningi x 1,5h = 4,5h -> 5 pelnych kratek. 168 - 5 = 163, liczba z naglowka.
-  var TREN=[/* wt */ 24+18, 24+19, /* czw */ 72+18, 72+19, /* sob */ 120+10];
-  var EXTRA=[/* pn */ 17, /* śr */ 48+17, 48+20, /* pt */ 96+18, /* nd */ 144+11, 144+16, 24+21, 72+20];
-  var REDUCE=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-  var g=document.getElementById('grid168');
+  // 3 treningi x 1,5h = 4,5h -> 5 pełnych kratek. 168 - 5 = 163.
+  var TREN=[24+18,24+19,72+18,72+19,120+10];
+  var EXTRA=[17,48+17,48+20,96+18,144+11,144+16,24+21,72+20];
+  var g=document.getElementById('g168');
   if(g){
     var f=document.createDocumentFragment();
     for(var i=0;i<168;i++){
       var d=document.createElement('div');
-      d.className='cell'+(TREN.indexOf(i)>-1?' train':(EXTRA.indexOf(i)>-1?' extra':''));
-      // kaskada: kratki zapalają się rzędami, trening na końcu (żeby rzucał się w oczy)
-      if(!REDUCE)d.style.transitionDelay=(Math.floor(i/24)*46+(i%24)*7)+'ms';
+      d.className='cl'+(TREN.indexOf(i)>-1?' t':(EXTRA.indexOf(i)>-1?' x':''));
+      if(!REDUCE)d.style.transitionDelay=(Math.floor(i/24)*44+(i%24)*6)+'ms';
       f.appendChild(d);
     }
     g.appendChild(f);
     if('IntersectionObserver' in window && !REDUCE){
       var gio=new IntersectionObserver(function(es){
         es.forEach(function(e){if(e.isIntersecting){g.classList.add('lit');gio.disconnect();}});
-      },{threshold:.18});
+      },{threshold:.16});
       gio.observe(g);
     } else { g.classList.add('lit'); }
   }
 
-  // licznik godzin — animowane przeliczanie przy przełączeniu
   function countTo(el,from,to,ms){
     if(REDUCE||!el){el&&(el.textContent=to);return;}
     var t0=performance.now();
     (function step(now){
-      var p=Math.min(1,(now-t0)/ms);
-      var e=1-Math.pow(1-p,3);                    // ease-out
+      var p=Math.min(1,(now-t0)/ms), e=1-Math.pow(1-p,3);
       el.textContent=Math.round(from+(to-from)*e);
       if(p<1)requestAnimationFrame(step);
     })(t0);
   }
 
-  var btn=document.getElementById('wkBtn'),card=document.getElementById('weekcard'),
-      msg=document.getElementById('wkMsg'),num=document.getElementById('wkNum'),
-      cap=document.getElementById('wkCap'),on=false;
+  var btn=document.getElementById('wkBtn'), card=document.getElementById('week'),
+      msg=document.getElementById('wkMsg'), num=document.getElementById('wkNum'),
+      cap=document.getElementById('wkCap'), on=false;
   btn&&btn.addEventListener('click',function(){
     on=!on;
     card.classList.toggle('on',on);
     btn.textContent=on?'Wróć do stanu obecnego':'Pokaż, co zmienia HoopConnect';
     btn.setAttribute('aria-pressed',on?'true':'false');
     msg.innerHTML=on
-      ? '<b>Te same trzy treningi — plus osiem godzin pracy własnej, o której wiesz.</b> Nie dlatego, że kazałeś. Dlatego, że zawodnik ma cel, który widzi.'
-      : '<b>Trzy treningi w tygodniu to 4,5 godziny.</b> Przez pozostałe 163 nie wiesz, czy ktokolwiek dotknął piłki.';
+      ? '<b>Te same trzy treningi, plus osiem godzin pracy własnej, o której wiesz.</b> Nie dlatego, że kazałeś — dlatego, że zawodnik ma powód, który widzi.'
+      : '<b>Trzy treningi w tygodniu to cztery i pół godziny.</b> Przez pozostałe 163 nie wiesz, czy ktokolwiek dotknął piłki.';
     countTo(num,on?163:155,on?155:163,520);
     if(cap)cap.textContent=on?'godzin poza zasięgiem — o osiem mniej':'godziny poza twoim zasięgiem';
   });
 
-  // wejścia przy scrollu
   var rv=document.querySelectorAll('.rv');
   if('IntersectionObserver' in window){
     var io=new IntersectionObserver(function(es){
-      es.forEach(function(e){
-        if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}
-      });
-    },{rootMargin:'0px 0px -8% 0px',threshold:.08});
-    rv.forEach(function(el,i){el.style.transitionDelay=(Math.min(i%4,3)*70)+'ms';io.observe(el);});
-  } else {
-    rv.forEach(function(el){el.classList.add('in');});
-  }
+      es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+    },{rootMargin:'0px 0px -6% 0px',threshold:.06});
+    rv.forEach(function(el,i){if(!REDUCE)el.style.transitionDelay=(Math.min(i%3,2)*60)+'ms';io.observe(el);});
+  } else { rv.forEach(function(el){el.classList.add('in');}); }
 })();
 </script>
 </body>
