@@ -16,10 +16,10 @@
   --ink:#101A26; --ink-2:#3A4A5C; --ink-3:#697C91; --ink-4:#94A4B6;
   --paper:#FFFFFF; --paper-2:#F7F9FC; --paper-3:#EFF3F8;
   --rule:#E2E9F1; --rule-2:#CBD7E4;
-  --blue:#1F6FC4; --blue-ink:#12508F;
-  --navy:#152B45;
-  --sel:#1F6FC4;
-  --cell-0:#E4EAF1; --cell-1:#1F6FC4; --cell-2:#9CC2E8;
+  --blue:#2272C3; --blue-ink:#0D4A8A; --blue-soft:#5BB8F5;
+  --navy:#0D2947;
+  --sel:#2272C3;
+  --cell-0:#E3EAF2; --cell-1:#2272C3; --cell-2:#5BB8F5;
   --shadow:0 1px 1px rgba(16,26,38,.04),0 8px 24px -14px rgba(16,26,38,.20);
   --shadow-up:0 24px 64px -32px rgba(16,26,38,.34);
   --on-blue:#fff;
@@ -28,10 +28,10 @@
   --ink:#EDF3FA; --ink-2:#B6C6D8; --ink-3:#8296AC; --ink-4:#5E7288;
   --paper:#0F1723; --paper-2:#0A111B; --paper-3:#16202E;
   --rule:#1F2C3D; --rule-2:#2C3D53;
-  --blue:#54A0EA; --blue-ink:#8CC0F4;
+  --blue:#5BB8F5; --blue-ink:#7ECBFF; --blue-soft:#7ECBFF;
   --navy:#0A111B;
-  --sel:#54A0EA;
-  --cell-0:#1C2939; --cell-1:#54A0EA; --cell-2:#2E5678;
+  --sel:#5BB8F5;
+  --cell-0:#1B2836; --cell-1:#5BB8F5; --cell-2:#2E90D4;
   --shadow:0 1px 1px rgba(0,0,0,.5),0 8px 24px -14px rgba(0,0,0,.8);
   --shadow-up:0 24px 64px -32px rgba(0,0,0,.9);
   --on-blue:#06121F;
@@ -53,8 +53,8 @@ svg{display:block}
   font-family:'Barlow',sans-serif;font-weight:600;font-size:16px;
   cursor:pointer;white-space:nowrap;transition:background .16s ease,border-color .16s ease,color .16s ease}
 .btn svg{width:17px;height:17px;flex-shrink:0}
-.btn-pri{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.btn-pri:hover{background:var(--blue-ink);border-color:var(--blue-ink);color:#fff}
+.btn-pri{background:var(--blue-ink);color:#fff;border-color:var(--blue-ink)}
+.btn-pri:hover{background:var(--blue);border-color:var(--blue);color:#fff}
 :root[data-theme="dark"] .btn-pri{background:var(--blue);color:var(--on-blue);border-color:var(--blue)}
 :root[data-theme="dark"] .btn-pri:hover{background:var(--blue-ink);border-color:var(--blue-ink);color:var(--on-blue)}
 .btn-sec{background:transparent;border-color:var(--rule-2);color:var(--ink)}
@@ -69,9 +69,11 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var
 /* ═══════════ NAWIGACJA ═══════════ */
 .nav{position:sticky;top:0;z-index:60;background:var(--paper);border-bottom:1px solid var(--rule)}
 .nav-in{display:flex;align-items:center;justify-content:space-between;height:66px}
-.brand{display:flex;align-items:center;gap:10px;font-family:'Barlow Condensed',sans-serif;
-  font-weight:800;font-size:21px}
-.brand img{width:27px;height:27px}
+.brand{display:inline-flex;align-items:center;gap:9px;font-family:'Barlow Condensed',sans-serif;
+  font-weight:800;font-size:23px;letter-spacing:-.012em;line-height:1;color:var(--ink)}
+.brand img{width:30px;height:30px;flex-shrink:0;transform:translateY(-.5px)}
+.brand .wm{display:inline-block;transform:translateY(.5px)}
+.brand .wm i{font-style:normal;color:var(--blue)}
 .nav-r{display:flex;align-items:center;gap:10px}
 .icobtn{width:42px;height:42px;border-radius:8px;border:1px solid var(--rule);background:transparent;
   color:var(--ink-2);cursor:pointer;display:grid;place-items:center;transition:.16s}
@@ -84,15 +86,15 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var
 section{padding:104px 0}
 .tint{background:var(--paper-2);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
 .kicker{display:block;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--ink-4);margin-bottom:18px}
+  color:var(--blue);margin-bottom:18px}
 .h2{font-size:clamp(29px,4.1vw,44px);max-width:19ch}
 .lede{color:var(--ink-2);font-size:19px;max-width:56ch;margin-top:16px}
 
 /* ═══════════ HERO ═══════════ */
 .hero{padding:clamp(48px,7vw,88px) 0 0}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12px;font-weight:700;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:26px}
-.hero-eyebrow::before{content:"";width:26px;height:1px;background:var(--rule-2)}
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);margin-bottom:26px}
+.hero-eyebrow::before{content:"";width:26px;height:2px;background:var(--blue);border-radius:2px}
 .hero h1{font-size:clamp(30px,4.6vw,52px);font-weight:700;color:var(--ink-2);letter-spacing:-.01em}
 .hero h1 em{font-style:normal;color:var(--ink);font-weight:800}
 .hero .payoff{display:block;font-family:'Barlow Condensed',sans-serif;font-weight:900;
@@ -124,7 +126,7 @@ section{padding:104px 0}
 .legend i{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 .tally{display:flex;align-items:baseline;gap:11px;flex-shrink:0}
 .tally b{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:42px;line-height:1;
-  color:var(--ink);letter-spacing:-.03em}
+  color:var(--blue);letter-spacing:-.03em}
 .tally i{font-style:normal;font-size:14px;color:var(--ink-3);max-width:112px;line-height:1.3}
 .week-msg{padding:20px 28px;font-size:15.5px;color:var(--ink-2);border-top:1px solid var(--rule)}
 .week-msg b{color:var(--ink);font-weight:600}
@@ -141,7 +143,7 @@ section{padding:104px 0}
 .loop{border-top:1px solid var(--rule)}
 .lp{display:grid;grid-template-columns:64px 1fr 1fr;gap:32px;align-items:baseline;
   padding:30px 0;border-bottom:1px solid var(--rule)}
-.lp-n{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:19px;color:var(--ink-4);letter-spacing:.04em}
+.lp-n{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:19px;color:var(--blue);letter-spacing:.04em}
 .lp h3{font-size:23px}
 .lp .who{display:block;font-family:'Barlow',sans-serif;font-weight:600;font-size:12px;
   letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:7px}
@@ -174,6 +176,21 @@ section{padding:104px 0}
 
 .shot{border:1px solid var(--rule);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:32px}
 .shot img{width:100%;height:auto;display:block}
+
+/* ═══════════ WARUNKI ═══════════ */
+.price{display:grid;grid-template-columns:1.15fr 1fr;gap:56px;align-items:center}
+.price-big{font-family:'Barlow Condensed',sans-serif;font-weight:900;
+  font-size:clamp(40px,6vw,68px);line-height:.98;letter-spacing:-.025em;color:var(--ink)}
+.price-big em{font-style:normal;color:var(--blue)}
+.price-sub{color:var(--ink-2);font-size:18px;margin-top:14px;max-width:40ch}
+.price-eg{margin-top:22px;padding:16px 20px;border-left:3px solid var(--blue);background:var(--paper);
+  border-radius:0 8px 8px 0;font-size:16px;color:var(--ink-2)}
+.price-eg b{color:var(--ink);font-weight:600}
+.terms{border-top:1px solid var(--rule)}
+.term{display:flex;gap:14px;align-items:flex-start;padding:18px 0;border-bottom:1px solid var(--rule)}
+.term svg{width:19px;height:19px;color:var(--blue);flex-shrink:0;margin-top:3px}
+.term b{display:block;font-weight:600;font-size:16.5px}
+.term span{font-size:15px;color:var(--ink-3)}
 
 /* ═══════════ ZAŁOŻYCIEL ═══════════ */
 .fdr{display:grid;grid-template-columns:auto 1fr;gap:34px;align-items:start;max-width:840px}
@@ -223,6 +240,7 @@ footer{padding:46px 0;border-top:1px solid var(--rule)}
 
 @media(max-width:920px){
   .ed{grid-template-columns:1fr;gap:36px}
+  .price{grid-template-columns:1fr;gap:34px}
   .grid3{grid-template-columns:1fr 1fr}
   .lp{grid-template-columns:44px 1fr;gap:18px}
   .lp-p{grid-column:2}
@@ -259,7 +277,7 @@ footer{padding:46px 0;border-top:1px solid var(--rule)}
 
 <nav class="nav">
   <div class="wrap nav-in">
-    <a class="brand" href="#top"><img src="/hoop.svg" alt="" />HoopConnect</a>
+    <a class="brand" href="#top"><img src="/hoop.svg" alt="" /><span class="wm">Hoop<i>Connect</i></span></a>
     <div class="nav-r">
       <button class="icobtn" id="themeBtn" type="button" aria-label="Przełącz motyw">
         <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
@@ -344,6 +362,10 @@ footer{padding:46px 0;border-top:1px solid var(--rule)}
         <div><span class="who">Ty</span><h3>Widzisz, kto pracuje</h3></div>
         <p class="lp-p">Frekwencja, systematyczność i postęp całej drużyny w jednym miejscu. W listopadzie, a nie po sezonie.</p></div>
     </div>
+    <p class="rv" style="margin-top:44px;font-size:20px;color:var(--ink);max-width:60ch;font-weight:500">
+      Po miesiącu wiesz, którzy zawodnicy pracują sami. <b style="font-weight:700">A oni wiedzą, że ty to widzisz</b> — i to zmienia więcej niż jakakolwiek pogadanka w szatni.</p>
+    <p class="rv" style="margin-top:16px;font-size:16px;color:var(--ink-3);max-width:60ch">
+      Po twojej stronie to około pół minuty tygodniowo. Zadanie wrzucasz raz dla całej grupy.</p>
   </div>
 </section>
 
@@ -403,8 +425,32 @@ footer{padding:46px 0;border-top:1px solid var(--rule)}
   </div>
 </section>
 
-<!-- ═══ ZAŁOŻYCIEL ═══ -->
+<!-- ═══ WARUNKI ═══ -->
 <section>
+  <div class="wrap">
+    <span class="kicker rv">Ile to kosztuje</span>
+    <div class="price">
+      <div class="rv">
+        <div class="price-big"><em>10 zł</em> miesięcznie<br>za zawodnika.</div>
+        <p class="price-sub">Płacisz za tych, którzy faktycznie korzystają. Nie za tych, którzy założyli konto we wrześniu i zniknęli.</p>
+        <div class="price-eg">Grupa czternastu zawodników to <b>140 zł miesięcznie</b> — mniej niż jeden komplet strojów raz na sezon.</div>
+      </div>
+      <div class="terms rv">
+        <div class="term"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <div><b>Pierwszy miesiąc bez opłat</b><span>Pełny pilotaż. Jeśli nie widzisz różnicy, kończymy i nie płacisz nic.</span></div></div>
+        <div class="term"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <div><b>Bez opłaty wdrożeniowej</b><span>Konfigurację robimy razem w kwadrans i nie ma za to faktury.</span></div></div>
+        <div class="term"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <div><b>Bez umowy na rok</b><span>Rezygnujesz z miesiąca na miesiąc, bez okresu wypowiedzenia.</span></div></div>
+        <div class="term"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <div><b>Zaczynasz od jednej grupy</b><span>Nie musisz przekonywać całego zarządu klubu, żeby spróbować.</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ZAŁOŻYCIEL ═══ -->
+<section class="tint">
   <div class="wrap">
     <div class="fdr rv">
       <div class="fdr-mk">MK</div>
@@ -424,7 +470,7 @@ footer{padding:46px 0;border-top:1px solid var(--rule)}
 </section>
 
 <!-- ═══ FAQ ═══ -->
-<section class="tint">
+<section>
   <div class="wrap">
     <span class="kicker rv">Zanim zapytasz</span>
     <h2 class="h2 rv" style="margin-bottom:44px">Pytania, które słyszę najczęściej</h2>
@@ -450,14 +496,14 @@ footer{padding:46px 0;border-top:1px solid var(--rule)}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         <a class="btn btn-ol" href="mailto:kontakt@hoopconnect.pl?subject=HoopConnect%20—%20pilota%C5%BC%20w%20klubie">Napisz do mnie</a>
       </div>
-      <p class="fin-note">Albo po prostu zadzwoń: <a href="tel:+48607118228">607 118 228</a></p>
+      <p class="fin-note">Pierwszy miesiąc bez opłat, bez umowy i bez wdrożeniowego.<br>Albo po prostu zadzwoń: <a href="tel:+48607118228">607 118 228</a></p>
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap foot">
-    <a class="brand" href="#top" style="font-size:18px"><img src="/hoop.svg" alt="" style="width:23px;height:23px" />HoopConnect</a>
+    <a class="brand" href="#top" style="font-size:20px"><img src="/hoop.svg" alt="" style="width:26px;height:26px" /><span class="wm">Hoop<i>Connect</i></span></a>
     <span>Mikołaj Kretowicz · kontakt@hoopconnect.pl · 607 118 228</span>
   </div>
 </footer>
