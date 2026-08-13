@@ -106,29 +106,36 @@ export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frame
   useEffect(() => {
     const card = cardRef.current
     if (!card) return
-    let rx = -8, ry = -14, tx = -8, ty = -14
+    // Rest at a slight tilt; only run the rAF loop while dragging (+ a short ease
+    // back to rest). Previously it ran a perpetual 60fps sway even when idle,
+    // repainting the screen-blended holo/spec every frame — the "card feels
+    // hot/slow" cost. At rest now: zero repaint.
+    const REST_X = -8, REST_Y = -14
+    let rx = REST_X, ry = REST_Y, tx = REST_X, ty = REST_Y
     let dragging = false, sx = 0, sy = 0, brx = 0, bry = 0
-    let t0 = performance.now(), raf = 0
+    let raf = 0, running = false
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
-    const loop = (now) => {
-      if (!dragging) {
-        const s = (now - t0) / 1000
-        tx = -8 + Math.sin(s * 0.6) * 4
-        ty = -14 + Math.sin(s * 0.45) * 7
-      }
-      rx += (tx - rx) * 0.12
-      ry += (ty - ry) * 0.12
+    const apply = () => {
       card.style.setProperty('--rx', rx.toFixed(2))
       card.style.setProperty('--ry', ry.toFixed(2))
+    }
+    const loop = () => {
+      rx += (tx - rx) * 0.15
+      ry += (ty - ry) * 0.15
+      apply()
+      if (!dragging && Math.abs(tx - rx) < 0.05 && Math.abs(ty - ry) < 0.05) {
+        rx = tx; ry = ty; apply(); running = false; return   // settled → stop
+      }
       raf = requestAnimationFrame(loop)
     }
-    raf = requestAnimationFrame(loop)
-    const down = (e) => { dragging = true; sx = e.clientX; sy = e.clientY; brx = rx; bry = ry; try { card.setPointerCapture(e.pointerId) } catch (_) {} }
-    const move = (e) => { if (!dragging) return; ty = clamp(bry + (e.clientX - sx) * 0.38, -46, 46); tx = clamp(brx - (e.clientY - sy) * 0.34, -34, 34) }
-    const up = () => { if (dragging) { dragging = false; t0 = performance.now() } }
+    const kick = () => { if (!running) { running = true; raf = requestAnimationFrame(loop) } }
+    const down = (e) => { dragging = true; sx = e.clientX; sy = e.clientY; brx = rx; bry = ry; try { card.setPointerCapture(e.pointerId) } catch (_) {}; kick() }
+    const move = (e) => { if (!dragging) return; ty = clamp(bry + (e.clientX - sx) * 0.38, -46, 46); tx = clamp(brx - (e.clientY - sy) * 0.34, -34, 34); kick() }
+    const up = () => { if (!dragging) return; dragging = false; tx = REST_X; ty = REST_Y; kick() }
     card.addEventListener('pointerdown', down)
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
+    apply()
     return () => { cancelAnimationFrame(raf); card.removeEventListener('pointerdown', down); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
   }, [])
 
