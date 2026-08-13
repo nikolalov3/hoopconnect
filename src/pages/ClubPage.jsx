@@ -58,7 +58,7 @@ const SPOT = {
 }
 
 // Concave-corner path for 343×410, r=24
-const COURT_PATH = 'M24,0 L319,0 Q319,24 343,24 L343,386 Q319,386 319,410 L24,410 Q24,386 0,386 L0,24 Q24,24 24,0 Z'
+const COURT_PATH = 'M22,0 L321,0 Q343,0 343,22 L343,388 Q343,410 321,410 L22,410 Q0,410 0,388 L0,22 Q0,0 22,0 Z'
 
 // ── MATCH CONSTANTS ───────────────────────────────────────────────────────────
 const MODE_SLOTS = { '2v2': 2, '3v3': 3, '5v5': 5 }
@@ -4250,7 +4250,7 @@ function MiniCourt({ club }) {
         </defs>
       </svg>
       <div style={{ position: 'relative', width: '100%', aspectRatio: '343 / 410' }}>
-        <div style={{ position: 'absolute', inset: 0, clipPath: 'url(#courtClipPreview)', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, borderRadius: 22, overflow: 'hidden' }}>
           <Court/>
           {POSITIONS.map(posKey => (
             <div key={posKey} style={{
@@ -4373,7 +4373,7 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
           {/* Clipped court card — fills wrapper */}
           <div style={{
             position: 'absolute', inset: 0,
-            clipPath: 'url(#courtClip)',
+            borderRadius: 22,
             overflow: 'hidden',
           }}>
             <Court/>
@@ -4425,11 +4425,6 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
             <path d={COURT_PATH} fill="none" stroke="rgba(0,220,255,0.50)" strokeWidth="1.4" filter="url(#softG)"/>
             {/* Top accent stripe */}
             <line x1="24" y1="0.8" x2="319" y2="0.8" stroke="url(#topStripe)" strokeWidth="2"/>
-            {/* Corner tick marks */}
-            <line x1="5"   y1="5"   x2="17"  y2="17"  stroke="rgba(0,240,255,0.25)" strokeWidth="1.2" strokeLinecap="round"/>
-            <line x1="338" y1="5"   x2="326" y2="17"  stroke="rgba(0,240,255,0.25)" strokeWidth="1.2" strokeLinecap="round"/>
-            <line x1="5"   y1="405" x2="17"  y2="393" stroke="rgba(0,240,255,0.25)" strokeWidth="1.2" strokeLinecap="round"/>
-            <line x1="338" y1="405" x2="326" y2="393" stroke="rgba(0,240,255,0.25)" strokeWidth="1.2" strokeLinecap="round"/>
           </svg>
 
           {/* Swap FAB — percentage-positioned so it scales with the court */}
