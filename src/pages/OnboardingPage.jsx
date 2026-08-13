@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { getCountryOptions } from '../lib/countries'
 
 const DAYS_COLORS = ['#00E676', '#7ECBFF', '#5BB8F5', '#FF3D3D']
 
@@ -200,7 +201,7 @@ function WelcomeScreen({ userName, onComplete }) {
 }
 
 export default function OnboardingPage() {
-  const { t } = useTranslation('onboarding')
+  const { t, i18n } = useTranslation('onboarding')
   const { user, setProfileData } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
@@ -278,7 +279,7 @@ export default function OnboardingPage() {
     value: i + 3, label: opt.label, sub: opt.sub, color: DAYS_COLORS[i],
   }))
   const months = t('step1.months', { returnObjects: true })
-  const countries = t('step3.countries', { returnObjects: true })
+  const countries = useMemo(() => getCountryOptions(i18n.language), [i18n.language])
 
   return (
     <div style={{
@@ -386,7 +387,7 @@ export default function OnboardingPage() {
               {[
                 { label: t('step1.day'),   value: birthDay,   set: setBirthDay,   options: Array.from({ length: 31 }, (_, i) => ({ val: i+1, label: String(i+1) })) },
                 { label: t('step1.month'), value: birthMonth, set: setBirthMonth, options: months.map((m,i) => ({ val: i+1, label: m })) },
-                { label: t('step1.year'),  value: birthYear,  set: setBirthYear,  options: Array.from({ length: 21 }, (_, i) => ({ val: currentYear-10-i, label: String(currentYear-10-i) })) },
+                { label: t('step1.year'),  value: birthYear,  set: setBirthYear,  options: Array.from({ length: 58 }, (_, i) => ({ val: currentYear-10-i, label: String(currentYear-10-i) })) },
               ].map(({ label, value, set, options }) => (
                 <div key={label}>
                   <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>{label}</p>
@@ -473,7 +474,9 @@ export default function OnboardingPage() {
                 }}
               >
                 {countries.map(c => (
-                  <option key={c.code} value={c.code}>{c.name}</option>
+                  c.separator
+                    ? <option key="sep" disabled>{c.name}</option>
+                    : <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
                 ))}
               </select>
             </div>
