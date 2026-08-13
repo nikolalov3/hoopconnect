@@ -1428,7 +1428,7 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
     return (
       <Sheet onClose={onClose}>
         <div style={{
-          position: 'relative', minHeight: 640,
+          position: 'relative', minHeight: 600, padding: '58px 0 16px',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           background: 'radial-gradient(130% 80% at 50% 22%, rgba(46,144,212,0.10), transparent 62%)',
         }}>
