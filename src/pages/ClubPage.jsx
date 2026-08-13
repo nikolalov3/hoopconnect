@@ -4354,7 +4354,7 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
       </AnimatePresence>
 
       {/* Court card */}
-      <div style={{ padding: '16px 22px 0', position: 'relative' }}>
+      <div style={{ padding: '16px 22px 0', position: 'relative', maxWidth: 320, margin: '0 auto', width: '100%' }}>
 
         {/* Responsive clip-path defs — objectBoundingBox scales with the element */}
         <svg width="0" height="0" aria-hidden="true"
