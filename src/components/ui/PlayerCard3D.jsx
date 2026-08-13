@@ -11,13 +11,14 @@ import HexAvatar from './HexAvatar'
 import { ARENAS, arenaProgress } from '../../lib/arenas'
 
 const CSS = `
-.pc3d-stage { perspective: 1300px; perspective-origin: 50% 45%; position: relative;
+.pc3d-stage { position: relative;
   display: flex; align-items: center; justify-content: center; padding: 18px 0 8px; }
 .pc3d-floor { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%);
   width: 252px; height: 44px; border-radius: 50%; z-index: -1;
   background: radial-gradient(ellipse at center, rgba(0,0,0,.6), rgba(0,0,0,0) 70%); filter: blur(9px); }
 .pc3d-card { --rx: -8; --ry: -14; position: relative; width: 300px; height: 452px;
-  transform-style: preserve-3d; transform: rotateX(calc(var(--rx)*1deg)) rotateY(calc(var(--ry)*1deg));
+  transform-style: preserve-3d;
+  transform: perspective(1150px) rotateX(calc(var(--rx)*1deg)) rotateY(calc(var(--ry)*1deg));
   cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .pc3d-card:active { cursor: grabbing; }
 .pc3d-sil { clip-path: path('M22,0 L278,0 Q300,0 300,22 L300,400 Q300,414 286,414 L210,414 Q196,414 192,428 L182,440 Q178,452 164,452 L22,452 Q0,452 0,430 L0,22 Q0,0 22,0 Z'); }
@@ -36,8 +37,6 @@ const CSS = `
 .pc3d-spec { position: absolute; inset: 0; pointer-events: none; z-index: 5; mix-blend-mode: screen;
   background: radial-gradient(120% 80% at calc(50% + var(--ry)*1.5%) calc(38% - var(--rx)*1.4%),
     rgba(255,255,255,.42), rgba(255,255,255,.05) 40%, transparent 60%); }
-.pc3d-grid { position: absolute; inset: 0; pointer-events: none; z-index: 3; opacity: .06;
-  background-image: linear-gradient(rgba(150,200,255,1) 1px, transparent 1px); background-size: 100% 8px; }
 .pc3d-slot { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 7;
   width: 54px; height: 9px; border-radius: 999px; background: #050c18;
   box-shadow: inset 0 1px 2px rgba(0,0,0,.8), 0 1px 0 rgba(150,200,255,.14); }
@@ -129,9 +128,8 @@ export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frame
       <div className="pc3d-stage">
         <div className="pc3d-floor" />
         <div className="pc3d-card" ref={cardRef}>
-          <div className="pc3d-body pc3d-sil" ref={slabsRef} />
+          <div className="pc3d-body" ref={slabsRef} />
           <div className="pc3d-face pc3d-sil">
-            <div className="pc3d-grid" />
             <div className="pc3d-holo" />
             <div className="pc3d-spec" />
             <div className="pc3d-slot" />
