@@ -12,6 +12,7 @@ import { checkTeamWinAchievements } from '../lib/achievements'
 import { calendarWeekNumber } from '../lib/week'
 import { shareMatchCard, doShare } from '../lib/shareCard'
 import HexAvatar, { HexFrameOnly } from '../components/ui/HexAvatar'
+import PlayerCard3D from '../components/ui/PlayerCard3D'
 import { ARENAS as ARENA_THEMES } from '../lib/arenas'
 import { KRAKOW_COURTS } from '../lib/krakowCourts'
 import L from 'leaflet'
@@ -1341,7 +1342,7 @@ function usePlayerProfileData(memberId) {
     setStats(null)
 
     Promise.all([
-      supabase.from('profiles').select('xp,arena_level,country,background,username,equipped_frame').eq('id', memberId).single(),
+      supabase.from('profiles').select('xp,arena_level,country,background,username,equipped_frame,hc_id').eq('id', memberId).single(),
       supabase.from('shooting_sessions').select('shot_type,made,attempted').eq('user_id', memberId),
       supabase.from('activity_log').select('trainings_completed').eq('user_id', memberId),
       supabase.from('match_players').select('match_id,team').eq('user_id', memberId),
@@ -1415,6 +1416,33 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
   useEffect(() => { setFlagOk(true) }, [country?.flagFile])
   const role = member.isOwner ? t('profile.roleCaptain') : t('profile.rolePlayer')
   const showDanger = isSelf || (isOwner && !member.isOwner)
+
+  // ── Twój własny profil = latająca karta 3D na prostym tle. Nic pod spodem. ──
+  if (isSelf) {
+    return (
+      <Sheet onClose={onClose}>
+        <div style={{
+          position: 'relative', minHeight: 540,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          background: 'radial-gradient(130% 80% at 50% 22%, rgba(46,144,212,0.10), transparent 62%)',
+        }}>
+          {loading || !profile ? (
+            <div style={{ padding: '80px 0', color: C.sub, fontSize: 13 }}>…</div>
+          ) : (
+            <PlayerCard3D
+              name={member.name}
+              hcId={profile?.hc_id}
+              arenaLevel={profile?.arena_level ?? 0}
+              xp={profile?.xp ?? 0}
+              frameVariant={frameVariant}
+              matchWins={stats?.wins ?? 0}
+              kotcWins={0}
+            />
+          )}
+        </div>
+      </Sheet>
+    )
+  }
 
   return (
     <Sheet onClose={onClose}>
