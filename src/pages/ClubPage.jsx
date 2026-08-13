@@ -1430,7 +1430,7 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
         <div style={{
           position: 'relative', minHeight: 600, padding: '58px 0 16px',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          background: 'linear-gradient(170deg, #13273f 0%, #0b1a2c 58%, #081320 100%)',
+          background: 'radial-gradient(130% 80% at 50% 22%, rgba(46,144,212,0.10), transparent 62%)',
         }}>
           <button
             onClick={onClose}
