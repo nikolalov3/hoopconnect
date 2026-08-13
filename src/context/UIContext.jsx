@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useMemo } from 'react'
 
 const UIContext = createContext({})
 
@@ -11,19 +11,21 @@ export function UIProvider({ children }) {
   const [frameUnlockData,       setFrameUnlockData]       = useState(null)
   const [notificationsOpen,     setNotificationsOpen]     = useState(false)
 
-  return (
-    <UIContext.Provider value={{
-      settingsOpen,    setSettingsOpen,
-      leaderboardOpen, setLeaderboardOpen,
-      leagueOpen,      setLeagueOpen,
-      leaderboardFromLeague, setLeaderboardFromLeague,
-      frameUnlockOpen, setFrameUnlockOpen,
-      frameUnlockData, setFrameUnlockData,
-      notificationsOpen, setNotificationsOpen,
-    }}>
-      {children}
-    </UIContext.Provider>
-  )
+  // Memoize so the value only changes when a UI flag actually changes — otherwise
+  // every UIProvider re-render minted a fresh object and re-rendered all consumers
+  // (the whole keep-alive Home/Club tree). Setters from useState are already stable.
+  const value = useMemo(() => ({
+    settingsOpen,    setSettingsOpen,
+    leaderboardOpen, setLeaderboardOpen,
+    leagueOpen,      setLeagueOpen,
+    leaderboardFromLeague, setLeaderboardFromLeague,
+    frameUnlockOpen, setFrameUnlockOpen,
+    frameUnlockData, setFrameUnlockData,
+    notificationsOpen, setNotificationsOpen,
+  }), [settingsOpen, leaderboardOpen, leagueOpen, leaderboardFromLeague,
+       frameUnlockOpen, frameUnlockData, notificationsOpen])
+
+  return <UIContext.Provider value={value}>{children}</UIContext.Provider>
 }
 
 export const useUI = () => useContext(UIContext)

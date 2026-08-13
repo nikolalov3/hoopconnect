@@ -16,6 +16,9 @@
     <!-- DNS preconnect for Google Fonts — eliminates extra RTT on cold load -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Fonts as a direct <link> instead of a CSS @import: the @import was a
+         render-blocking 3-hop waterfall (html → app CSS → fonts CSS → woff2). -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Barlow:wght@300;400;500;600&display=swap" />
     <!-- Umami analytics — defer, zero render impact, auto-tracks SPA routes -->
     <script defer src="https://cloud.umami.is/script.js" data-website-id="a7d4cc36-01ca-4b44-b767-133919650fcb"></script>
   </head>

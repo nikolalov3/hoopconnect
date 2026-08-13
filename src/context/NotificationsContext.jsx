@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 
@@ -105,16 +105,21 @@ export function NotificationsProvider({ children }) {
     if (error) await load()  // undo optimistic remove on failure
   }, [load])
 
+  // Memoize: functions are already useCallback-stable, so the value only changes
+  // when items/loading change — instead of a fresh object every provider render
+  // re-rendering the bell + every consumer.
+  const value = useMemo(() => ({
+    items,
+    unreadCount: items.length,
+    loading,
+    reload: load,
+    acceptTeamInvite,
+    declineTeamInvite,
+    markRead,
+  }), [items, loading, load, acceptTeamInvite, declineTeamInvite, markRead])
+
   return (
-    <Ctx.Provider value={{
-      items,
-      unreadCount: items.length,
-      loading,
-      reload: load,
-      acceptTeamInvite,
-      declineTeamInvite,
-      markRead,
-    }}>
+    <Ctx.Provider value={value}>
       {children}
     </Ctx.Provider>
   )
