@@ -1349,7 +1349,9 @@ function usePlayerProfileData(memberId) {
       // Osobno + tolerancyjnie: jeśli migracja hc_id jeszcze nie poszła, brak kolumny
       // NIE wywala ładowania profilu (zwróci error, my bierzemy ?.hc_id = undefined).
       supabase.from('profiles').select('hc_id').eq('id', memberId).maybeSingle(),
-    ]).then(async ([profileRes, sessionsRes, logsRes, mpRes, hcRes]) => {
+      // Wygrane KotC = liczba osiągnięć kotc_win_july (1 wiersz na wygraną sesję).
+      supabase.from('user_achievements').select('id', { count: 'exact', head: true }).eq('user_id', memberId).eq('base_id', 'kotc_win_july'),
+    ]).then(async ([profileRes, sessionsRes, logsRes, mpRes, hcRes, kotcRes]) => {
       if (cancelled) return
 
       const byType = {}
@@ -1394,6 +1396,7 @@ function usePlayerProfileData(memberId) {
         trainings,
         matches: mpRows.length,
         wins,
+        kotcWins: kotcRes?.count ?? 0,
       })
       setLoading(false)
     })
@@ -1420,7 +1423,7 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
   const role = member.isOwner ? t('profile.roleCaptain') : t('profile.rolePlayer')
   const showDanger = isSelf || (isOwner && !member.isOwner)
 
-  // ── Twój własny profil = latająca karta 3D na prostym tle. Nic pod spodem. ──
+  // ── Twój własny profil = latająca karta 3D. Pod spodem tylko opuść/rozwiąż klub. ──
   if (isSelf) {
     return (
       <Sheet onClose={onClose}>
@@ -1444,15 +1447,25 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
           {loading || !profile ? (
             <div style={{ padding: '80px 0', color: C.sub, fontSize: 13 }}>…</div>
           ) : (
-            <PlayerCard3D
-              name={member.name}
-              hcId={profile?.hc_id}
-              arenaLevel={profile?.arena_level ?? 0}
-              xp={profile?.xp ?? 0}
-              frameVariant={frameVariant}
-              matchWins={stats?.wins ?? 0}
-              kotcWins={0}
-            />
+            <>
+              <PlayerCard3D
+                name={member.name}
+                hcId={profile?.hc_id}
+                arenaLevel={profile?.arena_level ?? 0}
+                xp={profile?.xp ?? 0}
+                frameVariant={frameVariant}
+                matchWins={stats?.wins ?? 0}
+                kotcWins={stats?.kotcWins ?? 0}
+              />
+              <div style={{ marginTop: 8, width: '100%', maxWidth: 300 }}>
+                <motion.button whileTap={{ scale: 0.96 }} onClick={onLeave} disabled={removing}
+                  style={destructiveBtnStyle(removing)}>
+                  {member.isOwner
+                    ? (removing ? t('profile.disbanding') : t('profile.disbandClub'))
+                    : (removing ? t('profile.leaving')    : t('profile.leaveClub'))}
+                </motion.button>
+              </div>
+            </>
           )}
         </div>
       </Sheet>
@@ -1490,7 +1503,7 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
               xp={profile?.xp ?? 0}
               frameVariant={frameVariant}
               matchWins={stats?.wins ?? 0}
-              kotcWins={0}
+              kotcWins={stats?.kotcWins ?? 0}
             />
             {showDanger && (
               <div style={{ marginTop: 8, width: '100%', maxWidth: 300 }}>
