@@ -66,6 +66,17 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .pc3d-holo, .pc3d-spec { transition: none; } }
 `
 
+// Wstrzyknij CSS RAZ do <head> (przy imporcie modułu), zamiast <style> per render.
+// Dzięki temu style są gotowe zanim karta pierwszy raz się namaluje — inaczej
+// przy pierwszym otwarciu profilu widać było szare warstwy grubości zamiast lica
+// (style łapały się o klatkę za późno; drugie otwarcie działało bo <style> już był).
+if (typeof document !== 'undefined' && !document.getElementById('pc3d-styles')) {
+  const _el = document.createElement('style')
+  _el.id = 'pc3d-styles'
+  _el.textContent = CSS
+  document.head.appendChild(_el)
+}
+
 function arenaImg(i) { return `/arenas/arena-${i}.png` }
 
 export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frameVariant = 'none', matchWins = 0, kotcWins = 0 }) {
@@ -123,7 +134,6 @@ export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frame
 
   return (
     <>
-      <style>{CSS}</style>
       <div className="pc3d-stage">
         <div className="pc3d-floor" />
         <div className="pc3d-card" ref={cardRef}>
