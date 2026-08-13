@@ -1459,153 +1459,49 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
     )
   }
 
+  // ── Cudzy profil członka = ta sama karta 3D. Pod spodem tylko akcja właściciela. ──
   return (
     <Sheet onClose={onClose}>
-      <div style={{ position: 'relative' }}>
-        {/* ── Full-bleed cover artwork — sits BEHIND every section, not just the header.
-               Stretched via top/bottom to the wrapper's full content height (incl. the
-               sheet's own bleed margins), then faded into the base navy as it descends
-               so every panel below stays readable while the flag still shows through. ── */}
-        <div style={{
-          position: 'absolute', top: -20, left: -22, right: -22, bottom: -40,
-          zIndex: 0, overflow: 'hidden', borderRadius: '24px 24px 0 0', pointerEvents: 'none',
-          background: 'linear-gradient(170deg, rgba(20,40,75,0.45), #07101E 70%)',
-        }}>
-          {country && country.flagFile && flagOk && (
-            <img
-              src={`/flags/${country.flagFile}.png`}
-              alt=""
-              onError={() => setFlagOk(false)}
-              style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: 620,
-                width: '100%', objectFit: 'cover', objectPosition: 'center top',
-              }}
-            />
-          )}
-          {/* Fade: vivid up top, dissolving into the base navy well before the
-              progress bar section so it always sits on solid dark navy ── */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(180deg, rgba(7,16,30,0.10) 0%, rgba(7,16,30,0.50) 18%, rgba(7,16,30,0.85) 32%, #07101E 46%)',
-          }}/>
-        </div>
-
-        {/* ── Foreground content — everything renders above the backdrop ──────── */}
-        <div style={{ position: 'relative', zIndex: 1 }}>
-
-      {/* ── SECTION 2 — Identity ──────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 6 }}>
-        <div style={{ position: 'relative' }}>
-          {/* Ambient glow ring — colored by the player's current arena */}
-          <div style={{
-            position: 'absolute', inset: -10, borderRadius: '50%',
-            background: `radial-gradient(circle, ${theme.glow}30, transparent 70%)`,
-            pointerEvents: 'none',
-          }}/>
-          <HexAvatar name={member.name} size={104} variant={frameVariant}/>
-        </div>
-
-        <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 26,
-          color: C.text, letterSpacing: -0.4, margin: '16px 0 0', textAlign: 'center',
-          maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {member.name}
-        </p>
-        {country && (
-          <p style={{ fontSize: 12, fontWeight: 600, color: C.sub, margin: '5px 0 0' }}>
-            {country.flag} {t(`countries.${country.code}`)}
-          </p>
-        )}
-      </div>
-
-      {/* ── SECTION 3 — Progression: arena badge + XP bar (tap → Droga Aren) ── */}
-      <div
-        role="button" tabIndex={0}
-        onClick={() => setShowArenaRoad(true)}
-        style={{ cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
-          display: 'flex', alignItems: 'center', gap: 12 }}
-      >
-        <ArenaMiniBadge level={profile?.arena_level ?? 0} theme={theme} size={44}/>
-        <div style={{ flex: 1 }}>
-          <XpProgressBar
-            xp={profile?.xp ?? 0}
-            pct={pct}
-            nextArena={nextArena}
-            accentLo={theme.mid}
-            accentHi={theme.hi}
-            accent={theme.glow}
-            sub={C.sub}
-            tappable
-          />
-        </div>
-      </div>
-      <AnimatePresence>
-        {showArenaRoad && (
-          <ArenaRoadSheet
-            xp={profile?.xp ?? 0}
-            arenaLevel={profile?.arena_level ?? 0}
-            onClose={() => setShowArenaRoad(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* ── SECTION 4 — Quick stats (identity-level only, no percentages) ─────── */}
-      <div style={{ display: 'flex', gap: 8, margin: '24px 0 26px' }}>
-        <StatTile label={t('profile.statMatches')}    value={loading ? '—' : stats.matches}/>
-        <StatTile label={t('profile.statWins')}  value={loading ? '—' : stats.wins}/>
-        <StatTile label={t('profile.statTrainings')} value={loading ? '—' : stats.trainings}/>
-      </div>
-
-      {/* ── SECTION 5 — Trophy showcase ────────────────────────────────────────── */}
-      <div style={{ marginBottom: 26 }}>
-        <p style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 2.4,
-          textTransform: 'uppercase', color: C.sub, margin: '0 0 10px' }}>{t('profile.showcase')}</p>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} style={{
-              flex: 1, aspectRatio: '1', borderRadius: 14,
-              background: 'rgba(0,200,255,0.04)',
-              border: '1.5px dashed rgba(0,200,255,0.16)',
-            }}/>
-          ))}
-        </div>
-      </div>
-
-      {/* ── SECTION 6 — Club strip (tap → read-only club preview) ─────────────── */}
-      <ClubStrip club={club} role={role} onPress={onOpenClub} accent={theme.glow}/>
-
-      {/* ── SECTION 7 — Actions ────────────────────────────────────────────────── */}
-      <div style={{ marginTop: 22 }}>
-        {isSelf && (
+      <div style={{
+        position: 'relative', minHeight: 540,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        background: 'radial-gradient(130% 80% at 50% 22%, rgba(46,144,212,0.10), transparent 62%)',
+      }}>
+        <button
+          onClick={onClose}
+          aria-label={t('close', { defaultValue: 'Zamknij' })}
+          style={{
+            position: 'absolute', top: 4, right: 4, zIndex: 30,
+            width: 38, height: 38, borderRadius: '50%',
+            background: 'rgba(10,20,38,0.55)', border: '1px solid rgba(150,200,255,0.18)',
+            color: '#cfe0f2', fontSize: 16, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >✕</button>
+        {loading || !profile ? (
+          <div style={{ padding: '80px 0', color: C.sub, fontSize: 13 }}>…</div>
+        ) : (
           <>
-            <ActionRow icon="👤" label={t('profile.actionManageProfile')} soon accent={theme.glow}/>
-            <ActionRow icon="🏆" label={t('profile.actionEditShowcase')}  soon accent={theme.glow}/>
-            <ActionRow icon="📊" label={t('profile.actionFullStats')}     soon accent={theme.glow}/>
+            <PlayerCard3D
+              name={member.name}
+              hcId={profile?.hc_id}
+              arenaLevel={profile?.arena_level ?? 0}
+              xp={profile?.xp ?? 0}
+              frameVariant={frameVariant}
+              matchWins={stats?.wins ?? 0}
+              kotcWins={0}
+            />
+            {showDanger && (
+              <div style={{ marginTop: 8, width: '100%', maxWidth: 300 }}>
+                <motion.button whileTap={{ scale: 0.96 }} onClick={onRemove} disabled={removing}
+                  style={destructiveBtnStyle(removing)}>
+                  {removing ? t('profile.removing') : t('profile.removeFromClub')}
+                </motion.button>
+              </div>
+            )}
           </>
         )}
-
-        {showDanger && (
-          <div style={{ marginTop: isSelf ? 14 : 0 }}>
-            <p style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 2.4,
-              textTransform: 'uppercase', color: `${C.loss}90`, margin: '0 0 8px' }}>
-              {t('profile.dangerZone')}
-            </p>
-            {isSelf ? (
-              <motion.button whileTap={{ scale: 0.96 }} onClick={onLeave} disabled={removing}
-                style={destructiveBtnStyle(removing)}>
-                {member.isOwner
-                  ? (removing ? t('profile.disbanding') : t('profile.disbandClub'))
-                  : (removing ? t('profile.leaving')    : t('profile.leaveClub'))}
-              </motion.button>
-            ) : (
-              <motion.button whileTap={{ scale: 0.96 }} onClick={onRemove} disabled={removing}
-                style={destructiveBtnStyle(removing)}>
-                {removing ? t('profile.removing') : t('profile.removeFromClub')}
-              </motion.button>
-            )}
-          </div>
-        )}
-      </div>
-        </div>
       </div>
     </Sheet>
   )
