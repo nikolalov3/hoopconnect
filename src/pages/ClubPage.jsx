@@ -15,7 +15,8 @@ import HexAvatar, { HexFrameOnly } from '../components/ui/HexAvatar'
 import PlayerCard3D from '../components/ui/PlayerCard3D'
 import { ARENAS as ARENA_THEMES } from '../lib/arenas'
 import { KRAKOW_COURTS } from '../lib/krakowCourts'
-import L from 'leaflet'
+// leaflet is imported lazily inside MapPicker (see below) so its ~43 KB doesn't
+// load with the Club tab — only when the map picker actually opens.
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  DESIGN TOKENS — dark neon sports theme
@@ -2001,8 +2002,11 @@ function MapPicker({ center, onPin, existingPin, flyTo }) {
   const elRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
+  const LRef = useRef(null)
+  const [leafletReady, setLeafletReady] = useState(false)
 
-  // Initialise map once
+  // Initialise map once. Leaflet (~43 KB) is imported lazily here so it stays off
+  // the Club-tab load path and only downloads when the map picker actually opens.
   useEffect(() => {
     if (!document.querySelector('#leaflet-css')) {
       const link = document.createElement('link')
@@ -2011,55 +2015,65 @@ function MapPicker({ center, onPin, existingPin, flyTo }) {
       link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
       document.head.appendChild(link)
     }
-    if (!elRef.current || mapRef.current) return
+    let cancelled = false
+    let cleanup = () => {}
+    import('leaflet').then(mod => {
+      if (cancelled || !elRef.current || mapRef.current) return
+      const L = mod.default
+      LRef.current = L
 
-    const map = L.map(elRef.current, { zoomControl: false, attributionControl: false })
-      .setView(center ? [center.lat, center.lng] : [52.0, 20.0], center ? 13 : 6)
+      const map = L.map(elRef.current, { zoomControl: false, attributionControl: false })
+        .setView(center ? [center.lat, center.lng] : [52.0, 20.0], center ? 13 : 6)
 
-    // Ciemny motyw (CARTO Dark Matter, darmowe kafelki bez klucza API) —
-    // pasuje do ciemnego UI apki, zamiast domyślnych jasnych kafelków OSM.
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      subdomains: 'abcd', maxZoom: 20, className: 'map-tiles-dark',
-    }).addTo(map)
-    L.control.zoom({ position: 'bottomright' }).addTo(map)
+      // Ciemny motyw (CARTO Dark Matter, darmowe kafelki bez klucza API) —
+      // pasuje do ciemnego UI apki, zamiast domyślnych jasnych kafelków OSM.
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        subdomains: 'abcd', maxZoom: 20, className: 'map-tiles-dark',
+      }).addTo(map)
+      L.control.zoom({ position: 'bottomright' }).addTo(map)
 
-    const pinIcon = L.divIcon({
-      html: `<div style="width:22px;height:22px;background:linear-gradient(135deg,#00CCFF,#0055AA);border-radius:50%;border:2.5px solid rgba(255,255,255,0.9);box-shadow:0 2px 14px rgba(0,180,255,0.75)"></div>`,
-      className: '', iconSize: [22, 22], iconAnchor: [11, 11],
+      const pinIcon = L.divIcon({
+        html: `<div style="width:22px;height:22px;background:linear-gradient(135deg,#00CCFF,#0055AA);border-radius:50%;border:2.5px solid rgba(255,255,255,0.9);box-shadow:0 2px 14px rgba(0,180,255,0.75)"></div>`,
+        className: '', iconSize: [22, 22], iconAnchor: [11, 11],
+      })
+
+      function placePin(lat, lng) {
+        if (markerRef.current) markerRef.current.setLatLng([lat, lng])
+        else markerRef.current = L.marker([lat, lng], { icon: pinIcon }).addTo(map)
+        onPin(lat, lng)
+      }
+
+      if (existingPin) {
+        markerRef.current = L.marker([existingPin.lat, existingPin.lng], { icon: pinIcon }).addTo(map)
+      }
+
+      // Znane boiska (na razie Kraków, statyczna lista z OSM) — klikalne kropki,
+      // wybór ustawia pin tak samo jak kliknięcie w wolne miejsce na mapie.
+      // Wolny pin nadal działa (fallback dla boisk, których nie mamy w bazie).
+      const courtIcon = L.divIcon({
+        html: `<div style="width:14px;height:14px;background:rgba(255,159,10,0.85);border-radius:50%;border:2px solid rgba(255,255,255,0.75);box-shadow:0 0 8px rgba(255,159,10,0.6)"></div>`,
+        className: '', iconSize: [14, 14], iconAnchor: [7, 7],
+      })
+      KRAKOW_COURTS.forEach(([lat, lng]) => {
+        L.marker([lat, lng], { icon: courtIcon, zIndexOffset: -100 })
+          .addTo(map)
+          .on('click', () => placePin(lat, lng))
+      })
+
+      map.on('click', e => placePin(e.latlng.lat, e.latlng.lng))
+
+      mapRef.current = map
+      setLeafletReady(true)
+      cleanup = () => { map.remove(); mapRef.current = null; markerRef.current = null }
     })
-
-    function placePin(lat, lng) {
-      if (markerRef.current) markerRef.current.setLatLng([lat, lng])
-      else markerRef.current = L.marker([lat, lng], { icon: pinIcon }).addTo(map)
-      onPin(lat, lng)
-    }
-
-    if (existingPin) {
-      markerRef.current = L.marker([existingPin.lat, existingPin.lng], { icon: pinIcon }).addTo(map)
-    }
-
-    // Znane boiska (na razie Kraków, statyczna lista z OSM) — klikalne kropki,
-    // wybór ustawia pin tak samo jak kliknięcie w wolne miejsce na mapie.
-    // Wolny pin nadal działa (fallback dla boisk, których nie mamy w bazie).
-    const courtIcon = L.divIcon({
-      html: `<div style="width:14px;height:14px;background:rgba(255,159,10,0.85);border-radius:50%;border:2px solid rgba(255,255,255,0.75);box-shadow:0 0 8px rgba(255,159,10,0.6)"></div>`,
-      className: '', iconSize: [14, 14], iconAnchor: [7, 7],
-    })
-    KRAKOW_COURTS.forEach(([lat, lng]) => {
-      L.marker([lat, lng], { icon: courtIcon, zIndexOffset: -100 })
-        .addTo(map)
-        .on('click', () => placePin(lat, lng))
-    })
-
-    map.on('click', e => placePin(e.latlng.lat, e.latlng.lng))
-
-    mapRef.current = map
-    return () => { map.remove(); mapRef.current = null; markerRef.current = null }
+    return () => { cancelled = true; cleanup() }
   }, [])
 
-  // Fly to location when flyTo prop changes (e.g. "Moja lokalizacja" button)
+  // Fly to location when flyTo prop changes (e.g. "Moja lokalizacja" button).
+  // Also re-runs once leaflet finishes loading, in case flyTo arrived first.
   useEffect(() => {
-    if (!flyTo || !mapRef.current) return
+    const L = LRef.current
+    if (!flyTo || !mapRef.current || !L) return
     const pinIcon = L.divIcon({
       html: `<div style="width:22px;height:22px;background:linear-gradient(135deg,#00CCFF,#0055AA);border-radius:50%;border:2.5px solid rgba(255,255,255,0.9);box-shadow:0 2px 14px rgba(0,180,255,0.75)"></div>`,
       className: '', iconSize: [22, 22], iconAnchor: [11, 11],
@@ -2067,7 +2081,7 @@ function MapPicker({ center, onPin, existingPin, flyTo }) {
     mapRef.current.flyTo([flyTo.lat, flyTo.lng], 15, { animate: true, duration: 0.8 })
     if (markerRef.current) markerRef.current.setLatLng([flyTo.lat, flyTo.lng])
     else markerRef.current = L.marker([flyTo.lat, flyTo.lng], { icon: pinIcon }).addTo(mapRef.current)
-  }, [flyTo])
+  }, [flyTo, leafletReady])
 
   return <div ref={elRef} style={{ width: '100%', height: '100%' }}/>
 }

@@ -92,7 +92,7 @@ export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frame
   useEffect(() => {
     const slabs = slabsRef.current
     if (!slabs || slabs.childElementCount) return
-    const N = 20, step = 1.15
+    const N = 10, step = 2.3   // ~23px total thickness, half the composited layers
     for (let i = 1; i <= N; i++) {
       const d = document.createElement('div')
       d.className = 'pc3d-slab pc3d-sil'
