@@ -1342,11 +1342,14 @@ function usePlayerProfileData(memberId) {
     setStats(null)
 
     Promise.all([
-      supabase.from('profiles').select('xp,arena_level,country,background,username,equipped_frame,hc_id').eq('id', memberId).single(),
+      supabase.from('profiles').select('xp,arena_level,country,background,username,equipped_frame').eq('id', memberId).single(),
       supabase.from('shooting_sessions').select('shot_type,made,attempted').eq('user_id', memberId),
       supabase.from('activity_log').select('trainings_completed').eq('user_id', memberId),
       supabase.from('match_players').select('match_id,team').eq('user_id', memberId),
-    ]).then(async ([profileRes, sessionsRes, logsRes, mpRes]) => {
+      // Osobno + tolerancyjnie: jeśli migracja hc_id jeszcze nie poszła, brak kolumny
+      // NIE wywala ładowania profilu (zwróci error, my bierzemy ?.hc_id = undefined).
+      supabase.from('profiles').select('hc_id').eq('id', memberId).maybeSingle(),
+    ]).then(async ([profileRes, sessionsRes, logsRes, mpRes, hcRes]) => {
       if (cancelled) return
 
       const byType = {}
@@ -1383,7 +1386,7 @@ function usePlayerProfileData(memberId) {
       }
 
       if (cancelled) return
-      setProfile(profileRes.data || null)
+      setProfile(profileRes.data ? { ...profileRes.data, hc_id: hcRes?.data?.hc_id ?? null } : null)
       setStats({
         pct3: pctOf('3pt'), made3: byType['3pt']?.made || 0, att3: byType['3pt']?.attempted || 0,
         pct2: pctOf('2pt'), made2: byType['2pt']?.made || 0, att2: byType['2pt']?.attempted || 0,
