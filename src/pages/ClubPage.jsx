@@ -1425,7 +1425,7 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
     return (
       <Sheet onClose={onClose}>
         <div style={{
-          position: 'relative', minHeight: 540,
+          position: 'relative', minHeight: 640,
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           background: 'radial-gradient(130% 80% at 50% 22%, rgba(46,144,212,0.10), transparent 62%)',
         }}>
@@ -1433,7 +1433,7 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
             onClick={onClose}
             aria-label={t('close', { defaultValue: 'Zamknij' })}
             style={{
-              position: 'absolute', top: 4, right: 4, zIndex: 30,
+              position: 'absolute', top: 12, right: 12, zIndex: 30,
               width: 38, height: 38, borderRadius: '50%',
               background: 'rgba(10,20,38,0.55)', border: '1px solid rgba(150,200,255,0.18)',
               color: '#cfe0f2', fontSize: 16, cursor: 'pointer',

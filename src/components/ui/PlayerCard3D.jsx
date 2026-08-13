@@ -63,7 +63,6 @@ const CSS = `
 .pc3d-foot { margin-top: auto; padding-top: 12px; border-top: 1px solid rgba(150,200,255,.12); }
 .pc3d-foot .id { font-family: var(--font-display); font-weight: 700; font-size: 9px; letter-spacing: .1em; color: #6f8dab; line-height: 1.5; }
 .pc3d-foot .id b { color: #a9c6e4; }
-.pc3d-hint { text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: rgba(160,190,220,.45); margin-top: 6px; }
 @media (prefers-reduced-motion: reduce) { .pc3d-holo, .pc3d-spec { transition: none; } }
 `
 
@@ -172,7 +171,6 @@ export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frame
           </div>
         </div>
       </div>
-      <div className="pc3d-hint">↔ Przeciągnij, aby obrócić</div>
     </>
   )
 }
