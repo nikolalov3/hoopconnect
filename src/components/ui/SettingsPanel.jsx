@@ -599,23 +599,8 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
           )}
         </AnimatePresence>
 
-        {/* ── Ramka avatara ── */}
-        <Divider/>
-        <div style={{ display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', marginBottom: 12 }}>
-          <SLabel style={{ margin: 0 }}>{t('editProfile.avatarFrame')}</SLabel>
-          <AnimatePresence>
-            {frameState !== 'idle' && (
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                style={{ fontSize: 10, fontWeight: 700, margin: 0,
-                  color: frameState === 'error' ? C.red
-                       : frameState === 'saving' ? C.dim : C.green }}>
-                {frameState === 'error' ? t('editProfile.frameError') : frameState === 'saving' ? '…' : t('editProfile.frameSaved')}
-              </motion.p>
-            )}
-          </AnimatePresence>
-        </div>
-        <FramePicker current={frameId} uid={uid} profile={profile} onPick={handlePickFrame}/>
+        {/* Ramka przeniesiona do personalizacji karty (gwiazdka) — pencil = tylko
+           dane profilu, żeby edycja wyglądu i ustawień się nie dublowały. */}
 
         {/* ── Drużyny (zarządzanie członkostwem) ── */}
         <Divider/>
