@@ -30,7 +30,7 @@ const C = {
 
 const SLIDE = { type: 'tween', duration: 0.26, ease: [0.16, 1, 0.3, 1] }
 const SHEET = { type: 'spring', stiffness: 340, damping: 38 }
-const APP_VERSION = '1.2.1-beta'
+const APP_VERSION = '1.3.33'
 
 const SCHEDULES = {
   3: ['T','O','T','O','T','R','O'],
