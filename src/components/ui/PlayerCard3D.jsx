@@ -6,7 +6,7 @@
  * Props:
  *   name, hcId, arenaLevel, xp, frameVariant, matchWins, kotcWins
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import HexAvatar from './HexAvatar'
 import { ARENAS, arenaProgress } from '../../lib/arenas'
 
@@ -19,6 +19,7 @@ const CSS = `
 .pc3d-card { --rx: -8; --ry: -14; position: relative; width: 300px; height: 452px;
   transform-style: preserve-3d;
   transform: perspective(1150px) rotateX(calc(var(--rx)*1deg)) rotateY(calc(var(--ry)*1deg));
+  will-change: transform;
   cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .pc3d-card:active { cursor: grabbing; }
 .pc3d-sil { clip-path: path('M22,0 L278,0 Q300,0 300,22 L300,400 Q300,414 286,414 L210,414 Q196,414 192,428 L182,440 Q178,452 164,452 L22,452 Q0,452 0,430 L0,22 Q0,0 22,0 Z'); }
@@ -88,8 +89,11 @@ export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frame
   const nextArena = prog.next != null ? ARENAS[prog.next] : null
   const pct = Math.max(6, Math.min(100, prog.pct ?? 0))
 
-  // slab extrusion (once)
-  useEffect(() => {
+  // slab extrusion (once). useLayoutEffect (not useEffect) so the 10 thickness
+  // layers exist BEFORE the browser's first paint — otherwise on iOS the card
+  // painted once as just the face, then re-composited when the slabs were added
+  // a frame later, flashing the grey slab layers ("card grey on first open").
+  useLayoutEffect(() => {
     const slabs = slabsRef.current
     if (!slabs || slabs.childElementCount) return
     const N = 10, step = 2.3   // ~23px total thickness, half the composited layers
