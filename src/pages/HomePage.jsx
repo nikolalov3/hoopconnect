@@ -444,40 +444,38 @@ function ReportRatingRing({ score, daysLeft, loading, arenaLevel = 0, devPreview
 function QuotePanel({ quote, onClose }) {
   const { t } = useTranslation('home')
   if (!quote) return null
+  // Floating card that "hangs" centered over a blurred Home view (jak karta
+  // zawodnika) — nie wysuwany panel z dołu. Tap poza kartą zamyka. Bez podpisu.
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 300,
-        background: 'rgba(4,2,0,0.80)',
-        backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        padding: '0 0 110px',
+        background: 'rgba(4,2,0,0.68)',
+        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+        padding: '28px 20px',
       }}
     >
       <motion.div
-        initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 60 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+        initial={{ scale: 0.9, opacity: 0, y: 10 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.92, opacity: 0, y: 6 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 420,
-          margin: '0 16px',
-          background: 'rgba(12,8,4,0.95)',
+          margin: 'auto', width: '100%', maxWidth: 380,
+          background: 'rgba(12,8,4,0.92)',
           backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)',
           border: '1px solid rgba(91,184,245,0.20)',
           borderTop: '1px solid rgba(91,184,245,0.40)',
           borderRadius: 28,
-          padding: '28px 28px 24px',
-          boxShadow: '0 -4px 60px rgba(0,0,0,0.60), 0 0 40px rgba(91,184,245,0.07)',
+          padding: '32px 28px 26px',
+          boxShadow: '0 24px 70px rgba(0,0,0,0.55), 0 0 40px rgba(91,184,245,0.07)',
         }}
       >
-        <div style={{ width: 36, height: 3, background: 'rgba(255,255,255,0.12)', borderRadius: 2, margin: '0 auto 24px' }} />
-        <p style={{
-          fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 13,
-          letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--orange)',
-          marginBottom: 16,
-        }}>{t('quote.title')}</p>
         <p style={{
           fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 700,
           fontSize: 22, lineHeight: 1.35, color: 'var(--text-primary)',
