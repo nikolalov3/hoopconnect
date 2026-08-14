@@ -1413,6 +1413,53 @@ function usePlayerProfileData(memberId) {
   return { profile, stats, loading }
 }
 
+// Floating profile presentation: the 3D card "hangs" centered over a lightly
+// blurred Club view — no bottom sheet slide-up. The close ✕ sits in the screen
+// corner, well away from the card. Scroll root (overflowY:auto + inner margin
+// auto) so the card + action button stay reachable on short screens.
+function ProfileOverlay({ onClose, children }) {
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9000,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+        padding: '28px 20px',
+        // Lekkie rozmycie tła (widać Klub pod spodem) — do dopieszczenia.
+        background: 'rgba(4,9,20,0.55)',
+        backdropFilter: 'blur(7px)', WebkitBackdropFilter: 'blur(7px)',
+      }}
+    >
+      <button
+        onClick={(e) => { e.stopPropagation(); onClose() }}
+        aria-label="Zamknij"
+        style={{
+          position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 14px)', right: 16, zIndex: 40,
+          width: 40, height: 40, borderRadius: '50%',
+          background: 'rgba(10,20,38,0.6)', border: '1px solid rgba(150,200,255,0.2)',
+          color: '#cfe0f2', fontSize: 17, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          WebkitTapHighlightColor: 'transparent',
+          backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+        }}
+      >✕</button>
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 10 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.92, opacity: 0, y: 6 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{ margin: 'auto', width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+      >
+        {children}
+      </motion.div>
+    </motion.div>,
+    document.body
+  )
+}
+
 function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, onRemove, onLeave, removing, onOpenClub }) {
   const { t } = useTranslation('club')
   const { profile: myProfile } = useAuth()
@@ -1432,72 +1479,7 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
   // ── Twój własny profil = latająca karta 3D. Pod spodem tylko opuść/rozwiąż klub. ──
   if (isSelf) {
     return (
-      <Sheet onClose={onClose}>
-        <div style={{
-          position: 'relative', minHeight: 600, padding: '58px 0 16px',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          background: 'radial-gradient(130% 80% at 50% 22%, rgba(46,144,212,0.10), transparent 62%)',
-        }}>
-          <button
-            onClick={onClose}
-            aria-label={t('close', { defaultValue: 'Zamknij' })}
-            style={{
-              position: 'absolute', top: 12, right: 12, zIndex: 30,
-              width: 38, height: 38, borderRadius: '50%',
-              background: 'rgba(10,20,38,0.55)', border: '1px solid rgba(150,200,255,0.18)',
-              color: '#cfe0f2', fontSize: 16, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >✕</button>
-          {loading || !profile ? (
-            <div style={{ padding: '80px 0', color: C.sub, fontSize: 13 }}>…</div>
-          ) : (
-            <>
-              <PlayerCard3D
-                name={member.name}
-                hcId={profile?.hc_id}
-                arenaLevel={profile?.arena_level ?? 0}
-                xp={profile?.xp ?? 0}
-                frameVariant={frameVariant}
-                matchWins={stats?.wins ?? 0}
-                kotcWins={stats?.kotcWins ?? 0}
-              />
-              <div style={{ marginTop: 8, width: '100%', maxWidth: 300 }}>
-                <motion.button whileTap={{ scale: 0.96 }} onClick={onLeave} disabled={removing}
-                  style={destructiveBtnStyle(removing)}>
-                  {member.isOwner
-                    ? (removing ? t('profile.disbanding') : t('profile.disbandClub'))
-                    : (removing ? t('profile.leaving')    : t('profile.leaveClub'))}
-                </motion.button>
-              </div>
-            </>
-          )}
-        </div>
-      </Sheet>
-    )
-  }
-
-  // ── Cudzy profil członka = ta sama karta 3D. Pod spodem tylko akcja właściciela. ──
-  return (
-    <Sheet onClose={onClose}>
-      <div style={{
-        position: 'relative', minHeight: 540,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        background: 'radial-gradient(130% 80% at 50% 22%, rgba(46,144,212,0.10), transparent 62%)',
-      }}>
-        <button
-          onClick={onClose}
-          aria-label={t('close', { defaultValue: 'Zamknij' })}
-          style={{
-            position: 'absolute', top: 4, right: 4, zIndex: 30,
-            width: 38, height: 38, borderRadius: '50%',
-            background: 'rgba(10,20,38,0.55)', border: '1px solid rgba(150,200,255,0.18)',
-            color: '#cfe0f2', fontSize: 16, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >✕</button>
+      <ProfileOverlay onClose={onClose}>
         {loading || !profile ? (
           <div style={{ padding: '80px 0', color: C.sub, fontSize: 13 }}>…</div>
         ) : (
@@ -1511,18 +1493,47 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
               matchWins={stats?.wins ?? 0}
               kotcWins={stats?.kotcWins ?? 0}
             />
-            {showDanger && (
-              <div style={{ marginTop: 8, width: '100%', maxWidth: 300 }}>
-                <motion.button whileTap={{ scale: 0.96 }} onClick={onRemove} disabled={removing}
-                  style={destructiveBtnStyle(removing)}>
-                  {removing ? t('profile.removing') : t('profile.removeFromClub')}
-                </motion.button>
-              </div>
-            )}
+            <div style={{ marginTop: 20, width: '100%', maxWidth: 300 }}>
+              <motion.button whileTap={{ scale: 0.96 }} onClick={onLeave} disabled={removing}
+                style={destructiveBtnStyle(removing)}>
+                {member.isOwner
+                  ? (removing ? t('profile.disbanding') : t('profile.disbandClub'))
+                  : (removing ? t('profile.leaving')    : t('profile.leaveClub'))}
+              </motion.button>
+            </div>
           </>
         )}
-      </div>
-    </Sheet>
+      </ProfileOverlay>
+    )
+  }
+
+  // ── Cudzy profil członka = ta sama karta 3D. Pod spodem tylko akcja właściciela. ──
+  return (
+    <ProfileOverlay onClose={onClose}>
+      {loading || !profile ? (
+        <div style={{ padding: '80px 0', color: C.sub, fontSize: 13 }}>…</div>
+      ) : (
+        <>
+          <PlayerCard3D
+            name={member.name}
+            hcId={profile?.hc_id}
+            arenaLevel={profile?.arena_level ?? 0}
+            xp={profile?.xp ?? 0}
+            frameVariant={frameVariant}
+            matchWins={stats?.wins ?? 0}
+            kotcWins={stats?.kotcWins ?? 0}
+          />
+          {showDanger && (
+            <div style={{ marginTop: 20, width: '100%', maxWidth: 300 }}>
+              <motion.button whileTap={{ scale: 0.96 }} onClick={onRemove} disabled={removing}
+                style={destructiveBtnStyle(removing)}>
+                {removing ? t('profile.removing') : t('profile.removeFromClub')}
+              </motion.button>
+            </div>
+          )}
+        </>
+      )}
+    </ProfileOverlay>
   )
 }
 
