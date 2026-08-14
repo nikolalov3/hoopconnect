@@ -406,10 +406,15 @@ async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds 
   if (error) throw error
 
   // Own club's matches + matches within radius; ukryj mecze bez przeciwnika
-  // starsze niż 1h po terminie (są sprzątane w tle przez cleanup_stale_matches)
+  // starsze niż 1h po terminie (są sprzątane w tle przez cleanup_stale_matches).
+  // WYJĄTEK: mecze rozegrane, które czekają na wynik ('full'/'result_pending'/
+  // 'disputed') zostają widoczne, żeby dało się potwierdzić wynik po czasie —
+  // nawet dla pickupów bez klubu-rywala (away_club_id IS NULL).
   const staleBefore = now.getTime() - 3600000
+  const AWAITING_RESULT = ['full', 'result_pending', 'disputed']
   const visible = (matches || []).filter(m =>
-    !(!m.away_club_id && new Date(m.scheduled_at).getTime() < staleBefore) &&
+    !(!m.away_club_id && new Date(m.scheduled_at).getTime() < staleBefore
+        && !AWAITING_RESULT.includes(m.status)) &&
     ((myClubId && (m.club_id === myClubId || m.away_club_id === myClubId)) ||
       haversineKm(userLat, userLng, m.lat, m.lng) <= radiusKm)
   )
