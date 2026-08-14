@@ -31,10 +31,20 @@ const CSS = `
   border: 1px solid rgba(150,200,255,.28); }
 .pc3d-face::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
   background: linear-gradient(180deg, rgba(150,205,255,.16), transparent); pointer-events: none; }
+.pc3d-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; background-repeat: no-repeat; }
+.pc3d-bg::after { content: ''; position: absolute; inset: 0;
+  background: linear-gradient(158deg,
+    rgba(236,72,153,.30) 0%, rgba(168,60,224,.30) 46%, rgba(30,8,50,.66) 100%); }
 .pc3d-holo { position: absolute; inset: -20%; pointer-events: none; z-index: 4; mix-blend-mode: screen; opacity: .55;
   background: linear-gradient(calc(118deg + var(--ry)*1.6deg),
     rgba(0,240,220,0) 8%, rgba(120,200,255,.42) 30%, rgba(190,130,255,.42) 46%,
     rgba(255,150,210,.30) 56%, rgba(120,255,220,.34) 72%, rgba(0,240,220,0) 92%); }
+/* Cards with a custom background get a warmer pink/violet/gold holo to match;
+   plain (no-background) cards keep the neutral shimmer above. */
+.pc3d-hasbg .pc3d-holo { opacity: .6;
+  background: linear-gradient(calc(118deg + var(--ry)*1.6deg),
+    rgba(255,120,210,0) 8%, rgba(255,120,210,.42) 28%, rgba(190,110,255,.46) 46%,
+    rgba(255,185,120,.34) 60%, rgba(120,220,255,.30) 74%, rgba(255,120,210,0) 92%); }
 .pc3d-spec { position: absolute; inset: 0; pointer-events: none; z-index: 5; mix-blend-mode: screen;
   background: radial-gradient(120% 80% at calc(50% + var(--ry)*1.5%) calc(38% - var(--rx)*1.4%),
     rgba(255,255,255,.42), rgba(255,255,255,.05) 40%, transparent 60%); }
@@ -80,7 +90,7 @@ if (typeof document !== 'undefined' && !document.getElementById('pc3d-styles')) 
 
 function arenaImg(i) { return `/arenas/arena-${i}.png` }
 
-export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frameVariant = 'none', matchWins = 0, kotcWins = 0 }) {
+export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frameVariant = 'none', matchWins = 0, kotcWins = 0, scale = 1, background = null, interactive = true, blank = false, idle = false }) {
   const cardRef = useRef(null)
   const slabsRef = useRef(null)
 
@@ -106,10 +116,11 @@ export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frame
     }
   }, [])
 
-  // drag-to-rotate + idle float
+  // drag-to-rotate + idle float. Static previews (interactive=false) skip this so
+  // a tap selects the card instead of rotating it, and no handlers are bound.
   useEffect(() => {
     const card = cardRef.current
-    if (!card) return
+    if (!card || !interactive) return
     // Rest at a slight tilt; only run the rAF loop while dragging (+ a short ease
     // back to rest). Previously it ran a perpetual 60fps sway even when idle,
     // repainting the screen-blended holo/spec every frame — the "card feels
@@ -117,18 +128,27 @@ export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frame
     const REST_X = -8, REST_Y = -14
     let rx = REST_X, ry = REST_Y, tx = REST_X, ty = REST_Y
     let dragging = false, sx = 0, sy = 0, brx = 0, bry = 0
-    let raf = 0, running = false
+    let raf = 0, running = false, t0 = 0
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
     const apply = () => {
       card.style.setProperty('--rx', rx.toFixed(2))
       card.style.setProperty('--ry', ry.toFixed(2))
     }
-    const loop = () => {
-      rx += (tx - rx) * 0.15
-      ry += (ty - ry) * 0.15
+    const loop = (now) => {
+      if (!t0) t0 = now || 0
+      // Gentle idle sway (opt-in). Time is measured FROM MOUNT (phase 0 = rest),
+      // so the card eases out of its resting tilt with no initial jump — a small,
+      // slow Lissajous float that shows the depth without the old "hot" feel.
+      if (idle && !dragging) {
+        const s = ((now || 0) - t0) / 1000
+        tx = REST_X + Math.sin(s * 0.5) * 2.5
+        ty = REST_Y + Math.sin(s * 0.35) * 4
+      }
+      rx += (tx - rx) * 0.12
+      ry += (ty - ry) * 0.12
       apply()
-      if (!dragging && Math.abs(tx - rx) < 0.05 && Math.abs(ty - ry) < 0.05) {
-        rx = tx; ry = ty; apply(); running = false; return   // settled → stop
+      if (!idle && !dragging && Math.abs(tx - rx) < 0.05 && Math.abs(ty - ry) < 0.05) {
+        rx = tx; ry = ty; apply(); running = false; return   // settled → stop (non-idle)
       }
       raf = requestAnimationFrame(loop)
     }
@@ -140,20 +160,20 @@ export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frame
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
     apply()
+    if (idle) kick()
     return () => { cancelAnimationFrame(raf); card.removeEventListener('pointerdown', down); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
-  }, [])
+  }, [interactive, idle])
 
-  return (
-    <>
-      <div className="pc3d-stage">
+  const stage = (
+    <div className="pc3d-stage">
         <div className="pc3d-floor" />
         <div className="pc3d-card" ref={cardRef}>
           <div className="pc3d-body" ref={slabsRef} />
-          <div className="pc3d-face pc3d-sil">
+          <div className={`pc3d-face pc3d-sil${background ? ' pc3d-hasbg' : ''}`}>
+            {background && <div className="pc3d-bg" style={{ backgroundImage: `url(${background})` }} />}
             <div className="pc3d-holo" />
             <div className="pc3d-spec" />
-            <div className="pc3d-slot" />
-            <div className="pc3d-content">
+            {!blank && <div className="pc3d-content">
               <div className="pc3d-hdr">
                 <img src="/hoop.svg" alt="" />
                 <div className="pc3d-wm">HOOP<i>CONNECT</i></div>
@@ -188,10 +208,23 @@ export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frame
               <div className="pc3d-foot">
                 <div className="id">HC-ID · <b>{hcId ?? '—'}</b></div>
               </div>
-            </div>
+            </div>}
           </div>
         </div>
       </div>
-    </>
   )
+
+  if (scale && scale !== 1) {
+    // Reserve the scaled footprint (transform doesn't shrink the layout box) so a
+    // smaller card doesn't leave a tall gap. perspective() lives on .pc3d-card, so
+    // the 3D tilt still works under this ancestor scale.
+    return (
+      <div style={{ width: 300 * scale, height: 478 * scale, margin: '0 auto' }}>
+        <div style={{ width: 300, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+          {stage}
+        </div>
+      </div>
+    )
+  }
+  return stage
 }
