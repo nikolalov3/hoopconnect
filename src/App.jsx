@@ -26,6 +26,7 @@ const AchievementsPage = lazy(() => import('./pages/AchievementsPage'))
 const RecoveryPage    = lazy(() => import('./pages/RecoveryPage'))
 const ClubPage        = lazy(() => import('./pages/ClubPage'))
 const JoinClubPage    = lazy(() => import('./pages/JoinClubPage'))
+const CardLab         = lazy(() => import('./pages/CardLab'))
 const QrLandingPage   = lazy(() => import('./pages/QrLandingPage'))
 const ArenaRoad       = lazy(() => import('./components/ArenaRoad'))
 const KingOfTheCourt  = lazy(() => import('./features/kotc/KingOfTheCourt'))
@@ -256,6 +257,11 @@ export default function App() {
             <Route path="/kotc-live"       element={
               <Suspense fallback={<PageLoader />}>
                 <KotcOnline />
+              </Suspense>
+            } />
+            <Route path="/cardlab"         element={
+              <Suspense fallback={<PageLoader />}>
+                <CardLab />
               </Suspense>
             } />
             <Route path="/*"               element={<AppShell />} />

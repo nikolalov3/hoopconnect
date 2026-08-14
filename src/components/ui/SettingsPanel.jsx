@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import HexAvatar from './HexAvatar'
+import PlayerCard3D from './PlayerCard3D'
+import { useCardStats } from '../../hooks/useCardStats'
 import { FRAME_CATALOG, frameSeenKey } from '../../lib/frames'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -799,6 +801,8 @@ export default function SettingsPanel({ open, onClose }) {
 
   async function handleSignOut() { onClose(); await signOut() }
 
+  const { matchWins, kotcWins } = useCardStats(profile?.id)
+
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', { month: 'long', year: 'numeric' })
     : null
@@ -854,48 +858,54 @@ export default function SettingsPanel({ open, onClose }) {
                 overflowY: 'auto', WebkitOverflowScrolling: 'touch',
               }}>
 
-              {/* Profile hero */}
-              <div style={{ padding: '16px 18px 0' }}>
-                <div style={{
-                  background: C.surface,
-                  border: `1px solid ${C.border}`,
-                  borderTop: `1px solid ${C.borderT}`,
-                  borderRadius: 18, padding: '18px 16px',
-                  display: 'flex', alignItems: 'center', gap: 14,
-                }}>
-                  <div style={{ flexShrink: 0 }}>
-                    <HexAvatar name={profile?.name} variant={profile?.equipped_frame || 'none'} size={70}/>
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 18, fontWeight: 800, color: C.text, margin: 0,
-                      fontFamily: 'var(--font-display)', letterSpacing: 0.4,
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {profile?.name || t('defaultPlayerName')}
+              {/* Profile hero — the 3D card (a bit smaller than in the Club) with a
+                  light edit icon-button; identity line (e-mail · Beta) sits beneath. */}
+              <div style={{ padding: '18px 18px 0', position: 'relative' }}>
+                <div style={{ width: 216, margin: '0 auto' }}>
+                  <PlayerCard3D
+                    name={profile?.name}
+                    hcId={profile?.hc_id}
+                    arenaLevel={profile?.arena_level ?? 0}
+                    xp={profile?.xp ?? 0}
+                    frameVariant={profile?.equipped_frame || 'none'}
+                    matchWins={matchWins}
+                    kotcWins={kotcWins}
+                    scale={0.72}
+                  />
+                </div>
+
+                {/* Edit — light icon button, upper-right of the hero */}
+                <motion.button whileTap={{ scale: 0.9 }}
+                  onClick={() => setView('editProfile')}
+                  aria-label={t('edit')}
+                  style={{
+                    position: 'absolute', top: 22, right: 24, zIndex: 5,
+                    width: 40, height: 40, borderRadius: '50%',
+                    background: 'rgba(120,190,255,0.18)',
+                    border: '1px solid rgba(150,200,255,0.38)',
+                    color: '#dbeeff', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    WebkitTapHighlightColor: 'transparent',
+                    backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+                  }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                  </svg>
+                </motion.button>
+
+                {/* Identity — name is on the card; e-mail + Beta below */}
+                <div style={{ textAlign: 'center', marginTop: 6 }}>
+                  <p style={{ fontSize: 11, color: C.sub, margin: 0,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {user?.email}
+                  </p>
+                  {memberSince && (
+                    <p style={{ fontSize: 10, color: C.accent, fontWeight: 600,
+                      letterSpacing: 0.5, margin: '4px 0 0' }}>
+                      {t('beta', { date: memberSince })}
                     </p>
-                    <p style={{ fontSize: 10, color: C.sub, margin: '3px 0 0',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {user?.email}
-                    </p>
-                    {memberSince && (
-                      <p style={{ fontSize: 9, color: C.accent, fontWeight: 600,
-                        letterSpacing: 0.5, margin: '5px 0 0' }}>
-                        {t('beta', { date: memberSince })}
-                      </p>
-                    )}
-                  </div>
-                  <motion.button whileTap={{ scale: 0.93 }}
-                    onClick={() => setView('editProfile')}
-                    style={{
-                      flexShrink: 0, padding: '7px 14px',
-                      background: C.bb,
-                      border: `1px solid ${C.border}`,
-                      borderTop: `1px solid ${C.borderT}`,
-                      borderRadius: 8, cursor: 'pointer',
-                      WebkitTapHighlightColor: 'transparent',
-                    }}>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: C.accent,
-                      margin: 0, letterSpacing: 0.5 }}>{t('edit')}</p>
-                  </motion.button>
+                  )}
                 </div>
               </div>
 
