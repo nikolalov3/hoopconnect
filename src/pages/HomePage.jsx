@@ -443,55 +443,58 @@ function ReportRatingRing({ score, daysLeft, loading, arenaLevel = 0, devPreview
 function QuotePanel({ quote, onClose }) {
   const { t } = useTranslation('home')
   if (!quote) return null
-  // Floating card that "hangs" centered over a blurred Home view (jak karta
-  // zawodnika) — nie wysuwany panel z dołu. Tap poza kartą zamyka. Bez podpisu.
+  // Bare quote that "hangs" centered over a blurred Home view — no box/frame, no
+  // caption. Tap anywhere (or the ✕ at the bottom) closes it.
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 300,
-        background: 'rgba(4,2,0,0.68)',
-        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        background: 'rgba(4,2,0,0.72)',
+        backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        overflowY: 'auto', WebkitOverflowScrolling: 'touch',
-        padding: '28px 20px',
+        padding: '28px 26px calc(env(safe-area-inset-bottom, 0px) + 26px)',
       }}
     >
       <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 10 }}
+        initial={{ scale: 0.94, opacity: 0, y: 10 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.92, opacity: 0, y: 6 }}
+        exit={{ scale: 0.96, opacity: 0, y: 6 }}
         transition={{ type: 'spring', stiffness: 300, damping: 26 }}
         onClick={e => e.stopPropagation()}
         style={{
-          margin: 'auto', width: '100%', maxWidth: 380,
-          background: 'rgba(12,8,4,0.92)',
-          backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)',
-          border: '1px solid rgba(91,184,245,0.20)',
-          borderTop: '1px solid rgba(91,184,245,0.40)',
-          borderRadius: 28,
-          padding: '32px 28px 26px',
-          boxShadow: '0 24px 70px rgba(0,0,0,0.55), 0 0 40px rgba(91,184,245,0.07)',
+          flex: 1, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          width: '100%', maxWidth: 440, textAlign: 'center',
         }}
       >
         <p style={{
           fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 700,
-          fontSize: 22, lineHeight: 1.35, color: 'var(--text-primary)',
-          marginBottom: 18, letterSpacing: 0.3,
+          fontSize: 26, lineHeight: 1.4, color: 'var(--text-primary)',
+          marginBottom: 20, letterSpacing: 0.3,
         }}>
           „{quote.text}"
         </p>
         <p style={{
           color: 'var(--orange)', fontFamily: 'var(--font-display)',
-          fontWeight: 600, fontSize: 13, letterSpacing: 1, marginBottom: 24,
+          fontWeight: 600, fontSize: 14, letterSpacing: 1,
         }}>
           — {quote.author}
         </p>
-        <button className="btn-ghost" onClick={onClose} style={{ width: '100%', padding: '13px' }}>
-          {t('quote.close')}
-        </button>
       </motion.div>
+      <button
+        onClick={onClose}
+        aria-label={t('quote.close')}
+        style={{
+          flexShrink: 0, marginTop: 16,
+          width: 46, height: 46, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(150,200,255,0.20)',
+          color: '#cfe0f2', fontSize: 18, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >✕</button>
     </motion.div>
   )
 }
@@ -2011,8 +2014,9 @@ export default function HomePage() {
   const progress = trainings.length > 0 ? (completed.length / trainings.length) * 100 : 0
 
 
-  const greeting = profile?.name ? t('greetingHi', { name: profile.name }) : t('greetingDefault')
-  const dateStr = new Date().toLocaleDateString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })
+  // Only the first name in the greeting — a two-part "Imię Nazwisko" shows just "Imię".
+  const firstName = profile?.name ? profile.name.trim().split(/\s+/)[0] : ''
+  const greeting = firstName ? t('greetingHi', { name: firstName }) : t('greetingDefault')
 
   const slots = [
     { key: 'morning',  label: t('slots.morning'),  emoji: '🌅' },
@@ -2090,7 +2094,7 @@ export default function HomePage() {
 
       {/* Header — identical structure to StatsPage */}
       <div style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 0' }}>
-        <p className="section-label" style={{ marginBottom: 4 }}>{dateStr}</p>
+        {/* (data usunięta — miejsce zarezerwowane na przyszłe saldo punktów) */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
           <div>
             {/* Name — clickable when frame notification pending */}
