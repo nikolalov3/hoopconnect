@@ -10,7 +10,7 @@ import { getCache, setCache, bustCache } from '../lib/queryCache'
 import { pct as calcPct } from '../lib/pct'
 import { checkShotAchievements, checkPerfectSession } from '../lib/achievements'
 import { recalcFraud } from '../lib/anticheat'
-import { creditRestDayStreak } from '../lib/streak'
+import { creditRestDayStreak, nextStreakValue } from '../lib/streak'
 import StreakToast from '../components/ui/StreakToast'
 import { shareSessionCard, doShare } from '../lib/shareCard'
 import { dispatchLocal } from '../lib/realtimeManager'
@@ -389,7 +389,7 @@ export default function ShootingPage() {
 
     const lastActiveDate = (freshProfile?.last_active || '').slice(0, 10)
     if (lastActiveDate !== TODAY) {
-      const newStreak = (freshProfile?.streak || 0) + 1
+      const newStreak = nextStreakValue(freshProfile?.last_active, freshProfile?.streak)
       const { error: strErr } = await supabase.from('profiles').update({
         streak:         newStreak,
         longest_streak: Math.max(newStreak, freshProfile?.longest_streak || 0),

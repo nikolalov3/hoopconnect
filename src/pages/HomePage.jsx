@@ -11,6 +11,7 @@ import SettingsPanel from '../components/ui/SettingsPanel'
 import LeagueInfoPanel from '../components/ui/LeagueInfoPanel'
 import { useUI } from '../context/UIContext'
 import StreakToast from '../components/ui/StreakToast'
+import { nextStreakValue } from '../lib/streak'
 import { getCache, setCache, bustCache } from '../lib/queryCache'
 import { pGet, pSet } from '../lib/persistentCache'
 import { useNotifications } from '../context/NotificationsContext'
@@ -1666,7 +1667,7 @@ export default function HomePage() {
 
     // ── Streak ──
     if ((freshProfile?.last_active || '').slice(0, 10) !== TODAY) {
-      const newStreak = (freshProfile?.streak || 0) + 1
+      const newStreak = nextStreakValue(freshProfile?.last_active, freshProfile?.streak)
       const { error: strErr } = await supabase.from('profiles').update({
         streak:         newStreak,
         longest_streak: Math.max(newStreak, freshProfile?.longest_streak || 0),
