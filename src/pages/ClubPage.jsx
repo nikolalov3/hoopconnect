@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { creditRestDayStreak } from '../lib/streak'
 import { onTableChange, setClubScope } from '../lib/realtimeManager'
+import { useBackgroundCatalog, backgroundAsset } from '../lib/cardCatalog'
 import { checkTeamWinAchievements } from '../lib/achievements'
 import { calendarWeekNumber } from '../lib/week'
 import { shareMatchCard, doShare } from '../lib/shareCard'
@@ -1349,7 +1350,7 @@ function usePlayerProfileData(memberId) {
     setStats(null)
 
     Promise.all([
-      supabase.from('profiles').select('xp,arena_level,country,background,username,equipped_frame').eq('id', memberId).single(),
+      supabase.from('profiles').select('xp,arena_level,country,background,username,equipped_frame,equipped_background').eq('id', memberId).single(),
       supabase.from('shooting_sessions').select('shot_type,made,attempted').eq('user_id', memberId),
       supabase.from('activity_log').select('trainings_completed').eq('user_id', memberId),
       supabase.from('match_players').select('match_id,team').eq('user_id', memberId),
@@ -1465,6 +1466,8 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
   const { t } = useTranslation('club')
   const { profile: myProfile } = useAuth()
   const { profile, stats, loading } = usePlayerProfileData(member.id)
+  const bgCatalog = useBackgroundCatalog()
+  const cardBg = backgroundAsset(bgCatalog, profile?.equipped_background)
   const country = COUNTRIES.find(c => c.code === profile?.country) || null
   const { next: nextArena, pct } = arenaProgress(profile?.xp, profile?.arena_level)
   const theme = getArenaTheme(profile?.arena_level ?? 0)
@@ -1491,8 +1494,10 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
               arenaLevel={profile?.arena_level ?? 0}
               xp={profile?.xp ?? 0}
               frameVariant={frameVariant}
+              background={cardBg}
               matchWins={stats?.wins ?? 0}
               kotcWins={stats?.kotcWins ?? 0}
+              idle
             />
             <div style={{ marginTop: 20, width: '100%', maxWidth: 300 }}>
               <motion.button whileTap={{ scale: 0.96 }} onClick={onLeave} disabled={removing}
@@ -1521,8 +1526,10 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
             arenaLevel={profile?.arena_level ?? 0}
             xp={profile?.xp ?? 0}
             frameVariant={frameVariant}
+            background={cardBg}
             matchWins={stats?.wins ?? 0}
             kotcWins={stats?.kotcWins ?? 0}
+            idle
           />
           {showDanger && (
             <div style={{ marginTop: 20, width: '100%', maxWidth: 300 }}>

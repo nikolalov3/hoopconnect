@@ -5,7 +5,10 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import HexAvatar from './HexAvatar'
+import PlayerCard3D from './PlayerCard3D'
+import { useCardStats } from '../../hooks/useCardStats'
 import { FRAME_CATALOG, frameSeenKey } from '../../lib/frames'
+import { useBackgroundCatalog, backgroundAsset, useOwnedBackgrounds, redeemCode } from '../../lib/cardCatalog'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 // Bardziej szary, przygaszone baby-blue ramki
@@ -799,6 +802,59 @@ export default function SettingsPanel({ open, onClose }) {
 
   async function handleSignOut() { onClose(); await signOut() }
 
+  const { matchWins, kotcWins } = useCardStats(profile?.id)
+
+  // ── Card personalization (background + frame) ──────────────────────────────
+  const bgCatalog = useBackgroundCatalog()
+  const { owned: ownedBackgrounds, reload: reloadOwned } = useOwnedBackgrounds(profile?.id, bgCatalog)
+  const [personalizing, setPersonalizing] = useState(false)
+  const [draftBg,    setDraftBg]    = useState(null)
+  const [draftFrame, setDraftFrame] = useState('none')
+  const [savingPers, setSavingPers] = useState(false)
+  const [code,    setCode]    = useState('')
+  const [codeMsg, setCodeMsg] = useState(null)
+
+  function openPersonalization() {
+    setDraftBg(profile?.equipped_background || null)
+    setDraftFrame(profile?.equipped_frame || 'none')
+    setCode(''); setCodeMsg(null)
+    setPersonalizing(true)
+  }
+  async function savePersonalization() {
+    if (!profile?.id || savingPers) return
+    setSavingPers(true)
+    const patch = {
+      equipped_background: draftBg || null,
+      equipped_frame:      draftFrame === 'none' ? null : draftFrame,
+    }
+    const { error } = await supabase.from('profiles').update(patch).eq('id', profile.id)
+    if (!error) { setProfileData?.(patch); setPersonalizing(false) }
+    setSavingPers(false)
+  }
+  async function handleRedeem() {
+    if (!code.trim()) return
+    try {
+      const items = await redeemCode(code)
+      setCode('')
+      setCodeMsg({ ok: true, text: `Odblokowano: ${items?.[0]?.item_name || 'nagroda'}` })
+      reloadOwned()
+    } catch (e) {
+      const map = {
+        invalid_code: 'Nieprawidłowy kod', expired_code: 'Kod wygasł',
+        code_exhausted: 'Kod wyczerpany', already_redeemed: 'Kod już wykorzystany',
+        not_authenticated: 'Zaloguj się',
+      }
+      const msg = e?.message || ''
+      const key = Object.keys(map).find(k => msg.includes(k))
+      setCodeMsg({ ok: false, text: key ? map[key] : 'Nie udało się użyć kodu' })
+    }
+  }
+
+  // Card shows the draft while personalizing, otherwise the saved profile values.
+  const shownFrame = personalizing ? (draftFrame || 'none') : (profile?.equipped_frame || 'none')
+  const shownBgId  = personalizing ? draftBg : profile?.equipped_background
+  const shownBgAsset = backgroundAsset(bgCatalog, shownBgId)
+
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', { month: 'long', year: 'numeric' })
     : null
@@ -854,84 +910,162 @@ export default function SettingsPanel({ open, onClose }) {
                 overflowY: 'auto', WebkitOverflowScrolling: 'touch',
               }}>
 
-              {/* Profile hero */}
-              <div style={{ padding: '16px 18px 0' }}>
-                <div style={{
-                  background: C.surface,
-                  border: `1px solid ${C.border}`,
-                  borderTop: `1px solid ${C.borderT}`,
-                  borderRadius: 18, padding: '18px 16px',
-                  display: 'flex', alignItems: 'center', gap: 14,
-                }}>
-                  <div style={{ flexShrink: 0 }}>
-                    <HexAvatar name={profile?.name} variant={profile?.equipped_frame || 'none'} size={70}/>
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 18, fontWeight: 800, color: C.text, margin: 0,
-                      fontFamily: 'var(--font-display)', letterSpacing: 0.4,
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {profile?.name || t('defaultPlayerName')}
-                    </p>
-                    <p style={{ fontSize: 10, color: C.sub, margin: '3px 0 0',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {user?.email}
-                    </p>
-                    {memberSince && (
-                      <p style={{ fontSize: 9, color: C.accent, fontWeight: 600,
-                        letterSpacing: 0.5, margin: '5px 0 0' }}>
-                        {t('beta', { date: memberSince })}
-                      </p>
-                    )}
-                  </div>
-                  <motion.button whileTap={{ scale: 0.93 }}
+              {/* Profile hero — the 3D card (a bit smaller than in the Club) with a
+                  light edit icon-button; identity line (e-mail · Beta) sits beneath. */}
+              <div style={{ padding: '18px 18px 0', position: 'relative' }}>
+                <div style={{ width: 216, margin: '0 auto' }}>
+                  <PlayerCard3D
+                    name={profile?.name}
+                    hcId={profile?.hc_id}
+                    arenaLevel={profile?.arena_level ?? 0}
+                    xp={profile?.xp ?? 0}
+                    frameVariant={shownFrame}
+                    background={shownBgAsset}
+                    matchWins={matchWins}
+                    kotcWins={kotcWins}
+                    scale={0.72}
+                    idle
+                  />
+                </div>
+
+                {/* Edit profile (name etc.) — hidden while personalizing the card */}
+                {!personalizing && (
+                  <motion.button whileTap={{ scale: 0.9 }}
                     onClick={() => setView('editProfile')}
+                    aria-label={t('edit')}
                     style={{
-                      flexShrink: 0, padding: '7px 14px',
-                      background: C.bb,
-                      border: `1px solid ${C.border}`,
-                      borderTop: `1px solid ${C.borderT}`,
-                      borderRadius: 8, cursor: 'pointer',
+                      position: 'absolute', top: 22, right: 24, zIndex: 5,
+                      width: 40, height: 40, borderRadius: '50%',
+                      background: 'rgba(120,190,255,0.18)',
+                      border: '1px solid rgba(150,200,255,0.38)',
+                      color: '#dbeeff', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                       WebkitTapHighlightColor: 'transparent',
+                      backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
                     }}>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: C.accent,
-                      margin: 0, letterSpacing: 0.5 }}>{t('edit')}</p>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 20h9"/>
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                    </svg>
+                  </motion.button>
+                )}
+
+                {/* e-mail + personalization symbol (opens the in-place picker below) */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 8 }}>
+                  <p style={{ fontSize: 11, color: C.sub, margin: 0, maxWidth: 220,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {user?.email}
+                  </p>
+                  <motion.button whileTap={{ scale: 0.9 }}
+                    onClick={() => personalizing ? setPersonalizing(false) : openPersonalization()}
+                    aria-label="Personalizacja karty"
+                    style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', cursor: 'pointer',
+                      background: personalizing ? 'rgba(120,190,255,0.34)' : 'rgba(120,190,255,0.16)',
+                      border: `1px solid ${personalizing ? 'rgba(150,200,255,0.6)' : 'rgba(150,200,255,0.35)'}`,
+                      color: '#dbeeff', display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent' }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 3l1.9 4.6 4.9.4-3.7 3.2 1.1 4.8L12 13.9 7.7 16l1.1-4.8L5.1 8l4.9-.4L12 3z"/>
+                    </svg>
                   </motion.button>
                 </div>
               </div>
 
-              {/* Discord — tuż pod profilem */}
-              <div style={{ padding: '10px 18px 0' }}>
-                <DiscordCard/>
-              </div>
+              {personalizing ? (
+                /* ── In-place card personalization (swaps the lower menu) ── */
+                <div style={{ flex: 1, paddingTop: 14 }}>
+                  <div style={{ padding: '0 18px' }}><SLabel>Tło karty</SLabel></div>
+                  {ownedBackgrounds.length === 0 ? (
+                    <p style={{ padding: '0 18px', color: C.sub, fontSize: 12, margin: '0 0 6px' }}>
+                      Nie masz jeszcze żadnych teł — użyj kodu poniżej, żeby odblokować.
+                    </p>
+                  ) : (
+                    <div className="hide-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 18px 6px' }}>
+                      {ownedBackgrounds.map(b => {
+                        const sel = draftBg === b.id
+                        return (
+                          <button key={b.id} onClick={() => setDraftBg(sel ? null : b.id)}
+                            style={{ flexShrink: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, WebkitTapHighlightColor: 'transparent' }}>
+                            <div style={{ borderRadius: 12, padding: 3,
+                              border: `2px solid ${sel ? C.accent : C.border}`,
+                              boxShadow: sel ? '0 0 16px rgba(91,184,245,0.5)' : 'none' }}>
+                              <PlayerCard3D name={profile?.name} arenaLevel={profile?.arena_level ?? 0} xp={profile?.xp ?? 0}
+                                background={b.asset_path} scale={0.26} interactive={false} blank/>
+                            </div>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: sel ? '#dbeeff' : C.sub, maxWidth: 90,
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
 
-              {/* Sekcje */}
-              <div style={{ padding: '0 18px', flex: 1 }}>
+                  <div style={{ padding: '12px 18px 0' }}>
+                    <SLabel>Ramka</SLabel>
+                    <FramePicker current={draftFrame} uid={user?.id} profile={profile} onPick={setDraftFrame}/>
+                  </div>
 
-                <SLabel>{t('account')}</SLabel>
-                <CardGroup>
-                  <Row label={t('accountSettings')} sub={t('accountSub')} onClick={() => setView('account')}/>
-                  <Row label={t('language')} sub={i18n.language === 'pl' ? t('polish') : t('english')} onClick={() => setView('language')}/>
-                </CardGroup>
+                  <div style={{ padding: '18px 18px 0' }}>
+                    <SLabel>Masz kod?</SLabel>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="np. SMOK2026"
+                        style={{ flex: 1, padding: '11px 12px', borderRadius: 10, fontSize: 13, letterSpacing: 1,
+                          border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.03)', color: C.text }}/>
+                      <button onClick={handleRedeem} style={{ padding: '11px 16px', borderRadius: 10, cursor: 'pointer',
+                        border: `1px solid ${C.border}`, background: C.bb, color: C.accent, fontWeight: 700, fontSize: 13, fontFamily: 'inherit' }}>Użyj</button>
+                    </div>
+                    {codeMsg && <p style={{ fontSize: 11, margin: '8px 0 0', color: codeMsg.ok ? '#4ade80' : '#ff6b6b' }}>{codeMsg.text}</p>}
+                  </div>
 
-                <SLabel>{t('other')}</SLabel>
-                <CardGroup>
-                  <Row label={t('info')} sub={t('infoSub')} onClick={() => setView('info')}/>
-                </CardGroup>
+                  <div style={{ padding: '22px 18px 44px', display: 'flex', gap: 10 }}>
+                    <button onClick={() => setPersonalizing(false)} style={{ flex: 1, padding: '14px', borderRadius: 12, cursor: 'pointer',
+                      border: `1px solid ${C.border}`, background: 'transparent', color: C.sub, fontWeight: 700, fontSize: 13, fontFamily: 'inherit' }}>Anuluj</button>
+                    <button onClick={savePersonalization} disabled={savingPers} style={{ flex: 2, padding: '14px', borderRadius: 12, cursor: savingPers ? 'default' : 'pointer', border: 'none',
+                      background: 'linear-gradient(135deg, #1E6BB0, #5BB8F5)', color: '#fff', fontWeight: 800, fontSize: 14,
+                      letterSpacing: 0.5, fontFamily: 'var(--font-display)', textTransform: 'uppercase', opacity: savingPers ? 0.6 : 1 }}>
+                      {savingPers ? 'Zapisywanie…' : 'Zapisz'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Discord — tuż pod profilem */}
+                  <div style={{ padding: '10px 18px 0' }}>
+                    <DiscordCard/>
+                  </div>
 
-              </div>
+                  {/* Sekcje */}
+                  <div style={{ padding: '0 18px', flex: 1 }}>
 
-              {/* Sign out */}
-              <div style={{ padding: '24px 18px 44px', textAlign: 'center' }}>
-                <button onClick={handleSignOut} style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: 12, fontWeight: 600, color: C.red,
-                  WebkitTapHighlightColor: 'transparent', padding: '6px 16px',
-                }}>{t('signOut')}</button>
-                <p style={{ fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
-                  color: C.dim, fontWeight: 600, margin: '10px 0 0' }}>
-                  HoopConnect · {APP_VERSION}
-                </p>
-              </div>
+                    <SLabel>{t('account')}</SLabel>
+                    <CardGroup>
+                      <Row label={t('accountSettings')} sub={t('accountSub')} onClick={() => setView('account')}/>
+                      <Row label={t('language')} sub={i18n.language === 'pl' ? t('polish') : t('english')} onClick={() => setView('language')}/>
+                    </CardGroup>
+
+                    <SLabel>{t('other')}</SLabel>
+                    <CardGroup>
+                      <Row label={t('info')} sub={t('infoSub')} onClick={() => setView('info')}/>
+                    </CardGroup>
+
+                  </div>
+                </>
+              )}
+
+              {/* Sign out — hidden while personalizing */}
+              {!personalizing && (
+                <div style={{ padding: '24px 18px 44px', textAlign: 'center' }}>
+                  <button onClick={handleSignOut} style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontSize: 12, fontWeight: 600, color: C.red,
+                    WebkitTapHighlightColor: 'transparent', padding: '6px 16px',
+                  }}>{t('signOut')}</button>
+                  <p style={{ fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
+                    color: C.dim, fontWeight: 600, margin: '10px 0 0' }}>
+                    HoopConnect · {APP_VERSION}
+                  </p>
+                </div>
+              )}
 
             </motion.div>
 
