@@ -70,12 +70,15 @@ export default function AuthPage() {
 
   return (
     <div style={{
-      minHeight: '100%',
+      // Scroll root so on small phones / with the keyboard open the Google button
+      // and footer scroll into reach instead of being clipped below the fold.
+      height: '100%',
       display: 'flex',
       flexDirection: 'column',
       padding: '48px 26px 36px',
       position: 'relative',
-      overflow: 'hidden',
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch',
     }}>
       {/* Background glow */}
       <div style={{

@@ -1801,7 +1801,10 @@ function MatchCard({ match, dist, uid, onPress }) {
   const color = MODE_COLOR[match.mode]
   const isPast = new Date(match.scheduled_at) < new Date()
   const homeTeamName = match._club?.name || match._club?.abbr || t('matchCard.clubFallback')
-  const awayTeamName = match._awayClub?.name || match._awayClub?.abbr || (match.away_club_id ? t('matchCard.rivalsFallback') : t('matchCard.openFallback'))
+  // "Otwarte" only while the away side is genuinely empty/joinable. Once opponents
+  // have joined (pickup match, no rival club) show "Rywale", not "Otwarte".
+  const awayTeamName = match._awayClub?.name || match._awayClub?.abbr
+    || ((match.away_club_id || awayPlayers.length > 0) ? t('matchCard.rivalsFallback') : t('matchCard.openFallback'))
   const hasTeammate = !!match._hasTeammate
   // Match where the current user has already joined — strongest highlight
   const isParticipating = uid && match.players.some(p => p.user_id === uid)
@@ -2400,12 +2403,14 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
   const homeTeamName = local._club?.name || t('matchDetail.homeFallback')
   // If away is claimed by our club → show our name; if by another → show their name; if free → invite
   const awayIsFree = !local.away_club_id
+  const awayHasPlayers = local.players.some(p => p.team === 'away')
+  // Free away side shows "Dołącz" only while still empty; once opponents have
+  // joined (pickup match, no rival club) show "Rywale", not the join placeholder.
   const awayDisplayName = local._awayClub?.name
     || (local.away_club_id === userClubId ? userClubName : null)
-    || (awayIsFree ? t('matchDetail.joinFallback') : t('matchDetail.rivalsFallback'))
+    || (awayIsFree && !awayHasPlayers ? t('matchDetail.joinFallback') : t('matchDetail.rivalsFallback'))
   const awayTeamName = awayDisplayName
   const isCreator = local.created_by === uid
-  const awayHasPlayers = local.players.some(p => p.team === 'away')
   // Creator can delete if no enemy joined, cancel if they did
   const canCreatorRemove = isCreator && !isPast && local.status !== 'completed'
 
@@ -3331,7 +3336,9 @@ function JoinSuccessModal({ match, uid, clubName, playerName, onClose }) {
       style={{
         position: 'fixed', inset: 0, zIndex: 500,
         background: 'rgba(2,5,14,0.94)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        // Scroll root so the Share + Close buttons stay reachable on short screens.
+        overflowY: 'auto', WebkitOverflowScrolling: 'touch',
         padding: 24,
       }}>
       <motion.div
@@ -3341,7 +3348,7 @@ function JoinSuccessModal({ match, uid, clubName, playerName, onClose }) {
         transition={{ type: 'spring', stiffness: 300, damping: 24 }}
         style={{
           position: 'relative',
-          width: '100%', maxWidth: 380,
+          width: '100%', maxWidth: 380, margin: 'auto',
           background: C.surface, borderRadius: 28, padding: '38px 24px 28px',
           border: `1.5px solid ${color}40`,
           boxShadow: `0 28px 80px rgba(0,0,0,0.65), 0 0 0 1px ${color}20, 0 0 60px ${color}12`,

@@ -328,8 +328,8 @@ function KotcIntro({ onDone, onSkip }) {
   const last = i === INTRO_SLIDES.length - 1
   const s = INTRO_SLIDES[i]
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(3,6,12,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 9500 }}>
-      <div style={{ width: '100%', maxWidth: 360, background: 'rgba(14,22,38,0.66)', backdropFilter: 'blur(28px) saturate(1.5)', WebkitBackdropFilter: 'blur(28px) saturate(1.5)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 26, padding: '14px 18px 22px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.22), 0 24px 70px rgba(0,0,0,0.55)' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(3,6,12,0.72)', display: 'flex', flexDirection: 'column', overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: 20, zIndex: 9500 }}>
+      <div style={{ width: '100%', maxWidth: 360, margin: 'auto', background: 'rgba(14,22,38,0.66)', backdropFilter: 'blur(28px) saturate(1.5)', WebkitBackdropFilter: 'blur(28px) saturate(1.5)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 26, padding: '14px 18px 22px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.22), 0 24px 70px rgba(0,0,0,0.55)' }}>
         <div style={{ display: 'flex', gap: 5, marginBottom: 12 }}>
           {INTRO_SLIDES.map((_, idx) => (
             <div key={idx} style={{ flex: 1, height: 3, borderRadius: 2, background: idx <= i ? BLUE : 'rgba(255,255,255,0.15)', transition: 'background .2s' }} />

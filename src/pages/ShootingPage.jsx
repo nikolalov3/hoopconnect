@@ -580,8 +580,11 @@ export default function ShootingPage() {
 
   return (
     <div style={{
+      // Scroll root so the bottom CTAs (incl. freestyle "Zakończ sesję") stay
+      // reachable on small phones instead of being clipped below the fold.
       height: '100%', display: 'flex', flexDirection: 'column',
-      background: 'transparent', position: 'relative', overflow: 'hidden',
+      background: 'transparent', position: 'relative',
+      overflowY: 'auto', WebkitOverflowScrolling: 'touch',
     }}>
       <AnimatePresence>
         {finished && (

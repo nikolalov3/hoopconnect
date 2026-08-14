@@ -25,7 +25,10 @@ function WelcomeScreen({ userName, onComplete }) {
         backdropFilter: 'blur(40px)',
         WebkitBackdropFilter: 'blur(40px)',
         display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
+        alignItems: 'center',
+        // Scroll root instead of hard vertical centering, so on short screens the
+        // final CTA can't get stranded off-screen (inner wrapper uses margin:auto).
+        overflowY: 'auto', WebkitOverflowScrolling: 'touch',
         padding: '0 26px',
         paddingTop: 'env(safe-area-inset-top, 0px)',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
@@ -45,7 +48,7 @@ function WelcomeScreen({ userName, onComplete }) {
         pointerEvents: 'none',
       }} />
 
-      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 400, margin: 'auto 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
         {/* Badge — jak ikona osiągnięcia */}
         <motion.div
@@ -283,12 +286,16 @@ export default function OnboardingPage() {
 
   return (
     <div style={{
-      minHeight: '100%',
+      // Own scroll root: cap to viewport (height, not minHeight) + overflowY:auto so
+      // when a step is taller than the screen (small phones, keyboard open) the
+      // "Dalej"/finish button below scrolls into reach instead of being clipped.
+      height: '100%',
       display: 'flex',
       flexDirection: 'column',
       padding: '0 0 40px',
       position: 'relative',
-      overflow: 'hidden',
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch',
     }}>
       <AnimatePresence>
         {showWelcome && (
@@ -414,8 +421,13 @@ export default function OnboardingPage() {
                 </div>
               ))}
             </div>
-            {/* Wiek obliczony + info card */}
-            {age !== null && (
+            {/* Wiek obliczony + info card.
+               Fazy rozwojowe (fundamenty/rozwój/intensyfikacja) mają sens tylko dla
+               młodzieży. Dla dorosłych (age > 18) nie pokazujemy żadnego stwierdzenia
+               o „fazie" — brzmiało sztucznie dla starszych graczy. */}
+            {age !== null && age <= 18 && (() => {
+              const phaseKey = age <= 14 ? 'foundations' : age <= 16 ? 'development' : 'intensification'
+              return (
               <motion.div
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 style={{
@@ -429,13 +441,14 @@ export default function OnboardingPage() {
                 }}
               >
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--orange)', letterSpacing: 1, marginBottom: 4 }}>
-                  {t('step1.ageLabel', { age })} · {t(`step1.phases.${age <= 14 ? 'foundations' : age <= 16 ? 'development' : age <= 18 ? 'intensification' : 'advanced'}`)}
+                  {t('step1.ageLabel', { age })} · {t(`step1.phases.${phaseKey}`)}
                 </p>
                 <p style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.5 }}>
-                  {t(`step1.descs.${age <= 14 ? 'foundations' : age <= 16 ? 'development' : age <= 18 ? 'intensification' : 'advanced'}`)}
+                  {t(`step1.descs.${phaseKey}`)}
                 </p>
               </motion.div>
-            )}
+              )
+            })()}
           </motion.div>
         )}
 

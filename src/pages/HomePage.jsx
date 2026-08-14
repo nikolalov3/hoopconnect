@@ -1266,7 +1266,7 @@ export default function HomePage() {
   const [dayType, setDayType] = useState('T')
   const [reportScore, setReportScore] = useState(0)
   const [reportLoading, setReportLoading] = useState(true)
-  const [daysUntilReport, setDaysUntilReport] = useState(7)
+  const [daysUntilReport, setDaysUntilReport] = useState(0)  // raport odblokowany od startu (rozgrzewka), bez blokady 7-dniowej
   const [achievementToast, setAchievementToast] = useState(null) // { title, stage }
   const { setSettingsOpen, leagueOpen, setLeagueOpen, setFrameUnlockOpen, setFrameUnlockData, frameUnlockData, setNotificationsOpen } = useUI()
   const { unreadCount: notifUnreadCount } = useNotifications()
@@ -1411,7 +1411,7 @@ export default function HomePage() {
     }
     if (cachedLog !== null)    setActivityLog(cachedLog)
     if (cachedQuotes)          setQuote(cachedQuotes[Math.floor(Math.random() * cachedQuotes.length)])
-    if (cachedReport != null)  { setReportScore(cachedReport.score); setDaysUntilReport(cachedReport.daysLeft); setReportLoading(false) }
+    if (cachedReport != null)  { setReportScore(cachedReport.score); setDaysUntilReport(0); setReportLoading(false) }
 
     // ── 2. STATIC data z persistent cache (24h TTL) — eliminuje round-trip ──
     // Trainings i quotes zmieniają się rzadko (tylko przy deployu). Cache między
@@ -1487,16 +1487,12 @@ export default function HomePage() {
     const completedWeek = currentWeek - 1
 
     const weekStart     = startOfCalendarWeek(now)
-    const daysIntoWeek  = Math.floor((now.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24))
-    const daysToWeekEnd = 7 - daysIntoWeek          // dni do końca tygodnia / poniedziałku (1-7)
 
-    // Dopóki trwa tydzień, w którym gracz dołączył, nie ma jeszcze ŻADNEGO
-    // zakończonego (jego) tygodnia do zaraportowania — pokazujemy countdown
-    // „pierwszy raport za N dni”. Punkty mimo to liczą się od razu (patrz
-    // `runningTotal` niżej, filtrowany po dacie bieżącego tygodnia).
+    // Countdown „pierwszy raport za N dni" usunięty — raport jest odblokowany od
+    // startu: od razu pokazujemy rozgrzewkę i liczymy punkty (daysUntilReport=0).
+    // `hasFirstReport` zostaje — steruje archiwizacją zakończonego tygodnia niżej.
     const hasFirstReport = currentWeek > joinWeek
-    const remaining = hasFirstReport ? 0 : Math.max(1, daysToWeekEnd)
-    setDaysUntilReport(remaining)
+    setDaysUntilReport(0)
 
     // Archiwizacja zakończonego tygodnia (jeśli jeszcze nie zapisana) —
     // tylko dla tygodni OD dołączenia gracza wzwyż (nie cudzych, sprzed jego
@@ -1571,7 +1567,7 @@ export default function HomePage() {
       console.log('[weekly-report]', { currentWeek, joinWeek, weekStartISO, rows: pointsData })
     }
 
-    setCache(`report:${profile.id}`, { score: runningTotal, daysLeft: remaining }, 60 * 1000)
+    setCache(`report:${profile.id}`, { score: runningTotal, daysLeft: 0 }, 60 * 1000)
     setReportScore(runningTotal)
 
     setReportLoading(false)
@@ -1595,8 +1591,7 @@ export default function HomePage() {
       .gte('date', effectiveFromISO)
     const trueTotal = (data || []).reduce((s, r) => s + (r.points || 0), 0)
     setReportScore(trueTotal)
-    // Zachowujemy daysLeft z bieżącego stanu — nie nadpisujemy countdown'a
-    setCache(`report:${profile.id}`, { score: trueTotal, daysLeft: daysUntilReport ?? 0 }, 60 * 1000)
+    setCache(`report:${profile.id}`, { score: trueTotal, daysLeft: 0 }, 60 * 1000)
   }
 
   function getSwapAlternatives(trainingId) {
