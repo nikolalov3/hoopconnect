@@ -796,13 +796,14 @@ export default function SettingsPanel({ open, onClose }) {
   const [draftBg,    setDraftBg]    = useState(null)
   const [draftFrame, setDraftFrame] = useState('none')
   const [savingPers, setSavingPers] = useState(false)
-  const [code,    setCode]    = useState('')
-  const [codeMsg, setCodeMsg] = useState(null)
+  const [code,     setCode]     = useState('')
+  const [codeMsg,  setCodeMsg]  = useState(null)
+  const [showCode, setShowCode] = useState(false)
 
   function openPersonalization() {
     setDraftBg(profile?.equipped_background || null)
     setDraftFrame(profile?.equipped_frame || 'none')
-    setCode(''); setCodeMsg(null)
+    setCode(''); setCodeMsg(null); setShowCode(false)
     setPersonalizing(true)
   }
   async function savePersonalization() {
@@ -990,16 +991,27 @@ export default function SettingsPanel({ open, onClose }) {
                     <FramePicker current={draftFrame} uid={user?.id} profile={profile} onPick={setDraftFrame}/>
                   </div>
 
-                  <div style={{ padding: '18px 18px 0' }}>
-                    <SLabel>Masz kod?</SLabel>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="np. SMOK2026"
-                        style={{ flex: 1, padding: '11px 12px', borderRadius: 10, fontSize: 13, letterSpacing: 1,
-                          border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.03)', color: C.text }}/>
-                      <button onClick={handleRedeem} style={{ padding: '11px 16px', borderRadius: 10, cursor: 'pointer',
-                        border: `1px solid ${C.border}`, background: C.bb, color: C.accent, fontWeight: 700, fontSize: 13, fontFamily: 'inherit' }}>Użyj</button>
-                    </div>
-                    {codeMsg && <p style={{ fontSize: 11, margin: '8px 0 0', color: codeMsg.ok ? '#4ade80' : '#ff6b6b' }}>{codeMsg.text}</p>}
+                  {/* Redeem code — tucked away: just a quiet link until tapped */}
+                  <div style={{ padding: '20px 18px 0' }}>
+                    {!showCode ? (
+                      <button onClick={() => setShowCode(true)} style={{
+                        background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
+                        color: C.dim, fontSize: 12, fontWeight: 600, fontFamily: 'inherit',
+                        WebkitTapHighlightColor: 'transparent' }}>
+                        Masz kod? →
+                      </button>
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <input autoFocus value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="Wpisz kod"
+                            style={{ flex: 1, padding: '11px 12px', borderRadius: 10, fontSize: 13, letterSpacing: 1,
+                              border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.03)', color: C.text }}/>
+                          <button onClick={handleRedeem} style={{ padding: '11px 16px', borderRadius: 10, cursor: 'pointer',
+                            border: `1px solid ${C.border}`, background: C.bb, color: C.accent, fontWeight: 700, fontSize: 13, fontFamily: 'inherit' }}>Użyj</button>
+                        </div>
+                        {codeMsg && <p style={{ fontSize: 11, margin: '8px 0 0', color: codeMsg.ok ? '#4ade80' : '#ff6b6b' }}>{codeMsg.text}</p>}
+                      </>
+                    )}
                   </div>
 
                   <div style={{ padding: '22px 18px 44px', display: 'flex', gap: 10 }}>
