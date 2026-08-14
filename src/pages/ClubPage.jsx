@@ -8,6 +8,7 @@ import i18n from '../i18n'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { creditRestDayStreak } from '../lib/streak'
+import { onTableChange, setClubScope } from '../lib/realtimeManager'
 import { checkTeamWinAchievements } from '../lib/achievements'
 import { calendarWeekNumber } from '../lib/week'
 import { shareMatchCard, doShare } from '../lib/shareCard'
@@ -3672,8 +3673,29 @@ function MatchesPanel({ club, uid, isActive }) {
     if (locState === 'granted' && userLoc) loadMatches()
   }, [locState, userLoc, radius])
 
-  async function loadMatches() {
-    setLoading(true)
+  // Refetch the list when returning to the app (matches others created while we
+  // were backgrounded). Silent = no spinner; only while viewing the tab with
+  // location ready. Debounced — visibilitychange + focus often fire together.
+  useEffect(() => {
+    if (!isActive || locState !== 'granted' || !userLoc) return
+    let lastSync = 0
+    const resync = () => {
+      if (document.visibilityState === 'hidden') return
+      const now = Date.now()
+      if (now - lastSync < 2000) return
+      lastSync = now
+      loadMatches({ silent: true })
+    }
+    document.addEventListener('visibilitychange', resync)
+    window.addEventListener('focus', resync)
+    return () => {
+      document.removeEventListener('visibilitychange', resync)
+      window.removeEventListener('focus', resync)
+    }
+  }, [isActive, locState, userLoc, radius])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function loadMatches({ silent = false } = {}) {
+    if (!silent) setLoading(true)
     try {
       const data = await apiFetchMatches(userLoc.lat, userLoc.lng, radius, myMemberIds, club.id)
 
@@ -3710,7 +3732,7 @@ function MatchesPanel({ club, uid, isActive }) {
         localStorage.setItem(`hcNewTeamMatch_${uid}`, '1')
       }
     } catch (e) { console.error(e) }
-    finally { setLoading(false) }
+    finally { if (!silent) setLoading(false) }
   }
 
   function checkPendingResult(list) {
@@ -5209,14 +5231,54 @@ export default function ClubPage() {
   const [club,    setClub]    = useState(null)
   const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async () => {
+  // silent:true → refresh in place (no spinner) for realtime / focus resyncs.
+  const load = useCallback(async ({ silent = false } = {}) => {
     if (!profile?.id) return
-    setLoading(true)
-    setClub(await apiFetch(profile.id))
-    setLoading(false)
+    if (!silent) setLoading(true)
+    const next = await apiFetch(profile.id)
+    setClub(next)
+    if (!silent) setLoading(false)
   }, [profile?.id])
 
   useEffect(() => { load() }, [load])
+
+  // Keep the realtime channel scoped to this club (idempotent) so club_members /
+  // club_matches events actually arrive — covers a club created/joined mid-session,
+  // before AuthContext re-scopes on the next profile fetch.
+  useEffect(() => { if (club?.id) setClubScope(club.id) }, [club?.id])
+
+  // ── Live roster: someone joins/leaves the club → silent refetch (no spinner).
+  // Uses the existing multiplexed user-channel (zero new channels). Debounced so a
+  // burst of joins collapses into one refetch. (Matches live-update inside their
+  // own list component — they're not part of the club object here.) ──
+  useEffect(() => {
+    if (!profile?.id) return
+    let t = null
+    const bump = () => { clearTimeout(t); t = setTimeout(() => load({ silent: true }), 250) }
+    const unsubMembers = onTableChange('club_members', bump)
+    return () => { clearTimeout(t); unsubMembers() }
+  }, [profile?.id, load])
+
+  // ── Refetch on app foreground. On native (iOS/Android webview) the realtime
+  // socket can be suspended in the background, so events that fired while away are
+  // missed — a focus resync pulls current truth. Debounced (visibilitychange +
+  // focus often fire together). ──
+  useEffect(() => {
+    let lastSync = 0
+    const resync = () => {
+      if (document.visibilityState === 'hidden') return
+      const now = Date.now()
+      if (now - lastSync < 2000) return
+      lastSync = now
+      load({ silent: true })
+    }
+    document.addEventListener('visibilitychange', resync)
+    window.addEventListener('focus', resync)
+    return () => {
+      document.removeEventListener('visibilitychange', resync)
+      window.removeEventListener('focus', resync)
+    }
+  }, [load])
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
