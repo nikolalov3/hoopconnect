@@ -10,6 +10,28 @@
 import { supabase } from './supabase'
 
 /**
+ * Next streak value when crediting activity today, given the profile's stored
+ * `streak` and `last_active`.
+ *
+ * - last_active === yesterday  → continue the run (+1)
+ * - last_active older than yesterday (a full day was missed) → RESET to 1
+ * - last_active empty/null (brand-new profile, or same-day unmark that cleared
+ *   it) → continue (+1), so undo/re-mark doesn't nuke a legit streak
+ *
+ * This is the fix for "streak never resets" — previously every new-day credit
+ * just did (streak + 1) regardless of how many days were skipped.
+ *
+ * Callers must already have ensured last_active !== today (crediting once/day).
+ */
+export function nextStreakValue(lastActive, currentStreak) {
+  const today     = new Date().toISOString().split('T')[0]
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  const la = (lastActive || '').slice(0, 10)
+  const missedDay = la !== '' && la !== yesterday && la !== today
+  return missedDay ? 1 : (currentStreak || 0) + 1
+}
+
+/**
  * Credit streak when a recovery activity or match participation happens.
  * No-op if streak was already credited today (profile.last_active === today).
  * Also writes an activity_log entry so achievement calculations stay in sync.
@@ -31,7 +53,7 @@ export async function creditRestDayStreak(profile, setProfileData) {
   // Normalise: last_active may come back as full ISO timestamp or plain date
   if ((profile.last_active || '').slice(0, 10) === today) return 0  // already credited today
 
-  const newStreak = (profile.streak || 0) + 1
+  const newStreak = nextStreakValue(profile.last_active, profile.streak)
   const newLongest = Math.max(newStreak, profile.longest_streak || 0)
 
   await supabase.from('profiles').update({
