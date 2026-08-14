@@ -143,8 +143,11 @@ export default function JoinClubPage() {
 
   return (
     <div style={{
-      minHeight: '100%', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
+      // Scroll root: cap to viewport + overflowY so the position list + Join CTA
+      // scroll into reach on small phones instead of being centered off-screen.
+      height: '100%', display: 'flex', flexDirection: 'column',
+      alignItems: 'center',
+      overflowY: 'auto', WebkitOverflowScrolling: 'touch',
       padding: '32px 22px 48px',
       background: 'transparent',
     }}>
@@ -158,7 +161,7 @@ export default function JoinClubPage() {
         ) : error && !club ? (
           <motion.div key="err"
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-            style={{ textAlign: 'center' }}>
+            style={{ textAlign: 'center', margin: 'auto 0' }}>
             <p style={{ fontSize: 48, marginBottom: 12 }}>🏀</p>
             <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900,
               fontSize: 22, color: 'var(--text-primary)', marginBottom: 8 }}>
@@ -174,7 +177,7 @@ export default function JoinClubPage() {
         ) : done ? (
           <motion.div key="done"
             initial={{ opacity: 0, scale: 0.88 }} animate={{ opacity: 1, scale: 1 }}
-            style={{ textAlign: 'center' }}>
+            style={{ textAlign: 'center', margin: 'auto 0' }}>
             <motion.p
               initial={{ scale: 0 }} animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 400, damping: 18 }}
@@ -192,7 +195,7 @@ export default function JoinClubPage() {
         ) : (
           <motion.div key="main"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            style={{ width: '100%', maxWidth: 380 }}>
+            style={{ width: '100%', maxWidth: 380, margin: 'auto 0' }}>
 
             {/* Club card */}
             <div style={{
