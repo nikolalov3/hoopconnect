@@ -841,6 +841,12 @@ export default function SettingsPanel({ open, onClose }) {
   const shownBgId  = personalizing ? draftBg : profile?.equipped_background
   const shownBgAsset = backgroundAsset(bgCatalog, shownBgId)
 
+  // Unsaved changes while personalizing → the top-right ✕ becomes a ✓ that saves.
+  const draftFrameNorm = draftFrame === 'none' ? null : draftFrame
+  const hasChanges = personalizing &&
+    ((draftBg || null) !== (profile?.equipped_background || null) ||
+     draftFrameNorm !== (profile?.equipped_frame || null))
+
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', { month: 'long', year: 'numeric' })
     : null
@@ -900,7 +906,7 @@ export default function SettingsPanel({ open, onClose }) {
                     background={shownBgAsset}
                     matchWins={matchWins}
                     kotcWins={kotcWins}
-                    scale={0.72}
+                    scale={personalizing ? 0.56 : 0.72}
                     idle
                   />
                 </div>
@@ -983,15 +989,7 @@ export default function SettingsPanel({ open, onClose }) {
                     )}
                   </div>
 
-                  <div style={{ padding: '22px 18px 44px', display: 'flex', gap: 10 }}>
-                    <button onClick={() => setPersonalizing(false)} style={{ flex: 1, padding: '14px', borderRadius: 12, cursor: 'pointer',
-                      border: `1px solid ${C.border}`, background: 'transparent', color: C.sub, fontWeight: 700, fontSize: 13, fontFamily: 'inherit' }}>Anuluj</button>
-                    <button onClick={savePersonalization} disabled={savingPers} style={{ flex: 2, padding: '14px', borderRadius: 12, cursor: savingPers ? 'default' : 'pointer', border: 'none',
-                      background: 'linear-gradient(135deg, #1E6BB0, #5BB8F5)', color: '#fff', fontWeight: 800, fontSize: 14,
-                      letterSpacing: 0.5, fontFamily: 'var(--font-display)', textTransform: 'uppercase', opacity: savingPers ? 0.6 : 1 }}>
-                      {savingPers ? 'Zapisywanie…' : 'Zapisz'}
-                    </button>
-                  </div>
+                  <div style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 28px)' }}/>
                 </div>
               ) : (
                 <>
@@ -1088,20 +1086,34 @@ export default function SettingsPanel({ open, onClose }) {
 
             </motion.div>
 
-            {/* ✕ close — top-right of the overlay, only on the main view */}
+            {/* Top-right control — closes settings, OR (while personalizing) saves
+               the card if there are changes (✓) / just exits (✕). No bottom button
+               so nothing important hides below the fold. */}
             {isMain && (
-              <button onClick={onClose} aria-label={t('close', { defaultValue: 'Zamknij' })}
+              <button
+                onClick={() => {
+                  if (!personalizing) return onClose()
+                  if (hasChanges) return savePersonalization()
+                  setPersonalizing(false)
+                }}
+                disabled={savingPers}
+                aria-label={personalizing ? (hasChanges ? 'Zapisz' : 'Gotowe') : t('close', { defaultValue: 'Zamknij' })}
                 style={{
                   position: 'absolute', zIndex: 20,
                   top: 'calc(env(safe-area-inset-top, 0px) + 14px)', right: 18,
                   width: 40, height: 40, borderRadius: '50%',
-                  background: 'rgba(10,20,38,0.5)', border: '1px solid rgba(150,200,255,0.22)',
-                  color: '#cfe0f2', cursor: 'pointer',
+                  background: hasChanges ? 'rgba(30,180,110,0.22)' : 'rgba(10,20,38,0.5)',
+                  border: `1px solid ${hasChanges ? 'rgba(80,220,150,0.5)' : 'rgba(150,200,255,0.22)'}`,
+                  color: hasChanges ? '#7ef5b0' : '#cfe0f2', cursor: savingPers ? 'default' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   WebkitTapHighlightColor: 'transparent',
                   backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
                 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                {personalizing && hasChanges ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                )}
               </button>
             )}
 
