@@ -211,7 +211,7 @@ function SubHeader({ title, onBack, onClose }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10,
-      padding: '16px 18px 12px',
+      padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 18px 12px',
       borderBottom: `1px solid ${C.border}`, flexShrink: 0,
     }}>
       <button onClick={onBack} style={{
