@@ -264,6 +264,11 @@ export default function App() {
                 <CardLab />
               </Suspense>
             } />
+            <Route path="/onboardlab"      element={
+              <Suspense fallback={<PageLoader />}>
+                <OnboardingPage />
+              </Suspense>
+            } />
             <Route path="/*"               element={<AppShell />} />
           </Routes>
           </NotificationsProvider>
