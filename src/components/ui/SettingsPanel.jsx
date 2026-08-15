@@ -851,54 +851,45 @@ export default function SettingsPanel({ open, onClose }) {
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
+          {/* Glass backdrop — Settings is an OVERLAY on the main menu; the home
+             shows through, strongly blurred. */}
           <motion.div key="sp-bd"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.22 }}
-            onClick={onClose}
             style={{
               position: 'fixed', inset: 0, zIndex: 500,
-              background: 'rgba(4,8,15,0.75)',
-              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+              background: 'rgba(6,13,26,0.3)',
+              backdropFilter: 'blur(34px)', WebkitBackdropFilter: 'blur(34px)',
             }}
           />
 
-          {/* Sheet */}
+          {/* Overlay column — TRANSPARENT so the blurred home shows around the
+             card; the ✕ (top-right) closes. No bottom sheet, no drag handle. */}
           <motion.div key="sp-sheet"
-            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-            transition={SHEET}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.24 }}
             style={{
-              position: 'fixed', bottom: 0,
+              position: 'fixed', top: 0, bottom: 0,
               left: 'max(0px, calc((100vw - 430px) / 2))',
               width: 'min(100vw, 430px)',
-              height: '92%', zIndex: 501,
-              borderRadius: '20px 20px 0 0',
-              background: C.bg,
-              boxShadow: '0 -8px 60px rgba(0,0,0,0.65)',
+              zIndex: 501,
               overflow: 'hidden',
               display: 'flex', flexDirection: 'column',
             }}>
-
-            {/* Drag handle */}
-            <div style={{
-              width: 36, height: 4, borderRadius: 2,
-              background: 'rgba(255,255,255,0.12)',
-              margin: '12px auto 0', flexShrink: 0,
-            }}/>
 
             {/* ── MAIN VIEW ── */}
             <motion.div
               animate={{ x: isMain ? 0 : '-100%' }}
               transition={SLIDE}
               style={{
-                position: 'absolute', inset: 0, top: 20,
+                position: 'absolute', inset: 0,
                 display: 'flex', flexDirection: 'column',
                 overflowY: 'auto', WebkitOverflowScrolling: 'touch',
               }}>
 
-              {/* Profile hero — the 3D card (a bit smaller than in the Club) with a
-                  light edit icon-button; identity line (e-mail · Beta) sits beneath. */}
-              <div style={{ padding: '18px 18px 0', position: 'relative' }}>
+              {/* Profile hero — the 3D card hangs on the blurred menu; e-mail + a
+                  small edit affordance below open the card picker in place. */}
+              <div style={{ padding: 'calc(env(safe-area-inset-top, 0px) + 40px) 18px 0', position: 'relative' }}>
                 <div style={{ width: 216, margin: '0 auto' }}>
                   <PlayerCard3D
                     name={profile?.name}
@@ -914,43 +905,21 @@ export default function SettingsPanel({ open, onClose }) {
                   />
                 </div>
 
-                {/* Edit profile (name etc.) — hidden while personalizing the card */}
-                {!personalizing && (
-                  <motion.button whileTap={{ scale: 0.9 }}
-                    onClick={() => setView('editProfile')}
-                    aria-label={t('edit')}
-                    style={{
-                      position: 'absolute', top: 22, right: 24, zIndex: 5,
-                      width: 40, height: 40, borderRadius: '50%',
-                      background: 'rgba(120,190,255,0.18)',
-                      border: '1px solid rgba(150,200,255,0.38)',
-                      color: '#dbeeff', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      WebkitTapHighlightColor: 'transparent',
-                      backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-                    }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 20h9"/>
-                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-                    </svg>
-                  </motion.button>
-                )}
-
-                {/* e-mail + personalization symbol (opens the in-place picker below) */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 8 }}>
-                  <p style={{ fontSize: 11, color: C.sub, margin: 0, maxWidth: 220,
+                {/* e-mail + edit affordance (opens the in-place card picker below) */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 10 }}>
+                  <p style={{ fontSize: 12, color: C.sub, margin: 0, maxWidth: 220,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {user?.email}
                   </p>
                   <motion.button whileTap={{ scale: 0.9 }}
                     onClick={() => personalizing ? setPersonalizing(false) : openPersonalization()}
-                    aria-label="Personalizacja karty"
+                    aria-label="Edytuj kartę"
                     style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', cursor: 'pointer',
                       background: personalizing ? 'rgba(120,190,255,0.34)' : 'rgba(120,190,255,0.16)',
                       border: `1px solid ${personalizing ? 'rgba(150,200,255,0.6)' : 'rgba(150,200,255,0.35)'}`,
                       color: '#dbeeff', display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent' }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 3l1.9 4.6 4.9.4-3.7 3.2 1.1 4.8L12 13.9 7.7 16l1.1-4.8L5.1 8l4.9-.4L12 3z"/>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
                     </svg>
                   </motion.button>
                 </div>
@@ -1032,11 +1001,12 @@ export default function SettingsPanel({ open, onClose }) {
                   </div>
 
                   {/* Sekcje */}
-                  <div style={{ padding: '0 18px', flex: 1 }}>
+                  <div style={{ padding: '0 18px' }}>
 
                     <SLabel>{t('account')}</SLabel>
                     <CardGroup>
                       <Row label={t('accountSettings')} sub={t('accountSub')} onClick={() => setView('account')}/>
+                      <Row label="Profil" sub="Imię · Miasto · Dni treningu" onClick={() => setView('editProfile')}/>
                       <Row label={t('language')} sub={i18n.language === 'pl' ? t('polish') : t('english')} onClick={() => setView('language')}/>
                     </CardGroup>
 
@@ -1071,7 +1041,7 @@ export default function SettingsPanel({ open, onClose }) {
               animate={{ x: isMain ? '100%' : 0 }}
               transition={SLIDE}
               style={{
-                position: 'absolute', inset: 0, top: 20,
+                position: 'absolute', inset: 0,
                 background: C.bg,
                 display: 'flex', flexDirection: 'column',
                 pointerEvents: isMain ? 'none' : 'all',
@@ -1117,6 +1087,23 @@ export default function SettingsPanel({ open, onClose }) {
               )}
 
             </motion.div>
+
+            {/* ✕ close — top-right of the overlay, only on the main view */}
+            {isMain && (
+              <button onClick={onClose} aria-label={t('close', { defaultValue: 'Zamknij' })}
+                style={{
+                  position: 'absolute', zIndex: 20,
+                  top: 'calc(env(safe-area-inset-top, 0px) + 14px)', right: 18,
+                  width: 40, height: 40, borderRadius: '50%',
+                  background: 'rgba(10,20,38,0.5)', border: '1px solid rgba(150,200,255,0.22)',
+                  color: '#cfe0f2', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  WebkitTapHighlightColor: 'transparent',
+                  backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+              </button>
+            )}
 
           </motion.div>
         </>
