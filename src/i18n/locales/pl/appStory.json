@@ -1,0 +1,31 @@
+{
+  "skip": "Pomiń",
+  "next": "Dalej",
+  "enter": "Wchodzę 🏀",
+  "trening": {
+    "title": "Codzienne treningi",
+    "text": "Każdego dnia masz gotowy plan. Odhaczasz trening i zgarniasz punkty.",
+    "row1": "Rzuty za 3",
+    "row2": "Kozłowanie",
+    "row3": "Regeneracja",
+    "xpToday": "XP dziś"
+  },
+  "areny": {
+    "title": "Wspinasz się przez areny",
+    "text": "Aktywność napędza Twój wynik i XP. Awansujesz przez kolejne areny."
+  },
+  "klub": {
+    "title": "Kluby i mecze",
+    "text": "Zbierz drużynę i rozgrywajcie mecze. Za rozegrane mecze też zgarniasz XP.",
+    "xpPerMatch": "XP za mecz"
+  },
+  "kotc": {
+    "title": "King of the Court",
+    "text": "Wygrywaj gierki z rzędu i zostań królem boiska.",
+    "streak": "seria zwycięstw"
+  },
+  "start": {
+    "title": "To jest Twój czas",
+    "text": "Wszystko gotowe. Wskakuj na boisko."
+  }
+}

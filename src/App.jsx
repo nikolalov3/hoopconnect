@@ -30,6 +30,7 @@ const QrLandingPage   = lazy(() => import('./pages/QrLandingPage'))
 const ArenaRoad       = lazy(() => import('./components/ArenaRoad'))
 const KingOfTheCourt  = lazy(() => import('./features/kotc/KingOfTheCourt'))
 const KotcOnline      = lazy(() => import('./features/kotc/KotcOnline'))
+const AppOnboarding   = lazy(() => import('./components/ui/AppOnboarding'))
 
 // Wrapper trasy /arena — XP z profilu, powrót przyciskiem wstecz
 function ArenaRoadRoute() {
@@ -65,6 +66,16 @@ function AppShell() {
   const { user, profile, loading, profileReady } = useAuth()
   const { leaderboardOpen, frameUnlockOpen, setFrameUnlockOpen, frameUnlockData, setFrameUnlockData } = useUI()
   const location = useLocation()
+
+  // ── Story onboarding — shown once, right after registration completes ────────
+  // OnboardingPage sets `hc_story_pending` on finish; we render the IG-style story
+  // over the main menu and clear the flag when the user taps through to the end.
+  const [showStory, setShowStory] = useState(false)
+  useEffect(() => {
+    if (profile?.onboarding_done && localStorage.getItem('hc_story_pending')) {
+      setShowStory(true)
+    }
+  }, [profile?.onboarding_done, location.pathname])
 
   // Dane dla FrameUnlockPanel — budowane z FRAME_CATALOG (lib/frames.js),
   // tylko tłumaczenia dociągane tutaj (t() nie działa poza komponentem).
@@ -208,6 +219,13 @@ function AppShell() {
 
       {/* ── In-app notifications sheet (team invites etc) ── */}
       <NotificationsSheet />
+
+      {/* ── First-run story onboarding (once, after registration) ── */}
+      {showStory && (
+        <Suspense fallback={null}>
+          <AppOnboarding onDone={() => { localStorage.removeItem('hc_story_pending'); setShowStory(false) }} />
+        </Suspense>
+      )}
     </div>
   )
 }

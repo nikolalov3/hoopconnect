@@ -304,7 +304,11 @@ export default function OnboardingPage() {
         {showWelcome && (
           <WelcomeScreen
             userName={name.trim()}
-            onComplete={() => navigate('/', { replace: true })}
+            onComplete={() => {
+              // Nowe konto → po WelcomeScreen odpal story onboarding nad menu (AppShell to podłapie)
+              localStorage.setItem('hc_story_pending', '1')
+              navigate('/', { replace: true })
+            }}
           />
         )}
       </AnimatePresence>
