@@ -935,31 +935,27 @@ export default function SettingsPanel({ open, onClose }) {
                 /* ── In-place card personalization (swaps the lower menu) ── */
                 <div style={{ flex: 1, paddingTop: 14 }}>
                   <div style={{ padding: '0 18px' }}><SLabel>Tło karty</SLabel></div>
-                  {ownedBackgrounds.length === 0 ? (
-                    <p style={{ padding: '0 18px', color: C.sub, fontSize: 12, margin: '0 0 6px' }}>
-                      Nie masz jeszcze żadnych teł — użyj kodu poniżej, żeby odblokować.
-                    </p>
-                  ) : (
-                    <div className="hide-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 18px 6px' }}>
-                      {ownedBackgrounds.map(b => {
-                        const sel = draftBg === b.id
-                        return (
-                          <button key={b.id} onClick={() => setDraftBg(sel ? null : b.id)}
-                            style={{ flexShrink: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-                              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, WebkitTapHighlightColor: 'transparent' }}>
-                            <div style={{ borderRadius: 12, padding: 3,
-                              border: `2px solid ${sel ? C.accent : C.border}`,
-                              boxShadow: sel ? '0 0 16px rgba(91,184,245,0.5)' : 'none' }}>
-                              <PlayerCard3D name={profile?.name} arenaLevel={profile?.arena_level ?? 0} xp={profile?.xp ?? 0}
-                                background={b.asset_path} scale={0.26} interactive={false} blank/>
-                            </div>
-                            <span style={{ fontSize: 10, fontWeight: 700, color: sel ? '#dbeeff' : C.sub, maxWidth: 90,
-                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
+                  <div className="hide-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 18px 6px' }}>
+                    {/* Klasyczne — the default look everyone has (no background = null).
+                       Extra backgrounds only appear once unlocked (user_unlocks). */}
+                    {[{ id: null, name: 'Klasyczne', asset_path: null }, ...ownedBackgrounds].map(b => {
+                      const sel = (draftBg || null) === (b.id || null)
+                      return (
+                        <button key={b.id || 'classic'} onClick={() => setDraftBg(b.id || null)}
+                          style={{ flexShrink: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, WebkitTapHighlightColor: 'transparent' }}>
+                          <div style={{ borderRadius: 12, padding: 3,
+                            border: `2px solid ${sel ? C.accent : C.border}`,
+                            boxShadow: sel ? '0 0 16px rgba(91,184,245,0.5)' : 'none' }}>
+                            <PlayerCard3D name={profile?.name} arenaLevel={profile?.arena_level ?? 0} xp={profile?.xp ?? 0}
+                              background={b.asset_path} scale={0.26} interactive={false} blank/>
+                          </div>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: sel ? '#dbeeff' : C.sub, maxWidth: 90,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
 
                   <div style={{ padding: '12px 18px 0' }}>
                     <SLabel>Ramka</SLabel>
