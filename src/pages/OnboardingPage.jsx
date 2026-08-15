@@ -8,7 +8,8 @@ import { getCountryOptions } from '../lib/countries'
 
 const DAYS_COLORS = ['#00E676', '#7ECBFF', '#5BB8F5', '#FF3D3D']
 
-const STEP_COUNT = 4
+const STEP_COUNT = 2
+const onbLabel = { fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }
 const BLUE = '#5BB8F5'
 
 function WelcomeScreen({ userName, onComplete }) {
@@ -277,7 +278,9 @@ export default function OnboardingPage() {
     }
   }
 
-  const canNext = step === 0 ? name.trim().length >= 2 : true
+  const canNext = step === 0
+    ? (name.trim().length >= 2 && !!birthDay && !!birthMonth && !!birthYear)
+    : true
   const dayOptions = t('step2.days', { returnObjects: true }).map((opt, i) => ({
     value: i + 3, label: opt.label, sub: opt.sub, color: DAYS_COLORS[i],
   }))
@@ -327,216 +330,104 @@ export default function OnboardingPage() {
 
       <AnimatePresence mode="wait">
 
-        {/* STEP 0 — Imię */}
+        {/* PANEL 0 — O Tobie: imię + data urodzenia + kraj + miasto */}
         {step === 0 && (
-          <motion.div key="step0"
+          <motion.div key="p0"
             initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
-            style={{ flex: 1, padding: '40px 26px 0', display: 'flex', flexDirection: 'column' }}
+            style={{ flex: 1, padding: '30px 26px 0', display: 'flex', flexDirection: 'column', gap: 20 }}
           >
-            <p className="section-label" style={{ marginBottom: 8 }}>{t('stepOf', { n: 1, total: STEP_COUNT })}</p>
-            <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8, whiteSpace: 'pre-line' }}>
-              {t('step0.title')}
-            </h1>
-            <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 32, letterSpacing: 0.3 }}>
-              {t('step0.sub')}
-            </p>
+            <div>
+              <p className="section-label" style={{ marginBottom: 8 }}>{t('stepOf', { n: 1, total: STEP_COUNT })}</p>
+              <h1 className="display-title" style={{ fontSize: 40, marginBottom: 6 }}>O Tobie</h1>
+              <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>Kilka podstawowych informacji o Tobie.</p>
+            </div>
 
-            <input
-              className="input-field"
-              type="text"
-              placeholder={t('step0.placeholder')}
-              value={name}
-              onChange={e => setName(e.target.value)}
-              autoFocus
-              maxLength={30}
-              style={{ fontSize: 20, padding: '18px 16px', letterSpacing: 0.5 }}
-            />
+            {/* Imię */}
+            <div>
+              <p style={onbLabel}>Imię</p>
+              <input className="input-field" type="text" placeholder={t('step0.placeholder')}
+                value={name} onChange={e => setName(e.target.value)} autoFocus maxLength={30}
+                style={{ fontSize: 18, padding: '15px 16px', letterSpacing: 0.5 }}/>
+            </div>
 
-            {name.trim().length >= 2 && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                style={{
-                  marginTop: 20,
-                  padding: '16px 20px',
-                  background: 'rgba(91,184,245,0.10)',
-                  border: '1px solid rgba(91,184,245,0.25)',
-                  borderRadius: 'var(--radius)',
-                  boxShadow: '0 4px 20px rgba(91,184,245,0.12)',
-                }}
-              >
-                <p style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--orange)' }}>
-                  {t('step0.greeting', { name: name.trim() })}
-                </p>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 4 }}>
-                  {t('step0.greetingSub')}
-                </p>
-              </motion.div>
-            )}
-          </motion.div>
-        )}
-
-        {/* STEP 1 — Data urodzenia */}
-        {step === 1 && (
-          <motion.div key="step1"
-            initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
-            style={{ flex: 1, padding: '40px 26px 0', display: 'flex', flexDirection: 'column' }}
-          >
-            <p className="section-label" style={{ marginBottom: 8 }}>{t('stepOf', { n: 2, total: STEP_COUNT })}</p>
-            <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8, whiteSpace: 'pre-line' }}>
-              {t('step1.title')}
-            </h1>
-            <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 32 }}>
-              {t('step1.sub')}
-            </p>
-
-            {/* Date pickers */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.4fr', gap: 10, marginBottom: 24, alignItems: 'end' }}>
-              {[
-                { label: t('step1.day'),   value: birthDay,   set: setBirthDay,   options: Array.from({ length: 31 }, (_, i) => ({ val: i+1, label: String(i+1) })) },
-                { label: t('step1.month'), value: birthMonth, set: setBirthMonth, options: months.map((m,i) => ({ val: i+1, label: m })) },
-                { label: t('step1.year'),  value: birthYear,  set: setBirthYear,  options: Array.from({ length: 58 }, (_, i) => ({ val: currentYear-10-i, label: String(currentYear-10-i) })) },
-              ].map(({ label, value, set, options }) => (
-                <div key={label}>
-                  <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>{label}</p>
-                  <select
-                    value={value}
-                    onChange={e => set(e.target.value)}
+            {/* Data urodzenia */}
+            <div>
+              <p style={onbLabel}>Data urodzenia</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.4fr', gap: 10, alignItems: 'end' }}>
+                {[
+                  { label: t('step1.day'),   value: birthDay,   set: setBirthDay,   options: Array.from({ length: 31 }, (_, i) => ({ val: i+1, label: String(i+1) })) },
+                  { label: t('step1.month'), value: birthMonth, set: setBirthMonth, options: months.map((m,i) => ({ val: i+1, label: m })) },
+                  { label: t('step1.year'),  value: birthYear,  set: setBirthYear,  options: Array.from({ length: 58 }, (_, i) => ({ val: currentYear-10-i, label: String(currentYear-10-i) })) },
+                ].map(({ label, value, set, options }) => (
+                  <select key={label} value={value} onChange={e => set(e.target.value)} aria-label={label}
                     style={{
-                      width: '100%', padding: '15px 10px',
-                      background: 'rgba(6,14,30,0.52)',
-                      backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+                      width: '100%', padding: '15px 6px',
+                      background: 'rgba(6,14,30,0.52)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
                       border: `1px solid ${value ? 'rgba(91,184,245,0.40)' : 'rgba(120,190,255,0.09)'}`,
                       borderTop: `1px solid ${value ? 'rgba(91,184,245,0.55)' : 'rgba(160,210,255,0.16)'}`,
-                      borderRadius: 'var(--radius-sm)',
-                      color: value ? 'var(--text-primary)' : 'var(--text-dim)',
-                      fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 17,
-                      textAlign: 'center', cursor: 'pointer', outline: 'none',
-                      appearance: 'none', WebkitAppearance: 'none',
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    <option value="">—</option>
+                      borderRadius: 'var(--radius-sm)', color: value ? 'var(--text-primary)' : 'var(--text-dim)',
+                      fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, textAlign: 'center',
+                      cursor: 'pointer', outline: 'none', appearance: 'none', WebkitAppearance: 'none', boxSizing: 'border-box',
+                    }}>
+                    <option value="">{label}</option>
                     {options.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
                   </select>
-                </div>
-              ))}
+                ))}
+              </div>
+              {age !== null && age <= 18 && (() => {
+                const phaseKey = age <= 14 ? 'foundations' : age <= 16 ? 'development' : 'intensification'
+                return (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    style={{ marginTop: 12, padding: '14px 18px', background: 'rgba(6,14,30,0.52)',
+                      backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+                      border: '1px solid rgba(120,190,255,0.09)', borderTop: '1px solid rgba(160,210,255,0.16)',
+                      borderRadius: 'var(--radius)' }}>
+                    <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--orange)', letterSpacing: 1, marginBottom: 4 }}>
+                      {t('step1.ageLabel', { age })} · {t(`step1.phases.${phaseKey}`)}
+                    </p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.5 }}>{t(`step1.descs.${phaseKey}`)}</p>
+                  </motion.div>
+                )
+              })()}
             </div>
-            {/* Wiek obliczony + info card.
-               Fazy rozwojowe (fundamenty/rozwój/intensyfikacja) mają sens tylko dla
-               młodzieży. Dla dorosłych (age > 18) nie pokazujemy żadnego stwierdzenia
-               o „fazie" — brzmiało sztucznie dla starszych graczy. */}
-            {age !== null && age <= 18 && (() => {
-              const phaseKey = age <= 14 ? 'foundations' : age <= 16 ? 'development' : 'intensification'
-              return (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                style={{
-                  padding: '16px 20px',
-                  background: 'rgba(6,14,30,0.52)',
-                  backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-                  border: '1px solid rgba(120,190,255,0.09)',
-                  borderTop: '1px solid rgba(160,210,255,0.16)',
-                  borderRadius: 'var(--radius)',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
-                }}
-              >
-                <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--orange)', letterSpacing: 1, marginBottom: 4 }}>
-                  {t('step1.ageLabel', { age })} · {t(`step1.phases.${phaseKey}`)}
-                </p>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.5 }}>
-                  {t(`step1.descs.${phaseKey}`)}
-                </p>
-              </motion.div>
-              )
-            })()}
-          </motion.div>
-        )}
-
-        {/* STEP 3 — Miasto + Kraj */}
-        {step === 3 && (
-          <motion.div key="step3"
-            initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
-            style={{ flex: 1, padding: '40px 26px 0', display: 'flex', flexDirection: 'column' }}
-          >
-            <p className="section-label" style={{ marginBottom: 8 }}>{t('stepOf', { n: 4, total: STEP_COUNT })}</p>
-            <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8, whiteSpace: 'pre-line' }}>
-              {t('step3.title')}
-            </h1>
-            <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 28, letterSpacing: 0.3 }}>
-              {t('step3.sub')}
-            </p>
 
             {/* Kraj */}
-            <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>{t('step3.country')}</p>
-              <select
-                value={country}
-                onChange={e => setCountry(e.target.value)}
+            <div>
+              <p style={onbLabel}>{t('step3.country')}</p>
+              <select value={country} onChange={e => setCountry(e.target.value)}
                 style={{
                   width: '100%', padding: '15px 14px',
-                  background: 'rgba(6,14,30,0.52)',
-                  backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-                  border: `1px solid ${country ? 'rgba(91,184,245,0.40)' : 'rgba(120,190,255,0.09)'}`,
-                  borderTop: `1px solid ${country ? 'rgba(91,184,245,0.55)' : 'rgba(160,210,255,0.16)'}`,
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--text-primary)',
+                  background: 'rgba(6,14,30,0.52)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+                  border: '1px solid rgba(91,184,245,0.40)', borderTop: '1px solid rgba(91,184,245,0.55)',
+                  borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)',
                   fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16,
-                  cursor: 'pointer', outline: 'none',
-                  appearance: 'none', WebkitAppearance: 'none',
-                  boxSizing: 'border-box',
-                }}
-              >
+                  cursor: 'pointer', outline: 'none', appearance: 'none', WebkitAppearance: 'none', boxSizing: 'border-box',
+                }}>
                 {countries.map(c => (
-                  c.separator
-                    ? <option key="sep" disabled>{c.name}</option>
-                    : <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
+                  c.separator ? <option key="sep" disabled>{c.name}</option> : <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
                 ))}
               </select>
             </div>
 
             {/* Miasto */}
             <div>
-              <p style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 600, marginBottom: 8 }}>{t('step3.city')}</p>
-              <input
-                className="input-field"
-                type="text"
-                placeholder={t('step3.cityPlaceholder')}
-                value={city}
-                onChange={e => setCity(e.target.value)}
-                maxLength={60}
-                style={{ fontSize: 18, padding: '16px 14px', letterSpacing: 0.4 }}
-              />
+              <p style={onbLabel}>{t('step3.city')}</p>
+              <input className="input-field" type="text" placeholder={t('step3.cityPlaceholder')}
+                value={city} onChange={e => setCity(e.target.value)} maxLength={60}
+                style={{ fontSize: 17, padding: '15px 14px', letterSpacing: 0.4 }}/>
             </div>
 
-            {city.trim().length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                style={{
-                  marginTop: 20, padding: '14px 18px',
-                  background: 'rgba(91,184,245,0.10)',
-                  border: '1px solid rgba(91,184,245,0.25)',
-                  borderRadius: 'var(--radius)',
-                }}
-              >
-                <p style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.55 }}>
-                  {t('step3.citySubPrefix')}<span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{city.trim()}</span>{t('step3.citySubSuffix')}
-                </p>
-              </motion.div>
-            )}
-
-            {error && (
-              <p style={{ color: 'var(--red-shot)', fontSize: 13, marginTop: 14, textAlign: 'center' }}>{error}</p>
-            )}
+            {error && <p style={{ color: 'var(--red-shot)', fontSize: 13, textAlign: 'center' }}>{error}</p>}
           </motion.div>
         )}
 
-        {/* STEP 2 — Dni treningowe */}
-        {step === 2 && (
-          <motion.div key="step2"
+        {/* PANEL 1 — Trening: dni */}
+        {step === 1 && (
+          <motion.div key="p1"
             initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
             style={{ flex: 1, padding: '40px 26px 0', display: 'flex', flexDirection: 'column' }}
           >
-            <p className="section-label" style={{ marginBottom: 8 }}>{t('stepOf', { n: 3, total: STEP_COUNT })}</p>
+            <p className="section-label" style={{ marginBottom: 8 }}>{t('stepOf', { n: 2, total: STEP_COUNT })}</p>
             <h1 className="display-title" style={{ fontSize: 42, marginBottom: 8, whiteSpace: 'pre-line' }}>
               {t('step2.title')}
             </h1>
