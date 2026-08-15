@@ -453,7 +453,7 @@ function QuotePanel({ quote, onClose }) {
         position: 'fixed', inset: 0, zIndex: 300,
         background: 'rgba(4,2,0,0.72)',
         backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         padding: '28px 26px calc(env(safe-area-inset-bottom, 0px) + 26px)',
       }}
     >
@@ -464,8 +464,7 @@ function QuotePanel({ quote, onClose }) {
         transition={{ type: 'spring', stiffness: 300, damping: 26 }}
         onClick={e => e.stopPropagation()}
         style={{
-          flex: 1, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
           width: '100%', maxWidth: 440, textAlign: 'center',
         }}
       >
@@ -487,7 +486,7 @@ function QuotePanel({ quote, onClose }) {
         onClick={onClose}
         aria-label={t('quote.close')}
         style={{
-          flexShrink: 0, marginTop: 16,
+          flexShrink: 0, marginTop: 34,
           width: 46, height: 46, borderRadius: '50%',
           background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(150,200,255,0.20)',
           color: '#cfe0f2', fontSize: 18, cursor: 'pointer',
