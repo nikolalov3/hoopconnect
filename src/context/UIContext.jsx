@@ -10,6 +10,7 @@ export function UIProvider({ children }) {
   const [frameUnlockOpen,       setFrameUnlockOpen]       = useState(false)
   const [frameUnlockData,       setFrameUnlockData]       = useState(null)
   const [notificationsOpen,     setNotificationsOpen]     = useState(false)
+  const [storyOpen,             setStoryOpen]             = useState(false)
 
   // Memoize so the value only changes when a UI flag actually changes — otherwise
   // every UIProvider re-render minted a fresh object and re-rendered all consumers
@@ -22,8 +23,9 @@ export function UIProvider({ children }) {
     frameUnlockOpen, setFrameUnlockOpen,
     frameUnlockData, setFrameUnlockData,
     notificationsOpen, setNotificationsOpen,
+    storyOpen, setStoryOpen,
   }), [settingsOpen, leaderboardOpen, leagueOpen, leaderboardFromLeague,
-       frameUnlockOpen, frameUnlockData, notificationsOpen])
+       frameUnlockOpen, frameUnlockData, notificationsOpen, storyOpen])
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>
 }

@@ -1272,7 +1272,7 @@ export default function HomePage() {
   const [reportLoading, setReportLoading] = useState(true)
   const [daysUntilReport, setDaysUntilReport] = useState(0)  // raport odblokowany od startu (rozgrzewka), bez blokady 7-dniowej
   const [achievementToast, setAchievementToast] = useState(null) // { title, stage }
-  const { setSettingsOpen, leagueOpen, setLeagueOpen, setFrameUnlockOpen, setFrameUnlockData, frameUnlockData, setNotificationsOpen } = useUI()
+  const { setSettingsOpen, leagueOpen, setLeagueOpen, setFrameUnlockOpen, setFrameUnlockData, frameUnlockData, setNotificationsOpen, setStoryOpen } = useUI()
   const { unreadCount: notifUnreadCount } = useNotifications()
   const { practices: teamPractices } = useTodayTeamPractice()
   const [showSettings, setShowSettings] = useState(false)
@@ -2198,14 +2198,27 @@ export default function HomePage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {!daysUntilReport && !reportLoading && (
-              <span style={{
-                padding: '4px 12px',
-                background: `${scoreColor}18`,
-                border: `1px solid ${scoreColor}40`,
-                borderRadius: 'var(--radius-full)',
-                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
-                color: scoreColor, letterSpacing: 1.5, textTransform: 'uppercase',
-              }}>{scoreLabel}</span>
+              // Tap → re-open the intro story onboarding.
+              <button
+                onClick={() => setStoryOpen(true)}
+                aria-label={scoreLabel}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '4px 11px',
+                  background: `${scoreColor}18`,
+                  border: `1px solid ${scoreColor}40`,
+                  borderRadius: 'var(--radius-full)',
+                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
+                  color: scoreColor, letterSpacing: 1.5, textTransform: 'uppercase',
+                  cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                }}>
+                {scoreLabel}
+                <span aria-hidden="true" style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 13, height: 13, borderRadius: '50%',
+                  border: `1px solid ${scoreColor}`, fontSize: 8.5, lineHeight: 1, fontWeight: 900,
+                }}>?</span>
+              </button>
             )}
           </div>
         </div>

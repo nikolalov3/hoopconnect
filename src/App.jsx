@@ -65,16 +65,15 @@ function PageLoader() {
 function AppShell() {
   const { t } = useTranslation('frames')
   const { user, profile, loading, profileReady } = useAuth()
-  const { leaderboardOpen, frameUnlockOpen, setFrameUnlockOpen, frameUnlockData, setFrameUnlockData } = useUI()
+  const { leaderboardOpen, frameUnlockOpen, setFrameUnlockOpen, frameUnlockData, setFrameUnlockData, storyOpen, setStoryOpen } = useUI()
   const location = useLocation()
 
-  // ── Story onboarding — shown once, right after registration completes ────────
-  // OnboardingPage sets `hc_story_pending` on finish; we render the IG-style story
-  // over the main menu and clear the flag when the user taps through to the end.
-  const [showStory, setShowStory] = useState(false)
+  // ── Story onboarding ─────────────────────────────────────────────────────────
+  // Auto-opens once right after registration (OnboardingPage sets `hc_story_pending`
+  // on finish); can also be re-opened on demand from the report badge (setStoryOpen).
   useEffect(() => {
     if (profile?.onboarding_done && localStorage.getItem('hc_story_pending')) {
-      setShowStory(true)
+      setStoryOpen(true)
     }
   }, [profile?.onboarding_done, location.pathname])
 
@@ -221,10 +220,10 @@ function AppShell() {
       {/* ── In-app notifications sheet (team invites etc) ── */}
       <NotificationsSheet />
 
-      {/* ── First-run story onboarding (once, after registration) ── */}
-      {showStory && (
+      {/* ── Story onboarding — first run after signup, or re-opened from the report badge ── */}
+      {storyOpen && (
         <Suspense fallback={null}>
-          <AppOnboarding onDone={() => { localStorage.removeItem('hc_story_pending'); setShowStory(false) }} />
+          <AppOnboarding onDone={() => { localStorage.removeItem('hc_story_pending'); setStoryOpen(false) }} />
         </Suspense>
       )}
     </div>
