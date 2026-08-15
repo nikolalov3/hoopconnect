@@ -1,0 +1,31 @@
+{
+  "skip": "Skip",
+  "next": "Next",
+  "enter": "Let's go 🏀",
+  "trening": {
+    "title": "Daily training",
+    "text": "Every day you get a ready plan. Tick off your training and rack up points.",
+    "row1": "3-point shots",
+    "row2": "Dribbling",
+    "row3": "Recovery",
+    "xpToday": "XP today"
+  },
+  "areny": {
+    "title": "Climb through the arenas",
+    "text": "Your activity drives your score and XP. Rank up through the arenas."
+  },
+  "klub": {
+    "title": "Clubs & matches",
+    "text": "Build a squad and play matches. You earn XP for games you play, too.",
+    "xpPerMatch": "XP / game"
+  },
+  "kotc": {
+    "title": "King of the Court",
+    "text": "Win pickup games back-to-back and become king of the court.",
+    "streak": "win streak"
+  },
+  "start": {
+    "title": "This is your time",
+    "text": "You're all set. Jump on the court."
+  }
+}
