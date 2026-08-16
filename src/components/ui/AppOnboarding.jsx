@@ -427,6 +427,12 @@ export default function AppOnboarding({ onDone }) {
             </div>
             {/* copy sits lower with breathing room */}
             <div style={{ textAlign: 'center', maxWidth: 360, margin: '0 auto', paddingBottom: 'clamp(14px, 4.5vh, 52px)' }}>
+              {t(`${s.key}.eyebrow`, { defaultValue: '' }) && (
+                <p style={{ margin: '0 0 8px', fontFamily: 'var(--font-display)', fontWeight: 700,
+                  fontSize: 'clamp(11px, 3.2vw, 13px)', letterSpacing: 2, textTransform: 'uppercase', color: '#FFC24D' }}>
+                  {t(`${s.key}.eyebrow`)}
+                </p>
+              )}
               <h1 className="display-title" style={{ fontSize: 'clamp(30px, 8.5vw, 38px)', marginBottom: 14, lineHeight: 1.08 }}>{t(`${s.key}.title`)}</h1>
               <p style={{ color: 'rgba(238,244,255,0.72)', fontSize: 'clamp(15.5px, 4.3vw, 18px)', lineHeight: 1.6, margin: 0 }}>{t(`${s.key}.text`)}</p>
             </div>

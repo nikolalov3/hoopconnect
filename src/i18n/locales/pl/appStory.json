@@ -20,8 +20,9 @@
     "xpPerMatch": "XP za mecz"
   },
   "kotc": {
+    "eyebrow": "Sprawdź nowy tryb",
     "title": "King of the Court",
-    "text": "Wygrywaj gierki z rzędu i zostań królem boiska.",
+    "text": "Zbierz ekipę na boisku na sesję KotC, wygrywaj gierki z rzędu i zostań królem boiska.",
     "streak": "seria zwycięstw"
   },
   "start": {

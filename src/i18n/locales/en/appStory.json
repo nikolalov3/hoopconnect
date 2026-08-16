@@ -20,8 +20,9 @@
     "xpPerMatch": "XP / game"
   },
   "kotc": {
+    "eyebrow": "Try the new mode",
     "title": "King of the Court",
-    "text": "Win pickup games back-to-back and become king of the court.",
+    "text": "Round up players on the court for a KotC session, win games back-to-back and become king of the court.",
     "streak": "win streak"
   },
   "start": {
