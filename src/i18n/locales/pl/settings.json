@@ -29,6 +29,7 @@
     "title": "Edytuj profil",
     "profileData": "Dane profilowe",
     "nameLabel": "Imię / Nazwa",
+    "nameNotAllowed": "Ta nazwa jest niedozwolona. Wybierz inną.",
     "namePlaceholder": "Twoja nazwa",
     "cityLabel": "Miasto",
     "cityPlaceholder": "np. Warszawa",

@@ -83,6 +83,7 @@
   "finishCta": "LET'S GO, {{name}}! 🏀",
   "errors": {
     "nameRequired": "Enter your name",
+    "nameNotAllowed": "That name isn't allowed. Please choose another.",
     "birthRequired": "Choose your date of birth",
     "noSession": "No session — refresh the page",
     "saveError": "Save error: {{message}}"

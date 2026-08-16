@@ -29,6 +29,7 @@
     "title": "Edit profile",
     "profileData": "Profile info",
     "nameLabel": "Name",
+    "nameNotAllowed": "That name isn't allowed. Please choose another.",
     "namePlaceholder": "Your name",
     "cityLabel": "City",
     "cityPlaceholder": "e.g. New York",

@@ -83,6 +83,7 @@
   "finishCta": "ZACZYNAMY, {{name}}! 🏀",
   "errors": {
     "nameRequired": "Wpisz swoje imię",
+    "nameNotAllowed": "Ta nazwa jest niedozwolona. Wybierz inną.",
     "birthRequired": "Wybierz datę urodzenia",
     "noSession": "Brak sesji — odśwież stronę",
     "saveError": "Błąd zapisu: {{message}}"

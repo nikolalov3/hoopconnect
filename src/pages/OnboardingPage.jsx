@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { getCountryOptions } from '../lib/countries'
+import { validateName } from '../lib/nameFilter'
 
 const DAYS_COLORS = ['#00E676', '#7ECBFF', '#5BB8F5', '#FF3D3D']
 
@@ -233,6 +234,7 @@ export default function OnboardingPage() {
 
   async function handleFinish() {
     if (!name.trim()) { setError(t('errors.nameRequired')); return }
+    if (!validateName(name).ok) { setError(t('errors.nameNotAllowed')); return }
     if (!birthDay || !birthMonth || !birthYear) { setError(t('errors.birthRequired')); return }
     if (!user?.id) { setError(t('errors.noSession')); return }
     setSaving(true)
