@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase'
 import { creditRestDayStreak } from '../lib/streak'
 import { onTableChange, setClubScope } from '../lib/realtimeManager'
 import { useBackgroundCatalog, backgroundAsset } from '../lib/cardCatalog'
+import { reportName } from '../lib/moderation'
 import { checkTeamWinAchievements } from '../lib/achievements'
 import { calendarWeekNumber } from '../lib/week'
 import { shareMatchCard, doShare } from '../lib/shareCard'
@@ -1476,6 +1477,7 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
   const frameVariant = profile?.equipped_frame || myProfile?.equipped_frame || member.frame || 'none'
   const [flagOk, setFlagOk] = useState(true)
   const [showArenaRoad, setShowArenaRoad] = useState(false)
+  const [reported, setReported] = useState(false)
   useEffect(() => { setFlagOk(true) }, [country?.flagFile])
   const role = member.isOwner ? t('profile.roleCaptain') : t('profile.rolePlayer')
   const showDanger = isSelf || (isOwner && !member.isOwner)
@@ -1539,6 +1541,14 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
               </motion.button>
             </div>
           )}
+          {/* Zgłoś nieodpowiednią nazwę (reaktywna moderacja UGC) */}
+          <button
+            onClick={async () => { if (reported) return; setReported(true); await reportName(member.id, member.name, 'club_roster') }}
+            disabled={reported}
+            style={{ marginTop: 14, background: 'none', border: 'none', color: reported ? C.sub : 'rgba(255,120,120,0.72)',
+              fontSize: 12, fontWeight: 600, cursor: reported ? 'default' : 'pointer', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent' }}>
+            {reported ? t('profile.nameReported') : t('profile.reportName')}
+          </button>
         </>
       )}
     </ProfileOverlay>

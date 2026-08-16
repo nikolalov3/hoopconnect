@@ -9,6 +9,7 @@ import PlayerCard3D from './PlayerCard3D'
 import { useCardStats } from '../../hooks/useCardStats'
 import { FRAME_CATALOG, frameSeenKey } from '../../lib/frames'
 import { useBackgroundCatalog, backgroundAsset, useOwnedBackgrounds, redeemCode } from '../../lib/cardCatalog'
+import { validateName } from '../../lib/nameFilter'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 // Bardziej szary, przygaszone baby-blue ramki
@@ -466,6 +467,7 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
     return cached || profile?.training_days || 4
   })
   const [saveState,  setSaveState]  = useState('idle')
+  const [nameError,  setNameError]  = useState('')
   const [frameId,    setFrameId]    = useState(profile?.equipped_frame || 'none')
   const [frameState, setFrameState] = useState('idle')
 
@@ -476,6 +478,8 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
     || heightCm  !== (profile?.height_cm  || 0)
 
   async function handleSave() {
+    if (!validateName(name).ok) { setNameError(t('editProfile.nameNotAllowed')); return }
+    setNameError('')
     setSaveState('saving')
     try {
       const { error } = await supabase.from('profiles').update({
@@ -531,7 +535,8 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
         {/* ── Dane profilowe ── */}
         <SLabel>{t('editProfile.profileData')}</SLabel>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Field label={t('editProfile.nameLabel')} value={name} onChange={setName} placeholder={t('editProfile.namePlaceholder')}/>
+          <Field label={t('editProfile.nameLabel')} value={name} onChange={(v) => { setName(v); if (nameError) setNameError('') }} placeholder={t('editProfile.namePlaceholder')}/>
+          {nameError && <p style={{ margin: '-2px 2px 0', color: '#FF6B6B', fontSize: 12 }}>{nameError}</p>}
           <Field label={t('editProfile.cityLabel')} value={city} onChange={setCity} placeholder={t('editProfile.cityPlaceholder')}/>
         </div>
 
