@@ -15,11 +15,10 @@ export function useCardStats(userId) {
     let cancelled = false
 
     ;(async () => {
-      const [mpRes, kotcRes] = await Promise.all([
+      const [mpRes, profRes] = await Promise.all([
         supabase.from('match_players').select('match_id,team').eq('user_id', userId),
-        supabase.from('user_achievements')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', userId).eq('base_id', 'kotc_win_july'),
+        // Wygrane KotC = własny, niezależny licznik na profilu (nie liczymy osiągnięć).
+        supabase.from('profiles').select('kotc_wins').eq('id', userId).single(),
       ])
 
       let wins = 0
@@ -46,7 +45,7 @@ export function useCardStats(userId) {
         })
       }
 
-      if (!cancelled) setStats({ matchWins: wins, kotcWins: kotcRes?.count ?? 0 })
+      if (!cancelled) setStats({ matchWins: wins, kotcWins: profRes?.data?.kotc_wins ?? 0 })
     })()
 
     return () => { cancelled = true }
