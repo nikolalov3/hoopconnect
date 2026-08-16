@@ -1358,8 +1358,8 @@ function usePlayerProfileData(memberId) {
       // Osobno + tolerancyjnie: jeśli migracja hc_id jeszcze nie poszła, brak kolumny
       // NIE wywala ładowania profilu (zwróci error, my bierzemy ?.hc_id = undefined).
       supabase.from('profiles').select('hc_id').eq('id', memberId).maybeSingle(),
-      // Wygrane KotC = liczba osiągnięć kotc_win_july (1 wiersz na wygraną sesję).
-      supabase.from('user_achievements').select('id', { count: 'exact', head: true }).eq('user_id', memberId).eq('base_id', 'kotc_win_july'),
+      // Wygrane KotC = niezależny licznik na profilu; osobno + tolerancyjnie (brak kolumny nie wywala profilu).
+      supabase.from('profiles').select('kotc_wins').eq('id', memberId).maybeSingle(),
     ]).then(async ([profileRes, sessionsRes, logsRes, mpRes, hcRes, kotcRes]) => {
       if (cancelled) return
 
@@ -1405,7 +1405,7 @@ function usePlayerProfileData(memberId) {
         trainings,
         matches: mpRows.length,
         wins,
-        kotcWins: kotcRes?.count ?? 0,
+        kotcWins: kotcRes?.data?.kotc_wins ?? 0,
       })
       setLoading(false)
     })
