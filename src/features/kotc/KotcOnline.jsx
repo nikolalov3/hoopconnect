@@ -61,7 +61,7 @@ export default function KotcOnline({ onClose, initialSessionId = null }) {
           <>
             <img src="/kotklogo.png" alt="" style={{ width: 118, height: 118, objectFit: 'contain', display: 'block', margin: '36px auto 16px', filter: 'drop-shadow(0 8px 22px rgba(91,184,245,0.22))' }} />
             <h1 style={{ ...h1, fontSize: 30, textAlign: 'center', lineHeight: 1 }}>King of the Court</h1>
-            <p style={{ textAlign: 'center', color: MUTED, fontSize: 13.5, margin: '12px 0 36px' }}>Pickup 3v3 · 4-6 klubów · wygrany zostaje · do 90 pkt</p>
+            <p style={{ textAlign: 'center', color: MUTED, fontSize: 13.5, margin: '12px 0 36px' }}>Pickup 3v3 · 4-6 klubów · wygrany zostaje · do 67 pkt</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <button style={btnPrimary} onClick={() => setView(introSeen() ? 'create' : 'intro')}>Utwórz sesję</button>
               <button style={btnGhost} onClick={() => setView('join')}>Dołącz kodem</button>
@@ -341,7 +341,7 @@ function Finished({ state, onExit, onClose }) {
 // ── Onboarding (stories) — pokazane przed utworzeniem sesji ───────────────────
 const INTRO_SLIDES = [
   { img: '/kotklogo.png', title: 'King of the Court', text: 'Turniej pickup 3v3. Kluby dołączają kodem — od 4 do 6 drużyn. Gracie o punkty, XP i koronę.' },
-  { icon: '🔄', title: 'Wygrany zostaje', text: 'Wygrany zostaje na boisku, przegrany schodzi. Po 3 wygranych z rzędu król oddaje koronę. Pierwszy klub do 90 pkt wygrywa sesję.' },
+  { icon: '🔄', title: 'Wygrany zostaje', text: 'Wygrany zostaje na boisku, przegrany schodzi. Po 3 wygranych z rzędu król oddaje koronę. Pierwszy klub do 67 pkt wygrywa sesję.' },
   { icon: '🗳️', title: 'Kto wygrał? Wy decydujecie', text: 'Po każdej gierce gracze zatwierdzają, kto wygrał. Host ustala, ile osób musi kliknąć potwierdzenie — dopiero wtedy wynik liczy się oficjalnie. Zero sędziego, decyduje boisko.' },
   { icon: '🔥', title: 'Grasz = zgarniasz', text: 'Każda gierka to XP na konto. Weźmiesz sesję → grubszy bonus i korona 👑. Na koniec pełna tabela — widać kto rządził boiskiem. Flex w pełni zasłużony.' },
 ]
