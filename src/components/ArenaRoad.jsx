@@ -92,24 +92,17 @@ export default function ArenaRoad({ xp = 0, onClose }) {
       style={{
         position: 'fixed', top: 0, bottom: 0, left: 0, right: 0,
         maxWidth: 430, margin: '0 auto', zIndex: 9000,
-        background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(91,184,245,0.10) 0%, transparent 60%), #060B16',
+        // To samo delikatne tło co reszta apki (#root w index.css).
+        background: 'radial-gradient(ellipse 90% 55% at 62% -8%, rgba(91,184,245,0.22) 0%, transparent 58%), radial-gradient(ellipse 70% 45% at -8% 78%, rgba(50,120,230,0.16) 0%, transparent 55%), radial-gradient(ellipse 80% 50% at 108% 58%, rgba(110,185,255,0.13) 0%, transparent 54%), radial-gradient(ellipse 100% 60% at 50% 112%, rgba(30,90,180,0.20) 0%, transparent 50%), linear-gradient(170deg, #0C1F38 0%, #091828 42%, #060F1E 100%)',
         display: 'flex', flexDirection: 'column',
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
-      {/* HEADER */}
+      {/* HEADER — floats (no stiff bar/line), app-standard ✕ top-right */}
       <div style={{
         position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '16px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0,
+        padding: '16px 18px 12px', flexShrink: 0,
       }}>
-        {onClose && (
-          <button onClick={onClose} style={{
-            position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)',
-            width: 36, height: 36, border: 'none', background: 'transparent',
-            color: 'var(--text-primary)', cursor: 'pointer',
-            fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>←</button>
-        )}
         <div style={{ textAlign: 'center' }}>
           <div style={{
             fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800,
@@ -120,6 +113,16 @@ export default function ArenaRoad({ xp = 0, onClose }) {
             {xp}<img src="/hoopxp.png" alt="XP" style={{ width: 12, height: 12, objectFit: 'contain' }}/> · {ARENAS[currentIdx]?.name}
           </div>
         </div>
+        {onClose && (
+          // Ten sam X co w reszcie apki (ProfileOverlay / Ustawienia).
+          <button onClick={onClose} aria-label="Zamknij" style={{
+            position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+            width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(10,20,38,0.6)', border: '1px solid rgba(150,200,255,0.2)',
+            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+            color: '#cfe0f2', fontSize: 17, cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+          }}>✕</button>
+        )}
       </div>
 
       {/* DROGA — scroll */}
