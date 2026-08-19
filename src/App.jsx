@@ -286,6 +286,11 @@ export default function App() {
                 <OnboardingPage />
               </Suspense>
             } />
+            <Route path="/kotclab"         element={
+              <Suspense fallback={<PageLoader />}>
+                <KotcOnline onClose={() => { window.location.href = '/' }} />
+              </Suspense>
+            } />
             <Route path="/*"               element={<AppShell />} />
           </Routes>
           </NotificationsProvider>
