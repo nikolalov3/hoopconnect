@@ -64,7 +64,7 @@ function PageLoader() {
 function AppShell() {
   const { t } = useTranslation('frames')
   const { user, profile, loading, profileReady } = useAuth()
-  const { leaderboardOpen, frameUnlockOpen, setFrameUnlockOpen, frameUnlockData, setFrameUnlockData, storyOpen, setStoryOpen } = useUI()
+  const { leaderboardOpen, frameUnlockOpen, setFrameUnlockOpen, frameUnlockData, setFrameUnlockData, storyOpen, setStoryOpen, navHidden } = useUI()
   const location = useLocation()
 
   // ── Story onboarding ─────────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ function AppShell() {
   const inOnboarding = path === '/onboarding'
   const inCalendar   = path === '/calendar'
   const inArena      = path === '/arena'
-  const showNav      = !inShooting && !inOnboarding && !inCalendar && !inArena
+  const showNav      = !inShooting && !inOnboarding && !inCalendar && !inArena && !navHidden
 
   // Lazy-mount: a tab mounts on first visit, then stays mounted forever (keep-alive).
   // Switching tabs = instant CSS visibility swap, zero re-fetch, zero remount.

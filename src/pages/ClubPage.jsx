@@ -6,6 +6,7 @@ import { motion, AnimatePresence, useDragControls, useMotionValue, useTransform,
 import { useTranslation } from 'react-i18next'
 import i18n from '../i18n'
 import { useAuth } from '../context/AuthContext'
+import { useUI } from '../context/UIContext'
 import { supabase } from '../lib/supabase'
 import { creditRestDayStreak } from '../lib/streak'
 import { onTableChange, setClubScope } from '../lib/realtimeManager'
@@ -4552,6 +4553,10 @@ function ClubView({ club, onUpdate, uid }) {
   const [kotcLive, setKotcLive]   = useState(null)
   const reloadKotc = useCallback(() => { kotcActiveSession().then(setKotcLive).catch(() => {}) }, [])
   useEffect(() => { reloadKotc() }, [reloadKotc])
+
+  // KotC to pełnoekranowa nakładka — chowamy dolny pasek nawigacji (brak miss-clicków).
+  const { setNavHidden } = useUI()
+  useEffect(() => { setNavHidden(kotcOpen); return () => setNavHidden(false) }, [kotcOpen, setNavHidden])
 
   // ── Touch swipe (direction-aware — won't steal vertical scroll) ──────────────
   const touchRef = useRef(null)

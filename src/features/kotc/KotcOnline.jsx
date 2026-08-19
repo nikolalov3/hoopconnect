@@ -14,8 +14,9 @@ const glass = {
 }
 
 const shell = {
-  position: 'fixed', inset: 0, maxWidth: 460, margin: '0 auto',
-  background: `radial-gradient(ellipse 80% 50% at 50% 0%, rgba(91,184,245,0.12) 0%, transparent 60%), ${NAVY}`,
+  position: 'fixed', inset: 0, maxWidth: 430, margin: '0 auto',
+  // KotC ma własny klimat — jasna, szaro-biała poświata (pod srebrno-złote logo), nie niebieska.
+  background: `radial-gradient(ellipse 120% 72% at 50% -12%, rgba(250,252,255,0.44) 0%, rgba(216,225,240,0.13) 30%, transparent 60%), radial-gradient(ellipse 95% 55% at 8% 90%, rgba(205,215,230,0.14) 0%, transparent 55%), radial-gradient(ellipse 95% 55% at 102% 60%, rgba(222,230,244,0.14) 0%, transparent 54%), linear-gradient(170deg, #3A404B 0%, #30353F 48%, #262B34 100%)`,
   color: TXT, fontFamily: "'Barlow', sans-serif", display: 'flex', flexDirection: 'column',
   overflowY: 'auto', paddingTop: 'env(safe-area-inset-top, 0px)', zIndex: 9000,
 }
@@ -42,7 +43,10 @@ const introSeen = () => { try { return localStorage.getItem('hc_kotc_intro_seen'
 const markIntroSeen = () => { try { localStorage.setItem('hc_kotc_intro_seen', '1') } catch {} }
 
 export default function KotcOnline({ onClose, initialSessionId = null }) {
-  const [view, setView] = useState('home')
+  // Dev: /kotclab?kv=create wchodzi od razu w widok (na produkcji brak param → 'home').
+  const [view, setView] = useState(() => {
+    try { const v = new URLSearchParams(window.location.search).get('kv'); return ['create', 'join'].includes(v) ? v : 'home' } catch { return 'home' }
+  })
   const [sessionId, setSessionId] = useState(initialSessionId)
   const [err, setErr] = useState('')
 
@@ -50,7 +54,7 @@ export default function KotcOnline({ onClose, initialSessionId = null }) {
 
   return (
     <div style={shell}>
-      <Header title={view === 'home' ? '' : 'King of the Court'} onClose={onClose} />
+      <Header onClose={onClose} showLogo={view === 'join'} />
       <div style={{ padding: '24px 22px', flex: 1 }}>
         {err && <ErrBox msg={err} />}
         {view === 'home' && (
@@ -64,7 +68,7 @@ export default function KotcOnline({ onClose, initialSessionId = null }) {
             </div>
           </>
         )}
-        {view === 'create' && <Create onErr={setErr} onCreated={setSessionId} onBack={() => setView('home')} />}
+        {view === 'create' && <Create onErr={setErr} onCreated={setSessionId} />}
         {view === 'join' && <Join onErr={setErr} onJoined={setSessionId} onBack={() => setView('home')} />}
       </div>
       {view === 'intro' && <KotcIntro onDone={() => { markIntroSeen(); setView('create') }} onSkip={() => { markIntroSeen(); setView('create') }} />}
@@ -72,29 +76,41 @@ export default function KotcOnline({ onClose, initialSessionId = null }) {
   )
 }
 
-function Create({ onErr, onCreated, onBack }) {
+function Create({ onErr, onCreated }) {
   const [busy, setBusy] = useState(false)
-  const [votes, setVotes] = useState(6)
+  const [votes, setVotes] = useState(3)
+  const rec = votes >= 2 && votes <= 3
   const go = async () => {
     setBusy(true); onErr('')
     try { const s = await api.createSession({ confirmVotes: votes, minTeams: votes < 6 ? 2 : 4 }); onCreated(s.id) }
     catch (e) { onErr(e.message || 'Nie udało się utworzyć sesji') } finally { setBusy(false) }
   }
   return (
-    <div>
-      <h2 style={{ ...h1, fontSize: 24, marginBottom: 8 }}>Nowa sesja</h2>
-      <p style={{ color: MUTED, fontSize: 14, marginBottom: 18 }}>Dostaniesz <b>kod</b> — kluby dołączają nim do gry. Ty startujesz sesję.</p>
-      <div style={{ ...glass, borderRadius: 20, padding: '24px 22px 22px', marginBottom: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+      {/* logo + tytuł — wyśrodkowane w górnej przestrzeni */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 24 }}>
+        <img src="/kotklogo.png" alt="King of the Court"
+          style={{ height: 96, objectFit: 'contain', filter: 'drop-shadow(0 10px 26px rgba(240,190,60,0.32))', marginBottom: 18 }} />
+        <h2 style={{ ...h1, fontSize: 26, marginBottom: 8, textAlign: 'center' }}>Nowa sesja</h2>
+        <p style={{ color: MUTED, fontSize: 14, textAlign: 'center', maxWidth: 330 }}>Dostaniesz <b>kod</b>. Kluby dołączają nim do gry, a Ty startujesz sesję.</p>
+      </div>
+      {/* panel wyboru tuż nad przyciskiem — naturalny dolny blok */}
+      <div style={{ ...glass, borderRadius: 20, padding: '24px 22px 20px', width: '100%', marginBottom: 14 }}>
         <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: MUTED, textAlign: 'center' }}>Ile osób musi potwierdzić wynik</div>
-        <div style={{ ...h1, fontSize: 54, color: BLUE, textAlign: 'center', margin: '12px 0 10px', textShadow: '0 2px 10px rgba(91,184,245,0.16)' }}>{votes}</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 9, margin: '10px 0 8px' }}>
+          <span style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: 58, lineHeight: 1, color: BLUE, textShadow: '0 2px 12px rgba(91,184,245,0.22)' }}>{votes}</span>
+          {rec && <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: 1, textTransform: 'uppercase', color: '#00E676' }}>polecane</span>}
+        </div>
         <input type="range" min={1} max={6} value={votes} onChange={e => setVotes(+e.target.value)}
           style={{ width: '100%', accentColor: BLUE, height: 26, cursor: 'pointer' }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: MUTED, marginTop: 10 }}>
-          <span>1 · szybki test</span><span>6 · pełny tryb</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: MUTED, marginTop: 8 }}>
+          <span>1 · szybko</span><span>6 · wolno</span>
         </div>
+        <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: 'rgba(0,230,118,0.85)', marginTop: 10 }}>Polecane: 2–3 osoby</div>
       </div>
-      <button style={{ ...btnPrimary, width: '100%', opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={go}>{busy ? 'Tworzę…' : 'Utwórz sesję 🏀'}</button>
-      <button style={{ ...btnGhost, width: '100%', marginTop: 10 }} onClick={onBack}>Wróć</button>
+      <button style={{ ...btnPrimary, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: busy ? 0.6 : 1, marginBottom: 'env(safe-area-inset-bottom, 0px)' }} disabled={busy} onClick={go}>
+        {busy ? 'Tworzę…' : <TripleChevron />}
+      </button>
     </div>
   )
 }
@@ -143,7 +159,7 @@ function Session({ sessionId, onExit, onClose }) {
   useEffect(() => { load(); const unsub = api.subscribeSession(sessionId, load); return unsub }, [sessionId, load])
   useEffect(() => { import('../../lib/supabase').then(({ supabase }) => supabase.auth.getUser().then(({ data }) => setMe(data.user?.id))) }, [])
 
-  if (!state?.session) return <div style={shell}><Header title="King of the Court" onClose={onClose} /><div style={{ padding: 24, color: MUTED }}>Ładuję sesję…</div></div>
+  if (!state?.session) return <div style={shell}><Header showLogo onClose={onClose} /><div style={{ padding: 24, color: MUTED }}>Ładuję sesję…</div></div>
   const s = state.session
   const isHost = me && s.host_id === me
   if (s.status === 'finished') return <Finished state={state} onExit={onExit} onClose={onClose} />
@@ -162,8 +178,8 @@ function Lobby({ state, isHost, reload, onClose }) {
   const enough = state.teams.length >= s.min_teams
   return (
     <div style={shell}>
-      <Header title="Lobby" onClose={onClose} />
-      <div style={{ padding: '20px 22px', flex: 1 }}>
+      <Header showLogo onClose={onClose} />
+      <div style={{ padding: '20px 22px', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <div style={{ fontSize: 12, color: MUTED, letterSpacing: 1, textTransform: 'uppercase' }}>Kod sesji</div>
           <div style={{ ...h1, fontSize: 46, color: BLUE, letterSpacing: 8 }}>{s.code}</div>
@@ -182,11 +198,11 @@ function Lobby({ state, isHost, reload, onClose }) {
           {state.teams.length === 0 && <div style={{ color: MUTED, fontSize: 14 }}>Czekamy aż kluby dołączą kodem…</div>}
         </div>
         {isHost && (
-          <button style={{ ...btnPrimary, width: '100%', marginTop: 22, opacity: (enough && !busy) ? 1 : 0.5 }} disabled={!enough || busy} onClick={start}>
+          <button style={{ ...btnPrimary, width: '100%', marginTop: 'auto', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: (enough && !busy) ? 1 : 0.5 }} disabled={!enough || busy} onClick={start}>
             {enough ? 'Start sesji 🏀' : `Potrzeba min. ${s.min_teams} klubów`}
           </button>
         )}
-        {!isHost && <div style={{ textAlign: 'center', color: MUTED, marginTop: 22, fontSize: 14 }}>Czekaj aż host wystartuje…</div>}
+        {!isHost && <div style={{ textAlign: 'center', color: MUTED, marginTop: 'auto', paddingTop: 22, fontSize: 14 }}>Czekaj aż host wystartuje…</div>}
       </div>
     </div>
   )
@@ -215,7 +231,7 @@ function Live({ state, me, reload, onClose }) {
   }
   return (
     <div style={shell}>
-      <Header title="King of the Court" onClose={onClose} />
+      <Header showLogo onClose={onClose} />
       <div style={{ padding: '16px 18px', flex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
           <span style={{ fontSize: 12.5, color: MUTED }}>👑 Lider: <b style={{ color: TXT }}>{t(leader?.team_id)?.name}</b></span>
@@ -293,7 +309,7 @@ function Finished({ state, onExit, onClose }) {
   const king = t(state.session.winner_team_id) || (ranked[0] && t(ranked[0].team_id))
   return (
     <div style={shell}>
-      <Header title="Wyniki" onClose={onClose} />
+      <Header showLogo onClose={onClose} />
       <div style={{ padding: '30px 22px', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <img src="/kotklogo.png" alt="" style={{ width: 130, height: 130, objectFit: 'contain', margin: '0 auto', filter: 'drop-shadow(0 8px 26px rgba(91,184,245,0.4))' }} />
         <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: BLUE }}>King of the Court</div>
@@ -354,12 +370,37 @@ function KotcIntro({ onDone, onSkip }) {
   )
 }
 
-function Header({ title, onClose }) {
+function Header({ onClose, showLogo }) {
   return (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 18px', borderBottom: title ? `1px solid ${LINE}` : 'none', flexShrink: 0, minHeight: 54 }}>
-      {onClose && <button onClick={onClose} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: TXT, fontSize: 22, cursor: 'pointer' }}>←</button>}
-      {title && <div style={{ ...h1, fontSize: 20 }}>{title}</div>}
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minHeight: 48, padding: '12px 16px 4px', flexShrink: 0 }}>
+      {showLogo && (
+        <img src="/kotklogo.png" alt="King of the Court"
+          style={{ height: 58, objectFit: 'contain', filter: 'drop-shadow(0 6px 18px rgba(240,190,60,0.32))' }} />
+      )}
+      {onClose && (
+        // Ten sam X co w reszcie apki (ProfileOverlay / Ustawienia).
+        <button onClick={onClose} aria-label="Zamknij"
+          style={{ position: 'absolute', right: 16, top: 14,
+            width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(10,20,38,0.6)', border: '1px solid rgba(150,200,255,0.2)',
+            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+            color: '#cfe0f2', fontSize: 17, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>✕</button>
+      )}
     </div>
+  )
+}
+
+// Trzy strzałki „dalej" — sportowe CTA (jaśniejsza ostatnia = kierunek naprzód).
+function TripleChevron() {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+      {[0, 1, 2].map(k => (
+        <svg key={k} width="17" height="24" viewBox="0 0 17 24" fill="none" style={{ opacity: 0.5 + k * 0.25 }}>
+          <path d="M5 5 L12 12 L5 19" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ))}
+    </span>
   )
 }
 function ErrBox({ msg }) {
