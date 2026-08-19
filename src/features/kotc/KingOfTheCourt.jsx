@@ -50,7 +50,7 @@ function Setup({ onStart }) {
         fontSize: 32, fontWeight: 900, textAlign: 'center', letterSpacing: 0.5, lineHeight: 1,
       }}>King of the Court</h1>
       <p style={{ textAlign: 'center', color: MUTED, fontSize: 14, margin: '8px 0 26px' }}>
-        3v3 · wygrany zostaje · po 3 wygranych schodzi · do 90 pkt
+        3v3 · wygrany zostaje · po 3 wygranych schodzi · do 67 pkt
       </p>
 
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: BLUE, marginBottom: 10 }}>
