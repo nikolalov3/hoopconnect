@@ -3837,7 +3837,7 @@ function MatchesPanel({ club, uid, isActive }) {
           {RADIUS_OPTIONS.map(km => (
             <button key={km} onClick={() => setRadius(km)}
               style={{
-                flex: 1, padding: '7px 0', borderRadius: 9, cursor: 'pointer',
+                flex: 1, padding: '7px 0', borderRadius: 12, cursor: 'pointer',
                 fontSize: 11, fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: 0.5,
                 border: radius === km ? `1px solid ${C.accent}70` : '1px solid rgba(120,180,255,0.14)',
                 background: radius === km ? `${C.accent}1c` : 'rgba(255,255,255,0.03)',
@@ -3854,7 +3854,7 @@ function MatchesPanel({ club, uid, isActive }) {
           {MODE_OPTIONS.map(opt => (
             <button key={opt} onClick={() => setModeFilter(opt)}
               style={{
-                flex: 1, padding: '7px 0', borderRadius: 9, cursor: 'pointer',
+                flex: 1, padding: '7px 0', borderRadius: 12, cursor: 'pointer',
                 fontSize: 11, fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: 0.5,
                 border: modeFilter === opt ? `1px solid ${C.accent}70` : '1px solid rgba(120,180,255,0.14)',
                 background: modeFilter === opt ? `${C.accent}1c` : 'rgba(255,255,255,0.03)',
@@ -3988,7 +3988,7 @@ function MatchesPanel({ club, uid, isActive }) {
             )
           })()}
           {upcoming.length === 0 && past.length === 0 && (
-            <div style={{ padding: '48px 24px', textAlign: 'center',
+            <div style={{ padding: '48px 24px', textAlign: 'center', borderRadius: 20,
               border: `1px solid rgba(255,255,255,0.06)`,
               borderTop: `1px solid rgba(255,255,255,0.10)` }}>
               <img src="/brokelogo.png" alt=""
@@ -4014,7 +4014,7 @@ function MatchesPanel({ club, uid, isActive }) {
             cursor: 'pointer', background: `linear-gradient(135deg, ${C.accent}, ${C.accentLo})`,
             color: '#000', fontFamily: 'var(--font-display)', fontWeight: 900,
             fontSize: 12, letterSpacing: 2, textTransform: 'uppercase',
-            boxShadow: `0 6px 28px ${C.accentLo}55`,
+            boxShadow: `0 4px 14px ${C.accentLo}30`,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             strokeWidth="3" strokeLinecap="round">

@@ -69,7 +69,7 @@ export default function KotcOnline({ onClose, initialSessionId = null }) {
           </>
         )}
         {view === 'create' && <Create onErr={setErr} onCreated={setSessionId} />}
-        {view === 'join' && <Join onErr={setErr} onJoined={setSessionId} onBack={() => setView('home')} />}
+        {view === 'join' && <Join onErr={setErr} onJoined={setSessionId} />}
       </div>
       {view === 'intro' && <KotcIntro onDone={() => { markIntroSeen(); setView('create') }} onSkip={() => { markIntroSeen(); setView('create') }} />}
     </div>
@@ -115,7 +115,7 @@ function Create({ onErr, onCreated }) {
   )
 }
 
-function Join({ onErr, onJoined, onBack }) {
+function Join({ onErr, onJoined }) {
   const [code, setCode] = useState('')
   const [clubs, setClubs] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -127,27 +127,33 @@ function Join({ onErr, onJoined, onBack }) {
     catch (e) { onErr(e.message || 'Nie udało się dołączyć') } finally { setBusy(false) }
   }
   return (
-    <div>
-      <h2 style={{ ...h1, fontSize: 24, marginBottom: 8 }}>Dołącz do sesji</h2>
-      <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="KOD SESJI" maxLength={6}
-        style={{ width: '100%', background: CARD, border: `1px solid ${LINE}`, borderRadius: 12, padding: '14px', color: TXT, fontSize: 22, fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: 4, textAlign: 'center', outline: 'none', textTransform: 'uppercase' }} />
-      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: BLUE, margin: '20px 0 10px' }}>Wejdź jako klub</div>
-      {clubs === null && <div style={{ color: MUTED, fontSize: 14 }}>Ładuję kluby…</div>}
-      {clubs?.length === 0 && <div style={{ color: MUTED, fontSize: 14 }}>Nie masz klubu z min. 3 graczami. Uzupełnij skład klubu w zakładce Klub.</div>}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {(clubs || []).map(c => {
-          const ok = c.roster >= 3
-          return (
-            <button key={c.id} disabled={!ok || busy || code.length < 4} onClick={() => join(c.id)}
-              style={{ ...btnGhost, textAlign: 'left', display: 'flex', gap: 10, alignItems: 'center', opacity: (ok && code.length >= 4) ? 1 : 0.45 }}>
-              <HexBadge abbr={c.abbr} size={30} />
-              <span style={{ flex: 1, fontWeight: 700 }}>{c.name}</span>
-              <span style={{ fontSize: 12, color: ok ? BLUE : '#E5A93C' }}>{c.roster} {ok ? 'graczy ✓' : '(min 3)'}</span>
-            </button>
-          )
-        })}
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+      {/* tytuł wyśrodkowany w górnej przestrzeni */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: 24 }}>
+        <h2 style={{ ...h1, fontSize: 26, marginBottom: 8 }}>Dołącz do sesji</h2>
+        <p style={{ color: MUTED, fontSize: 14, maxWidth: 320 }}>Wpisz kod od hosta i wybierz swój klub.</p>
       </div>
-      <button style={{ ...btnGhost, width: '100%', marginTop: 14 }} onClick={onBack}>Wróć</button>
+      {/* kod + wybór klubu — na dole */}
+      <div style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="KOD SESJI" maxLength={6}
+          style={{ width: '100%', background: CARD, border: `1px solid ${LINE}`, borderRadius: 12, padding: '14px', color: TXT, fontSize: 22, fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: 4, textAlign: 'center', outline: 'none', textTransform: 'uppercase' }} />
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: BLUE, margin: '18px 0 10px' }}>Wejdź jako klub</div>
+        {clubs === null && <div style={{ color: MUTED, fontSize: 14 }}>Ładuję kluby…</div>}
+        {clubs?.length === 0 && <div style={{ color: MUTED, fontSize: 14 }}>Nie masz klubu z min. 3 graczami. Uzupełnij skład klubu w zakładce Klub.</div>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {(clubs || []).map(c => {
+            const ok = c.roster >= 3
+            return (
+              <button key={c.id} disabled={!ok || busy || code.length < 4} onClick={() => join(c.id)}
+                style={{ ...btnGhost, textAlign: 'left', display: 'flex', gap: 10, alignItems: 'center', opacity: (ok && code.length >= 4) ? 1 : 0.45 }}>
+                <HexBadge abbr={c.abbr} size={30} />
+                <span style={{ flex: 1, fontWeight: 700 }}>{c.name}</span>
+                <span style={{ fontSize: 12, color: ok ? BLUE : '#E5A93C' }}>{c.roster} {ok ? 'graczy ✓' : '(min 3)'}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
