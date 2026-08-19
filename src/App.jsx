@@ -291,6 +291,11 @@ export default function App() {
                 <KotcOnline onClose={() => { window.location.href = '/' }} />
               </Suspense>
             } />
+            <Route path="/arenalab"        element={
+              <Suspense fallback={<PageLoader />}>
+                <ArenaRoad xp={2500} onClose={() => { window.location.href = '/' }} />
+              </Suspense>
+            } />
             <Route path="/*"               element={<AppShell />} />
           </Routes>
           </NotificationsProvider>
