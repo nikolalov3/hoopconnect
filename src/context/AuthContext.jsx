@@ -39,6 +39,9 @@ export function AuthProvider({ children }) {
   // This prevents token-refresh events from re-blocking the UI with a spinner.
   const [profileReady, setProfileReady] = useState(false)
   const profileReadyRef = useRef(false)
+  // recovery: true po kliknięciu w link "reset hasła" z maila (event PASSWORD_RECOVERY).
+  // Gdy true, App pokazuje ekran ustawienia nowego hasła zamiast normalnej apki.
+  const [recovery, setRecovery] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -57,6 +60,9 @@ export function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
+      // Link "reset hasła" z maila loguje usera i emituje PASSWORD_RECOVERY.
+      // Podnosimy flagę → App pokaże ekran ustawienia nowego hasła.
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true)
       if (session?.user) {
         if (event === 'SIGNED_IN') {
           profileReadyRef.current = false
@@ -166,7 +172,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, profileReady, signIn, signUp, signOut, refreshProfile, setProfileData }}>
+    <AuthContext.Provider value={{ user, profile, loading, profileReady, recovery, clearRecovery: () => setRecovery(false), signIn, signUp, signOut, refreshProfile, setProfileData }}>
       {children}
     </AuthContext.Provider>
   )

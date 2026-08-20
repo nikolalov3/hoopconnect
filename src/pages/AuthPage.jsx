@@ -4,6 +4,13 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 
+const authLinkStyle = {
+  background: 'none', border: 'none', cursor: 'pointer',
+  color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 600,
+  letterSpacing: 0.3, marginTop: 4, padding: '6px 0',
+  textAlign: 'center', WebkitTapHighlightColor: 'transparent',
+}
+
 export default function AuthPage() {
   const { t } = useTranslation('auth')
   const { signIn, signUp } = useAuth()
@@ -43,6 +50,22 @@ export default function AuthPage() {
     e.preventDefault()
     setError('')
     setSuccess('')
+
+    if (mode === 'reset') {
+      setLoading(true)
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin,
+        })
+        if (error) setError(t('errors.resetGeneric'))
+        else setSuccess(t('reset.sent'))
+      } catch {
+        setError(t('errors.resetGeneric'))
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
 
     if (mode === 'register' && password !== confirmPassword) {
       setError(t('errors.passwordsDontMatch'))
@@ -215,7 +238,8 @@ export default function AuthPage() {
         </p>
       </div>
 
-      {/* Mode toggle */}
+      {/* Mode toggle — ukryty w trybie resetu hasła */}
+      {mode !== 'reset' && (
       <div style={{
         display: 'flex',
         background: 'rgba(10,6,3,0.65)',
@@ -249,6 +273,20 @@ export default function AuthPage() {
           </button>
         ))}
       </div>
+      )}
+
+      {/* Nagłówek trybu resetu hasła */}
+      {mode === 'reset' && (
+        <div style={{ textAlign: 'center', marginBottom: 18 }}>
+          <div style={{
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
+            textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-primary)',
+          }}>{t('reset.title')}</div>
+          <p style={{ color: 'var(--text-dim)', fontSize: 12.5, marginTop: 6, lineHeight: 1.4 }}>
+            {t('reset.subtitle')}
+          </p>
+        </div>
+      )}
 
       {/* Form */}
       <AnimatePresence mode="wait">
@@ -270,16 +308,18 @@ export default function AuthPage() {
             required
             autoComplete="email"
           />
-          <input
-            className="input-field"
-            type="password"
-            placeholder={t('password')}
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            minLength={6}
-          />
+          {mode !== 'reset' && (
+            <input
+              className="input-field"
+              type="password"
+              placeholder={t('password')}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              minLength={6}
+            />
+          )}
 
           {mode === 'register' && (
             <motion.div
@@ -337,12 +377,25 @@ export default function AuthPage() {
             disabled={loading}
             style={{ marginTop: 6, opacity: loading ? 0.6 : 1 }}
           >
-            {loading ? '…' : mode === 'login' ? t('loginButton') : t('registerButton')}
+            {loading ? '…' : mode === 'login' ? t('loginButton') : mode === 'register' ? t('registerButton') : t('reset.sendButton')}
           </button>
+
+          {/* Link do resetu / powrotu */}
+          {mode === 'login' && (
+            <button type="button" onClick={() => switchMode('reset')} style={authLinkStyle}>
+              {t('forgotPassword')}
+            </button>
+          )}
+          {mode === 'reset' && (
+            <button type="button" onClick={() => switchMode('login')} style={authLinkStyle}>
+              ← {t('reset.back')}
+            </button>
+          )}
         </motion.form>
       </AnimatePresence>
 
-      {/* Divider */}
+      {/* Divider + Google — ukryte w trybie resetu hasła */}
+      {mode !== 'reset' && (<>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '22px 0 14px' }}>
         <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.10)' }} />
         <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
@@ -384,6 +437,7 @@ export default function AuthPage() {
           {oauthLoading ? '…' : t('googleLogin')}
         </span>
       </motion.button>
+      </>)}
 
       {/* Footer */}
       <p style={{
