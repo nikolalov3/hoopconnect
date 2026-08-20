@@ -4326,7 +4326,7 @@ function MiniCourt({ club }) {
           </clipPath>
         </defs>
       </svg>
-      <div style={{ position: 'relative', width: '100%', aspectRatio: '343 / 410' }}>
+      <div style={{ position: 'relative', width: '100%', maxWidth: 'calc(52dvh * 343 / 410)', margin: '0 auto', aspectRatio: '343 / 410' }}>
         <div style={{ position: 'absolute', inset: 0, borderRadius: 22, overflow: 'hidden' }}>
           <Court/>
           {POSITIONS.map(posKey => (
@@ -4445,7 +4445,7 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
         </svg>
 
         {/* Responsive court wrapper — always fills available width, keeps 343:410 ratio */}
-        <div style={{ position: 'relative', width: '100%', aspectRatio: '343 / 410' }}>
+        <div style={{ position: 'relative', width: '100%', maxWidth: 'calc(52dvh * 343 / 410)', margin: '0 auto', aspectRatio: '343 / 410' }}>
 
           {/* Clipped court card — fills wrapper */}
           <div style={{
