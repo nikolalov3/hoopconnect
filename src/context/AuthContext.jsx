@@ -44,13 +44,13 @@ export function AuthProvider({ children }) {
   const [recovery, setRecovery] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        // Start realtime od razu (z user_id filterami). Gdy fetchProfile
-        // ustali club_id, ewentualnie dorzuca CLUB_TABLES — rebuild raz.
+        // startRealtime FIRST (sets userId) so fetchProfile's later setClubScope
+        // rebuilds the channel with club scope instead of being ignored.
         startRealtime(session.user.id)
-        fetchProfile(session.user.id)
+        fetchProfile(session.user.id, session.user)
       } else {
         setProfileReady(true)
         profileReadyRef.current = true
@@ -68,7 +68,7 @@ export function AuthProvider({ children }) {
           profileReadyRef.current = false
           setProfileReady(false)
           startRealtime(session.user.id)
-          fetchProfile(session.user.id)
+          fetchProfile(session.user.id, session.user)
         }
       } else {
         stopRealtime()
@@ -108,43 +108,44 @@ export function AuthProvider({ children }) {
     }
   }, [user?.id])
 
-  async function fetchProfile(userId) {
-    try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const sessionUser = sessionData?.session?.user
+  // sessionUser is passed in by callers (from getSession / onAuthStateChange) so we
+  // avoid a redundant getSession() here. Only the profiles query gates first paint;
+  // the username backfill and club-scope lookup run fire-and-forget after paint.
+  const markReady = () => {
+    if (!profileReadyRef.current) {
+      profileReadyRef.current = true
+      setProfileReady(true)
+    }
+  }
 
+  async function fetchProfile(userId, sessionUser) {
+    try {
       const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
 
-      // Backfill username if missing (happens when DB trigger creates row without email)
+      // Backfill username if missing (DB trigger may create the row without email).
+      // Show it optimistically now; persist in the background (don't block paint).
       if (data && !data.username && sessionUser?.email) {
-        await supabase
-          .from('profiles')
-          .update({ username: sessionUser.email })
-          .eq('id', userId)
         setProfile({ ...data, username: sessionUser.email })
+        supabase.from('profiles').update({ username: sessionUser.email }).eq('id', userId)
+          .then(() => {}, () => {})
       } else {
         setProfile(data)
       }
 
-      // Pobierz club_id i ustaw realtime scope (1 dodatkowy .on() na tym samym
-      // channelu, bez nowych channeli). Dzięki temu eventy club_members /
-      // club_matches lecą instant zamiast czekać na 2-min poll.
-      const { data: mb } = await supabase
-        .from('club_members').select('club_id')
-        .eq('user_id', userId).maybeSingle()
-      setClubScope(mb?.club_id || null)
+      // Unblock the render gate as soon as the profile is in.
+      markReady()
+
+      // Club scope only configures realtime (adds a .on() on the same channel so
+      // club_members/club_matches events arrive instantly). Off the paint gate.
+      supabase.from('club_members').select('club_id').eq('user_id', userId).maybeSingle()
+        .then(({ data: mb }) => setClubScope(mb?.club_id || null), () => {})
     } catch {
       setProfile(null)
-    } finally {
-      // Only set profileReady once — subsequent token refreshes don't retrigger spinner
-      if (!profileReadyRef.current) {
-        profileReadyRef.current = true
-        setProfileReady(true)
-      }
+      markReady()
     }
   }
 
@@ -164,7 +165,7 @@ export function AuthProvider({ children }) {
   }
 
   async function refreshProfile() {
-    if (user) await fetchProfile(user.id)
+    if (user) await fetchProfile(user.id, user)
   }
 
   function setProfileData(data) {

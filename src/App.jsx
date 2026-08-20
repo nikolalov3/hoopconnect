@@ -16,7 +16,9 @@ const SEASON_1_END = new Date('2026-08-24T00:00:00')
 const DIAMOND_MIN  = 820   // weekly avg threshold for Diamond tier
 
 // Lazy-loaded pages — each page loads as a separate JS chunk
-const AuthPage        = lazy(() => import('./pages/AuthPage'))
+// AuthPage is the GUARANTEED first screen for every logged-out visitor, so it is
+// imported statically (part of the initial graph, no lazy chunk hop before the LCP).
+import AuthPage from './pages/AuthPage'
 const SetNewPasswordPage = lazy(() => import('./pages/SetNewPasswordPage'))
 const OnboardingPage  = lazy(() => import('./pages/OnboardingPage'))
 const HomePage        = lazy(() => import('./pages/HomePage'))
@@ -241,8 +243,10 @@ function AppShell() {
 
 function AuthRoute() {
   const { user, loading } = useAuth()
-  if (loading) return null
-  if (user) {
+  // Optimistic paint: AuthPage is a static, network-free shell — render it
+  // immediately instead of blanking while the session probe resolves. Only once
+  // the probe confirms a logged-in user do we redirect away.
+  if (!loading && user) {
     const returnTo = localStorage.getItem('hc_returnTo')
     if (returnTo) {
       localStorage.removeItem('hc_returnTo')
@@ -250,11 +254,7 @@ function AuthRoute() {
     }
     return <Navigate to="/" replace />
   }
-  return (
-    <Suspense fallback={<PageLoader />}>
-      <AuthPage />
-    </Suspense>
-  )
+  return <AuthPage />
 }
 
 export default function App() {
