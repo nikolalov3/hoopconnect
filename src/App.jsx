@@ -17,6 +17,7 @@ const DIAMOND_MIN  = 820   // weekly avg threshold for Diamond tier
 
 // Lazy-loaded pages — each page loads as a separate JS chunk
 const AuthPage        = lazy(() => import('./pages/AuthPage'))
+const SetNewPasswordPage = lazy(() => import('./pages/SetNewPasswordPage'))
 const OnboardingPage  = lazy(() => import('./pages/OnboardingPage'))
 const HomePage        = lazy(() => import('./pages/HomePage'))
 const ShootingPage    = lazy(() => import('./pages/ShootingPage'))
@@ -64,7 +65,7 @@ function PageLoader() {
 
 function AppShell() {
   const { t } = useTranslation('frames')
-  const { user, profile, loading, profileReady } = useAuth()
+  const { user, profile, loading, profileReady, recovery } = useAuth()
   const { leaderboardOpen, frameUnlockOpen, setFrameUnlockOpen, frameUnlockData, setFrameUnlockData, storyOpen, setStoryOpen, navHidden } = useUI()
   const location = useLocation()
 
@@ -152,6 +153,15 @@ function AppShell() {
       }}>
         <div className="spinner" />
       </div>
+    )
+  }
+
+  // Reset hasła z maila → ekran ustawienia nowego hasła (ma pierwszeństwo nad resztą).
+  if (recovery) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <SetNewPasswordPage />
+      </Suspense>
     )
   }
 
