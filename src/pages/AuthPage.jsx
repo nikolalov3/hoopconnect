@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { authRedirectUrl } from '../lib/authRedirect'
 import { motion, AnimatePresence } from 'framer-motion'
 
 // Sign in with Apple (Apple Guideline 4.8 — required alongside Google on iOS).
@@ -34,7 +35,7 @@ export default function AuthPage() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin },
+        options: { redirectTo: authRedirectUrl() },
       })
       if (error) setError(error.message)
     } catch (e) {
@@ -50,7 +51,7 @@ export default function AuthPage() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
-        options: { redirectTo: window.location.origin },
+        options: { redirectTo: authRedirectUrl() },
       })
       if (error) setError(error.message)
     } catch (e) {
@@ -76,7 +77,7 @@ export default function AuthPage() {
       setLoading(true)
       try {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin,
+          redirectTo: authRedirectUrl(),
         })
         if (error) setError(t('errors.resetGeneric'))
         else setSuccess(t('reset.sent'))

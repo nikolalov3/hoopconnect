@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { authRedirectUrl } from '../../lib/authRedirect'
 import { useCoachAuth } from '../context/CoachAuthContext'
 
 const AGE_CATEGORIES = ['U10','U12','U14','U16','U18','Senior']
@@ -101,7 +102,7 @@ export default function SettingsPage() {
   async function handlePasswordReset() {
     setPwState('sending')
     const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-      redirectTo: window.location.origin,
+      redirectTo: authRedirectUrl(),
     })
     setPwState(error ? 'error' : 'sent')
     setTimeout(() => setPwState('idle'), 4000)

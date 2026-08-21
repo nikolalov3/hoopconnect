@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { authRedirectUrl } from '../../lib/authRedirect'
 import HexAvatar from './HexAvatar'
 import PlayerCard3D from './PlayerCard3D'
 import { useCardStats } from '../../hooks/useCardStats'
@@ -639,7 +640,7 @@ function AccountView({ onBack, onClose, user }) {
     setPwState('sending')
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: window.location.origin,
+        redirectTo: authRedirectUrl(),
       })
       setPwState(error ? 'error' : 'sent')
     } catch { setPwState('error') }
