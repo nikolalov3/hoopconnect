@@ -70,12 +70,3 @@ export function setSentryUser(user) {
 
 /** Re-export the React ErrorBoundary — wrap each app's root with it. */
 export const SentryErrorBoundary = Sentry.ErrorBoundary
-
-/** Manually capture an exception (e.g. caught error in async flow). */
-export function captureError(err, ctx) {
-  if (!initialized) {
-    console.error('[captureError]', err, ctx)
-    return
-  }
-  Sentry.captureException(err, ctx ? { extra: ctx } : undefined)
-}

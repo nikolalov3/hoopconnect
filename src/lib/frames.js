@@ -16,8 +16,6 @@ export const FRAME_CATALOG = [
   { id: 'ff',           path: '/ff.png',          rarity: 'legendary', i18nKey: 'ff', autoGrantSilent: true },
 ]
 
-export const FRAME_BY_ID = Object.fromEntries(FRAME_CATALOG.map(f => [f.id, f]))
-
 // Klucz localStorage używany zarówno przez FrameUnlockPanel (early_access/
 // diamond_s1, ustawiany na onClose) jak i przez auto-grant (ff i przyszłe
 // autoGrantSilent) — jeden wzorzec klucza dla całej apki.

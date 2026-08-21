@@ -60,47 +60,6 @@ function CDBlock({ label, value }) {
 }
 
 /* ─── prize image placeholder ──────────────────────────────────── */
-function PrizePlaceholder({ color, height=110 }) {
-  const { t } = useTranslation('leagueInfo')
-  return (
-    <div style={{
-      height, position:'relative', overflow:'hidden',
-      background:`linear-gradient(135deg,${color}10,rgba(0,0,0,0.4))`,
-      borderBottom:`1px solid ${color}20`,
-      display:'flex', alignItems:'center', justifyContent:'center',
-    }}>
-      {/* scanline overlay */}
-      <div style={{
-        position:'absolute', inset:0, zIndex:1,
-        backgroundImage:`repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.15) 2px,rgba(0,0,0,0.15) 4px)`,
-        pointerEvents:'none',
-      }}/>
-      {/* grid */}
-      <svg style={{position:'absolute',inset:0,width:'100%',height:'100%',opacity:0.08}}
-        viewBox="0 0 100 100" preserveAspectRatio="none">
-        {[20,40,60,80].map(x=><line key={x} x1={x} y1="0" x2={x} y2="100" stroke={color} strokeWidth="0.5"/>)}
-        {[25,50,75].map(y=><line key={y} x1="0" y1={y} x2="100" y2={y} stroke={color} strokeWidth="0.5"/>)}
-      </svg>
-      <div style={{textAlign:'center',position:'relative',zIndex:2}}>
-        <div style={{
-          width:40,height:40,margin:'0 auto 7px',
-          border:`1.5px dashed ${color}50`,
-          display:'flex',alignItems:'center',justifyContent:'center',
-        }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6">
-            <rect x="3" y="3" width="18" height="18" rx="0"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <polyline points="21 15 16 10 5 21"/>
-          </svg>
-        </div>
-        <p style={{fontSize:8,color:`${color}66`,margin:0,letterSpacing:2,
-          textTransform:'uppercase',fontWeight:700}}>{t('prizes.placeholder')}</p>
-      </div>
-    </div>
-  )
-}
-
 /* ─── tier carousel ────────────────────────────────────────────── */
 const TIER_COLORS = ['#CD7F32', '#C0C0C0', '#FFD700', '#5BB8F5', '#B9F2FF']
 const TIER_RANGES  = [{min:0,max:249},{min:250,max:449},{min:450,max:649},{min:650,max:819},{min:820,max:1000}]
@@ -435,87 +394,6 @@ export default function LeagueInfoPanel({ open, onClose }) {
 
               {/* ── COUNTDOWN — isolated component (only it re-renders/s) ── */}
               <CountdownTimer open={open} isWaiting={!isActive} nextStart={nextStart}/>
-
-              {/* ── NAGRODY ───────────────────────────────────────── */}
-              <SLabel mt={0}>{t('prizes.title')}</SLabel>
-
-              {/* 1st — full glowing frame */}
-              <div style={{
-                marginBottom:8,
-                border:`1px solid ${ORANGE}60`,
-                borderTop:`2px solid ${ORANGE}`,
-                borderBottom:`2px solid ${ORANGE}`,
-                position:'relative',
-                overflow:'hidden',
-                boxShadow:`0 0 28px ${ORANGE}1D, inset 0 0 28px ${ORANGE}05`,
-              }}>
-                <PrizePlaceholder color={ORANGE} height={120}/>
-                <div style={{
-                  padding:'13px 15px',
-                  background:`linear-gradient(135deg,${ORANGE}10,rgba(0,0,0,0.3))`,
-                  display:'flex',alignItems:'center',gap:12,
-                }}>
-                  <div style={{
-                    width:36,height:36,flexShrink:0,
-                    background:`${ORANGE}1A`,
-                    border:`1px solid ${ORANGE}50`,
-                    display:'flex',alignItems:'center',justifyContent:'center',
-                  }}>
-                    <span style={{fontSize:16,fontWeight:900,color:ORANGE,
-                      fontFamily:'var(--font-display)'}}>1</span>
-                  </div>
-                  <div style={{flex:1}}>
-                    <p style={{fontSize:15,fontWeight:800,
-                      color:'rgba(255,255,255,0.95)',margin:'0 0 2px'}}>{t('prizes.first')}</p>
-                    <p style={{fontSize:10,color:'rgba(255,255,255,0.38)',margin:0}}>
-                      {t('prizes.firstDesc')}
-                    </p>
-                  </div>
-                  <div style={{width:8,height:8,background:ORANGE,flexShrink:0,
-                    boxShadow:`0 0 9px ${ORANGE}, 0 0 18px ${ORANGE}7A`}}/>
-                </div>
-              </div>
-
-              {/* 2nd & 3rd — no border, only corner accents */}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:0}}>
-                {[
-                  {rank:'2',color:BLUE,  prize:t('prizes.coupon')},
-                  {rank:'3',color:PURPLE,prize:t('prizes.coupon')},
-                ].map(r=>(
-                  <div key={r.rank} style={{
-                    overflow:'hidden',position:'relative',
-                    background:`linear-gradient(135deg,${r.color}08,rgba(0,0,0,0.35))`,
-                  }}>
-                    {/* corner accents only */}
-                    <div style={{position:'absolute',top:0,left:0,width:12,height:12,
-                      borderTop:`1.5px solid ${r.color}`,borderLeft:`1.5px solid ${r.color}`,zIndex:2}}/>
-                    <div style={{position:'absolute',top:0,right:0,width:12,height:12,
-                      borderTop:`1.5px solid ${r.color}`,borderRight:`1.5px solid ${r.color}`,zIndex:2}}/>
-                    <div style={{position:'absolute',bottom:0,left:0,width:12,height:12,
-                      borderBottom:`1.5px solid ${r.color}`,borderLeft:`1.5px solid ${r.color}`,zIndex:2}}/>
-                    <div style={{position:'absolute',bottom:0,right:0,width:12,height:12,
-                      borderBottom:`1.5px solid ${r.color}`,borderRight:`1.5px solid ${r.color}`,zIndex:2}}/>
-                    <PrizePlaceholder color={r.color} height={70}/>
-                    <div style={{
-                      padding:'10px 11px',
-                      display:'flex',alignItems:'center',gap:8,
-                    }}>
-                      <span style={{fontSize:15,fontWeight:900,color:r.color,
-                        fontFamily:'var(--font-display)',flexShrink:0}}>{r.rank}</span>
-                      <div style={{flex:1,minWidth:0}}>
-                        <p style={{fontSize:12,fontWeight:700,
-                          color:'rgba(255,255,255,0.88)',margin:'0 0 1px',
-                          overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                          {r.prize}
-                        </p>
-                        <p style={{fontSize:9,color:'rgba(255,255,255,0.3)',margin:0}}>
-                          {t('prizes.shop')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
 
               {/* ── POZIOMY ───────────────────────────────────────── */}
               <SLabel>{t('tiersTitle')}</SLabel>

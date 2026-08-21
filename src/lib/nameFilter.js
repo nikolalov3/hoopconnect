@@ -64,6 +64,3 @@ export function validateName(raw, { min = 2, max = 24 } = {}) {
   }
   return { ok: true }
 }
-
-// Podgląd znormalizowanej formy — przydatne w testach/debugowaniu.
-export const _normalize = normalize

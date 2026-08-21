@@ -33,23 +33,3 @@ export function pSet(key, data, ttlMs = 24 * 60 * 60 * 1000) {  // 24h default
   }
 }
 
-export function pBust(keyOrPrefix) {
-  try {
-    if (keyOrPrefix.endsWith('*')) {
-      const prefix = PREFIX + keyOrPrefix.slice(0, -1)
-      Object.keys(localStorage)
-        .filter(k => k.startsWith(prefix))
-        .forEach(k => localStorage.removeItem(k))
-    } else {
-      localStorage.removeItem(PREFIX + keyOrPrefix)
-    }
-  } catch {}
-}
-
-export function pBustAll() {
-  try {
-    Object.keys(localStorage)
-      .filter(k => k.startsWith(PREFIX))
-      .forEach(k => localStorage.removeItem(k))
-  } catch {}
-}
