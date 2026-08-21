@@ -12,6 +12,7 @@ import { creditRestDayStreak } from '../lib/streak'
 import { onTableChange, setClubScope } from '../lib/realtimeManager'
 import { useBackgroundCatalog, backgroundAsset } from '../lib/cardCatalog'
 import { reportName } from '../lib/moderation'
+import { containsBlockedTerm } from '../lib/nameFilter'
 import { checkTeamWinAchievements } from '../lib/achievements'
 import { calendarWeekNumber } from '../lib/week'
 import { shareMatchCard, doShare } from '../lib/shareCard'
@@ -1620,6 +1621,7 @@ function EditClubSheet({ club, onClose, onSaved }) {
 
   async function save() {
     if (!valid || saving) return
+    if (containsBlockedTerm(name)) { setErr(t('nameNotAllowed')); return }
     setSaving(true); setErr(null)
     try {
       await apiUpdateClub(club.id, { name: name.trim(), abbr, country: ctry })
@@ -2266,6 +2268,9 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
       }
       // ───────────────────────────────────────────────────────────────────────
 
+      if (note.trim() && containsBlockedTerm(note)) {
+        setErr(t('noteNotAllowed')); setSaving(false); return
+      }
       const match = await apiCreateMatch({
         clubId: club.id, createdBy: uid, mode,
         lat: pin.lat, lng: pin.lng, address: addr || null,
@@ -5204,6 +5209,7 @@ function CreateClubForm({ onCreated, profile, onBack }) {
 
   async function submit() {
     if (!valid || saving) return
+    if (containsBlockedTerm(name)) { setErr(t('nameNotAllowed')); return }
     setSaving(true); setErr(null)
     try { onCreated(await apiCreate({ name: name.trim(), abbr, country: ctry, profile })) }
     catch (e) { setErr(e?.message ?? JSON.stringify(e)); setSaving(false) }

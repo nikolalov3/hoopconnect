@@ -64,3 +64,23 @@ export function validateName(raw, { min = 2, max = 24 } = {}) {
   }
   return { ok: true }
 }
+
+/**
+ * Czy tekst zawiera zablokowany termin (wyzwiska/wulgaryzmy)?
+ * W przeciwieństwie do validateName NIE narzuca charsetu ani długości — dla
+ * dłuższego, swobodnego tekstu (nazwy klubów, notatki meczów), gdzie dozwolona
+ * jest interpunkcja, emoji itd. Blokuje tylko listę BLOCKED.
+ * @returns {boolean} true jeśli zawiera niedozwolony termin
+ */
+export function containsBlockedTerm(raw) {
+  const norm  = normalize(raw)
+  const deRep = norm.replace(/(.)\1{2,}/g, '$1')
+  for (const term of BLOCKED) {
+    if (norm.includes(term) || deRep.includes(term)) return true
+  }
+  const digits = (raw || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  for (const code of NUMERIC_BLOCKED) {
+    if (digits.includes(code)) return true
+  }
+  return false
+}

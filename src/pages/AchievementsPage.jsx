@@ -183,7 +183,8 @@ export default function AchievementsPage() {
   const [selected, setSelected] = useState(null)
   const [unseenBaseIds, setUnseenBaseIds] = useState(new Set())
   const [devBusy, setDevBusy] = useState(false)
-  const isDev = profile?.username === 'nikolalovexo@gmail.com'
+  // Dev-only tools (unlock all / clear account) — stripped from production builds.
+  const isDev = import.meta.env.DEV
 
   async function devUnlockAll() {
     if (!profile) return

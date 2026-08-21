@@ -1,4 +1,6 @@
 {
+  "nameNotAllowed": "This name isn't allowed — please choose another.",
+  "noteNotAllowed": "The note contains disallowed words — please edit it.",
   "positions": {
     "PG": "Point Guard",
     "SG": "Shooting Guard",

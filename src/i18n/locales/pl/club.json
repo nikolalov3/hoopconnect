@@ -1,4 +1,6 @@
 {
+  "nameNotAllowed": "Ta nazwa jest niedozwolona — wybierz inną.",
+  "noteNotAllowed": "Notatka zawiera niedozwolone słowa — popraw ją.",
   "positions": {
     "PG": "Rozgrywający",
     "SG": "Rzucający",
