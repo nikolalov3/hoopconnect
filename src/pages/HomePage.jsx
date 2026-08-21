@@ -248,8 +248,8 @@ function ReportRatingRing({ score, daysLeft, loading, arenaLevel = 0, devPreview
   const fillRatio = isLocked ? 0 : Math.min(score, 1000) / 1000
   const dash = fillRatio * HEX_HALF_LEN
 
-  // DEV: na localhost przełączaj podgląd ramy strzałkami, niezależnie od profile.arena_level
-  const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  // DEV (tylko buildy dev — wycinane z produkcji): podgląd ramy strzałkami, niezależnie od profile.arena_level
+  const isDev = import.meta.env.DEV
   const previewLevel = isDev ? devPreviewLevel : arenaLevel
 
   const scoreColor = score >= 750 ? '#00E676' : score >= 500 ? '#7ECBFF' : score >= 250 ? '#5BB8F5' : '#6B5040'
@@ -1565,7 +1565,7 @@ export default function HomePage() {
       .eq('user_id', profile.id)
       .gte('date', effectiveFromISO)
     const runningTotal = (pointsData || []).reduce((sum, r) => sum + (r.points || 0), 0)
-    if (typeof window !== 'undefined' && window.location?.hostname === 'localhost') {
+    if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.log('[weekly-report]', { currentWeek, joinWeek, weekStartISO, rows: pointsData })
     }
@@ -1706,11 +1706,11 @@ export default function HomePage() {
     if (allDone) setShowDayDoneModal(true)
     setTimeout(() => checkAchievements(trainingId, allDone), 0)
 
-    // ── DEV ONLY: localhost — każdy trening wyzwala modal awansu areny ──────
+    // ── DEV ONLY (buildy dev — wycinane z produkcji): każdy trening wyzwala modal awansu areny ──────
     // Pobiera ŚWIEŻE dane z DB (profile w closure może być stary). Cykl:
     //   0→1→2→3→4→5→0→1→... (Elite wraca do Street Court i pokazuje 0→1)
     // prevXp = próg prevLevel (nie DB xp) → pasek zawsze liczy W GÓRĘ, nie w dół.
-    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    if (import.meta.env.DEV) {
       const DEV_T = ARENA_META.map(a => a.threshold)
       const DEV_N = ARENA_META.map(a => a.name)
       const { data: devFresh } = await supabase
@@ -2228,7 +2228,7 @@ export default function HomePage() {
           style={{ cursor: 'pointer' }}
         >
           <ReportRatingRing
-            score={typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 800 : reportScore}
+            score={import.meta.env.DEV ? 800 : reportScore}
             daysLeft={daysUntilReport}
             loading={reportLoading}
             arenaLevel={profile?.arena_level ?? 0}
@@ -2237,7 +2237,7 @@ export default function HomePage() {
           />
         </div>
 
-        {typeof window !== 'undefined' && window.location.hostname === 'localhost' && (
+        {import.meta.env.DEV && (
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
             <button onClick={devTriggerArenaUp} className="btn-ghost" style={{ fontSize: 11, padding: '8px 14px' }}>
               {t('report.devShowArenaUp')}

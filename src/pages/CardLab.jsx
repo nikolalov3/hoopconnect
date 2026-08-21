@@ -1,6 +1,6 @@
 /**
  * CardLab — dev-only sandbox to visualise the settings OVERLAY IN CONTEXT.
- * Public route /cardlab, renders only on localhost so it never ships live.
+ * Dev route /cardlab, renders only in dev builds so it never ships live.
  *
  * Settings is an OVERLAY over the main menu: the home shows through, blurred
  * (glass). The card hangs on top, ✕ closes (top-right), an edit affordance sits
@@ -82,7 +82,7 @@ const iconBtn = {
 }
 
 export default function CardLab() {
-  const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  const isDev = import.meta.env.DEV
   const [bg, setBg]           = useState('bg_dragon')
   const [frame, setFrame]     = useState('early_access')
   const [editing, setEditing] = useState(false)
