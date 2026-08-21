@@ -155,6 +155,15 @@ export default function AuthPage({ mode = 'login' }) {
           >
             {submitting ? '...' : (isRegister ? 'Załóż konto' : 'Zaloguj się')}
           </button>
+
+          {isRegister && (
+            <p style={{ fontSize: 11.5, color: '#4D5C73', textAlign: 'center', lineHeight: 1.55, margin: '4px 2px 0' }}>
+              Zakładając konto, akceptujesz{' '}
+              <a href="https://hoopconnect.pl/terms" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 600, color: '#2563EB' }}>Regulamin</a>
+              {' '}oraz{' '}
+              <a href="https://hoopconnect.pl/privacy" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 600, color: '#2563EB' }}>Politykę prywatności</a>.
+            </p>
+          )}
         </form>
 
         <div style={{

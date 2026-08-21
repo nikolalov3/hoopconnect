@@ -402,6 +402,16 @@ export default function AuthPage() {
             {loading ? '…' : mode === 'login' ? t('loginButton') : mode === 'register' ? t('registerButton') : t('reset.sendButton')}
           </button>
 
+          {/* Akceptacja Regulaminu + Polityki prywatności przy rejestracji */}
+          {mode === 'register' && (
+            <p style={{ fontSize: 10.5, color: 'var(--text-dim)', textAlign: 'center', lineHeight: 1.55, margin: '2px 4px 0' }}>
+              {t('termsPrefix')}{' '}
+              <a href="https://hoopconnect.pl/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--orange)' }}>{t('termsLink')}</a>
+              {' '}{t('termsAnd')}{' '}
+              <a href="https://hoopconnect.pl/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--orange)' }}>{t('privacyLink')}</a>.
+            </p>
+          )}
+
           {/* Link do resetu / powrotu */}
           {mode === 'login' && (
             <button type="button" onClick={() => switchMode('reset')} style={authLinkStyle}>

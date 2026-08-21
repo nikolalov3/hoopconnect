@@ -69,7 +69,7 @@
 
     <!-- POLSKI -->
     <div data-lang="pl" class="visible">
-      <p class="meta">Ostatnia aktualizacja: 19 maja 2026</p>
+      <p class="meta">Ostatnia aktualizacja: 21 sierpnia 2026</p>
 
       <h2>1. Administrator danych osobowych</h2>
       <p>Administratorem Twoich danych osobowych jest operator aplikacji HoopConnect. W sprawach dotyczących przetwarzania danych możesz skontaktować się z nami pod adresem: <a href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a>.</p>
@@ -78,9 +78,11 @@
       <p>W ramach korzystania z Aplikacji przetwarzamy następujące dane:</p>
       <ul>
         <li><strong>Dane konta:</strong> adres e-mail, nazwa użytkownika (nick), hasło (przechowywane w postaci skrótu).</li>
-        <li><strong>Dane treningowe:</strong> ukończone treningi, sesje rzutowe, wyniki, seria (streak), punkty, tygodniowe raporty.</li>
+        <li><strong>Dane profilu:</strong> nazwa wyświetlana, miasto i kraj (podawane dobrowolnie), wiek wyliczany z podanej daty urodzenia, identyfikator HC-ID, treści tworzone przez użytkownika (nazwy klubów, mecze, zgłoszenia i blokady innych użytkowników).</li>
+        <li><strong>Dane treningowe i rozgrywkowe:</strong> ukończone treningi, sesje rzutowe, wyniki, seria (streak), punkty, XP i poziom areny, wygrane King of the Court, tygodniowe raporty oraz wewnętrzny wskaźnik ryzyka nadużyć (anti-cheat).</li>
+        <li><strong>Dane lokalizacji:</strong> dokładna lokalizacja urządzenia (GPS) — przetwarzana wyłącznie na Twoją prośbę i tylko po wyrażeniu zgody, aby pokazać boiska i mecze w pobliżu. Współrzędne mogą być przekazane do zewnętrznej usługi geokodowania (patrz sekcja 6).</li>
         <li><strong>Dane aktywności:</strong> daty logowania, aktywność w Aplikacji.</li>
-        <li><strong>Dane techniczne:</strong> adres IP, typ urządzenia i przeglądarki (zbierane automatycznie przez infrastrukturę hostingową).</li>
+        <li><strong>Dane techniczne:</strong> adres IP, typ urządzenia i przeglądarki (zbierane automatycznie przez infrastrukturę hostingową oraz dostawców zewnętrznych wymienionych w sekcji 6).</li>
       </ul>
       <p>Nie zbieramy danych wrażliwych (np. danych zdrowotnych w rozumieniu RODO) ani danych płatniczych.</p>
 
@@ -111,9 +113,14 @@
       <p>Twoje dane mogą być przekazywane następującym podmiotom:</p>
       <ul>
         <li><strong>Supabase Inc.</strong> – dostawca bazy danych i uwierzytelniania (serwery w UE lub z odpowiednimi zabezpieczeniami transferu).</li>
-        <li><strong>Vercel Inc.</strong> – platforma hostingowa aplikacji.</li>
+        <li><strong>Vercel Inc.</strong> – platforma hostingowa aplikacji; usługa Vercel Speed Insights zbiera anonimowe wskaźniki wydajności (Web Vitals).</li>
+        <li><strong>Sentry (Functional Software, Inc.)</strong> – monitorowanie błędów i wydajności; otrzymuje identyfikator i adres e-mail zalogowanego użytkownika oraz dane techniczne błędów (aktywne wyłącznie w wersji produkcyjnej).</li>
+        <li><strong>Umami</strong> – anonimowa analityka odwiedzin bez plików cookie; otrzymuje adres odwiedzanej strony/trasy, adres IP i informacje o przeglądarce.</li>
+        <li><strong>OpenStreetMap Foundation (Nominatim)</strong> – usługa geokodowania; otrzymuje współrzędne GPS w celu ustalenia adresu boiska lub meczu (tylko gdy korzystasz z funkcji lokalizacji).</li>
+        <li><strong>CARTO (CartoDB, Inc.)</strong> – dostawca kafelków map; otrzymuje adres IP podczas wyświetlania mapy.</li>
+        <li><strong>Google Ireland Ltd. (Google Fonts)</strong> – dostawca czcionek; otrzymuje adres IP podczas ładowania czcionek.</li>
       </ul>
-      <p>Nie sprzedajemy Twoich danych osobom trzecim. Podmioty te przetwarzają dane wyłącznie na nasze zlecenie i na podstawie umów powierzenia przetwarzania danych.</p>
+      <p>Nie sprzedajemy Twoich danych osobom trzecim i nie wykorzystujemy ich do śledzenia Cię między aplikacjami. Podmioty te przetwarzają dane wyłącznie na nasze zlecenie lub w zakresie niezbędnym do świadczenia usługi (mapy, czcionki, analityka, diagnostyka).</p>
 
       <h2>7. Pliki cookie i localStorage</h2>
       <p>Aplikacja używa:</p>
@@ -135,7 +142,7 @@
 
     <!-- ENGLISH -->
     <div data-lang="en">
-      <p class="meta">Last updated: May 19, 2026</p>
+      <p class="meta">Last updated: August 21, 2026</p>
 
       <h2>1. Data controller</h2>
       <p>The data controller for your personal data is the operator of the HoopConnect application. For data-related enquiries, contact us at: <a href="mailto:kontakt@hoopconnect.pl">kontakt@hoopconnect.pl</a>.</p>
@@ -144,9 +151,11 @@
       <p>When you use the App, we process the following data:</p>
       <ul>
         <li><strong>Account data:</strong> email address, username (nickname), password (stored as a hash).</li>
-        <li><strong>Training data:</strong> completed workouts, shooting sessions, scores, streaks, points, weekly reports.</li>
+        <li><strong>Profile data:</strong> display name, city and country (provided voluntarily), age derived from your date of birth, HC-ID identifier, and content you create (club names, matches, reports and blocks of other users).</li>
+        <li><strong>Training &amp; gameplay data:</strong> completed workouts, shooting sessions, scores, streaks, points, XP and arena level, King of the Court wins, weekly reports, and an internal anti-cheat risk score.</li>
+        <li><strong>Location data:</strong> precise device location (GPS) — processed only at your request and with your consent, to show nearby courts and matches. Coordinates may be sent to a third-party geocoding service (see section 6).</li>
         <li><strong>Activity data:</strong> login dates, App activity.</li>
-        <li><strong>Technical data:</strong> IP address, device and browser type (collected automatically by hosting infrastructure).</li>
+        <li><strong>Technical data:</strong> IP address, device and browser type (collected automatically by hosting infrastructure and the third-party providers listed in section 6).</li>
       </ul>
       <p>We do not collect sensitive data (e.g. health data as defined by GDPR) or payment data.</p>
 
@@ -177,9 +186,14 @@
       <p>Your data may be shared with the following parties:</p>
       <ul>
         <li><strong>Supabase Inc.</strong> – database and authentication provider (servers in the EU or with appropriate transfer safeguards).</li>
-        <li><strong>Vercel Inc.</strong> – application hosting platform.</li>
+        <li><strong>Vercel Inc.</strong> – application hosting platform; the Vercel Speed Insights feature collects anonymous performance metrics (Web Vitals).</li>
+        <li><strong>Sentry (Functional Software, Inc.)</strong> – error and performance monitoring; receives the logged-in user's ID and email address plus technical error data (active in the production build only).</li>
+        <li><strong>Umami</strong> – cookieless, anonymous visit analytics; receives the visited page/route, IP address and browser information.</li>
+        <li><strong>OpenStreetMap Foundation (Nominatim)</strong> – geocoding service; receives GPS coordinates to resolve a court or match address (only when you use location features).</li>
+        <li><strong>CARTO (CartoDB, Inc.)</strong> – map tile provider; receives your IP address when a map is displayed.</li>
+        <li><strong>Google Ireland Ltd. (Google Fonts)</strong> – font provider; receives your IP address when fonts are loaded.</li>
       </ul>
-      <p>We do not sell your personal data to third parties. These processors handle data solely on our behalf and under data processing agreements.</p>
+      <p>We do not sell your personal data and we do not use it to track you across other apps. These parties process data solely on our behalf or as necessary to provide the service (maps, fonts, analytics, diagnostics).</p>
 
       <h2>7. Cookies and localStorage</h2>
       <p>The App uses:</p>
