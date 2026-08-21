@@ -399,17 +399,7 @@ export default function AchievementsPage() {
 
   return (
     <div className="page-content" style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 22px', position: 'relative' }}>
-      {/* Warm background overlay — covers blue global gradient */}
-      <div style={{
-        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-        background: `
-          radial-gradient(ellipse 90% 55% at 50% -5%,  rgba(91,184,245,0.42) 0%, transparent 60%),
-          radial-gradient(ellipse 65% 45% at -10% 65%, rgba(91,184,245,0.20) 0%, transparent 55%),
-          radial-gradient(ellipse 75% 45% at 110% 55%, rgba(91,184,245,0.16) 0%, transparent 55%),
-          radial-gradient(ellipse 100% 55% at 50% 110%,rgba(91,184,245,0.22) 0%, transparent 50%),
-          linear-gradient(170deg, rgba(3,8,16,0.74) 0%, rgba(2,5,10,0.80) 100%)
-        `,
-      }} />
+      {/* Tło: standardowe #root (jak Klub/reszta) — bez własnego overlay */}
       <AnimatePresence>
         {selected && <AchievementModal achievement={selected} onClose={() => setSelected(null)} />}
       </AnimatePresence>
