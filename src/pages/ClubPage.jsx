@@ -1478,7 +1478,6 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
   const frameVariant = profile?.equipped_frame || myProfile?.equipped_frame || member.frame || 'none'
   const [flagOk, setFlagOk] = useState(true)
   const [showArenaRoad, setShowArenaRoad] = useState(false)
-  const [reported, setReported] = useState(false)
   useEffect(() => { setFlagOk(true) }, [country?.flagFile])
   const role = member.isOwner ? t('profile.roleCaptain') : t('profile.rolePlayer')
   const showDanger = isSelf || (isOwner && !member.isOwner)
@@ -1542,14 +1541,64 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
               </motion.button>
             </div>
           )}
-          {/* Zgłoś nieodpowiednią nazwę (reaktywna moderacja UGC) */}
-          <button
-            onClick={async () => { if (reported) return; setReported(true); await reportName(member.id, member.name, 'club_roster') }}
-            disabled={reported}
-            style={{ marginTop: 14, background: 'none', border: 'none', color: reported ? C.sub : 'rgba(255,120,120,0.72)',
-              fontSize: 12, fontWeight: 600, cursor: reported ? 'default' : 'pointer', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent' }}>
-            {reported ? t('profile.nameReported') : t('profile.reportName')}
-          </button>
+          {/* Moderacja UGC — zgłoś nazwę + zablokuj/odblokuj gracza (Apple 1.2) */}
+          <ModerationActions targetId={member.id} targetName={member.name} context="club_roster"/>
+        </>
+      )}
+    </ProfileOverlay>
+  )
+}
+
+// ── Moderation actions (Apple 1.2 UGC) — report + block/unblock, shared by the
+//    club-roster profile and the match-player profile. Hidden for your own id. ──
+function ModerationActions({ targetId, targetName, context }) {
+  const { t } = useTranslation('club')
+  const { user, blockedIds, blockUser, unblockUser } = useAuth()
+  const [reported, setReported] = useState(false)
+  const [busy, setBusy] = useState(false)
+  if (!targetId || targetId === user?.id) return null
+  const isBlocked = blockedIds.has(targetId)
+  const base = {
+    background: 'none', border: 'none', fontSize: 12, fontWeight: 600,
+    fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent', padding: '2px 4px',
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14 }}>
+      <button
+        onClick={async () => { if (reported) return; setReported(true); await reportName(targetId, targetName, context) }}
+        disabled={reported}
+        style={{ ...base, color: reported ? C.sub : 'rgba(255,120,120,0.72)', cursor: reported ? 'default' : 'pointer' }}>
+        {reported ? t('profile.nameReported') : t('profile.reportName')}
+      </button>
+      <button
+        onClick={async () => { if (busy) return; setBusy(true); isBlocked ? await unblockUser(targetId) : await blockUser(targetId); setBusy(false) }}
+        disabled={busy}
+        style={{ ...base, color: isBlocked ? C.accent : 'rgba(255,120,120,0.72)', cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1 }}>
+        {isBlocked ? t('profile.unblock') : t('profile.block')}
+      </button>
+    </div>
+  )
+}
+
+// ── Lightweight player profile opened from a match (tap a joined player). Same
+//    3D card as the roster sheet, plus report/block — no club-owner actions. ──
+function MatchPlayerSheet({ player, uid, onClose }) {
+  const { profile, stats, loading } = usePlayerProfileData(player.user_id)
+  const bgCatalog = useBackgroundCatalog()
+  const cardBg = backgroundAsset(bgCatalog, profile?.equipped_background)
+  const frameVariant = profile?.equipped_frame || player.profile?.equipped_frame || 'none'
+  const name = player.profile?.name || profile?.name || '—'
+  return (
+    <ProfileOverlay onClose={onClose}>
+      {loading || !profile ? (
+        <div style={{ padding: '80px 0', color: C.sub, fontSize: 13 }}>…</div>
+      ) : (
+        <>
+          <PlayerCard3D
+            name={name} hcId={profile?.hc_id} arenaLevel={profile?.arena_level ?? 0}
+            xp={profile?.xp ?? 0} frameVariant={frameVariant} background={cardBg}
+            matchWins={stats?.wins ?? 0} kotcWins={stats?.kotcWins ?? 0} idle/>
+          <ModerationActions targetId={player.user_id} targetName={name} context="match"/>
         </>
       )}
     </ProfileOverlay>
@@ -2425,6 +2474,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
   const [deleting,       setDeleting]       = useState(false)
   const [noShowSaving,   setNoShowSaving]   = useState(false)
   const [err,           setErr]           = useState(null)
+  const [profilePlayer, setProfilePlayer] = useState(null)  // tapped joined player → profile
 
   const myPlayer = local.players.find(p => p.user_id === uid)
   const n = MODE_SLOTS[local.mode]
@@ -2500,7 +2550,9 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
     const isMe = player?.user_id === uid
     const initial = player?.profile?.name?.[0]?.toUpperCase() || '?'
     return (
-      <div style={{ position: 'relative', width: SZ, height: SZ, flexShrink: 0 }}>
+      <div
+        onClick={filled ? () => setProfilePlayer(player) : undefined}
+        style={{ position: 'relative', width: SZ, height: SZ, flexShrink: 0, cursor: filled ? 'pointer' : 'default' }}>
         {/* Pulse ring — only for users who can actually join this team */}
         {!filled && canJoin && (
           <motion.div
@@ -3050,6 +3102,11 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
           )}
         </div>
       </motion.div>
+
+      {/* Tapped a joined player → their profile (with report/block) */}
+      {profilePlayer && (
+        <MatchPlayerSheet player={profilePlayer} uid={uid} onClose={() => setProfilePlayer(null)} />
+      )}
     </motion.div>,
     document.body
   )
@@ -3567,7 +3624,7 @@ async function forwardGeocode(city) {
 
 function MatchesPanel({ club, uid, isActive }) {
   const { t } = useTranslation('club')
-  const { profile } = useAuth()
+  const { profile, blockedIds } = useAuth()
   const [locState, setLocState] = useState('idle')
   const [locError,  setLocError]  = useState(null)   // 'permission' | 'unavailable' | null
   const [userLoc,  setUserLoc]  = useState(null)
@@ -3715,7 +3772,9 @@ function MatchesPanel({ club, uid, isActive }) {
   async function loadMatches({ silent = false } = {}) {
     if (!silent) setLoading(true)
     try {
-      const data = await apiFetchMatches(userLoc.lat, userLoc.lng, radius, myMemberIds, club.id)
+      const raw = await apiFetchMatches(userLoc.lat, userLoc.lng, radius, myMemberIds, club.id)
+      // Hide matches created by users you've blocked (Apple 1.2).
+      const data = blockedIds.size ? raw.filter(m => !blockedIds.has(m.created_by)) : raw
 
       // ── Auto-cancel matches starting in <5min with no away players ───────────
       const now = new Date()

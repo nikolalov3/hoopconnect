@@ -68,6 +68,8 @@
     "removeFromClub": "✕ Remove from club",
     "reportName": "Report name",
     "nameReported": "Reported — thank you",
+    "block": "Block",
+    "unblock": "Unblock",
     "removing": "Removing…"
   },
   "editClub": {

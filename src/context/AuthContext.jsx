@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { bustAll } from '../lib/queryCache'
 import { setSentryUser } from '../lib/sentry'
 import { startRealtime, stopRealtime, setClubScope } from '../lib/realtimeManager'
+import { fetchBlockedIds, blockUser as apiBlockUser, unblockUser as apiUnblockUser } from '../lib/moderation'
 
 const AuthContext = createContext({})
 
@@ -42,6 +43,8 @@ export function AuthProvider({ children }) {
   // recovery: true po kliknięciu w link "reset hasła" z maila (event PASSWORD_RECOVERY).
   // Gdy true, App pokazuje ekran ustawienia nowego hasła zamiast normalnej apki.
   const [recovery, setRecovery] = useState(false)
+  // Zbiór id-ków użytkowników zablokowanych przez bieżącego usera (Apple 1.2).
+  const [blockedIds, setBlockedIds] = useState(() => new Set())
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -73,6 +76,7 @@ export function AuthProvider({ children }) {
       } else {
         stopRealtime()
         setProfile(null)
+        setBlockedIds(new Set())
         setProfileReady(true)
         profileReadyRef.current = true
       }
@@ -143,10 +147,29 @@ export function AuthProvider({ children }) {
       // club_members/club_matches events arrive instantly). Off the paint gate.
       supabase.from('club_members').select('club_id').eq('user_id', userId).maybeSingle()
         .then(({ data: mb }) => setClubScope(mb?.club_id || null), () => {})
+
+      // Blocked-users list (for hiding blocked users' content). Off the paint gate.
+      fetchBlockedIds().then(ids => setBlockedIds(new Set(ids))).catch(() => {})
     } catch {
       setProfile(null)
       markReady()
     }
+  }
+
+  // Optimistic block/unblock — update the set now, roll back if the write fails.
+  async function blockUser(id) {
+    if (!id) return false
+    setBlockedIds(prev => new Set(prev).add(id))
+    const { ok } = await apiBlockUser(id)
+    if (!ok) setBlockedIds(prev => { const n = new Set(prev); n.delete(id); return n })
+    return ok
+  }
+  async function unblockUser(id) {
+    if (!id) return false
+    setBlockedIds(prev => { const n = new Set(prev); n.delete(id); return n })
+    const { ok } = await apiUnblockUser(id)
+    if (!ok) setBlockedIds(prev => new Set(prev).add(id))
+    return ok
   }
 
   async function signIn(email, password) {
@@ -173,7 +196,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, profileReady, recovery, clearRecovery: () => setRecovery(false), signIn, signUp, signOut, refreshProfile, setProfileData }}>
+    <AuthContext.Provider value={{ user, profile, loading, profileReady, recovery, clearRecovery: () => setRecovery(false), blockedIds, blockUser, unblockUser, signIn, signUp, signOut, refreshProfile, setProfileData }}>
       {children}
     </AuthContext.Provider>
   )
