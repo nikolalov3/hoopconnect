@@ -4,6 +4,11 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 
+// Sign in with Apple (Apple Guideline 4.8 — required alongside Google on iOS).
+// Gated so it only shows once the Apple provider is configured in Supabase Auth;
+// set VITE_APPLE_LOGIN=1 in the build env to enable. Off by default = no dead button.
+const APPLE_LOGIN = import.meta.env.VITE_APPLE_LOGIN === '1'
+
 const authLinkStyle = {
   background: 'none', border: 'none', cursor: 'pointer',
   color: 'var(--text-dim)', fontSize: 12.5, fontWeight: 600,
@@ -34,6 +39,22 @@ export default function AuthPage() {
       if (error) setError(error.message)
     } catch (e) {
       setError(e.message || t('errors.googleGeneric'))
+    } finally {
+      setOauthLoading(false)
+    }
+  }
+
+  async function handleAppleLogin() {
+    setError('')
+    setOauthLoading(true)
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: { redirectTo: window.location.origin },
+      })
+      if (error) setError(error.message)
+    } catch (e) {
+      setError(e.message || t('errors.appleGeneric'))
     } finally {
       setOauthLoading(false)
     }
@@ -403,6 +424,30 @@ export default function AuthPage() {
         </span>
         <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.10)' }} />
       </div>
+
+      {/* Sign in with Apple — only when the Apple provider is configured (VITE_APPLE_LOGIN=1) */}
+      {APPLE_LOGIN && (
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={handleAppleLogin}
+          disabled={oauthLoading}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            padding: '13px 20px', marginBottom: 10,
+            background: '#000', border: '1px solid rgba(255,255,255,0.14)',
+            borderRadius: 'var(--radius-sm)', cursor: oauthLoading ? 'default' : 'pointer',
+            opacity: oauthLoading ? 0.65 : 1,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.35)', transition: 'opacity 0.15s',
+          }}
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+            <path d="M16.36 12.9c.02 2.34 2.05 3.12 2.08 3.13-.02.06-.32 1.11-1.07 2.2-.64.94-1.31 1.87-2.36 1.89-1.03.02-1.36-.61-2.54-.61-1.18 0-1.55.59-2.52.63-1.01.04-1.79-1.01-2.44-1.95-1.32-1.92-2.33-5.42-.97-7.79.67-1.17 1.88-1.92 3.19-1.94 1-.02 1.94.67 2.55.67.61 0 1.76-.83 2.96-.71.5.02 1.92.2 2.83 1.53-.07.05-1.69.99-1.67 2.95M14.43 6.3c.54-.66.9-1.57.8-2.48-.78.03-1.72.52-2.28 1.17-.5.58-.94 1.51-.82 2.4.87.07 1.76-.44 2.3-1.09"/>
+          </svg>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, letterSpacing: 0.5, color: '#fff' }}>
+            {t('appleLogin')}
+          </span>
+        </motion.button>
+      )}
 
       {/* Google Sign In */}
       <motion.button

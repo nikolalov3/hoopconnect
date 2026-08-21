@@ -62,9 +62,10 @@
     "passwordSub": "We'll send a reset link to your email",
     "deleteAccount": "Delete account",
     "deleteConfirmTitle": "Are you sure?",
-    "deleteConfirmBody": "This action can't be undone. Get in touch with us.",
-    "deleteEmailSubject": "Account deletion",
-    "writeToUs": "Contact us",
+    "deleteConfirmBody": "This can't be undone. We'll permanently delete your account and all data (profile, trainings, clubs, matches, stats).",
+    "deleteConfirmBtn": "Delete account forever",
+    "deleting": "Deleting…",
+    "deleteError": "Couldn't delete your account. Please try again.",
     "cancel": "Cancel"
   },
   "infoView": {

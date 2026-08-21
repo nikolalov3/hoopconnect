@@ -619,8 +619,21 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
 // ── Sub-view: Konto ───────────────────────────────────────────────────────────
 function AccountView({ onBack, onClose, user }) {
   const { t } = useTranslation('settings')
+  const { signOut } = useAuth()
   const [pwState,  setPwState]  = useState('idle')
-  const [delState, setDelState] = useState('idle')
+  const [delState, setDelState] = useState('idle')  // idle | confirm | deleting | error
+
+  async function handleDelete() {
+    setDelState('deleting')
+    try {
+      const { error } = await supabase.rpc('delete_account')
+      if (error) { setDelState('error'); return }
+      // Account is gone server-side → clear the (now invalid) session; the app
+      // routes to /auth on SIGNED_OUT. signOut is resilient if the token is dead.
+      await signOut()
+      onClose()
+    } catch { setDelState('error') }
+  }
 
   async function handlePasswordReset() {
     setPwState('sending')
@@ -684,12 +697,18 @@ function AccountView({ onBack, onClose, user }) {
             <p style={{ fontSize: 10.5, color: C.sub, margin: '0 0 14px', lineHeight: 1.5 }}>
               {t('accountView.deleteConfirmBody')}
             </p>
-            <a href={`mailto:kontakt@hoopconnect.pl?subject=${encodeURIComponent(t('accountView.deleteEmailSubject'))}`} style={{
-              display: 'block', padding: '10px', background: C.red,
-              borderRadius: 8, fontSize: 12, fontWeight: 700, color: '#fff',
-              textDecoration: 'none', textAlign: 'center',
-            }}>{t('accountView.writeToUs')}</a>
-            <button onClick={() => setDelState('idle')} style={{
+            {delState === 'error' && (
+              <p style={{ fontSize: 10.5, color: C.red, margin: '0 0 10px', fontWeight: 600 }}>
+                {t('accountView.deleteError')}
+              </p>
+            )}
+            <button onClick={handleDelete} disabled={delState === 'deleting'} style={{
+              display: 'block', width: '100%', padding: '10px', background: C.red,
+              border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, color: '#fff',
+              textAlign: 'center', cursor: delState === 'deleting' ? 'default' : 'pointer',
+              opacity: delState === 'deleting' ? 0.6 : 1, WebkitTapHighlightColor: 'transparent',
+            }}>{delState === 'deleting' ? t('accountView.deleting') : t('accountView.deleteConfirmBtn')}</button>
+            <button onClick={() => setDelState('idle')} disabled={delState === 'deleting'} style={{
               background: 'none', border: 'none', cursor: 'pointer',
               fontSize: 10, color: C.sub, marginTop: 10, width: '100%',
               WebkitTapHighlightColor: 'transparent',
