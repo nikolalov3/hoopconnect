@@ -26,14 +26,6 @@
     "start": "START",
     "close": "ZAMKNIĘCIE"
   },
-  "prizes": {
-    "title": "Nagrody za sezon",
-    "placeholder": "Grafika nagrody",
-    "first": "Koszulka NBA",
-    "firstDesc": "Oryginalna koszulka do wyboru · miejsce 1.",
-    "coupon": "Kupon 150 zł",
-    "shop": "Sklep koszykarski"
-  },
   "tiersTitle": "Poziomy ligowe",
   "tiers": [
     { "label": "Brąz", "desc": "Punkt startowy każdego gracza.", "sub": "Zacznij trenować i zbieraj punkty do wyższej ligi." },

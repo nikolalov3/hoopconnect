@@ -54,13 +54,6 @@ export async function castVote(gameId, clubId) {
   return data
 }
 
-export async function findSessionByCode(code) {
-  const { data, error } = await supabase.from('kotc_sessions')
-    .select('*').eq('code', code.toUpperCase()).maybeSingle()
-  if (error) throw error
-  return data
-}
-
 // Pełny stan sesji: sesja + kluby (nazwa+skrót) + aktualna gierka + głosy.
 export async function getSessionState(sessionId) {
   const [{ data: session }, { data: teams }, { data: games }] = await Promise.all([

@@ -25,7 +25,6 @@ import enFrames from './locales/en/frames.json'
 import enLeagueInfo from './locales/en/leagueInfo.json'
 import enAddSession from './locales/en/addSession.json'
 import enTrainingCard from './locales/en/trainingCard.json'
-import enActivityCalendar from './locales/en/activityCalendar.json'
 import enAppStory from './locales/en/appStory.json'
 
 import plCommon from './locales/pl/common.json'
@@ -48,7 +47,6 @@ import plFrames from './locales/pl/frames.json'
 import plLeagueInfo from './locales/pl/leagueInfo.json'
 import plAddSession from './locales/pl/addSession.json'
 import plTrainingCard from './locales/pl/trainingCard.json'
-import plActivityCalendar from './locales/pl/activityCalendar.json'
 import plAppStory from './locales/pl/appStory.json'
 
 const LANG_STORAGE_KEY = 'hc_lang'
@@ -80,7 +78,7 @@ i18n
         settings: enSettings, leaderboard: enLeaderboard,
         notifications: enNotifications, frames: enFrames, leagueInfo: enLeagueInfo,
         addSession: enAddSession, trainingCard: enTrainingCard,
-        activityCalendar: enActivityCalendar, appStory: enAppStory,
+        appStory: enAppStory,
       },
       pl: {
         common: plCommon, auth: plAuth, onboarding: plOnboarding, home: plHome,
@@ -90,7 +88,7 @@ i18n
         settings: plSettings, leaderboard: plLeaderboard,
         notifications: plNotifications, frames: plFrames, leagueInfo: plLeagueInfo,
         addSession: plAddSession, trainingCard: plTrainingCard,
-        activityCalendar: plActivityCalendar, appStory: plAppStory,
+        appStory: plAppStory,
       },
     },
     fallbackLng: 'en',
@@ -100,7 +98,7 @@ i18n
       'common', 'auth', 'onboarding', 'home', 'shooting', 'calendar', 'stats',
       'achievements', 'recovery', 'club', 'joinClub', 'qrLanding', 'arenaRoad',
       'settings', 'leaderboard', 'notifications', 'frames', 'leagueInfo', 'addSession',
-      'trainingCard', 'activityCalendar', 'appStory',
+      'trainingCard', 'appStory',
     ],
     detection: {
       order: ['localStorage', 'systemLanguageOrPolish'],

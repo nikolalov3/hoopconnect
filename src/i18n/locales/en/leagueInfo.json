@@ -26,14 +26,6 @@
     "start": "START",
     "close": "CLOSE"
   },
-  "prizes": {
-    "title": "Season prizes",
-    "placeholder": "Prize artwork",
-    "first": "NBA jersey",
-    "firstDesc": "Original jersey of your choice · 1st place.",
-    "coupon": "150 PLN voucher",
-    "shop": "Basketball store"
-  },
   "tiersTitle": "League tiers",
   "tiers": [
     { "label": "Bronze", "desc": "Every player's starting point.", "sub": "Start training and earn points toward a higher league." },
