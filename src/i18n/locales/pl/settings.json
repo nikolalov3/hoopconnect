@@ -62,9 +62,10 @@
     "passwordSub": "Link resetujący wysyłamy na Twój email",
     "deleteAccount": "Usuń konto",
     "deleteConfirmTitle": "Czy na pewno?",
-    "deleteConfirmBody": "Tej akcji nie można cofnąć. Skontaktuj się z nami.",
-    "deleteEmailSubject": "Usunięcie konta",
-    "writeToUs": "Napisz do nas",
+    "deleteConfirmBody": "Tej operacji nie można cofnąć. Trwale usuniemy Twoje konto i wszystkie dane (profil, treningi, kluby, mecze, statystyki).",
+    "deleteConfirmBtn": "Usuń konto na zawsze",
+    "deleting": "Usuwanie…",
+    "deleteError": "Nie udało się usunąć konta. Spróbuj ponownie.",
     "cancel": "Anuluj"
   },
   "infoView": {
