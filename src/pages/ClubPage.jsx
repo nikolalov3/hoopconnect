@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import KotcOnline from '../features/kotc/KotcOnline'
 import { getMyActiveSession as kotcActiveSession } from '../features/kotc/api'
 import { createPortal } from 'react-dom'
@@ -53,13 +53,14 @@ const POS = {
 }
 const POSITIONS = Object.keys(POS)
 
-// Court token positions (% of 343×410 court card)
+// Court token positions (% of 343×410 court card). Insets tuned so tokens keep
+// clear breathing room from every edge at any scale (see CourtScaler).
 const SPOT = {
-  PG: { x: '22%', y: '15%' },
-  SG: { x: '78%', y: '15%' },
-  SF: { x: '17%', y: '47%' },
-  C:  { x: '50%', y: '71%' },
-  PF: { x: '83%', y: '47%' },
+  PG: { x: '23%', y: '18%' },
+  SG: { x: '77%', y: '18%' },
+  SF: { x: '20%', y: '48%' },
+  C:  { x: '50%', y: '72%' },
+  PF: { x: '80%', y: '48%' },
 }
 
 // Concave-corner path for 343×410, r=24
@@ -4374,6 +4375,35 @@ function StatsPanel({ club }) {
 }
 
 // ── READ-ONLY COURT (used inside the club preview — no taps, no swap FAB) ─────
+// Scales a fixed 343×410 court canvas to the container width so the WHOLE card
+// (court, tokens, labels, FAB) scales as ONE unit — nothing overflows or drifts
+// past the edges on small screens. Positions/sizes stay in design px inside the
+// canvas; only the outer transform changes.
+function CourtScaler({ children }) {
+  const ref = useRef(null)
+  const [scale, setScale] = useState(null)  // null until measured → no flash at wrong size
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const measure = () => setScale(el.clientWidth / 343)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  return (
+    <div ref={ref} style={{ position: 'relative', width: '100%', maxWidth: 'calc(52dvh * 343 / 410)', margin: '0 auto', aspectRatio: '343 / 410' }}>
+      <div style={{
+        position: 'absolute', top: 0, left: 0, width: 343, height: 410,
+        transformOrigin: 'top left', transform: `scale(${scale ?? 1})`,
+        visibility: scale == null ? 'hidden' : 'visible',
+      }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 function MiniCourt({ club }) {
   return (
     <div style={{ padding: '0 22px 0', position: 'relative' }}>
@@ -4385,7 +4415,7 @@ function MiniCourt({ club }) {
           </clipPath>
         </defs>
       </svg>
-      <div style={{ position: 'relative', width: '100%', maxWidth: 'calc(52dvh * 343 / 410)', margin: '0 auto', aspectRatio: '343 / 410' }}>
+      <CourtScaler>
         <div style={{ position: 'absolute', inset: 0, borderRadius: 22, overflow: 'hidden' }}>
           <Court/>
           {POSITIONS.map(posKey => (
@@ -4411,7 +4441,7 @@ function MiniCourt({ club }) {
           <path d={COURT_PATH} fill="none" stroke="rgba(0,200,255,0.13)" strokeWidth="7" filter="url(#neonGPrev)"/>
           <path d={COURT_PATH} fill="none" stroke="rgba(0,220,255,0.42)" strokeWidth="1.4"/>
         </svg>
-      </div>
+      </CourtScaler>
     </div>
   )
 }
@@ -4504,7 +4534,7 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
         </svg>
 
         {/* Responsive court wrapper — always fills available width, keeps 343:410 ratio */}
-        <div style={{ position: 'relative', width: '100%', maxWidth: 'calc(52dvh * 343 / 410)', margin: '0 auto', aspectRatio: '343 / 410' }}>
+        <CourtScaler>
 
           {/* Clipped court card — fills wrapper */}
           <div style={{
@@ -4587,7 +4617,7 @@ function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, sw
               }
             </motion.button>
           )}
-        </div>
+        </CourtScaler>
       </div>
 
     </div>
