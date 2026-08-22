@@ -374,9 +374,12 @@ function FramePicker({ current, uid, profile, onPick }) {
   const unlocked = useMemo(() => {
     const frames = new Set(['none'])
     for (const f of FRAME_CATALOG) {
-      // current === f.id: fallback na sam start, zanim flaga w localStorage
-      // zdąży się zapisać (np. tuż po ręcznym przyznaniu ramki w bazie).
-      if (current === f.id || (uid && localStorage.getItem(frameSeenKey(f.id, uid)))) {
+      // early_access jest przyznawany KAŻDEMU userowi → zawsze odblokowany.
+      // (wcześniej wisiał tylko na markerze localStorage/`current` — przełączenie
+      //  na inną ramkę bez markera gubiło go bezpowrotnie.)
+      // current === f.id: fallback zanim marker w localStorage zdąży się zapisać.
+      if (f.id === 'early_access' || current === f.id ||
+          (uid && localStorage.getItem(frameSeenKey(f.id, uid)))) {
         frames.add(f.id)
       }
     }
@@ -516,6 +519,9 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
         .eq('id', uid)
         .select('equipped_frame')
       if (error) throw error
+      // Remember ownership: any frame you equip stays selectable after switching
+      // away (otherwise it vanishes once it's no longer `current`).
+      if (equipped && uid) localStorage.setItem(frameSeenKey(equipped, uid), '1')
       setFrameState('saved')
       setTimeout(() => setFrameState('idle'), 1400)
     } catch (e) {
@@ -839,7 +845,11 @@ export default function SettingsPanel({ open, onClose }) {
       equipped_frame:      draftFrame === 'none' ? null : draftFrame,
     }
     const { error } = await supabase.from('profiles').update(patch).eq('id', profile.id)
-    if (!error) { setProfileData?.(patch); setPersonalizing(false) }
+    if (!error) {
+      // Remember frame ownership so it stays selectable after switching away.
+      if (patch.equipped_frame) localStorage.setItem(frameSeenKey(patch.equipped_frame, profile.id), '1')
+      setProfileData?.(patch); setPersonalizing(false)
+    }
     setSavingPers(false)
   }
   async function handleRedeem() {
