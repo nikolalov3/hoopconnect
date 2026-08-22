@@ -382,21 +382,32 @@ function FramePicker({ current, uid, profile, onPick }) {
     }
   }, [uid, current])
 
+  // Trwała własność z bazy (public.user_unlocks) — źródło prawdy działające na
+  // każdym urządzeniu. null = jeszcze się ładuje (do tego czasu działają fallbacki:
+  // free/current/localStorage), więc ramka nigdy nie miga jako zablokowana.
+  const [ownedItemIds, setOwnedItemIds] = useState(null)
+  useEffect(() => {
+    if (!uid) { setOwnedItemIds(null); return }
+    let alive = true
+    supabase.from('user_unlocks').select('item_id').eq('user_id', uid)
+      .then(({ data }) => { if (alive) setOwnedItemIds(new Set((data || []).map(r => r.item_id))) })
+    return () => { alive = false }
+  }, [uid])
+
   const unlocked = useMemo(() => {
     const frames = new Set(['none'])
     for (const f of FRAME_CATALOG) {
-      // early_access jest przyznawany KAŻDEMU userowi → zawsze odblokowany.
-      // (wcześniej wisiał tylko na markerze localStorage/`current` — przełączenie
-      //  na inną ramkę bez markera gubiło go bezpowrotnie.)
-      // current === f.id: fallback zanim marker w localStorage zdąży się zapisać
-      //  (a przy pierwszym renderze efekt powyżej dopiero utrwala marker).
-      if (f.id === 'early_access' || current === f.id ||
-          (uid && localStorage.getItem(frameSeenKey(f.id, uid)))) {
+      if (
+        f.free ||                                                    // is_default: każdy user
+        (ownedItemIds && f.itemId && ownedItemIds.has(f.itemId)) ||  // własność w bazie (trwała, cross-device)
+        current === f.id ||                                          // aktualnie założona (natychmiastowy fallback)
+        (uid && localStorage.getItem(frameSeenKey(f.id, uid)))       // legacy/lokalny marker
+      ) {
         frames.add(f.id)
       }
     }
     return frames
-  }, [uid, profile?.username, current])
+  }, [uid, profile?.username, current, ownedItemIds])
 
   return (
     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>

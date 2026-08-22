@@ -10,6 +10,7 @@ import LeaderboardDrawer from './components/ui/LeaderboardDrawer'
 import FrameUnlockPanel from './components/ui/FrameUnlockPanel'
 import NotificationsSheet from './components/ui/NotificationsSheet'
 import { FRAME_CATALOG, frameSeenKey } from './lib/frames'
+import { supabase } from './lib/supabase'
 
 // ── Frame reward configs ──────────────────────────────────────────────────────
 const SEASON_1_END = new Date('2026-08-24T00:00:00')
@@ -102,14 +103,14 @@ function AppShell() {
       return
     }
 
-    // 2. Diamond S1 — shown from Aug 24 to players who reached Diamond avg
-    if (now >= SEASON_1_END) {
+    // 2. Diamond S1 — from Aug 24, to players who reached Diamond avg. The claim
+    //    RPC records DURABLE ownership in user_unlocks (server-validates the same
+    //    rule), so the frame stays selectable on every device even after switching
+    //    away. The panel is just the one-time celebration (per device).
+    if (now >= SEASON_1_END && (profile.weekly_points || 0) >= DIAMOND_MIN) {
+      supabase.rpc('claim_diamond_s1').catch(() => {})   // idempotent; retries each qualifying load
       const seenD = frameSeenKey('diamond_s1', user.id)
-      if (!localStorage.getItem(seenD)) {
-        if ((profile.weekly_points || 0) >= DIAMOND_MIN) {
-          setFrameUnlockData(FRAMES.diamond_s1)
-        }
-      }
+      if (!localStorage.getItem(seenD)) setFrameUnlockData(FRAMES.diamond_s1)
     }
 
     // 3. autoGrantSilent frames (np. Friends & Family) — przyznawane ręcznie
