@@ -371,13 +371,25 @@ function FramePicker({ current, uid, profile, onPick }) {
     { id: 'none', label: t('frames.none') },
     ...FRAME_CATALOG.map(f => ({ id: f.id, label: t(`frames.${f.id}`) })),
   ]
+  // Utrwal własność AKTUALNIE założonej ramki z katalogu na tym urządzeniu.
+  // Bez tego legendarna ramka (np. diamond_s1), której jedynym trwałym śladem jest
+  // profiles.equipped_frame, znika z pickera w chwili przełączenia na inną ramkę na
+  // świeżym urządzeniu (gdzie markera nigdy nie zapisano — bo zdobyto ją gdzie indziej).
+  // Samo otwarcie Ustawień z założoną ramką zapisuje marker → przełączenie jej nie gubi.
+  useEffect(() => {
+    if (uid && current && current !== 'none' && FRAME_CATALOG.some(f => f.id === current)) {
+      try { localStorage.setItem(frameSeenKey(current, uid), '1') } catch { /* storage off */ }
+    }
+  }, [uid, current])
+
   const unlocked = useMemo(() => {
     const frames = new Set(['none'])
     for (const f of FRAME_CATALOG) {
       // early_access jest przyznawany KAŻDEMU userowi → zawsze odblokowany.
       // (wcześniej wisiał tylko na markerze localStorage/`current` — przełączenie
       //  na inną ramkę bez markera gubiło go bezpowrotnie.)
-      // current === f.id: fallback zanim marker w localStorage zdąży się zapisać.
+      // current === f.id: fallback zanim marker w localStorage zdąży się zapisać
+      //  (a przy pierwszym renderze efekt powyżej dopiero utrwala marker).
       if (f.id === 'early_access' || current === f.id ||
           (uid && localStorage.getItem(frameSeenKey(f.id, uid)))) {
         frames.add(f.id)
