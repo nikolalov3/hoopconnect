@@ -22,7 +22,11 @@ const CSS = `
   will-change: transform;
   cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .pc3d-card:active { cursor: grabbing; }
-.pc3d-sil { clip-path: path('M22,0 L278,0 Q300,0 300,22 L300,400 Q300,414 286,414 L210,414 Q196,414 192,428 L182,440 Q178,452 164,452 L22,452 Q0,452 0,430 L0,22 Q0,0 22,0 Z'); }
+/* Card silhouette. Was clip-path:path() — but clip-path is mis-projected by 3D
+   transforms in WebKit/iOS (preserve-3d + perspective + translateZ), which clipped
+   the card into a hard triangle on some devices. border-radius composes correctly
+   with 3D everywhere, so we use a rounded-rect silhouette instead. */
+.pc3d-sil { border-radius: 22px; }
 .pc3d-body { position: absolute; inset: 0; transform-style: preserve-3d; }
 .pc3d-slab { position: absolute; inset: 0; background: linear-gradient(158deg, #4a648c 0%, #26394f 52%, #0d1a2b 100%); }
 .pc3d-face { position: absolute; inset: 0; overflow: hidden; padding: 18px 20px 14px;
