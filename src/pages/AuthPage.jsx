@@ -203,13 +203,13 @@ export default function AuthPage() {
               <line x1="45" y1="0"  x2="45" y2="90" />
               <line x1="57" y1="0"  x2="57" y2="90" />
               <line x1="69" y1="0"  x2="69" y2="90" />
-              {/* Horizontal lines */}
-              <line x1="0"  y1="23" x2="90" y2="23" />
+              {/* Horizontal lines — only those aligned with facet vertices, so no
+                  stray dashes poke out near the narrow top/bottom of the diamond
+                  (matches logo-crest.svg / the splash + onboarding logo). */}
               <line x1="0"  y1="32" x2="90" y2="32" />
               <line x1="0"  y1="42" x2="90" y2="42" />
               <line x1="0"  y1="48" x2="90" y2="48" />
               <line x1="0"  y1="58" x2="90" y2="58" />
-              <line x1="0"  y1="67" x2="90" y2="67" />
             </g>
 
             {/* Facet edge lines */}
