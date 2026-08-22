@@ -22,24 +22,26 @@ const CSS = `
   will-change: transform;
   cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .pc3d-card:active { cursor: grabbing; }
-/* Card silhouette. Was clip-path:path() — but clip-path is mis-projected by 3D
-   transforms in WebKit/iOS (preserve-3d + perspective + translateZ), which clipped
-   the card into a hard triangle on some devices. border-radius composes correctly
-   with 3D everywhere, so we use a rounded-rect silhouette instead. */
+/* Card silhouette = rounded rect. IMPORTANT: never clip the ROTATED face with
+   overflow:hidden or clip-path — WebKit/iOS mis-clips a rounded/clipped element
+   inside a 3D transform (preserve-3d + perspective + translateZ), slicing the card
+   into a triangle that shifts with rotation. Instead each layer carries its own
+   border-radius (clips only its own background), so nothing clips CHILDREN in 3D. */
 .pc3d-sil { border-radius: 22px; }
 .pc3d-body { position: absolute; inset: 0; transform-style: preserve-3d; }
 .pc3d-slab { position: absolute; inset: 0; background: linear-gradient(158deg, #4a648c 0%, #26394f 52%, #0d1a2b 100%); }
-.pc3d-face { position: absolute; inset: 0; overflow: hidden; padding: 18px 20px 14px;
-  display: flex; flex-direction: column;
+.pc3d-face { position: absolute; inset: 0; padding: 18px 20px 14px;
+  display: flex; flex-direction: column; border-radius: 22px;
   background: linear-gradient(157deg, #16304f 0%, #0d1f38 46%, #0a1830 100%);
   border: 1px solid rgba(150,200,255,.28); }
 .pc3d-face::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
+  border-radius: 22px 22px 0 0;
   background: linear-gradient(180deg, rgba(150,205,255,.16), transparent); pointer-events: none; }
-.pc3d-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; background-repeat: no-repeat; }
-.pc3d-bg::after { content: ''; position: absolute; inset: 0;
+.pc3d-bg { position: absolute; inset: 0; z-index: 0; border-radius: 22px; background-size: cover; background-position: center; background-repeat: no-repeat; }
+.pc3d-bg::after { content: ''; position: absolute; inset: 0; border-radius: 22px;
   background: linear-gradient(158deg,
     rgba(236,72,153,.30) 0%, rgba(168,60,224,.30) 46%, rgba(30,8,50,.66) 100%); }
-.pc3d-holo { position: absolute; inset: -20%; pointer-events: none; z-index: 4; mix-blend-mode: screen; opacity: .55;
+.pc3d-holo { position: absolute; inset: 0; border-radius: 22px; pointer-events: none; z-index: 4; mix-blend-mode: screen; opacity: .55;
   background: linear-gradient(calc(118deg + var(--ry)*1.6deg),
     rgba(0,240,220,0) 8%, rgba(120,200,255,.42) 30%, rgba(190,130,255,.42) 46%,
     rgba(255,150,210,.30) 56%, rgba(120,255,220,.34) 72%, rgba(0,240,220,0) 92%); }
@@ -49,7 +51,7 @@ const CSS = `
   background: linear-gradient(calc(118deg + var(--ry)*1.6deg),
     rgba(255,120,210,0) 8%, rgba(255,120,210,.42) 28%, rgba(190,110,255,.46) 46%,
     rgba(255,185,120,.34) 60%, rgba(120,220,255,.30) 74%, rgba(255,120,210,0) 92%); }
-.pc3d-spec { position: absolute; inset: 0; pointer-events: none; z-index: 5; mix-blend-mode: screen;
+.pc3d-spec { position: absolute; inset: 0; border-radius: 22px; pointer-events: none; z-index: 5; mix-blend-mode: screen;
   background: radial-gradient(120% 80% at calc(50% + var(--ry)*1.5%) calc(38% - var(--rx)*1.4%),
     rgba(255,255,255,.42), rgba(255,255,255,.05) 40%, transparent 60%); }
 .pc3d-slot { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 7;
