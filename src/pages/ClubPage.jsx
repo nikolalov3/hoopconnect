@@ -4906,6 +4906,8 @@ function NoClubScreen({ onCreated, profile }) {
   const [selPos,      setSelPos]      = useState(null)
   const [joining,     setJoining]     = useState(false)
 
+  const joinRef = useRef(null)
+
   // Auto-lookup when code reaches 5 chars
   useEffect(() => {
     const raw = codeInput.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 5)
@@ -4917,6 +4919,15 @@ function NoClubScreen({ onCreated, profile }) {
       setCodeResult(r)
     })
   }, [codeInput])
+
+  // When a valid code reveals the position picker + Join CTA, scroll them into
+  // view — otherwise on a small phone with the keyboard open they appear below
+  // the fold and are hard to reach.
+  useEffect(() => {
+    if (!codeResult) return
+    const id = setTimeout(() => joinRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80)
+    return () => clearTimeout(id)
+  }, [codeResult])
 
   async function handleJoin() {
     if (!selPos || !codeResult || joining) return
@@ -4987,46 +4998,6 @@ function NoClubScreen({ onCreated, profile }) {
           {t('noClub.subtitle')}
         </p>
       </motion.div>
-
-      {/* ── Step cards — minimal ────────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: 32,
-        border: '1px solid rgba(255,255,255,0.06)',
-        borderTop: '1px solid rgba(255,255,255,0.10)', borderRadius: 14, overflow: 'hidden' }}>
-        {STEPS.map((s, i) => (
-          <motion.div key={s.num}
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            transition={{ delay: 0.06 + i * 0.05, duration: 0.28 }}
-            style={{
-              display: 'flex', alignItems: 'flex-start', gap: 16,
-              padding: '16px 18px',
-              background: i % 2 === 0 ? 'rgba(6,14,30,0.60)' : 'rgba(4,10,22,0.50)',
-              borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-            }}>
-            {/* Step number */}
-            <span style={{
-              fontFamily: 'var(--font-display)', fontWeight: 900,
-              fontSize: 11, letterSpacing: 1, flexShrink: 0, marginTop: 1,
-              color: `${s.accent}60`,
-            }}>{s.num}</span>
-            {/* Text */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{
-                fontSize: 13, fontWeight: 700, letterSpacing: 0.2,
-                color: 'rgba(255,255,255,0.90)', margin: '0 0 4px',
-                fontFamily: 'var(--font-display)',
-              }}>{s.title}</p>
-              <p style={{
-                fontSize: 11.5, color: 'rgba(255,255,255,0.38)',
-                lineHeight: 1.6, margin: 0,
-              }}>{s.body}</p>
-            </div>
-            {/* Accent dot */}
-            <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-              marginTop: 5, background: s.accent, opacity: 0.5,
-              boxShadow: `0 0 5px ${s.accent}` }}/>
-          </motion.div>
-        ))}
-      </div>
 
       {/* ── Primary CTA ────────────────────────────────────────────────── */}
       <motion.button
@@ -5179,6 +5150,7 @@ function NoClubScreen({ onCreated, profile }) {
               )}
 
               <motion.button
+                ref={joinRef}
                 whileTap={{ scale: 0.97 }} onClick={handleJoin}
                 disabled={!selPos || joining}
                 className="btn-primary"
@@ -5190,6 +5162,43 @@ function NoClubScreen({ onCreated, profile }) {
         </AnimatePresence>
 
       </motion.div>
+
+      {/* ── How it works (explanation — below the actions) ────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 32,
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderTop: '1px solid rgba(255,255,255,0.10)', borderRadius: 14, overflow: 'hidden' }}>
+        {STEPS.map((s, i) => (
+          <motion.div key={s.num}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            transition={{ delay: 0.06 + i * 0.05, duration: 0.28 }}
+            style={{
+              display: 'flex', alignItems: 'flex-start', gap: 16,
+              padding: '16px 18px',
+              background: i % 2 === 0 ? 'rgba(6,14,30,0.60)' : 'rgba(4,10,22,0.50)',
+              borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+            }}>
+            <span style={{
+              fontFamily: 'var(--font-display)', fontWeight: 900,
+              fontSize: 11, letterSpacing: 1, flexShrink: 0, marginTop: 1,
+              color: `${s.accent}60`,
+            }}>{s.num}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{
+                fontSize: 13, fontWeight: 700, letterSpacing: 0.2,
+                color: 'rgba(255,255,255,0.90)', margin: '0 0 4px',
+                fontFamily: 'var(--font-display)',
+              }}>{s.title}</p>
+              <p style={{
+                fontSize: 11.5, color: 'rgba(255,255,255,0.38)',
+                lineHeight: 1.6, margin: 0,
+              }}>{s.body}</p>
+            </div>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+              marginTop: 5, background: s.accent, opacity: 0.5,
+              boxShadow: `0 0 5px ${s.accent}` }}/>
+          </motion.div>
+        ))}
+      </div>
     </div>
   )
 }
