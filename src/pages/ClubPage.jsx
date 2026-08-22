@@ -1430,8 +1430,11 @@ function ProfileOverlay({ onClose, children }) {
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 9000,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        // NO overflow here: an overflow (auto/hidden) ancestor clips the 3D-rotated
+        // PlayerCard3D to its 2D box on WebKit/iOS — the perspective turns that clip
+        // edge into a diagonal that slices the card (and shifts as it rotates). The
+        // content (card + 1-2 buttons) fits centered, so we don't need to scroll.
         padding: '28px 20px',
         // Lekkie rozmycie tła (widać Klub pod spodem) — do dopieszczenia.
         background: 'rgba(4,9,20,0.55)',
