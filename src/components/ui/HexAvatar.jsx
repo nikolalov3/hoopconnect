@@ -1,13 +1,16 @@
 /**
  * HexAvatar + HexFrameOnly
  * ─────────────────────────
- * Frame is a PNG overlay loaded from /frames/{variant}.png
- * Falls back to SVG frame if image fails to load.
+ * The frame is a PNG overlay. Its path is resolved from FRAME_PATHS below:
+ * catalog frames (lib/frames.js) by id, plus a few legacy aliases, plus
+ * 'none' → null (no frame). There is NO SVG fallback — if the PNG 404s the
+ * <image> simply renders nothing (i.e. it degrades to a frameless hex).
  *
- * variant: 'default' | 'beta' | 'gold'
+ * variant: a frame id from FRAME_CATALOG (e.g. 'early_access', 'diamond_s1'),
+ *          a legacy alias ('default' | 'betatester' | 'beta' | 'gold'), or 'none'.
  *
- * PNG spec: 1024×1024 px, transparent background, hex frame centered.
- * Drop PNGs into:  public/frames/default.png  etc.
+ * PNG spec: pointy-top hex frame, transparent bg, filling the 122×122 art box.
+ * Add new frames to lib/frames.js (they render here automatically) — not here.
  */
 import { useId } from 'react'
 import { FRAME_CATALOG } from '../../lib/frames'

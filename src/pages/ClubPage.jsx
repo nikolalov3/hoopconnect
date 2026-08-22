@@ -1480,7 +1480,12 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
   const theme = getArenaTheme(profile?.arena_level ?? 0)
   // Prefer the freshly-fetched DB row (always current) over the AuthContext snapshot,
   // so a just-changed equipped frame shows immediately when opening your own profile.
-  const frameVariant = profile?.equipped_frame || myProfile?.equipped_frame || member.frame || 'none'
+  // Only the self-card may fall back to the AuthContext (myProfile) snapshot.
+  // For another member's card, NEVER fall back to the viewer's frame — otherwise a
+  // frameless member (equipped_frame = null) inherits the logged-in user's frame.
+  const frameVariant = isSelf
+    ? (profile?.equipped_frame || myProfile?.equipped_frame || 'none')
+    : (profile?.equipped_frame || member.frame || 'none')
   const [flagOk, setFlagOk] = useState(true)
   const [showArenaRoad, setShowArenaRoad] = useState(false)
   useEffect(() => { setFlagOk(true) }, [country?.flagFile])
