@@ -1478,14 +1478,15 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
   const country = COUNTRIES.find(c => c.code === profile?.country) || null
   const { next: nextArena, pct } = arenaProgress(profile?.xp, profile?.arena_level)
   const theme = getArenaTheme(profile?.arena_level ?? 0)
-  // Prefer the freshly-fetched DB row (always current) over the AuthContext snapshot,
-  // so a just-changed equipped frame shows immediately when opening your own profile.
-  // Only the self-card may fall back to the AuthContext (myProfile) snapshot.
-  // For another member's card, NEVER fall back to the viewer's frame — otherwise a
-  // frameless member (equipped_frame = null) inherits the logged-in user's frame.
+  // The card only renders once the fresh DB row (`profile`) has loaded (guard below),
+  // so profile.equipped_frame is always authoritative here. Do NOT fall back to any
+  // snapshot: for the self-card the AuthContext (myProfile) snapshot is a fine fill-in
+  // before the row loads, but for another member NEVER fall back to member.frame — that
+  // stale roster snapshot would re-show a frame the member just REMOVED (fresh null
+  // masked by an old id), and must never be the viewer's frame either.
   const frameVariant = isSelf
     ? (profile?.equipped_frame || myProfile?.equipped_frame || 'none')
-    : (profile?.equipped_frame || member.frame || 'none')
+    : (profile?.equipped_frame || 'none')
   const [flagOk, setFlagOk] = useState(true)
   const [showArenaRoad, setShowArenaRoad] = useState(false)
   useEffect(() => { setFlagOk(true) }, [country?.flagFile])
@@ -1596,7 +1597,10 @@ function MatchPlayerSheet({ player, uid, onClose }) {
   const { profile, stats, loading } = usePlayerProfileData(player.user_id)
   const bgCatalog = useBackgroundCatalog()
   const cardBg = backgroundAsset(bgCatalog, profile?.equipped_background)
-  const frameVariant = profile?.equipped_frame || player.profile?.equipped_frame || 'none'
+  // The card only renders after the fresh row (`profile`) loads (guard below), so
+  // profile.equipped_frame is authoritative — don't OR-fall onto the match snapshot
+  // (player.profile), which would re-show a frame the player just removed.
+  const frameVariant = profile?.equipped_frame || 'none'
   const name = player.profile?.name || profile?.name || '—'
   return (
     <ProfileOverlay onClose={onClose}>
@@ -1867,7 +1871,7 @@ function SectionDivider() {
 
 // Roster — wraps to a 2-on-top/3-on-bottom layout for 5v5, single row otherwise.
 // Player hexagons are the focal point now (no club crest), so they're sized up.
-function RosterGrid({ players, slots, color, size = 32 }) {
+function RosterGrid({ players, slots, color, size = 32, uid, myFrame }) {
   const rows = slots === 5 ? [2, 3] : [slots]
   let slot = 0
   return (
@@ -1878,8 +1882,10 @@ function RosterGrid({ players, slots, color, size = 32 }) {
             slot += 1
             const s = slot
             const p = players.find(pl => pl.slot === s)
+            // For the viewer's own hex use their live frame (myFrame) — the match
+            // snapshot can be stale right after they change it; others use snapshot.
             return p
-              ? <HexAvatar key={s} name={p.profile?.name} size={size} variant={p.profile?.equipped_frame || 'none'} noAnim/>
+              ? <HexAvatar key={s} name={p.profile?.name} size={size} variant={(p.user_id === uid ? myFrame : p.profile?.equipped_frame) || 'none'} noAnim/>
               : <HexSlot key={s} filled={false} color={color} size={size * 0.76}/>
           })}
         </div>
@@ -1888,7 +1894,7 @@ function RosterGrid({ players, slots, color, size = 32 }) {
   )
 }
 
-function MatchCard({ match, dist, uid, onPress }) {
+function MatchCard({ match, dist, uid, myFrame, onPress }) {
   const { t } = useTranslation('club')
   const slots = MODE_SLOTS[match.mode]
   const homePlayers = match.players.filter(p => p.team === 'home')
@@ -2023,14 +2029,14 @@ function MatchCard({ match, dist, uid, onPress }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
             <div style={{ display: 'flex', justifyContent: 'center', flex: 1, minWidth: 0 }}>
-              <RosterGrid players={homePlayers} slots={slots} color={TEAM_BLUE} size={58}/>
+              <RosterGrid players={homePlayers} slots={slots} color={TEAM_BLUE} size={58} uid={uid} myFrame={myFrame}/>
             </div>
             <span style={{
               fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 900, letterSpacing: 2,
               color: 'rgba(160,200,255,0.35)', flexShrink: 0,
             }}>VS</span>
             <div style={{ display: 'flex', justifyContent: 'center', flex: 1, minWidth: 0 }}>
-              <RosterGrid players={awayPlayers} slots={slots} color={TEAM_RED} size={58}/>
+              <RosterGrid players={awayPlayers} slots={slots} color={TEAM_RED} size={58} uid={uid} myFrame={myFrame}/>
             </div>
           </div>
         </div>
@@ -3639,6 +3645,9 @@ async function forwardGeocode(city) {
 function MatchesPanel({ club, uid, isActive }) {
   const { t } = useTranslation('club')
   const { profile, blockedIds } = useAuth()
+  // Viewer's live frame — passed to match rosters so the viewer's own hex reflects
+  // a just-changed frame even before the match snapshot refetches.
+  const myFrame = profile?.equipped_frame || 'none'
   const [locState, setLocState] = useState('idle')
   const [locError,  setLocError]  = useState(null)   // 'permission' | 'unavailable' | null
   const [userLoc,  setUserLoc]  = useState(null)
@@ -3699,7 +3708,9 @@ function MatchesPanel({ club, uid, isActive }) {
         const uids = [...new Set((players || []).map(p => p.user_id))]
         let pm = {}
         if (uids.length) {
-          const { data: pd } = await supabase.from('profiles').select('id,name').in('id', uids)
+          // include equipped_frame — omitting it blanked every player's frame to
+          // 'none' on each join/leave until the next full loadMatches.
+          const { data: pd } = await supabase.from('profiles').select('id,name,equipped_frame').in('id', uids)
           pm = Object.fromEntries((pd || []).map(p => [p.id, p]))
         }
         const updatedPlayers = (players || []).map(p => ({ ...p, profile: pm[p.user_id] || null }))
@@ -4030,12 +4041,12 @@ function MatchesPanel({ club, uid, isActive }) {
                 <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
                   color: C.dim, margin: '0 0 10px 2px' }}>{t('matchesPanel.upcoming')}</p>
                 {mine.map(m => (
-                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
+                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid} myFrame={myFrame}
                     onPress={() => { setActive(m); setSheet('detail') }}/>
                 ))}
                 {mine.length > 0 && others.length > 0 && <SectionDivider/>}
                 {others.map(m => (
-                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
+                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid} myFrame={myFrame}
                     onPress={() => { setActive(m); setSheet('detail') }}/>
                 ))}
               </>
@@ -4049,12 +4060,12 @@ function MatchesPanel({ club, uid, isActive }) {
                 <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
                   color: C.dim, margin: '16px 0 10px 2px' }}>{t('matchesPanel.recent')}</p>
                 {mine.map(m => (
-                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
+                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid} myFrame={myFrame}
                     onPress={() => { setActive(m); setSheet('detail') }}/>
                 ))}
                 {mine.length > 0 && others.length > 0 && <SectionDivider/>}
                 {others.map(m => (
-                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid}
+                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid} myFrame={myFrame}
                     onPress={() => { setActive(m); setSheet('detail') }}/>
                 ))}
               </>
