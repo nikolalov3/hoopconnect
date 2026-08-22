@@ -6,7 +6,7 @@
  * Props:
  *   name, hcId, arenaLevel, xp, frameVariant, matchWins, kotcWins
  */
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import HexAvatar from './HexAvatar'
 import { ARENAS, arenaProgress } from '../../lib/arenas'
 
@@ -17,23 +17,30 @@ const CSS = `
   width: 252px; height: 44px; border-radius: 50%; z-index: -1;
   background: radial-gradient(ellipse at center, rgba(0,0,0,.6), rgba(0,0,0,0) 70%); filter: blur(9px); }
 .pc3d-card { --rx: -8; --ry: -14; position: relative; width: 300px; height: 452px;
-  transform-style: preserve-3d;
+  /* Single tilted plane: perspective+rotate ONLY — no transform-style:preserve-3d
+     and no nested 3D layer stack. A nested preserve-3d subtree (the old translateZ
+     slabs) under a backdrop-filter/overflow ancestor gets mis-clipped by WebKit/iOS:
+     perspective projects the ancestor's rectangular clip into a triangle that shifts
+     with rotation. Thickness/depth is now faked with a tilt-reactive box-shadow. */
   transform: perspective(1150px) rotateX(calc(var(--rx)*1deg)) rotateY(calc(var(--ry)*1deg));
   will-change: transform;
   cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .pc3d-card:active { cursor: grabbing; }
-/* Card silhouette = rounded rect. IMPORTANT: never clip the ROTATED face with
-   overflow:hidden or clip-path — WebKit/iOS mis-clips a rounded/clipped element
-   inside a 3D transform (preserve-3d + perspective + translateZ), slicing the card
-   into a triangle that shifts with rotation. Instead each layer carries its own
-   border-radius (clips only its own background), so nothing clips CHILDREN in 3D. */
 .pc3d-sil { border-radius: 22px; }
-.pc3d-body { position: absolute; inset: 0; transform-style: preserve-3d; }
-.pc3d-slab { position: absolute; inset: 0; background: linear-gradient(158deg, #4a648c 0%, #26394f 52%, #0d1a2b 100%); }
 .pc3d-face { position: absolute; inset: 0; padding: 18px 20px 14px;
   display: flex; flex-direction: column; border-radius: 22px;
   background: linear-gradient(157deg, #16304f 0%, #0d1f38 46%, #0a1830 100%);
-  border: 1px solid rgba(150,200,255,.28); }
+  border: 1px solid rgba(150,200,255,.28);
+  /* Faked 3D thickness: a short stack of hard offset shadows (the extruded "edge")
+     pointing toward the tilt-away corner (driven by --ry / --rx), plus an ambient
+     floor shadow. Replaces the removed translateZ slab stack — same premium depth,
+     no nested 3D subtree for WebKit to mis-clip. */
+  box-shadow:
+    calc(var(--ry)*0.35px) calc(var(--rx)*-0.35px) 0 rgba(9,17,30,0.90),
+    calc(var(--ry)*0.70px) calc(var(--rx)*-0.70px) 0 rgba(8,15,27,0.80),
+    calc(var(--ry)*1.05px) calc(var(--rx)*-1.05px) 0 rgba(7,13,23,0.66),
+    calc(var(--ry)*1.40px) calc(var(--rx)*-1.40px) 0 rgba(6,11,21,0.50),
+    0 24px 44px rgba(0,0,0,0.55); }
 .pc3d-face::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
   border-radius: 22px 22px 0 0;
   background: linear-gradient(180deg, rgba(150,205,255,.16), transparent); pointer-events: none; }
@@ -98,29 +105,15 @@ function arenaImg(i) { return `/arenas/arena-${i}.png` }
 
 export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frameVariant = 'none', matchWins = 0, kotcWins = 0, scale = 1, background = null, interactive = true, blank = false, idle = false }) {
   const cardRef = useRef(null)
-  const slabsRef = useRef(null)
 
   const prog = arenaProgress(xp, arenaLevel)
   const curArena = ARENAS[prog.current] || ARENAS[0]
   const nextArena = prog.next != null ? ARENAS[prog.next] : null
   const pct = Math.max(6, Math.min(100, prog.pct ?? 0))
 
-  // slab extrusion (once). useLayoutEffect (not useEffect) so the 10 thickness
-  // layers exist BEFORE the browser's first paint — otherwise on iOS the card
-  // painted once as just the face, then re-composited when the slabs were added
-  // a frame later, flashing the grey slab layers ("card grey on first open").
-  useLayoutEffect(() => {
-    const slabs = slabsRef.current
-    if (!slabs || slabs.childElementCount) return
-    const N = 10, step = 2.3   // ~23px total thickness, half the composited layers
-    for (let i = 1; i <= N; i++) {
-      const d = document.createElement('div')
-      d.className = 'pc3d-slab pc3d-sil'
-      d.style.transform = `translateZ(-${(i * step).toFixed(2)}px)`
-      d.style.filter = `brightness(${(1 - (i / N) * 0.55).toFixed(3)})`
-      slabs.appendChild(d)
-    }
-  }, [])
+  // Thickness is now a CSS box-shadow on .pc3d-face (driven by --rx/--ry) — no more
+  // translateZ slab stack, so there is no nested preserve-3d subtree for WebKit/iOS
+  // to mis-clip into a triangle.
 
   // drag-to-rotate + idle float. Static previews (interactive=false) skip this so
   // a tap selects the card instead of rotating it, and no handlers are bound.
@@ -174,7 +167,6 @@ export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frame
     <div className="pc3d-stage">
         <div className="pc3d-floor" />
         <div className="pc3d-card" ref={cardRef}>
-          <div className="pc3d-body" ref={slabsRef} />
           <div className={`pc3d-face pc3d-sil${background ? ' pc3d-hasbg' : ''}`}>
             {background && <div className="pc3d-bg" style={{ backgroundImage: `url(${background})` }} />}
             <div className="pc3d-holo" />
