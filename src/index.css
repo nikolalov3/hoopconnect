@@ -39,7 +39,17 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body, #root { height: 100%; width: 100%; overflow: hidden; }
+html, body, #root {
+  width: 100%;
+  height: 100%;          /* fallback for browsers without dvh */
+  height: 100dvh;        /* fill the FULL dynamic viewport — on iOS standalone the
+                            old `height:100%` computed short, leaving the bottom
+                            safe area (home indicator) uncovered = a black bar. */
+  overflow: hidden;
+}
+/* Paint the root canvas (incl. the safe-area strips) with the app's dark bg so the
+   home-indicator area can never show the window's black through it. */
+html { background: #060F1E; }
 
 body {
   font-family: var(--font-body);

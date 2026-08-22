@@ -173,7 +173,7 @@ export default function BottomNav() {
   return (
     <AnimatePresence initial={false}>
     {!settingsOpen && !leagueOpen && !leaderboardOpen && (
-    <div style={{ position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)', zIndex: 200 }}>
+    <div style={{ position: 'absolute', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 22px)', left: '50%', transform: 'translateX(-50%)', zIndex: 200 }}>
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
