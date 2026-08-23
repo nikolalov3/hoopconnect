@@ -1436,9 +1436,10 @@ function ProfileOverlay({ onClose, children }) {
         // edge into a diagonal that slices the card (and shifts as it rotates). The
         // content (card + 1-2 buttons) fits centered, so we don't need to scroll.
         padding: '28px 20px',
-        // Lekkie rozmycie tła (widać Klub pod spodem) — do dopieszczenia.
-        background: 'rgba(4,9,20,0.55)',
-        backdropFilter: 'blur(7px)', WebkitBackdropFilter: 'blur(7px)',
+        // NO backdrop-filter here: a backdrop-filter ancestor is the other WebKit/iOS
+        // trigger that mis-clips the perspective-tilted PlayerCard3D into a shifting
+        // triangle. Use a plain (slightly darker) scrim instead of a blur.
+        background: 'rgba(4,9,20,0.66)',
       }}
     >
       <button
