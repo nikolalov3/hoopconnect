@@ -1,66 +1,52 @@
 /**
- * PlayerCard3D — latająca karta zawodnika (drag = obrót, holograficzny połysk,
- * realna grubość 3D przez stos warstw, kształt keycard z wcięciem).
+ * PlayerCard3D — karta zawodnika: płaska (bez efektu 3D), holograficzny połysk,
+ * kształt keycard z wcięciem u dołu (clip-path). Nazwa "3D" została historycznie.
  * Avatar + ramka renderowane przez HexAvatar (ramka warunkowa wg equipped_frame).
  *
  * Props:
  *   name, hcId, arenaLevel, xp, frameVariant, matchWins, kotcWins
+ *   (interactive / idle są akceptowane dla zgodności z istniejącymi wywołaniami,
+ *    ale nic już nie robią — karta jest statyczna.)
  */
-import { useEffect, useRef } from 'react'
 import HexAvatar from './HexAvatar'
 import { ARENAS, arenaProgress } from '../../lib/arenas'
 
 const CSS = `
 .pc3d-stage { position: relative;
   display: flex; align-items: center; justify-content: center; padding: 18px 0 8px; }
-.pc3d-floor { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%);
-  width: 252px; height: 44px; border-radius: 50%; z-index: -1;
-  background: radial-gradient(ellipse at center, rgba(0,0,0,.6), rgba(0,0,0,0) 70%); filter: blur(9px); }
-.pc3d-card { --rx: -8; --ry: -14; position: relative; width: 300px; height: 452px;
-  /* Single tilted plane: perspective+rotate ONLY — no transform-style:preserve-3d
-     and no nested 3D layer stack. A nested preserve-3d subtree (the old translateZ
-     slabs) under a backdrop-filter/overflow ancestor gets mis-clipped by WebKit/iOS:
-     perspective projects the ancestor's rectangular clip into a triangle that shifts
-     with rotation. Thickness/depth is now faked with a tilt-reactive box-shadow. */
-  transform: perspective(1150px) rotateX(calc(var(--rx)*1deg)) rotateY(calc(var(--ry)*1deg));
-  will-change: transform;
-  cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
-.pc3d-card:active { cursor: grabbing; }
-.pc3d-sil { border-radius: 22px; }
+.pc3d-card { position: relative; width: 300px; height: 452px;
+  /* Soft drop-shadow via filter (not box-shadow) so it hugs the notched silhouette,
+     not a rectangle — a flat grounding shadow, not the old extruded-edge look. */
+  filter: drop-shadow(0 9px 18px rgba(0,0,0,0.34));
+  user-select: none; -webkit-user-select: none; }
+/* Keycard shape with the bottom-right notch, restored via clip-path (applied to the
+   face through its pc3d-sil class). The card is a FLAT plane — no perspective, no
+   rotate, no 3D thickness — so WebKit/iOS has nothing to project into a triangle. */
+.pc3d-sil { clip-path: path('M22,0 L278,0 Q300,0 300,22 L300,400 Q300,414 286,414 L210,414 Q196,414 192,428 L182,440 Q178,452 164,452 L22,452 Q0,452 0,430 L0,22 Q0,0 22,0 Z'); }
 .pc3d-face { position: absolute; inset: 0; padding: 18px 20px 14px;
-  display: flex; flex-direction: column; border-radius: 22px;
+  display: flex; flex-direction: column;
   background: linear-gradient(157deg, #16304f 0%, #0d1f38 46%, #0a1830 100%);
-  border: 1px solid rgba(150,200,255,.28);
-  /* Faked 3D thickness: a short stack of hard offset shadows (the extruded "edge")
-     pointing toward the tilt-away corner (driven by --ry / --rx), plus an ambient
-     floor shadow. Replaces the removed translateZ slab stack — same premium depth,
-     no nested 3D subtree for WebKit to mis-clip. */
-  box-shadow:
-    calc(var(--ry)*0.35px) calc(var(--rx)*-0.35px) 0 rgba(9,17,30,0.90),
-    calc(var(--ry)*0.70px) calc(var(--rx)*-0.70px) 0 rgba(8,15,27,0.80),
-    calc(var(--ry)*1.05px) calc(var(--rx)*-1.05px) 0 rgba(7,13,23,0.66),
-    calc(var(--ry)*1.40px) calc(var(--rx)*-1.40px) 0 rgba(6,11,21,0.50),
-    0 24px 44px rgba(0,0,0,0.55); }
+  border: 1px solid rgba(150,200,255,.28); }
 .pc3d-face::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
-  border-radius: 22px 22px 0 0;
   background: linear-gradient(180deg, rgba(150,205,255,.16), transparent); pointer-events: none; }
-.pc3d-bg { position: absolute; inset: 0; z-index: 0; border-radius: 22px; background-size: cover; background-position: center; background-repeat: no-repeat; }
-.pc3d-bg::after { content: ''; position: absolute; inset: 0; border-radius: 22px;
+.pc3d-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; background-repeat: no-repeat; }
+.pc3d-bg::after { content: ''; position: absolute; inset: 0;
   background: linear-gradient(158deg,
     rgba(236,72,153,.30) 0%, rgba(168,60,224,.30) 46%, rgba(30,8,50,.66) 100%); }
-.pc3d-holo { position: absolute; inset: 0; border-radius: 22px; pointer-events: none; z-index: 4; mix-blend-mode: screen; opacity: .55;
-  background: linear-gradient(calc(118deg + var(--ry)*1.6deg),
+/* Static holographic sheen (fixed angle — the card no longer tilts). */
+.pc3d-holo { position: absolute; inset: 0; pointer-events: none; z-index: 4; mix-blend-mode: screen; opacity: .42;
+  background: linear-gradient(118deg,
     rgba(0,240,220,0) 8%, rgba(120,200,255,.42) 30%, rgba(190,130,255,.42) 46%,
     rgba(255,150,210,.30) 56%, rgba(120,255,220,.34) 72%, rgba(0,240,220,0) 92%); }
 /* Cards with a custom background get a warmer pink/violet/gold holo to match;
    plain (no-background) cards keep the neutral shimmer above. */
-.pc3d-hasbg .pc3d-holo { opacity: .6;
-  background: linear-gradient(calc(118deg + var(--ry)*1.6deg),
+.pc3d-hasbg .pc3d-holo { opacity: .5;
+  background: linear-gradient(118deg,
     rgba(255,120,210,0) 8%, rgba(255,120,210,.42) 28%, rgba(190,110,255,.46) 46%,
     rgba(255,185,120,.34) 60%, rgba(120,220,255,.30) 74%, rgba(255,120,210,0) 92%); }
-.pc3d-spec { position: absolute; inset: 0; border-radius: 22px; pointer-events: none; z-index: 5; mix-blend-mode: screen;
-  background: radial-gradient(120% 80% at calc(50% + var(--ry)*1.5%) calc(38% - var(--rx)*1.4%),
-    rgba(255,255,255,.42), rgba(255,255,255,.05) 40%, transparent 60%); }
+.pc3d-spec { position: absolute; inset: 0; pointer-events: none; z-index: 5; mix-blend-mode: screen;
+  background: radial-gradient(120% 80% at 50% 38%,
+    rgba(255,255,255,.34), rgba(255,255,255,.05) 40%, transparent 60%); }
 .pc3d-slot { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 7;
   width: 54px; height: 9px; border-radius: 999px; background: #050c18;
   box-shadow: inset 0 1px 2px rgba(0,0,0,.8), 0 1px 0 rgba(150,200,255,.14); }
@@ -104,69 +90,18 @@ if (typeof document !== 'undefined' && !document.getElementById('pc3d-styles')) 
 function arenaImg(i) { return `/arenas/arena-${i}.png` }
 
 export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frameVariant = 'none', matchWins = 0, kotcWins = 0, scale = 1, background = null, interactive = true, blank = false, idle = false }) {
-  const cardRef = useRef(null)
-
   const prog = arenaProgress(xp, arenaLevel)
   const curArena = ARENAS[prog.current] || ARENAS[0]
   const nextArena = prog.next != null ? ARENAS[prog.next] : null
   const pct = Math.max(6, Math.min(100, prog.pct ?? 0))
 
-  // Thickness is now a CSS box-shadow on .pc3d-face (driven by --rx/--ry) — no more
-  // translateZ slab stack, so there is no nested preserve-3d subtree for WebKit/iOS
-  // to mis-clip into a triangle.
-
-  // drag-to-rotate + idle float. Static previews (interactive=false) skip this so
-  // a tap selects the card instead of rotating it, and no handlers are bound.
-  useEffect(() => {
-    const card = cardRef.current
-    if (!card || !interactive) return
-    // Rest at a slight tilt; only run the rAF loop while dragging (+ a short ease
-    // back to rest). Previously it ran a perpetual 60fps sway even when idle,
-    // repainting the screen-blended holo/spec every frame — the "card feels
-    // hot/slow" cost. At rest now: zero repaint.
-    const REST_X = -8, REST_Y = -14
-    let rx = REST_X, ry = REST_Y, tx = REST_X, ty = REST_Y
-    let dragging = false, sx = 0, sy = 0, brx = 0, bry = 0
-    let raf = 0, running = false, t0 = 0
-    const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
-    const apply = () => {
-      card.style.setProperty('--rx', rx.toFixed(2))
-      card.style.setProperty('--ry', ry.toFixed(2))
-    }
-    const loop = (now) => {
-      if (!t0) t0 = now || 0
-      // Gentle idle sway (opt-in). Time is measured FROM MOUNT (phase 0 = rest),
-      // so the card eases out of its resting tilt with no initial jump — a small,
-      // slow Lissajous float that shows the depth without the old "hot" feel.
-      if (idle && !dragging) {
-        const s = ((now || 0) - t0) / 1000
-        tx = REST_X + Math.sin(s * 0.5) * 2.5
-        ty = REST_Y + Math.sin(s * 0.35) * 4
-      }
-      rx += (tx - rx) * 0.12
-      ry += (ty - ry) * 0.12
-      apply()
-      if (!idle && !dragging && Math.abs(tx - rx) < 0.05 && Math.abs(ty - ry) < 0.05) {
-        rx = tx; ry = ty; apply(); running = false; return   // settled → stop (non-idle)
-      }
-      raf = requestAnimationFrame(loop)
-    }
-    const kick = () => { if (!running) { running = true; raf = requestAnimationFrame(loop) } }
-    const down = (e) => { dragging = true; sx = e.clientX; sy = e.clientY; brx = rx; bry = ry; try { card.setPointerCapture(e.pointerId) } catch (_) {}; kick() }
-    const move = (e) => { if (!dragging) return; ty = clamp(bry + (e.clientX - sx) * 0.38, -46, 46); tx = clamp(brx - (e.clientY - sy) * 0.34, -34, 34); kick() }
-    const up = () => { if (!dragging) return; dragging = false; tx = REST_X; ty = REST_Y; kick() }
-    card.addEventListener('pointerdown', down)
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', up)
-    apply()
-    if (idle) kick()
-    return () => { cancelAnimationFrame(raf); card.removeEventListener('pointerdown', down); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
-  }, [interactive, idle])
+  // Flat card — no perspective/rotate/3D and no drag-to-rotate. The holographic
+  // sheen is static. `interactive` / `idle` are accepted for call-site compatibility
+  // but no longer do anything (kept so existing callers don't break).
 
   const stage = (
     <div className="pc3d-stage">
-        <div className="pc3d-floor" />
-        <div className="pc3d-card" ref={cardRef}>
+        <div className="pc3d-card">
           <div className={`pc3d-face pc3d-sil${background ? ' pc3d-hasbg' : ''}`}>
             {background && <div className="pc3d-bg" style={{ backgroundImage: `url(${background})` }} />}
             <div className="pc3d-holo" />
@@ -214,8 +149,8 @@ export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frame
 
   if (scale && scale !== 1) {
     // Reserve the scaled footprint (transform doesn't shrink the layout box) so a
-    // smaller card doesn't leave a tall gap. perspective() lives on .pc3d-card, so
-    // the 3D tilt still works under this ancestor scale.
+    // smaller card doesn't leave a tall gap. The clip-path is in the card's local
+    // coords, so it scales cleanly with this ancestor transform.
     return (
       <div style={{ width: 300 * scale, height: 478 * scale, margin: '0 auto' }}>
         <div style={{ width: 300, transform: `scale(${scale})`, transformOrigin: 'top left' }}>

@@ -1002,11 +1002,16 @@ export default function SettingsPanel({ open, onClose }) {
                         <button key={b.id || 'classic'} onClick={() => setDraftBg(b.id || null)}
                           style={{ flexShrink: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, WebkitTapHighlightColor: 'transparent' }}>
+                          {/* Just the card background as a swatch (no mini-card). */}
                           <div style={{ borderRadius: 12, padding: 3,
                             border: `2px solid ${sel ? C.accent : C.border}`,
                             boxShadow: sel ? '0 0 16px rgba(91,184,245,0.5)' : 'none' }}>
-                            <PlayerCard3D name={profile?.name} arenaLevel={profile?.arena_level ?? 0} xp={profile?.xp ?? 0}
-                              background={b.asset_path} scale={0.26} interactive={false} blank/>
+                            <div style={{
+                              width: 72, height: 104, borderRadius: 9,
+                              background: b.asset_path
+                                ? `#0a1830 url(${b.asset_path}) center/cover no-repeat`
+                                : 'linear-gradient(157deg, #16304f 0%, #0d1f38 46%, #0a1830 100%)',
+                            }}/>
                           </div>
                           <span style={{ fontSize: 10, fontWeight: 700, color: sel ? '#dbeeff' : C.sub, maxWidth: 90,
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
