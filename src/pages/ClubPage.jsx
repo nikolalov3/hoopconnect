@@ -3645,7 +3645,7 @@ async function forwardGeocode(city) {
 
 function MatchesPanel({ club, uid, isActive }) {
   const { t } = useTranslation('club')
-  const { profile, blockedIds } = useAuth()
+  const { profile, blockedIds, refreshProfile } = useAuth()
   // Viewer's live frame — passed to match rosters so the viewer's own hex reflects
   // a just-changed frame even before the match snapshot refetches.
   const myFrame = profile?.equipped_frame || 'none'
@@ -4113,7 +4113,12 @@ function MatchesPanel({ club, uid, isActive }) {
         {sheet === 'create' && (
           <CreateMatchSheet key="create" club={club} uid={uid}
             onClose={() => setSheet(null)}
-            onCreated={m => setMatches(prev => [{ ...m, _dist: haversineKm(userLoc.lat, userLoc.lng, m.lat, m.lng) }, ...prev])}/>
+            onCreated={m => {
+              setMatches(prev => [{ ...m, _dist: haversineKm(userLoc.lat, userLoc.lng, m.lat, m.lng) }, ...prev])
+              // The "10 matches created → +240 XP" milestone is granted server-side
+              // (DB trigger). Refresh the profile so that XP/arena shows immediately.
+              refreshProfile?.()
+            }}/>
         )}
         {sheet === 'detail' && active && (
           <MatchDetailSheet key="detail" match={active} uid={uid}
