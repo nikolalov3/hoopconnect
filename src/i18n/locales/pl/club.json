@@ -26,6 +26,7 @@
     "awayClubTaken": "Drużyna away jest już zajęta przez inny klub",
     "teamFull": "Drużyna jest już pełna",
     "slotTaken": "Ten slot właśnie zajął ktoś inny — odśwież i spróbuj ponownie",
+    "confirmFailed": "Nie udało się potwierdzić wyniku — odśwież i spróbuj ponownie.",
     "saveFailed": "Nie udało się zapisać.",
     "dailyLimit": "Możesz zagrać maksymalnie 3 mecze dziennie.",
     "tooSoon": "Za mała przerwa między meczami. Odstęp musi wynosić co najmniej {{min}} minut.",
