@@ -4235,9 +4235,34 @@ function PanelDots({ active, onChange }) {
 // ── STATS PANEL ───────────────────────────────────────────────────────────────
 function StatsPanel({ club }) {
   const { t } = useTranslation('club')
+  const { user } = useAuth()
+  const uid = user?.id
   const [completed, setCompleted] = useState([])
   const [upcoming,  setUpcoming]  = useState([])
   const [loading,   setLoading]   = useState(true)
+  const [detailMatch, setDetailMatch] = useState(null)  // tapped past result → detail sheet
+
+  // Tap a recent result → open the same MatchDetailSheet as Mecze. The roster + club
+  // names are ALREADY stored (match_players / clubs); we just read them on demand for
+  // that one match (no extra storage, one small query only when a row is tapped).
+  async function openDetail(m) {
+    const [{ data: mps }, { data: clubRows }] = await Promise.all([
+      supabase.from('match_players').select('*').eq('match_id', m.id),
+      supabase.from('clubs').select('id,name,abbr,country_flag').in('id', [m.club_id, m.away_club_id].filter(Boolean)),
+    ])
+    const uids = [...new Set((mps || []).map(p => p.user_id))]
+    const profs = uids.length
+      ? (await supabase.from('profiles').select('id,name,equipped_frame').in('id', uids)).data || []
+      : []
+    const pm = Object.fromEntries(profs.map(p => [p.id, p]))
+    const cmap = Object.fromEntries((clubRows || []).map(c => [c.id, c]))
+    setDetailMatch({
+      ...m,
+      players: (mps || []).map(p => ({ ...p, profile: pm[p.user_id] || null })),
+      _club: cmap[m.club_id] || null,
+      _awayClub: m.away_club_id ? (cmap[m.away_club_id] || null) : null,
+    })
+  }
 
   useEffect(() => {
     if (!club?.id) return
@@ -4250,7 +4275,7 @@ function StatsPanel({ club }) {
           .eq('club_id', club.id)
           .eq('status', 'completed')
           .order('scheduled_at', { ascending: false })
-          .limit(8),
+          .limit(10),
         supabase.from('club_matches')
           .select('id,scheduled_at,mode,club_id,away_club_id,status')
           .eq('club_id', club.id)
@@ -4263,7 +4288,7 @@ function StatsPanel({ club }) {
           .eq('away_club_id', club.id)
           .eq('status', 'completed')
           .order('scheduled_at', { ascending: false })
-          .limit(8),
+          .limit(10),
       ])
 
       const all = [...(comp || []), ...(compAway || [])]
@@ -4380,7 +4405,7 @@ function StatsPanel({ club }) {
           <div style={{ padding: '20px 16px', textAlign: 'center' }}>
             <p style={{ fontSize: 11, color: C.sub, fontWeight: 500 }}>{t('statsPanel.noRecent')}</p>
           </div>
-        ) : completed.slice(0, 8).map((m, i) => {
+        ) : completed.slice(0, 10).map((m, i) => {
           const isHome   = m.club_id === club.id
           let result = '–', resultColor = C.sub
           if (m.walkover) {
@@ -4396,10 +4421,11 @@ function StatsPanel({ club }) {
           const sh = isHome ? m.score_home : m.score_away
           const sa = isHome ? m.score_away : m.score_home
           return (
-            <div key={m.id} style={{
-              padding: '12px 16px',
+            <motion.div key={m.id} whileTap={{ scale: 0.99, backgroundColor: 'rgba(255,255,255,0.03)' }}
+              onClick={() => openDetail(m)} style={{
+              padding: '12px 16px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
               borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
             }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: C.text, minWidth: 52 }}>
                 {fmtDate(m.scheduled_at)}
@@ -4415,10 +4441,23 @@ function StatsPanel({ club }) {
                 fontFamily: 'var(--font-display)' }}>
                 {result}
               </span>
-            </div>
+              <svg width="6" height="10" viewBox="0 0 12 20" fill="none" stroke={C.dim} strokeWidth="2.4"
+                strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <path d="M2 2l8 8-8 8"/>
+              </svg>
+            </motion.div>
           )
         })}
       </div>
+
+      {/* Tapped past result → same detail panel (roster + score) as Mecze, read-only */}
+      <AnimatePresence>
+        {detailMatch && (
+          <MatchDetailSheet key="statsDetail" match={detailMatch} uid={uid}
+            userClubId={club.id} userClubName={club.name}
+            onClose={() => setDetailMatch(null)}/>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
