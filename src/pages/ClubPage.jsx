@@ -2918,11 +2918,9 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {['home', 'away'].map(team => {
-                  const tColor = team === 'home' ? C.accent : C.hoop
                   const teamFull = local.players.filter(p => p.team === team).length >= n
                   const locked = (team === 'home' && !isHomeClubMember) || (team === 'away' && isAwayLocked)
                   const disabled = joining || teamFull || locked
-                  const isOpenAway = team === 'away' && awayIsFree && !teamFull && !locked
                   const isActive = !disabled
                   const lockedLabel = team === 'home'
                     ? t('matchDetail.lockedHome')
@@ -2948,16 +2946,13 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                           background: 'rgba(14,24,42,0.60)',
                           border: '0.5px solid rgba(255,255,255,0.06)',
                           color: 'rgba(80,110,140,0.55)',
-                        } : isOpenAway ? {
-                          background: 'linear-gradient(145deg, rgba(255,150,20,0.28) 0%, rgba(255,100,0,0.16) 100%)',
-                          border: '0.5px solid rgba(255,168,32,0.50)',
-                          boxShadow: '0 6px 28px rgba(255,140,0,0.22), inset 0 1px 0 rgba(255,200,80,0.25)',
-                          color: C.hoop,
                         } : isActive ? {
-                          background: `linear-gradient(145deg, ${tColor}28 0%, ${tColor}14 100%)`,
-                          border: `0.5px solid ${tColor}50`,
-                          boxShadow: `0 6px 28px ${tColor}18, inset 0 1px 0 ${tColor}22`,
-                          color: tColor,
+                          // Join CTA is ALWAYS the inviting blue accent — orange read as
+                          // "don't press". Team colour-coding stays on the roster hexes.
+                          background: `linear-gradient(145deg, ${C.accent}2e 0%, ${C.accent}16 100%)`,
+                          border: `0.5px solid ${C.accent}5a`,
+                          boxShadow: `0 6px 28px ${C.accent}22, inset 0 1px 0 ${C.accent}28`,
+                          color: C.accentHi,
                         } : {
                           background: 'rgba(14,24,42,0.60)',
                           border: '0.5px solid rgba(255,255,255,0.06)',
