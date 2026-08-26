@@ -29,6 +29,7 @@ const StatsPage       = lazy(() => import('./pages/StatsPage'))
 const AchievementsPage = lazy(() => import('./pages/AchievementsPage'))
 const RecoveryPage    = lazy(() => import('./pages/RecoveryPage'))
 const ClubPage        = lazy(() => import('./pages/ClubPage'))
+const MatchLab        = lazy(() => import('./pages/MatchLab'))  // DEV-ONLY preview
 const JoinClubPage    = lazy(() => import('./pages/JoinClubPage'))
 const CardLab         = lazy(() => import('./pages/CardLab'))
 const QrLandingPage   = lazy(() => import('./pages/QrLandingPage'))
@@ -292,6 +293,12 @@ export default function App() {
                 <CardLab />
               </Suspense>
             } />
+            <Route path="/matchlab"        element={
+              <Suspense fallback={<PageLoader />}>
+                <MatchLab />
+              </Suspense>
+            } />
+
             <Route path="/onboardlab"      element={
               <Suspense fallback={<PageLoader />}>
                 <OnboardingPage />
