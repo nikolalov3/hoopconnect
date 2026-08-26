@@ -26,6 +26,7 @@
     "awayClubTaken": "The away team is already taken by another club",
     "teamFull": "The team is already full",
     "slotTaken": "Someone else just took this slot — refresh and try again",
+    "confirmFailed": "Couldn't confirm the result — refresh and try again.",
     "saveFailed": "Couldn't save.",
     "dailyLimit": "You can play a maximum of 3 matches per day.",
     "tooSoon": "Not enough time between matches. The gap must be at least {{min}} minutes.",

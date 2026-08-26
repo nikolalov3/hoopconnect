@@ -464,20 +464,21 @@ async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds 
 async function apiJoinMatch(matchId, userId, team, mode) {
   const n = MODE_SLOTS[mode]
 
+  let userClubId = null
   if (team === 'away') {
     // Enforce away-club exclusivity — only one club can occupy the away slots
     const [{ data: matchRow }, { data: membership }] = await Promise.all([
       supabase.from('club_matches').select('away_club_id').eq('id', matchId).single(),
       supabase.from('club_members').select('club_id').eq('user_id', userId).maybeSingle(),
     ])
-    const userClubId = membership?.club_id || null
+    userClubId = membership?.club_id || null
     if (matchRow?.away_club_id && matchRow.away_club_id !== userClubId) {
       throw new Error(i18n.t('club:errors.awayClubTaken'))
     }
-    // First away player — claim the slot for their club
-    if (!matchRow?.away_club_id && userClubId) {
-      await supabase.from('club_matches').update({ away_club_id: userClubId }).eq('id', matchId)
-    }
+    // NOTE: the away_club_id claim is deliberately done AFTER the match_players
+    // insert below — the matches_update RLS only allows the update once the caller
+    // has a match_players row for this match; doing it first silently updated 0 rows
+    // (no error), leaving away_club_id NULL → "Rywale" labels + skipped match XP.
   }
 
   const { data: existing } = await supabase.from('match_players').select('slot').eq('match_id', matchId).eq('team', team)
@@ -489,6 +490,17 @@ async function apiJoinMatch(matchId, userId, team, mode) {
   if (error) {
     if (error.code === '23505') throw new Error(i18n.t('club:errors.slotTaken'))
     throw error
+  }
+
+  // Claim the away slot for the joining player's club — now that the match_players
+  // row exists, the RLS existence check passes so the update actually lands.
+  // `.is('away_club_id', null)` keeps it a no-op once a club has claimed (also
+  // race-safe-ish); `.select('id')` surfaces a silent 0-row rejection.
+  if (team === 'away' && userClubId) {
+    const { data: claimed, error: claimErr } = await supabase.from('club_matches')
+      .update({ away_club_id: userClubId }).eq('id', matchId).is('away_club_id', null).select('id')
+    if (claimErr) console.warn('away_club_id claim failed:', claimErr.message)
+    else if (!claimed?.length) console.warn('away_club_id claim updated 0 rows (already claimed or RLS)')
   }
   const { count } = await supabase.from('match_players').select('*', { count: 'exact', head: true }).eq('match_id', matchId)
   if ((count || 0) >= n * 2) {
@@ -546,9 +558,13 @@ async function awardMatchPoints(matchId) {
 
 // Away captain confirms home's submitted score
 async function apiConfirmAwayScore(matchId) {
-  const { error } = await supabase.from('club_matches')
-    .update({ status: 'completed' }).eq('id', matchId)
+  // .select() + row-count check: without it an RLS-rejected update returns 0 rows
+  // with NO error, so a "confirmation" could silently do nothing and leave the match
+  // stuck on result_pending (never completing → no XP granted).
+  const { data, error } = await supabase.from('club_matches')
+    .update({ status: 'completed' }).eq('id', matchId).select('id')
   if (error) throw error
+  if (!data?.length) throw new Error(i18n.t('club:errors.confirmFailed'))
   await awardMatchPoints(matchId)
 }
 
@@ -1870,14 +1886,15 @@ function SectionDivider() {
   )
 }
 
-// Roster — wraps to a 2-on-top/3-on-bottom layout for 5v5, single row otherwise.
+// Roster — one row per team by default; 5v5 wraps to two sub-rows. `rows` overrides
+// the sub-row split (used to mirror the two stacked teams so they meet at the VS).
 // Player hexagons are the focal point now (no club crest), so they're sized up.
-function RosterGrid({ players, slots, color, size = 32, uid, myFrame }) {
-  const rows = slots === 5 ? [2, 3] : [slots]
+function RosterGrid({ players, slots, color, size = 32, uid, myFrame, rows }) {
+  const rowConfig = rows || (slots === 5 ? [3, 2] : [slots])
   let slot = 0
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
-      {rows.map((count, ri) => (
+      {rowConfig.map((count, ri) => (
         <div key={ri} style={{ display: 'flex', gap: 10, justifyContent: 'center', alignItems: 'center', height: size }}>
           {Array.from({ length: count }).map(() => {
             slot += 1
@@ -1895,18 +1912,24 @@ function RosterGrid({ players, slots, color, size = 32, uid, myFrame }) {
   )
 }
 
-function MatchCard({ match, dist, uid, myFrame, onPress }) {
+export function MatchCard({ match, dist, uid, myFrame, userClubId, userClubName, onPress }) {
   const { t } = useTranslation('club')
   const slots = MODE_SLOTS[match.mode]
   const homePlayers = match.players.filter(p => p.team === 'home')
   const awayPlayers = match.players.filter(p => p.team === 'away')
   const color = MODE_COLOR[match.mode]
   const isPast = new Date(match.scheduled_at) < new Date()
-  const homeTeamName = match._club?.name || match._club?.abbr || t('matchCard.clubFallback')
-  // "Otwarte" only while the away side is genuinely empty/joinable. Once opponents
-  // have joined (pickup match, no rival club) show "Rywale", not "Otwarte".
+  const homeTeamName = match._club?.name || match._club?.abbr
+    || (match.club_id === userClubId ? userClubName : null) || t('matchCard.clubFallback')
+  // Relativize to the viewer: never show your OWN club as "Rywale". Prefer the real
+  // away-club name; if it's not loaded yet but the away club is the viewer's own,
+  // show the viewer's club name. "Otwarte" only while the away side is genuinely
+  // empty/joinable; once opponents have joined show "Rywale".
   const awayTeamName = match._awayClub?.name || match._awayClub?.abbr
+    || (match.away_club_id && match.away_club_id === userClubId ? userClubName : null)
     || ((match.away_club_id || awayPlayers.length > 0) ? t('matchCard.rivalsFallback') : t('matchCard.openFallback'))
+  const homeIsMine = !!userClubId && match.club_id === userClubId
+  const awayIsMine = !!userClubId && match.away_club_id === userClubId
   const hasTeammate = !!match._hasTeammate
   // Match where the current user has already joined — strongest highlight
   const isParticipating = uid && match.players.some(p => p.user_id === uid)
@@ -2012,52 +2035,47 @@ function MatchCard({ match, dist, uid, myFrame, onPress }) {
           </span>
         </div>
 
-        {/* ── Center duel: team names on their own row, roster hexagons + "VS"
-              divider on the next — keeps VS vertically centered against the
-              hexagon rows regardless of label height. ──────── */}
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 4, marginBottom: 9 }}>
-            <span style={{
-              flex: 1, minWidth: 0, textAlign: 'center',
-              fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: C.text,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>{homeTeamName}</span>
-            <span style={{
-              flex: 1, minWidth: 0, textAlign: 'center',
-              fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: C.text,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>{awayTeamName}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
-            <div style={{ display: 'flex', justifyContent: 'center', flex: 1, minWidth: 0 }}>
-              <RosterGrid players={homePlayers} slots={slots} color={TEAM_BLUE} size={58} uid={uid} myFrame={myFrame}/>
-            </div>
-            <span style={{
-              fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 900, letterSpacing: 2,
-              color: 'rgba(160,200,255,0.35)', flexShrink: 0,
-            }}>VS</span>
-            <div style={{ display: 'flex', justifyContent: 'center', flex: 1, minWidth: 0 }}>
-              <RosterGrid players={awayPlayers} slots={slots} color={TEAM_RED} size={58} uid={uid} myFrame={myFrame}/>
-            </div>
-          </div>
-        </div>
+        {/* ── Duel: teams STACKED (home on top, away on the bottom) so each roster
+              row spans the full card width and never overflows/overlaps the way the
+              old side-by-side layout did on 3v3 / 5v5. 5v5 rosters mirror (3/2 vs
+              2/3) so they converge toward the centre, which shows the score once the
+              match is completed, otherwise "VS". ──────── */}
+        <div style={{ marginBottom: 12, display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <span style={{
+            textAlign: 'center', fontSize: 9.5, fontWeight: 800, letterSpacing: 1.2,
+            textTransform: 'uppercase', lineHeight: 1.2, maxWidth: '100%',
+            color: homeIsMine ? C.accentHi : C.text,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{homeTeamName}</span>
+          <RosterGrid players={homePlayers} slots={slots} rows={slots === 5 ? [3, 2] : undefined}
+            color={TEAM_BLUE} size={54} uid={uid} myFrame={myFrame}/>
 
-        {/* Score */}
-        {match.status === 'completed' && match.score_home != null && (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, marginBottom: 14 }}>
-            <span style={{ fontSize: 26, fontWeight: 900, lineHeight: 1, fontFamily: 'var(--font-display)',
-              color: match.score_home > match.score_away ? C.win : C.text,
-              textShadow: match.score_home > match.score_away ? `0 0 16px ${C.win}48` : 'none' }}>
-              {match.score_home}
-            </span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: C.dim }}>:</span>
-            <span style={{ fontSize: 26, fontWeight: 900, lineHeight: 1, fontFamily: 'var(--font-display)',
-              color: match.score_away > match.score_home ? C.win : C.text,
-              textShadow: match.score_away > match.score_home ? `0 0 16px ${C.win}48` : 'none' }}>
-              {match.score_away}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0' }}>
+            <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, rgba(160,200,255,0.20))' }}/>
+            {match.status === 'completed' && match.score_home != null ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 900, lineHeight: 1 }}>
+                <span style={{ fontSize: 22, color: match.score_home > match.score_away ? C.win : C.text,
+                  textShadow: match.score_home > match.score_away ? `0 0 14px ${C.win}48` : 'none' }}>{match.score_home}</span>
+                <span style={{ fontSize: 12, color: C.dim }}>:</span>
+                <span style={{ fontSize: 22, color: match.score_away > match.score_home ? C.win : C.text,
+                  textShadow: match.score_away > match.score_home ? `0 0 14px ${C.win}48` : 'none' }}>{match.score_away}</span>
+              </span>
+            ) : (
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 900, letterSpacing: 2,
+                color: 'rgba(160,200,255,0.45)', flexShrink: 0 }}>VS</span>
+            )}
+            <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(160,200,255,0.20), transparent)' }}/>
           </div>
-        )}
+
+          <RosterGrid players={awayPlayers} slots={slots} rows={slots === 5 ? [2, 3] : undefined}
+            color={TEAM_RED} size={54} uid={uid} myFrame={myFrame}/>
+          <span style={{
+            textAlign: 'center', fontSize: 9.5, fontWeight: 800, letterSpacing: 1.2,
+            textTransform: 'uppercase', lineHeight: 1.2, maxWidth: '100%',
+            color: awayIsMine ? C.accentHi : C.text,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{awayTeamName}</span>
+        </div>
 
         {/* Date/time + location — centered, no box, date on top (primary) */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, textAlign: 'center' }}>
@@ -3720,11 +3738,12 @@ function MatchesPanel({ club, uid, isActive }) {
           if (m.id !== changedId) return m
           const filled = updatedPlayers.length
           const cap = (MODE_SLOTS[m.mode] || 0) * 2
-          return {
-            ...m,
-            players: updatedPlayers,
-            status: filled >= cap ? 'full' : 'open',
-          }
+          // Only recompute open/full from the roster — never clobber a match that has
+          // moved on to result_pending / completed / disputed with a stale 'open'.
+          const status = (m.status === 'open' || m.status === 'full')
+            ? (filled >= cap ? 'full' : 'open')
+            : m.status
+          return { ...m, players: updatedPlayers, status }
         }))
       })
       .subscribe()
@@ -4042,12 +4061,12 @@ function MatchesPanel({ club, uid, isActive }) {
                 <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
                   color: C.dim, margin: '0 0 10px 2px' }}>{t('matchesPanel.upcoming')}</p>
                 {mine.map(m => (
-                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid} myFrame={myFrame}
+                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid} myFrame={myFrame} userClubId={club?.id} userClubName={club?.name}
                     onPress={() => { setActive(m); setSheet('detail') }}/>
                 ))}
                 {mine.length > 0 && others.length > 0 && <SectionDivider/>}
                 {others.map(m => (
-                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid} myFrame={myFrame}
+                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid} myFrame={myFrame} userClubId={club?.id} userClubName={club?.name}
                     onPress={() => { setActive(m); setSheet('detail') }}/>
                 ))}
               </>
@@ -4061,12 +4080,12 @@ function MatchesPanel({ club, uid, isActive }) {
                 <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
                   color: C.dim, margin: '16px 0 10px 2px' }}>{t('matchesPanel.recent')}</p>
                 {mine.map(m => (
-                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid} myFrame={myFrame}
+                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid} myFrame={myFrame} userClubId={club?.id} userClubName={club?.name}
                     onPress={() => { setActive(m); setSheet('detail') }}/>
                 ))}
                 {mine.length > 0 && others.length > 0 && <SectionDivider/>}
                 {others.map(m => (
-                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid} myFrame={myFrame}
+                  <MatchCard key={m.id} match={m} dist={m._dist} uid={uid} myFrame={myFrame} userClubId={club?.id} userClubName={club?.name}
                     onPress={() => { setActive(m); setSheet('detail') }}/>
                 ))}
               </>
