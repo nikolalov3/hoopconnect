@@ -288,7 +288,7 @@ export default function AuthPage() {
               fontFamily: 'var(--font-display)', fontWeight: 700,
               fontSize: 13, letterSpacing: 1.5, textTransform: 'uppercase',
               transition: 'all 0.2s',
-              boxShadow: mode === m ? '0 4px 16px rgba(91,184,245,0.40), inset 0 1px 0 rgba(180,230,255,0.20)' : 'none',
+              boxShadow: mode === m ? '0 4px 16px rgba(91,184,245,0.12), inset 0 1px 0 rgba(180,230,255,0.20)' : 'none',
             }}
           >
             {m === 'login' ? t('login') : t('register')}
@@ -397,7 +397,9 @@ export default function AuthPage() {
             type="submit"
             className="btn-primary"
             disabled={loading}
-            style={{ marginTop: 6, opacity: loading ? 0.6 : 1 }}
+            style={{ marginTop: 6, opacity: loading ? 0.6 : 1,
+              // 70% softer glow than the shared .btn-primary (0.45 → 0.135).
+              boxShadow: '0 4px 24px rgba(91,184,245,0.135), inset 0 1px 0 rgba(180,230,255,0.25)' }}
           >
             {loading ? '…' : mode === 'login' ? t('loginButton') : mode === 'register' ? t('registerButton') : t('reset.sendButton')}
           </button>
