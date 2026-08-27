@@ -749,9 +749,9 @@ function Token({ posKey, member, onPress, swapMode, isSrc, isTgt }) {
             so the falloff completes before any container edge (no hard clipped ring) */}
         {member && (
           <div style={{
-            position: 'absolute', inset: '-18%',
-            background: `radial-gradient(circle at 50% 50%, ${isSrc ? 'rgba(0,221,255,0.23)' : pos.glow.replace(/[\d.]+\)$/, '0.20)')} 0%, ${isSrc ? 'rgba(0,221,255,0.08)' : pos.glow.replace(/[\d.]+\)$/, '0.07)')} 36%, transparent 68%)`,
-            filter: 'blur(16px)', pointerEvents: 'none',
+            position: 'absolute', inset: '-15.3%',
+            background: `radial-gradient(circle at 50% 50%, ${isSrc ? 'rgba(0,221,255,0.46)' : pos.glow.replace(/[\d.]+\)$/, '0.40)')} 0%, ${isSrc ? 'rgba(0,221,255,0.16)' : pos.glow.replace(/[\d.]+\)$/, '0.14)')} 36%, transparent 68%)`,
+            filter: 'blur(13.6px)', pointerEvents: 'none',
           }}/>
         )}
         {/* Sci-fi frame overlay — only for filled slots */}
@@ -762,7 +762,7 @@ function Token({ posKey, member, onPress, swapMode, isSrc, isTgt }) {
           style={{
             overflow: 'visible', position: 'relative', zIndex: 1,
             filter: member
-              ? `drop-shadow(0 5px 16px ${isSrc ? 'rgba(0,221,255,0.40)' : pos.glow.replace('0.55', '0.38')})`
+              ? `drop-shadow(0 5px 13.6px ${isSrc ? 'rgba(0,221,255,0.80)' : pos.glow.replace('0.55', '0.75')})`
               : 'none',
           }}>
           <defs>
@@ -2433,7 +2433,7 @@ export function CreateMatchSheet({ club, uid, onClose, onCreated }) {
                   background: pin ? 'linear-gradient(135deg, #5BB8F5 0%, #2E90D4 100%)' : 'rgba(255,255,255,0.12)',
                   border: pin ? 'none' : '1px solid rgba(255,255,255,0.20)',
                   color: pin ? '#FFFFFF' : 'rgba(238,244,255,0.60)',
-                  fontFamily: 'var(--font-display)', fontWeight: 900,
+                  fontFamily: 'var(--font-display)', fontWeight: 700,
                   fontSize: 15, letterSpacing: 1.5, textTransform: 'uppercase',
                   boxShadow: pin ? '0 5px 22px rgba(91,184,245,0.24), inset 0 1px 0 rgba(200,235,255,0.30)' : 'none',
                   transition: 'all 0.2s' }}>
@@ -2486,7 +2486,7 @@ export function CreateMatchSheet({ club, uid, onClose, onCreated }) {
                 : 'rgba(255,255,255,0.12)',
               border: canCreate ? 'none' : '1px solid rgba(255,255,255,0.20)',
               color: canCreate ? '#FFFFFF' : 'rgba(238,244,255,0.60)',
-              fontFamily: 'var(--font-display)', fontWeight: 900,
+              fontFamily: 'var(--font-display)', fontWeight: 700,
               fontSize: 15, letterSpacing: 1.5, textTransform: 'uppercase',
               cursor: canCreate && !saving ? 'pointer' : 'default',
               boxShadow: canCreate ? '0 5px 22px rgba(91,184,245,0.24), inset 0 1px 0 rgba(200,235,255,0.30)' : 'none',
@@ -4110,7 +4110,7 @@ function MatchesPanel({ club, uid, isActive }) {
         <motion.button whileTap={{ scale: 0.97 }} onClick={() => setSheet('create')}
           style={{ width: '100%', marginTop: 16, padding: '15px', border: 'none', borderRadius: 16,
             cursor: 'pointer', background: 'linear-gradient(135deg, #5BB8F5 0%, #2E90D4 100%)',
-            color: '#FFFFFF', fontFamily: 'var(--font-display)', fontWeight: 900,
+            color: '#FFFFFF', fontFamily: 'var(--font-display)', fontWeight: 700,
             fontSize: 15, letterSpacing: 1.5, textTransform: 'uppercase',
             boxShadow: '0 5px 22px rgba(91,184,245,0.24), inset 0 1px 0 rgba(200,235,255,0.30)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
@@ -4857,8 +4857,12 @@ function ClubView({ club, onUpdate, uid }) {
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px',
                   borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit', color: '#EEF4FF',
-                  border: `1px solid ${kotcLive ? 'rgba(91,184,245,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                  background: kotcLive ? 'rgba(91,184,245,0.12)' : 'rgba(255,255,255,0.04)',
+                  // Delicate white-silver premium frame (metallic edge: bright top highlight
+                  // + subtle bottom depth), 1px thin. Live state keeps its blue accent.
+                  border: `1px solid ${kotcLive ? 'rgba(91,184,245,0.5)' : 'rgba(228,236,248,0.42)'}`,
+                  background: kotcLive ? 'rgba(91,184,245,0.12)' : 'rgba(255,255,255,0.05)',
+                  boxShadow: kotcLive ? 'none'
+                    : 'inset 0 1px 0 rgba(255,255,255,0.40), inset 0 -1px 0 rgba(120,140,170,0.18), 0 2px 14px rgba(0,0,0,0.22)',
                 }}>
                 <img src="/kotklogo.png" alt="" style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }}/>
                 <div style={{ flex: 1, textAlign: 'left' }}>
