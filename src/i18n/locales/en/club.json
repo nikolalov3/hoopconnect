@@ -199,7 +199,7 @@
     "recent": "Recent",
     "noMatchesTitle": "No matches nearby",
     "noMatchesBody": "No club has scheduled a match\nwithin {{km}} km. You can change the range above.",
-    "createMatch": "Schedule match"
+    "createMatch": "Create match"
   },
   "panelLabels": ["Matches", "Roster", "Stats"],
   "statsPanel": {

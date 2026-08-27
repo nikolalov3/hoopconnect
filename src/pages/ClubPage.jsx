@@ -1949,7 +1949,7 @@ export function MatchCard({ match, dist, uid, myFrame, userClubId, userClubName,
   return (
     <motion.div whileTap={{ scale: 0.975 }} onClick={onPress}
       style={{
-        position: 'relative', borderRadius: 20, marginBottom: 12, cursor: 'pointer',
+        position: 'relative', borderRadius: 16, marginBottom: 12, cursor: 'pointer',
         overflow: 'hidden', isolation: 'isolate',
         border: frameBorder,
         boxShadow: frameGlow,
@@ -2210,7 +2210,7 @@ function MapPicker({ center, onPin, existingPin, flyTo }) {
 }
 
 // ── CREATE MATCH SHEET ────────────────────────────────────────────────────────
-function CreateMatchSheet({ club, uid, onClose, onCreated }) {
+export function CreateMatchSheet({ club, uid, onClose, onCreated }) {
   const { t } = useTranslation('club')
   const [mode,       setMode]       = useState(null)
   const [pin,        setPin]        = useState(null)
@@ -2318,59 +2318,54 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 
   return createPortal(
     <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, zIndex: 200,
-        background: 'rgba(4,8,15,0.88)', backdropFilter: 'blur(10px)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 200, maxWidth: 430, margin: '0 auto',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        // FULL-SCREEN — light silver background taken from the KOTC "create session" screen.
+        background: 'radial-gradient(ellipse 120% 72% at 50% -12%, rgba(250,252,255,0.44) 0%, rgba(216,225,240,0.13) 30%, transparent 60%), radial-gradient(ellipse 95% 55% at 8% 90%, rgba(205,215,230,0.14) 0%, transparent 55%), radial-gradient(ellipse 95% 55% at 102% 60%, rgba(222,230,244,0.14) 0%, transparent 54%), linear-gradient(170deg, #3A404B 0%, #30353F 48%, #262B34 100%)',
+        paddingTop: 'env(safe-area-inset-top, 0px)' }}>
 
-      <motion.div
-        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-        transition={{ type: 'spring', stiffness: 300, damping: 32 }}
-        style={{ marginTop: 'auto', width: '100%', maxWidth: 430,
-          background: C.bg, borderRadius: '24px 24px 0 0',
-          height: '96%', display: 'flex', flexDirection: 'column',
-          border: `1px solid ${C.line}`, borderBottom: 'none',
-          boxShadow: `0 -16px 60px rgba(0,200,255,0.10)` }}>
+      {/* X — top-right (app-standard) */}
+      <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} aria-label="Zamknij"
+        style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top, 0px) + 14px)', right: 16, zIndex: 5,
+          width: 38, height: 38, borderRadius: '50%',
+          background: 'rgba(10,20,38,0.55)', border: '1px solid rgba(255,255,255,0.20)',
+          color: '#EEF4FF', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+          display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </motion.button>
 
-        {/* Header */}
-        <div style={{ position: 'relative', padding: '16px 20px 14px',
-          borderBottom: `1px solid ${C.dim}30`, display: 'flex', alignItems: 'center' }}>
-          <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
-            width: 36, height: 4, borderRadius: 2, background: C.dim }}/>
-          <p style={{ flex: 1, margin: '6px 0 0', fontSize: 13, fontWeight: 900, letterSpacing: 2.5,
-            textTransform: 'uppercase', color: C.text, fontFamily: 'var(--font-display)' }}>
-            {t('createMatch.title')}
-          </p>
-          <motion.button whileTap={{ scale: 0.88 }} onClick={onClose}
-            style={{ width: 32, height: 32, borderRadius: '50%', border: 'none',
-              background: `${C.dim}70`, color: C.sub, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </motion.button>
-        </div>
+      {/* Header */}
+      <div style={{ padding: '22px 22px 14px' }}>
+        <p style={{ margin: 0, fontSize: 16, fontWeight: 900, letterSpacing: 2,
+          textTransform: 'uppercase', color: C.text, fontFamily: 'var(--font-display)' }}>
+          {t('createMatch.title')}
+        </p>
+      </div>
 
-        {/* Scrollable body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '22px 20px 48px' }}>
+      {/* Scrollable body */}
+      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+        padding: '18px 22px calc(env(safe-area-inset-bottom, 0px) + 28px)', minHeight: 0 }}>
 
           {/* Mode selector */}
           <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
-            color: C.dim, margin: '0 0 10px' }}>{t('createMatch.gameMode')}</p>
+            color: 'rgba(238,244,255,0.58)', margin: '0 0 10px' }}>{t('createMatch.gameMode')}</p>
           <div style={{ display: 'flex', gap: 10, marginBottom: 26 }}>
             {['2v2', '3v3', '5v5'].map(m => {
               const col = MODE_COLOR[m], active = mode === m
               return (
                 <motion.button key={m} whileTap={{ scale: 0.93 }} onClick={() => setMode(m)}
-                  style={{ flex: 1, padding: '14px 0', border: 'none', borderRadius: 14, cursor: 'pointer',
-                    background: active ? `${col}18` : C.surface,
-                    outline: `1.5px solid ${active ? col : `${C.dim}80`}`,
+                  style={{ flex: 1, padding: '14px 0', border: 'none', borderRadius: 12, cursor: 'pointer',
+                    background: active ? `${col}26` : 'rgba(255,255,255,0.07)',
+                    outline: `1.5px solid ${active ? col : 'rgba(255,255,255,0.16)'}`,
                     boxShadow: active ? `0 4px 18px ${col}28` : 'none', transition: 'all 0.18s' }}>
                   <p style={{ fontSize: 18, fontWeight: 900, letterSpacing: -0.5,
-                    color: active ? col : C.sub, margin: 0, fontFamily: 'var(--font-display)' }}>{m}</p>
+                    color: active ? col : 'rgba(238,244,255,0.75)', margin: 0, fontFamily: 'var(--font-display)' }}>{m}</p>
                   <p style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 1,
-                    color: active ? `${col}90` : C.dim, margin: '3px 0 0', textTransform: 'uppercase' }}>
+                    color: active ? `${col}90` : 'rgba(238,244,255,0.42)', margin: '3px 0 0', textTransform: 'uppercase' }}>
                     {t(`modeLabel.${m}`)}
                   </p>
                 </motion.button>
@@ -2380,17 +2375,17 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 
           {/* Location — compact field, same style as date/time; opens map on tap */}
           <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
-            color: C.dim, margin: '0 0 10px' }}>{t('createMatch.location')}</p>
+            color: 'rgba(238,244,255,0.58)', margin: '0 0 10px' }}>{t('createMatch.location')}</p>
           <motion.button whileTap={{ scale: 0.98 }} onClick={() => setMapOpen(true)}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8,
               padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer',
-              background: C.surface, boxSizing: 'border-box', marginBottom: 26,
-              outline: `1px solid ${pin ? `${C.accentLo}60` : `${C.dim}60`}` }}>
+              background: 'rgba(255,255,255,0.07)', boxSizing: 'border-box', marginBottom: 26,
+              outline: `1px solid ${pin ? `${C.accentLo}70` : 'rgba(255,255,255,0.16)'}` }}>
             <span style={{ fontSize: 13, flex: 1, textAlign: 'left', fontWeight: 700,
-              color: addr ? C.text : C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              color: addr ? '#F2F6FF' : 'rgba(238,244,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {addr ? `📍 ${addr}` : t('createMatch.selectPointHint')}
             </span>
-            <svg width="7" height="12" viewBox="0 0 12 20" fill="none" stroke={C.dim} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="7" height="12" viewBox="0 0 12 20" fill="none" stroke="rgba(238,244,255,0.5)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 2l8 8-8 8"/>
             </svg>
           </motion.button>
@@ -2404,7 +2399,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                 <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
-                  color: C.dim, margin: 0 }}>{t('createMatch.location')}</p>
+                  color: 'rgba(238,244,255,0.58)', margin: 0 }}>{t('createMatch.location')}</p>
                 <motion.button whileTap={{ scale: 0.9 }} onClick={() => setMapOpen(false)}
                   style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer',
                     background: C.surface, color: C.sub, fontSize: 15, lineHeight: 1 }}>✕</motion.button>
@@ -2438,10 +2433,16 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
               </div>
 
               <motion.button whileTap={{ scale: 0.97 }} disabled={!pin} onClick={() => setMapOpen(false)}
-                style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', cursor: pin ? 'pointer' : 'default',
-                  background: pin ? C.accent : C.surface, color: pin ? '#04101f' : C.dim,
-                  fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, letterSpacing: 0.5,
-                  opacity: pin ? 1 : 0.6 }}>
+                style={{ width: '100%', padding: '15px', borderRadius: 12, cursor: pin ? 'pointer' : 'default',
+                  // Unified with the "Stwórz mecz" button: grey when inactive, blue when
+                  // ready, white text, same size.
+                  background: pin ? 'linear-gradient(135deg, #5BB8F5 0%, #2E90D4 100%)' : 'rgba(255,255,255,0.12)',
+                  border: pin ? 'none' : '1px solid rgba(255,255,255,0.20)',
+                  color: pin ? '#FFFFFF' : 'rgba(238,244,255,0.60)',
+                  fontFamily: 'var(--font-display)', fontWeight: 900,
+                  fontSize: 15, letterSpacing: 1.5, textTransform: 'uppercase',
+                  boxShadow: pin ? '0 5px 22px rgba(91,184,245,0.24), inset 0 1px 0 rgba(200,235,255,0.30)' : 'none',
+                  transition: 'all 0.2s' }}>
                 {t('createMatch.next')}
               </motion.button>
             </div>
@@ -2449,7 +2450,7 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 
           {/* Date + Time */}
           <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
-            color: C.dim, margin: '0 0 10px' }}>{t('createMatch.dateTime')}</p>
+            color: 'rgba(238,244,255,0.58)', margin: '0 0 10px' }}>{t('createMatch.dateTime')}</p>
           <div style={{ display: 'flex', gap: 10, marginBottom: 26 }}>
             {[
               { type: 'date', val: date, set: setDate },
@@ -2459,8 +2460,8 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
                 onChange={e => set(e.target.value)}
                 min={type === 'date' ? new Date().toISOString().split('T')[0] : undefined}
                 style={{ flex: 1, padding: '12px 10px', borderRadius: 12,
-                  background: C.surface, color: C.text, border: 'none',
-                  outline: `1px solid ${val ? `${C.accentLo}60` : `${C.dim}60`}`,
+                  background: 'rgba(255,255,255,0.07)', color: '#F2F6FF', border: 'none',
+                  outline: `1px solid ${val ? `${C.accentLo}70` : 'rgba(255,255,255,0.16)'}`,
                   fontSize: 13, fontWeight: 700, colorScheme: 'dark', boxSizing: 'border-box' }}
               />
             ))}
@@ -2468,13 +2469,13 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 
           {/* Note */}
           <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.5, textTransform: 'uppercase',
-            color: C.dim, margin: '0 0 10px' }}>
+            color: 'rgba(238,244,255,0.58)', margin: '0 0 10px' }}>
             {t('createMatch.note')} <span style={{ fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>{t('createMatch.optional')}</span>
           </p>
           <input type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={120}
             placeholder={t('createMatch.notePlaceholder')}
             style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', boxSizing: 'border-box',
-              background: C.surface, color: C.text, outline: `1px solid ${C.dim}60`,
+              background: 'rgba(255,255,255,0.07)', color: '#F2F6FF', outline: '1px solid rgba(255,255,255,0.16)',
               fontSize: 12, marginBottom: 28 }}
           />
 
@@ -2483,18 +2484,22 @@ function CreateMatchSheet({ club, uid, onClose, onCreated }) {
           {/* Create button */}
           <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreate}
             disabled={!canCreate || saving}
-            style={{ width: '100%', padding: '15px', border: 'none', borderRadius: 16,
-              background: canCreate ? `linear-gradient(135deg, ${C.accent}, ${C.accentLo})` : C.dim,
-              color: canCreate ? '#000' : C.sub,
+            style={{ width: '100%', padding: '15px', borderRadius: 12,
+              // Inactive: a clearly-visible grey (not the near-invisible dark before).
+              // Active: the same blue as the "Ukończ ćwiczenie" primary button.
+              background: canCreate
+                ? 'linear-gradient(135deg, #5BB8F5 0%, #2E90D4 100%)'
+                : 'rgba(255,255,255,0.12)',
+              border: canCreate ? 'none' : '1px solid rgba(255,255,255,0.20)',
+              color: canCreate ? '#FFFFFF' : 'rgba(238,244,255,0.60)',
               fontFamily: 'var(--font-display)', fontWeight: 900,
-              fontSize: 12, letterSpacing: 2.5, textTransform: 'uppercase',
+              fontSize: 15, letterSpacing: 1.5, textTransform: 'uppercase',
               cursor: canCreate && !saving ? 'pointer' : 'default',
-              boxShadow: canCreate ? `0 6px 28px ${C.accentLo}55` : 'none',
+              boxShadow: canCreate ? '0 5px 22px rgba(91,184,245,0.24), inset 0 1px 0 rgba(200,235,255,0.30)' : 'none',
               transition: 'all 0.2s', opacity: saving ? 0.7 : 1 }}>
             {saving ? t('createMatch.creating') : t('createMatch.createMatch')}
           </motion.button>
         </div>
-      </motion.div>
     </motion.div>,
     document.body
   )
@@ -3975,7 +3980,7 @@ function MatchesPanel({ club, uid, isActive }) {
 
       {/* Denied */}
       {locState === 'denied' && (
-        <div style={{ padding: '36px 20px', borderRadius: 20, textAlign: 'center',
+        <div style={{ padding: '36px 20px', borderRadius: 16, textAlign: 'center',
           background: C.surface, border: `1px solid ${C.dim}40` }}>
           {/* SVG pin icon */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
@@ -4087,7 +4092,7 @@ function MatchesPanel({ club, uid, isActive }) {
             )
           })()}
           {upcoming.length === 0 && past.length === 0 && (
-            <div style={{ padding: '48px 24px', textAlign: 'center', borderRadius: 20,
+            <div style={{ padding: '48px 24px', textAlign: 'center', borderRadius: 16,
               border: `1px solid rgba(255,255,255,0.06)`,
               borderTop: `1px solid rgba(255,255,255,0.10)` }}>
               <img src="/brokelogo.png" alt=""
@@ -4109,11 +4114,11 @@ function MatchesPanel({ club, uid, isActive }) {
       {/* Create match button — inline at bottom, safe for all screen sizes */}
       {isMember && locState === 'granted' && (
         <motion.button whileTap={{ scale: 0.97 }} onClick={() => setSheet('create')}
-          style={{ width: '100%', marginTop: 16, padding: '14px', border: 'none', borderRadius: 16,
-            cursor: 'pointer', background: `linear-gradient(135deg, ${C.accent}, ${C.accentLo})`,
-            color: '#000', fontFamily: 'var(--font-display)', fontWeight: 900,
-            fontSize: 12, letterSpacing: 2, textTransform: 'uppercase',
-            boxShadow: `0 4px 14px ${C.accentLo}30`,
+          style={{ width: '100%', marginTop: 16, padding: '15px', border: 'none', borderRadius: 16,
+            cursor: 'pointer', background: 'linear-gradient(135deg, #5BB8F5 0%, #2E90D4 100%)',
+            color: '#FFFFFF', fontFamily: 'var(--font-display)', fontWeight: 900,
+            fontSize: 15, letterSpacing: 1.5, textTransform: 'uppercase',
+            boxShadow: '0 5px 22px rgba(91,184,245,0.24), inset 0 1px 0 rgba(200,235,255,0.30)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             strokeWidth="3" strokeLinecap="round">
