@@ -5,7 +5,7 @@
  * a logged-in session or live match data. NOT for production.
  */
 import { useState } from 'react'
-import { MatchCard } from './ClubPage'
+import { MatchCard, CreateMatchSheet } from './ClubPage'
 
 const P = (team, slot, name, frame = 'none') => ({
   team, slot, user_id: `${team}-${slot}`,
@@ -45,6 +45,7 @@ function mkMatch(mode, over = {}) {
 export default function MatchLab() {
   const [mode, setMode] = useState('3v3')
   const [state, setState] = useState('result_pending')
+  const [showCreate, setShowCreate] = useState(false)
 
   const over = state === 'completed'
     ? { status: 'completed', score_home: 21, score_away: 18 }
@@ -76,7 +77,20 @@ export default function MatchLab() {
 
         <MatchCard match={match} dist={2.0} uid="home-1" myFrame="ff"
           userClubId="home-club" userClubName="LOVE C." onPress={() => {}} />
+
+        <button onClick={() => setShowCreate(true)} style={{
+          marginTop: 24, width: '100%', padding: '14px', borderRadius: 12, cursor: 'pointer',
+          border: 'none', fontWeight: 800, fontSize: 14, letterSpacing: 1, textTransform: 'uppercase',
+          background: 'linear-gradient(90deg, #2b8fff, #1666c8)', color: '#fff', fontFamily: 'inherit',
+        }}>+ Umów mecz (panel tworzenia)</button>
       </div>
+
+      {showCreate && (
+        <CreateMatchSheet
+          club={{ id: 'lab-club', name: 'LOVE C.' }} uid="home-1"
+          onClose={() => setShowCreate(false)}
+          onCreated={() => setShowCreate(false)} />
+      )}
     </div>
   )
 }
