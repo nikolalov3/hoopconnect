@@ -122,13 +122,17 @@ export function AuthProvider({ children }) {
     }
   }
 
-  async function fetchProfile(userId, sessionUser) {
+  async function fetchProfile(userId, sessionUser, attempt = 0) {
     try {
-      const { data } = await supabase
+      // maybeSingle: 0 rows → { data: null, error: null } (genuine "no profile"),
+      // a real failure → error set. This lets us tell "no row" from "fetch failed".
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
+
+      if (error) throw error
 
       // Backfill username if missing (DB trigger may create the row without email).
       // Show it optimistically now; persist in the background (don't block paint).
@@ -151,6 +155,14 @@ export function AuthProvider({ children }) {
       // Blocked-users list (for hiding blocked users' content). Off the paint gate.
       fetchBlockedIds().then(ids => setBlockedIds(new Set(ids))).catch(() => {})
     } catch {
+      // Transient failure (e.g. a cold-start network race in the iOS home-screen PWA).
+      // Do NOT mark ready with a null profile — that flashes the onboarding screen at
+      // an already-logged-in user (App routes to /onboarding when profile is null).
+      // Retry a few times first; only give up (and unblock) after several attempts.
+      if (attempt < 4) {
+        setTimeout(() => fetchProfile(userId, sessionUser, attempt + 1), 400 * (attempt + 1))
+        return
+      }
       setProfile(null)
       markReady()
     }
