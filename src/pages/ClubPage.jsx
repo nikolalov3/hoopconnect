@@ -612,12 +612,6 @@ function Court() {
       <rect width="343" height="410" fill="url(#hoopG)"/>
       <rect width="343" height="410" fill="url(#paintG)"/>
 
-      {/* Wood planks */}
-      {Array.from({ length: 26 }, (_, i) => (
-        <line key={i} x1="0" y1={i * 16 + 8} x2="343" y2={i * 16 + 8}
-          stroke="rgba(255,255,255,0.011)" strokeWidth="1"/>
-      ))}
-
       {/* ── Halfcourt flush to top ── */}
       <line x1="0" y1="1" x2="343" y2="1" stroke={C.line} strokeWidth="1.5"/>
       <path d="M 137 1 A 36 36 0 0 0 206 1" fill="none" stroke="rgba(0,210,255,0.20)" strokeWidth="1.3"/>
@@ -756,7 +750,7 @@ function Token({ posKey, member, onPress, swapMode, isSrc, isTgt }) {
         {member && (
           <div style={{
             position: 'absolute', inset: '-18%',
-            background: `radial-gradient(circle at 50% 50%, ${isSrc ? 'rgba(0,221,255,0.46)' : pos.glow.replace(/[\d.]+\)$/, '0.40)')} 0%, ${isSrc ? 'rgba(0,221,255,0.16)' : pos.glow.replace(/[\d.]+\)$/, '0.14)')} 36%, transparent 68%)`,
+            background: `radial-gradient(circle at 50% 50%, ${isSrc ? 'rgba(0,221,255,0.23)' : pos.glow.replace(/[\d.]+\)$/, '0.20)')} 0%, ${isSrc ? 'rgba(0,221,255,0.08)' : pos.glow.replace(/[\d.]+\)$/, '0.07)')} 36%, transparent 68%)`,
             filter: 'blur(16px)', pointerEvents: 'none',
           }}/>
         )}
@@ -768,7 +762,7 @@ function Token({ posKey, member, onPress, swapMode, isSrc, isTgt }) {
           style={{
             overflow: 'visible', position: 'relative', zIndex: 1,
             filter: member
-              ? `drop-shadow(0 5px 16px ${isSrc ? 'rgba(0,221,255,0.80)' : pos.glow.replace('0.55', '0.75')})`
+              ? `drop-shadow(0 5px 16px ${isSrc ? 'rgba(0,221,255,0.40)' : pos.glow.replace('0.55', '0.38')})`
               : 'none',
           }}>
           <defs>
