@@ -227,7 +227,11 @@ function TrainingCard({ training, done, onDone, onUndo, onSwap, canSwap }) {
 
               {!done ? (
                 <>
-                  <button className="btn-primary" onClick={handleAction} style={{ fontSize: 15, padding: '13px' }}>
+                  {/* Softer glow (80% less) than the shared .btn-primary — override just
+                      the outer shadow's alpha (0.45 → 0.09), keep the inset highlight. */}
+                  <button className="btn-primary" onClick={handleAction}
+                    style={{ fontSize: 15, padding: '13px',
+                      boxShadow: '0 4px 24px rgba(91,184,245,0.09), inset 0 1px 0 rgba(180,230,255,0.25)' }}>
                     {isShooting ? t('startShootingTracker') : t('completeExercise')}
                   </button>
                   {training.requires_equipment && onSwap && canSwap && (
