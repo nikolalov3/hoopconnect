@@ -4851,7 +4851,7 @@ function ClubView({ club, onUpdate, uid }) {
           {/* Panel 0 — Mecze */}
           <div style={{ width: '33.333%', height: '100%', overflowY: 'auto' }}>
             {/* ── King of the Court — wejście / status na żywo ── */}
-            <div style={{ padding: '12px 16px 4px' }}>
+            <div style={{ padding: '12px 16px 16px' }}>
               <button
                 onClick={() => { setKotcSid(kotcLive?.id || null); setKotcOpen(true) }}
                 style={{
