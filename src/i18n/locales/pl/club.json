@@ -199,7 +199,7 @@
     "recent": "Ostatnie",
     "noMatchesTitle": "Brak meczów w pobliżu",
     "noMatchesBody": "Żaden klub nie zaplanował meczu\nw zasięgu {{km}} km. Możesz zmienić zasięg powyżej.",
-    "createMatch": "Umów mecz"
+    "createMatch": "Stwórz mecz"
   },
   "panelLabels": ["Mecze", "Skład", "Statystyki"],
   "statsPanel": {
