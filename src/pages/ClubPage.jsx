@@ -19,7 +19,6 @@ import { shareMatchCard, doShare } from '../lib/shareCard'
 import HexAvatar, { HexFrameOnly } from '../components/ui/HexAvatar'
 import PlayerCard3D from '../components/ui/PlayerCard3D'
 import { ARENAS as ARENA_THEMES } from '../lib/arenas'
-import { COURTS } from '../lib/courts'
 // leaflet is imported lazily inside MapPicker (see below) so its ~43 KB doesn't
 // load with the Club tab — only when the map picker actually opens.
 
@@ -2169,24 +2168,43 @@ function MapPicker({ center, onPin, existingPin, flyTo }) {
         markerRef.current = L.marker([existingPin.lat, existingPin.lng], { icon: pinIcon }).addTo(map)
       }
 
-      // Znane boiska (na razie Kraków, statyczna lista z OSM) — klikalne kropki,
-      // wybór ustawia pin tak samo jak kliknięcie w wolne miejsce na mapie.
-      // Wolny pin nadal działa (fallback dla boisk, których nie mamy w bazie).
-      const courtIcon = L.divIcon({
-        html: `<div style="width:14px;height:14px;background:rgba(255,159,10,0.85);border-radius:50%;border:2px solid rgba(255,255,255,0.75);box-shadow:0 0 8px rgba(255,159,10,0.6)"></div>`,
-        className: '', iconSize: [14, 14], iconAnchor: [7, 7],
-      })
-      COURTS.forEach(([lat, lng]) => {
-        L.marker([lat, lng], { icon: courtIcon, zIndexOffset: -100 })
-          .addTo(map)
-          .on('click', () => placePin(lat, lng))
-      })
+      // Znane boiska — ładowane PO WIDOKU z tabeli `courts` (nie cała Polska naraz)
+      // i rysowane na CANVASIE (setki tanich kropek zamiast tysięcy divów z glow →
+      // płynnie przy dowolnej liczbie boisk w bazie). Poniżej MIN_ZOOM nie renderujemy
+      // (kraj/region = za dużo i bez sensu). Klik w kropkę = pin; wolny pin (klik w mapę)
+      // nadal działa dla boisk, których nie ma w bazie.
+      const MIN_ZOOM = 12
+      const courtsRenderer = L.canvas({ padding: 0.5 })
+      const courtsLayer = L.layerGroup().addTo(map)
+      let courtsToken = 0
+      async function loadCourtsInView() {
+        if (map.getZoom() < MIN_ZOOM) { courtsLayer.clearLayers(); return }
+        const b = map.getBounds()
+        const my = ++courtsToken
+        const { data } = await supabase.from('courts')
+          .select('lat,lng')
+          .gte('lat', b.getSouth()).lte('lat', b.getNorth())
+          .gte('lng', b.getWest()).lte('lng', b.getEast())
+          .limit(800)
+        if (cancelled || my !== courtsToken || !mapRef.current) return   // ignore stale response
+        courtsLayer.clearLayers()
+        for (const c of (data || [])) {
+          L.circleMarker([c.lat, c.lng], {
+            renderer: courtsRenderer, radius: 5,
+            color: 'rgba(255,255,255,0.75)', weight: 1.5,
+            fillColor: '#FF9F0A', fillOpacity: 0.9,
+          }).addTo(courtsLayer).on('click', () => placePin(c.lat, c.lng))
+        }
+      }
+      let courtsDebounce
+      map.on('moveend', () => { clearTimeout(courtsDebounce); courtsDebounce = setTimeout(loadCourtsInView, 300) })
+      loadCourtsInView()
 
       map.on('click', e => placePin(e.latlng.lat, e.latlng.lng))
 
       mapRef.current = map
       setLeafletReady(true)
-      cleanup = () => { map.remove(); mapRef.current = null; markerRef.current = null }
+      cleanup = () => { clearTimeout(courtsDebounce); map.remove(); mapRef.current = null; markerRef.current = null }
     })
     return () => { cancelled = true; cleanup() }
   }, [])
