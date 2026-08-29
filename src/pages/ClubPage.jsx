@@ -19,7 +19,7 @@ import { shareMatchCard, doShare } from '../lib/shareCard'
 import HexAvatar, { HexFrameOnly } from '../components/ui/HexAvatar'
 import PlayerCard3D from '../components/ui/PlayerCard3D'
 import { ARENAS as ARENA_THEMES } from '../lib/arenas'
-import { KRAKOW_COURTS } from '../lib/krakowCourts'
+import { COURTS } from '../lib/courts'
 // leaflet is imported lazily inside MapPicker (see below) so its ~43 KB doesn't
 // load with the Club tab — only when the map picker actually opens.
 
@@ -2176,7 +2176,7 @@ function MapPicker({ center, onPin, existingPin, flyTo }) {
         html: `<div style="width:14px;height:14px;background:rgba(255,159,10,0.85);border-radius:50%;border:2px solid rgba(255,255,255,0.75);box-shadow:0 0 8px rgba(255,159,10,0.6)"></div>`,
         className: '', iconSize: [14, 14], iconAnchor: [7, 7],
       })
-      KRAKOW_COURTS.forEach(([lat, lng]) => {
+      COURTS.forEach(([lat, lng]) => {
         L.marker([lat, lng], { icon: courtIcon, zIndexOffset: -100 })
           .addTo(map)
           .on('click', () => placePin(lat, lng))
