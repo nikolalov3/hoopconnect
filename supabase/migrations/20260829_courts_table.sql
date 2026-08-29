@@ -1,11 +1,17 @@
 -- ============================================================================
--- Courts directory — moved from a static in-bundle array to a DB table so it
--- scales to all of Poland (and beyond) without bloating the bundle, updates
--- without a deploy, and can later hold user-submitted courts.
+-- Courts directory — a READ-ONLY public catalogue of basketball courts, seeded
+-- from OpenStreetMap. It scales to all of Poland (and beyond) without bloating
+-- the bundle and updates by re-importing the CSV — no deploy needed.
 --
 -- The map picker loads only the courts inside the current viewport (a lat/lng
 -- bbox query, capped) and renders them on a canvas — so however many rows this
 -- table holds, only the visible slice is ever fetched/drawn.
+--
+-- IMPORTANT — courts are NOT user-generated. There is intentionally NO insert/
+-- update/delete policy (RLS default-denies writes) and no auth-user linkage, so
+-- the app carries no user-submitted-map-point surface. That keeps it clear of the
+-- App Store's user-generated-content requirements. Rows are seeded only from
+-- public datasets (OSM), server-side (CSV import / service role).
 --
 -- After running this migration, import supabase/seed/courts_poland.csv into
 -- public.courts (Supabase dashboard → Table editor → courts → Import data via
@@ -19,14 +25,13 @@ create table if not exists public.courts (
   lat        double precision not null,
   lng        double precision not null,
   name       text,
-  source     text not null default 'osm' check (source in ('osm', 'user')),
+  source     text not null default 'osm',   -- provenance of a public dataset (never end-user)
   osm_type   text,
   osm_id     bigint,
-  created_by uuid references auth.users(id) on delete set null,  -- for user-submitted
   created_at timestamptz not null default now()
 );
 
--- bbox (viewport) queries: range scan on lat, filter lng. 6.5k rows → instant.
+-- bbox (viewport) queries: range scan on lat, filter lng. Thousands of rows → instant.
 create index if not exists idx_courts_lat on public.courts (lat);
 create index if not exists idx_courts_lng on public.courts (lng);
 
@@ -36,10 +41,8 @@ create unique index if not exists uniq_courts_osm on public.courts (osm_type, os
 
 alter table public.courts enable row level security;
 
--- Public directory — anyone (incl. anon) can read courts.
+-- Public directory — anyone (incl. anon) can READ courts. No write policy exists
+-- on purpose: RLS default-denies inserts/updates/deletes, so courts can never be
+-- added by end users. Seeding is server-side only (CSV import / service role).
 drop policy if exists "courts readable" on public.courts;
 create policy "courts readable" on public.courts for select using (true);
-
--- NOTE: user-submitted courts (source='user') will need an INSERT path — either a
--- SECURITY DEFINER RPC (validate + insert) or a scoped INSERT policy. Add when that
--- feature ships; for now the table is read-only from clients and seeded from OSM.
