@@ -2142,10 +2142,15 @@ function MapPicker({ center, onPin, existingPin, flyTo }) {
       const map = L.map(elRef.current, { zoomControl: false, attributionControl: false })
         .setView(center ? [center.lat, center.lng] : [52.0, 20.0], center ? 13 : 6)
 
-      // Ciemny motyw (CARTO Dark Matter, darmowe kafelki bez klucza API) —
-      // pasuje do ciemnego UI apki, zamiast domyślnych jasnych kafelków OSM.
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        subdomains: 'abcd', maxZoom: 20, className: 'map-tiles-dark',
+      // Esri "Dark Gray Canvas" — darmowy ciemny basemap BEZ klucza API (CARTO
+      // dark_all zaczęło znaczyć kafelki "API KEY REQUIRED"). Baza + osobna
+      // warstwa etykiet. maxNativeZoom 16 (natywny limit) + overzoom do 18.
+      L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 18, maxNativeZoom: 16, className: 'map-tiles-dark',
+        attribution: '&copy; Esri',
+      }).addTo(map)
+      L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 18, maxNativeZoom: 16,
       }).addTo(map)
       L.control.zoom({ position: 'bottomright' }).addTo(map)
 
