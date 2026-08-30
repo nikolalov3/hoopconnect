@@ -199,7 +199,7 @@ const RowItem = memo(function RowItem({ row, rank, isMe }) {
           color: `${row.tier.color}88`, letterSpacing: 0.5, textTransform: 'uppercase',
         }}>
           {row.tier.label}
-          {row.fraud > 0.5 && (
+          {row.suspicious && (
             <span style={{ color: '#FF6B35', marginLeft: 6, fontSize: 8, letterSpacing: 1 }}>
               {t('watched')}
             </span>
@@ -317,7 +317,7 @@ export default function LeaderboardDrawer() {
       }
 
       const { data: profiles } = await supabase
-        .from('profiles').select('id, name, fraud_probability').in('id', uids)
+        .from('public_profiles').select('id, name, suspicious').in('id', uids)
       const pm = Object.fromEntries((profiles || []).map(pr => [pr.id, pr]))
       const tierLabels = t('tiers', { returnObjects: true })
 
@@ -330,7 +330,7 @@ export default function LeaderboardDrawer() {
             name:  pm[uid]?.name || t('defaultPlayerName'),
             score: weekScore,           // weekly ranking position
             avg,                        // season avg — shown in tier
-            fraud: pm[uid]?.fraud_probability || 0,
+            suspicious: pm[uid]?.suspicious || false,
             tier:  getTier(avg, tierLabels),  // tier from season average
           }
         })
