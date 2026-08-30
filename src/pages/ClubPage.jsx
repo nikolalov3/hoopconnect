@@ -234,7 +234,7 @@ async function apiFetch(uid) {
   // 3. Fetch profiles for all member user_ids in one query
   const userIds = (members ?? []).map(m => m.user_id).filter(Boolean)
   const { data: profiles } = userIds.length
-    ? await supabase.from('profiles').select('id,name,equipped_frame').in('id', userIds)
+    ? await supabase.from('public_profiles').select('id,name,equipped_frame').in('id', userIds)
     : { data: [] }
 
   const profileMap = {}
@@ -437,7 +437,7 @@ async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds 
   // profiles + clubs are independent — fetch in parallel
   const [profileRows, clubRows] = await Promise.all([
     uids.length
-      ? supabase.from('profiles').select('id,name,equipped_frame').in('id', uids).then(r => r.data || [])
+      ? supabase.from('public_profiles').select('id,name,equipped_frame').in('id', uids).then(r => r.data || [])
       : Promise.resolve([]),
     allClubIds.length
       ? supabase.from('clubs').select('id,name,abbr,country_flag').in('id', allClubIds).then(r => r.data || [])
@@ -546,7 +546,7 @@ async function apiSubmitHomeScore(matchId, scoreHome, scoreAway, autoComplete = 
 async function awardMatchPoints(matchId) {
   const { data: players } = await supabase
     .from('match_players')
-    .select('user_id, profiles(created_at)')
+    .select('user_id')
     .eq('match_id', matchId)
   if (!players || players.length === 0) return
   // Globalny kalendarzowy tydzień (poniedziałek 00:00 UTC, wspólny dla
@@ -1363,15 +1363,15 @@ function usePlayerProfileData(memberId) {
     setStats(null)
 
     Promise.all([
-      supabase.from('profiles').select('xp,arena_level,country,background,username,equipped_frame,equipped_background').eq('id', memberId).single(),
+      supabase.from('public_profiles').select('xp,arena_level,country,background,username,equipped_frame,equipped_background').eq('id', memberId).single(),
       supabase.from('shooting_sessions').select('shot_type,made,attempted').eq('user_id', memberId),
       supabase.from('activity_log').select('trainings_completed').eq('user_id', memberId),
       supabase.from('match_players').select('match_id,team').eq('user_id', memberId),
       // Osobno + tolerancyjnie: jeśli migracja hc_id jeszcze nie poszła, brak kolumny
       // NIE wywala ładowania profilu (zwróci error, my bierzemy ?.hc_id = undefined).
-      supabase.from('profiles').select('hc_id').eq('id', memberId).maybeSingle(),
+      supabase.from('public_profiles').select('hc_id').eq('id', memberId).maybeSingle(),
       // Wygrane KotC = niezależny licznik na profilu; osobno + tolerancyjnie (brak kolumny nie wywala profilu).
-      supabase.from('profiles').select('kotc_wins').eq('id', memberId).maybeSingle(),
+      supabase.from('public_profiles').select('kotc_wins').eq('id', memberId).maybeSingle(),
     ]).then(async ([profileRes, sessionsRes, logsRes, mpRes, hcRes, kotcRes]) => {
       if (cancelled) return
 
@@ -2684,7 +2684,7 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
       const { data } = await supabase.from('match_players').select('*').eq('match_id', local.id)
       const userIds = [...new Set((data || []).map(p => p.user_id))]
       const { data: profiles } = userIds.length
-        ? await supabase.from('profiles').select('id,name,equipped_frame').in('id', userIds)
+        ? await supabase.from('public_profiles').select('id,name,equipped_frame').in('id', userIds)
         : { data: [] }
       const pm = Object.fromEntries((profiles || []).map(pr => [pr.id, pr]))
       const playersWithProfiles = (data || []).map(p => ({ ...p, profile: pm[p.user_id] || null }))
@@ -3746,7 +3746,7 @@ function MatchesPanel({ club, uid, isActive }) {
         if (uids.length) {
           // include equipped_frame — omitting it blanked every player's frame to
           // 'none' on each join/leave until the next full loadMatches.
-          const { data: pd } = await supabase.from('profiles').select('id,name,equipped_frame').in('id', uids)
+          const { data: pd } = await supabase.from('public_profiles').select('id,name,equipped_frame').in('id', uids)
           pm = Object.fromEntries((pd || []).map(p => [p.id, p]))
         }
         const updatedPlayers = (players || []).map(p => ({ ...p, profile: pm[p.user_id] || null }))
@@ -4269,7 +4269,7 @@ function StatsPanel({ club }) {
     ])
     const uids = [...new Set((mps || []).map(p => p.user_id))]
     const profs = uids.length
-      ? (await supabase.from('profiles').select('id,name,equipped_frame').in('id', uids)).data || []
+      ? (await supabase.from('public_profiles').select('id,name,equipped_frame').in('id', uids)).data || []
       : []
     const pm = Object.fromEntries(profs.map(p => [p.id, p]))
     const cmap = Object.fromEntries((clubRows || []).map(c => [c.id, c]))
