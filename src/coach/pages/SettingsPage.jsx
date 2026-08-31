@@ -63,6 +63,8 @@ export default function SettingsPage() {
   // Archive team
   const [archiving, setArchiving] = useState(false)
   const [confirmArchive, setConfirmArchive] = useState(false)
+  // Delete account
+  const [delState, setDelState] = useState('idle')  // 'idle' | 'confirm' | 'deleting' | 'error'
 
   async function saveProfile(e) {
     e.preventDefault()
@@ -119,6 +121,20 @@ export default function SettingsPage() {
     setCurrentTeam(null)
     await refreshTeams()
     navigate('/teams', { replace: true })
+  }
+
+  // Trwałe usunięcie konta trenera. Ten sam SECURITY DEFINER RPC co apka gracza
+  // (delete_account, keyed on auth.uid()); kaskady FK sprzątają coach_profiles →
+  // teams → members/invites/practice/broadcasts/locations. Wymagane przez App
+  // Store 5.1.1(v) + RODO (prawo do usunięcia).
+  async function handleDeleteAccount() {
+    setDelState('deleting')
+    try {
+      const { error } = await supabase.rpc('delete_account')
+      if (error) { setDelState('error'); return }
+      await signOut()
+      navigate('/', { replace: true })
+    } catch { setDelState('error') }
   }
 
   async function handleSignOut() {
@@ -272,6 +288,37 @@ export default function SettingsPage() {
           )}
         </div>
       )}
+
+      {/* ── Usuń konto ───────────────────────────────────────────────── */}
+      <div className="coach-card" style={{ marginBottom: 16, borderColor: '#FCE5E2' }}>
+        <h2 className="coach-h2" style={{ color: '#D85546', marginBottom: 4 }}>Usuń konto</h2>
+        <p className="coach-subtitle" style={{ marginBottom: 16 }}>
+          Trwale usuwa Twoje konto trenera oraz wszystkie Twoje drużyny, zawodników, treningi i wiadomości. Tej operacji nie da się cofnąć.
+        </p>
+        {delState === 'idle' ? (
+          <button onClick={() => setDelState('confirm')} className="coach-btn-secondary"
+            style={{ borderColor: '#D85546', color: '#D85546' }}>
+            Usuń konto trenera
+          </button>
+        ) : (
+          <>
+            {delState === 'error' && (
+              <div style={{ background: '#FCE5E2', border: '1px solid #F4B5AB', color: '#A1372A', padding: '10px 12px', borderRadius: 10, fontSize: 13, marginBottom: 10 }}>
+                Nie udało się usunąć konta. Spróbuj ponownie.
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setDelState('idle')} disabled={delState === 'deleting'} className="coach-btn-secondary" style={{ flex: 1 }}>
+                Anuluj
+              </button>
+              <button onClick={handleDeleteAccount} disabled={delState === 'deleting'} className="coach-btn-primary"
+                style={{ flex: 1, background: '#D85546' }}>
+                {delState === 'deleting' ? 'Usuwanie...' : 'Tak, usuń konto na zawsze'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* ── Wyloguj ──────────────────────────────────────────────────── */}
       <div style={{ padding: '24px 0 16px', textAlign: 'center' }}>
