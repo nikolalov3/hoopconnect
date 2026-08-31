@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useCoachAuth } from '../context/CoachAuthContext'
+import { ARENAS } from '../../lib/arenas'
 
 export default function PlayerPage() {
   const { playerId } = useParams()
@@ -18,6 +19,7 @@ export default function PlayerPage() {
   const [error, setError]         = useState(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [removing, setRemoving] = useState(false)
+  const [stats, setStats] = useState(null)
 
   useEffect(() => {
     if (!currentTeam?.id || !playerId) return
@@ -34,6 +36,9 @@ export default function PlayerPage() {
         setLastName(m.display_last_name || '')
         setJersey(m.jersey_number == null ? '' : String(m.jersey_number))
       }
+      // Player stats — fire-and-forget, non-fatal (degrades before the migration runs)
+      supabase.rpc('get_player_stats', { p_team_id: currentTeam.id, p_player_id: playerId })
+        .then(r => { if (!cancelled) setStats(r.data || null) })
       setLoading(false)
     })()
     return () => { cancelled = true }
@@ -81,6 +86,13 @@ export default function PlayerPage() {
        || member.player_email?.split('@')[0]
        || 'Zawodnik')
     : '...'
+
+  const arenaName = stats ? (ARENAS[stats.arena_level]?.name || ARENAS[0]?.name) : null
+  const att = stats?.attendance
+  const attTotal = att?.total || 0
+  const attRate = attTotal ? Math.round(((att.present + att.late) / attTotal) * 100) : null
+  const shooting = stats?.shooting || {}
+  const shotTypes = Object.keys(shooting)
 
   return (
     <div>
@@ -140,13 +152,49 @@ export default function PlayerPage() {
             </div>
           </div>
 
-          {/* Raport tygodniowy placeholder */}
+          {/* Statystyki zawodnika */}
           <div className="coach-card" style={{ marginBottom: 16 }}>
-            <h2 className="coach-h2" style={{ marginBottom: 4 }}>Raport tygodniowy</h2>
-            <p className="coach-subtitle" style={{ marginBottom: 16 }}>Ostatnie 7 dni</p>
-            <div className="coach-placeholder" style={{ minHeight: 100 }}>
-              <div>Wkrótce: realne dane z treningów zawodnika.</div>
-            </div>
+            <h2 className="coach-h2" style={{ marginBottom: 16 }}>Statystyki</h2>
+            {!stats ? (
+              <div className="coach-placeholder" style={{ minHeight: 80 }}><div className="spinner" /></div>
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 16 }}>
+                  <StatTile label="Arena" value={arenaName} sub={`${stats.xp} XP`} accent="#5591CD" />
+                  <StatTile label="Obecność" value={attRate != null ? `${attRate}%` : '—'} sub={`${att.present + att.late}/${attTotal} treningów`} accent="#3FA86A" />
+                  <StatTile label="Wynik ub. tydzień" value={String(stats.last_week_score)} sub="pkt" accent="#E5A93C" />
+                </div>
+
+                {attTotal > 0 && (
+                  <div style={{ fontSize: 12, color: '#8A9AB0', marginBottom: shotTypes.length ? 18 : 0 }}>
+                    Obecny: <b style={{ color: '#3FA86A' }}>{att.present}</b> · Spóźniony: <b style={{ color: '#E5A93C' }}>{att.late}</b> · Nieobecny: <b style={{ color: '#D85546' }}>{att.absent}</b>
+                  </div>
+                )}
+
+                {shotTypes.length > 0 ? (
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#8A9AB0', marginBottom: 10 }}>Rzuty</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {shotTypes.map(st => {
+                        const s = shooting[st]
+                        const pct = s.attempted ? Math.round((s.made / s.attempted) * 100) : 0
+                        return (
+                          <div key={st} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span style={{ width: 54, fontSize: 12, fontWeight: 700, color: '#1A2233' }}>{st.toUpperCase()}</span>
+                            <div style={{ flex: 1, height: 8, borderRadius: 99, background: '#EDF1F7', overflow: 'hidden' }}>
+                              <div style={{ width: `${pct}%`, height: '100%', background: '#5591CD' }} />
+                            </div>
+                            <span style={{ width: 100, textAlign: 'right', fontSize: 12, color: '#4D5C73' }}>{s.made}/{s.attempted} · {pct}%</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 12, color: '#8A9AB0', margin: 0 }}>Brak jeszcze danych o rzutach.</p>
+                )}
+              </>
+            )}
           </div>
 
           {/* Strefa niebezpieczna — usuwanie */}
@@ -175,6 +223,16 @@ export default function PlayerPage() {
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+function StatTile({ label, value, sub, accent }) {
+  return (
+    <div style={{ background: '#F6F8FB', borderRadius: 12, padding: '12px 14px' }}>
+      <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: '#8A9AB0', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color: accent || '#1A2233', lineHeight: 1.1 }}>{value ?? '—'}</div>
+      {sub && <div style={{ fontSize: 11, color: '#8A9AB0', marginTop: 2 }}>{sub}</div>}
     </div>
   )
 }
