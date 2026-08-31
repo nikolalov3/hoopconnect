@@ -61,10 +61,30 @@ export function CoachAuthProvider({ children }) {
   // ── Loaders ───────────────────────────────────────────────────────────────
   async function loadCoachData(userId) {
     try {
-      const [{ data: profile }, { data: teamsList }] = await Promise.all([
+      let [{ data: profile }, { data: teamsList }] = await Promise.all([
         supabase.from('coach_profiles').select('*').eq('id', userId).maybeSingle(),
         supabase.from('teams').select('*').eq('coach_id', userId).is('archived_at', null).order('created_at', { ascending: true }),
       ])
+
+      // Self-heal: a logged-in user with NO coach_profiles row would loop forever
+      // on /login (ProtectedRoute bounces when coachProfile is null). This happens
+      // when the sign-up insert ran before a session existed (email confirmation on)
+      // — players get their row from the handle_new_user() trigger, coaches don't.
+      // We now have a session, so create the row and re-read.
+      if (!profile && userId) {
+        try {
+          const { data: { user: authUser } } = await supabase.auth.getUser()
+          const meta = authUser?.user_metadata || {}
+          const email = authUser?.email || ''
+          const fullName = (meta.full_name && meta.full_name.trim())
+            || (email ? email.split('@')[0] : '') || 'Trener'
+          await supabase.from('coach_profiles').insert({ id: userId, full_name: fullName, email })
+          const { data: healed } = await supabase.from('coach_profiles').select('*').eq('id', userId).maybeSingle()
+          profile = healed || null
+        } catch (healErr) {
+          console.warn('[CoachAuth] coach_profiles self-heal failed', healErr)
+        }
+      }
 
       setCoachProfile(profile || null)
       setTeams(teamsList || [])
@@ -117,16 +137,23 @@ export function CoachAuthProvider({ children }) {
   , [])
 
   const signUp = useCallback(async (email, password, fullName) => {
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    // Stash full_name in auth metadata so we can recreate the coach_profiles row
+    // on first login even if the immediate insert below can't run (no session yet).
+    const { data, error } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { full_name: fullName, role: 'coach' } },
+    })
     if (error) return { data, error }
-    // Create coach_profiles row immediately (RLS lets us insert with id=auth.uid())
+    // Best-effort immediate insert (works when there's a session, i.e. email
+    // confirmation is off). If there's no session yet it's RLS-rejected — NON-FATAL:
+    // loadCoachData self-heals the row on first login. Don't block sign-up on it.
     if (data?.user) {
       const { error: profileErr } = await supabase.from('coach_profiles').insert({
         id: data.user.id,
         full_name: fullName,
         email,
       })
-      if (profileErr) return { data, error: profileErr }
+      if (profileErr) console.warn('[CoachAuth] deferred coach_profiles insert (will self-heal on login):', profileErr.message)
     }
     return { data, error: null }
   }, [])
