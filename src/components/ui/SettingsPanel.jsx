@@ -91,6 +91,9 @@ function TeamsSection() {
   const [teams, setTeams] = useState(null)         // null = loading, [] = empty
   const [confirmTeamId, setConfirmTeamId] = useState(null)
   const [busyTeamId, setBusyTeamId] = useState(null)
+  const [codeInput, setCodeInput] = useState('')
+  const [joinState, setJoinState] = useState('idle')  // idle|joining|joined|already|notfound|error
+  const [joinedName, setJoinedName] = useState('')
 
   const load = async () => {
     const { data, error } = await supabase.rpc('get_my_teams')
@@ -108,12 +111,81 @@ function TeamsSection() {
     if (!error) await load()
   }
 
+  const joinByCode = async (e) => {
+    e?.preventDefault?.()
+    const code = codeInput.trim()
+    if (!code || joinState === 'joining') return
+    setJoinState('joining')
+    const { data, error } = await supabase.rpc('join_team_by_code', { p_code: code })
+    if (error) { setJoinState('error'); return }
+    const status = data?.status
+    if (status === 'joined') {
+      setJoinedName(data.team_name || ''); setJoinState('joined'); setCodeInput(''); await load()
+    } else if (status === 'already_member') {
+      setJoinState('already'); await load()
+    } else if (status === 'not_found') {
+      setJoinState('notfound')
+    } else {
+      setJoinState('error')
+    }
+  }
+
   if (teams === null) return null
-  if (teams.length === 0) return null
+
+  const showFeedback = joinState !== 'idle' && joinState !== 'joining'
 
   return (
     <>
       <SLabel>{t('team.label')}</SLabel>
+
+      {/* Dołącz do drużyny trenera kodem */}
+      <form onSubmit={joinByCode} style={{ marginBottom: teams.length ? 14 : 0 }}>
+        <p style={{ fontSize: 12, color: C.sub, margin: '0 0 8px', letterSpacing: 0.2 }}>
+          {t('team.join.prompt')}
+        </p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            value={codeInput}
+            onChange={e => { setCodeInput(e.target.value.toUpperCase()); if (showFeedback) setJoinState('idle') }}
+            placeholder={t('team.join.placeholder')}
+            maxLength={12}
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+            style={{
+              flex: 1, padding: '11px 14px', borderRadius: 11,
+              border: `1px solid ${C.border}`, background: C.card, color: C.text,
+              fontSize: 15, fontWeight: 700, letterSpacing: 3,
+              fontFamily: 'ui-monospace, monospace', textTransform: 'uppercase', outline: 'none',
+            }}
+          />
+          <button type="submit" disabled={!codeInput.trim() || joinState === 'joining'}
+            style={{
+              padding: '11px 18px', borderRadius: 11, border: 'none', cursor: 'pointer',
+              background: '#5BB8F5', color: '#04213A', fontSize: 13, fontWeight: 800,
+              letterSpacing: 0.5, whiteSpace: 'nowrap',
+              opacity: (!codeInput.trim() || joinState === 'joining') ? 0.5 : 1,
+            }}>
+            {joinState === 'joining' ? t('team.join.joining') : t('team.join.button')}
+          </button>
+        </div>
+        {showFeedback && (
+          <p style={{
+            fontSize: 12, margin: '8px 0 0', fontWeight: 600,
+            color: joinState === 'joined' ? '#3FD07F' : joinState === 'already' ? C.sub : C.red,
+          }}>
+            {joinState === 'joined'    ? t('team.join.joined', { team: joinedName })
+              : joinState === 'already'  ? t('team.join.already')
+              : joinState === 'notfound' ? t('team.join.notFound')
+              :                            t('team.join.error')}
+          </p>
+        )}
+        <p style={{ fontSize: 10.5, color: C.sub, margin: '8px 0 0', opacity: 0.72, letterSpacing: 0.2 }}>
+          {t('team.join.consent')}
+        </p>
+      </form>
+
+      {teams.length > 0 && (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {teams.map(tm => {
           const isConfirming = confirmTeamId === tm.team_id
@@ -188,6 +260,7 @@ function TeamsSection() {
           )
         })}
       </div>
+      )}
     </>
   )
 }
