@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useCoachAuth } from '../context/CoachAuthContext'
+import { ARENAS } from '../../lib/arenas'
 
 export default function TeamPage() {
   const navigate = useNavigate()
@@ -16,6 +17,7 @@ export default function TeamPage() {
   const [joinCode, setJoinCode] = useState(currentTeam?.join_code || '')
   const [codeCopied, setCodeCopied] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
+  const [scores, setScores] = useState({})  // player_id -> { arena_level, xp, last_week_score }
 
   useEffect(() => {
     if (!currentTeam) return
@@ -87,10 +89,11 @@ export default function TeamPage() {
     // get_team_roster joins team_members + auth.users.email server-side
     // so the UI can show the email-local-part as a label fallback when
     // first/last name haven't been typed yet.
-    const [rosterRes, invitesRes, attRes] = await Promise.all([
+    const [rosterRes, invitesRes, attRes, scoresRes] = await Promise.all([
       supabase.rpc('get_team_roster', { p_team_id: currentTeam.id }),
       supabase.from('team_invites').select('*').eq('team_id', currentTeam.id).eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.rpc('get_team_attendance_recent', { p_team_id: currentTeam.id, p_limit: 10 }),
+      supabase.rpc('get_team_scores', { p_team_id: currentTeam.id }),  // optional — degrades if migration not run
     ])
 
     const errors = []
@@ -105,6 +108,9 @@ export default function TeamPage() {
     setMembers(rosterRes.data || [])
     setInvites(invitesRes.data || [])
     setAttendance(attRes.data || [])
+    const scoreMap = {}
+    for (const s of (scoresRes.data || [])) scoreMap[s.player_id] = s
+    setScores(scoreMap)   // scoresRes.error (e.g. pre-migration) is non-fatal — roster still renders
     setLoading(false)
   }
 
@@ -204,6 +210,9 @@ export default function TeamPage() {
                   ? (m.jersey_number ? `#${m.jersey_number}` : 'bez numeru')
                   : 'uzupełnij imię'
 
+                const stat = scores[m.player_id]
+                const arenaName = stat ? (ARENAS[stat.arena_level]?.name || ARENAS[0].name) : null
+
                 // Attendance dots: pull this player's rows from the matrix
                 const myAtt = attendance
                   .filter(a => a.player_id === m.player_id)
@@ -236,6 +245,12 @@ export default function TeamPage() {
                       <div style={{ fontSize: 12, color: '#8A9AB0' }}>
                         {subLine}
                       </div>
+                      {stat && (
+                        <div style={{ fontSize: 11, marginTop: 3, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <span style={{ color: '#5591CD', fontWeight: 700 }}>{arenaName}</span>
+                          <span style={{ color: '#8A9AB0' }}>{stat.last_week_score} pkt · ub. tydzień</span>
+                        </div>
+                      )}
                     </div>
                     <AttendanceDots items={myAtt}/>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A9AB0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
