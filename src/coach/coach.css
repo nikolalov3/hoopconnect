@@ -67,7 +67,11 @@ body.coach-panel ::-webkit-scrollbar-thumb:hover { background: #5591CD; }
 
 /* layout root */
 .coach-app {
-  min-height: 100vh;
+  /* Global body is position:fixed/overflow:hidden (iOS notch fix), so the coach
+     layout must own its own scroll container — otherwise content below the fold
+     (e.g. the danger zone) is unreachable. */
+  height: 100dvh;
+  overflow: hidden;
   background: #F6F8FB;
   color: #1A2233;
 }
@@ -172,7 +176,8 @@ body.coach-panel ::-webkit-scrollbar-thumb:hover { background: #5591CD; }
 /* main content */
 .coach-main {
   margin-left: 240px;
-  min-height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;   /* the scroll container (sidebar stays fixed) */
   display: flex;
   flex-direction: column;
 }
@@ -306,6 +311,7 @@ body.coach-panel ::-webkit-scrollbar-thumb:hover { background: #5591CD; }
     flex-direction: row;
     align-items: center;
     overflow-x: auto;
+    flex-shrink: 0;
   }
   .coach-sidebar-header {
     border-bottom: none;
@@ -325,7 +331,9 @@ body.coach-panel ::-webkit-scrollbar-thumb:hover { background: #5591CD; }
   .coach-sidebar-footer {
     display: none;
   }
-  .coach-main { margin-left: 0; }
+  /* sidebar is an in-flow top bar on mobile → stack it above a scrollable main */
+  .coach-app { display: flex; flex-direction: column; }
+  .coach-main { margin-left: 0; height: auto; flex: 1; min-height: 0; }
   .coach-content { padding: 20px 18px 40px; }
 }
 
