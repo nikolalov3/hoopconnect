@@ -143,7 +143,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div style={{ maxWidth: 760 }}>
+    <div>
       <header style={{ marginBottom: 24 }}>
         <h1 className="coach-h1">Ustawienia</h1>
         <p className="coach-subtitle">Konto trenera i drużyna.</p>
@@ -153,7 +153,7 @@ export default function SettingsPage() {
       <div className="coach-card" style={{ marginBottom: 16 }}>
         <h2 className="coach-h2" style={{ marginBottom: 16 }}>Twoje dane</h2>
         <form onSubmit={saveProfile} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
             <div>
               <label className="coach-label">Imię i nazwisko *</label>
               <input className="coach-input" type="text" value={fullName} onChange={e => setFullName(e.target.value)} required/>
@@ -194,7 +194,7 @@ export default function SettingsPage() {
             Edytujesz aktualną drużynę. Inne edytujesz po przełączeniu w sidebarze.
           </p>
           <form onSubmit={saveTeam} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
               <div>
                 <label className="coach-label">Nazwa *</label>
                 <input className="coach-input" type="text" value={teamName} onChange={e => setTeamName(e.target.value)} required/>
