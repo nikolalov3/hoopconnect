@@ -23,7 +23,18 @@
     "sectionMixed": "Mixed",
     "stayConfirm": "No, stay",
     "leaveConfirm": "Yes, leave team",
-    "leave": "Leave team"
+    "leave": "Leave team",
+    "join": {
+      "prompt": "Got a code from your coach? Join a team.",
+      "placeholder": "Enter code",
+      "button": "Join",
+      "joining": "Joining...",
+      "joined": "Joined {{team}}",
+      "already": "You're already in this team",
+      "notFound": "No team found for that code",
+      "error": "Couldn't join",
+      "consent": "By joining you confirm parent or guardian consent."
+    }
   },
   "editProfile": {
     "title": "Edit profile",

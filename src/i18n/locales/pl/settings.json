@@ -23,7 +23,18 @@
     "sectionMixed": "Mixed",
     "stayConfirm": "Nie, zostaję",
     "leaveConfirm": "Tak, opuść drużynę",
-    "leave": "Opuść drużynę"
+    "leave": "Opuść drużynę",
+    "join": {
+      "prompt": "Masz kod od trenera? Dołącz do drużyny.",
+      "placeholder": "Wpisz kod",
+      "button": "Dołącz",
+      "joining": "Dołączanie...",
+      "joined": "Dołączono do {{team}}",
+      "already": "Już jesteś w tej drużynie",
+      "notFound": "Nie znaleziono drużyny o tym kodzie",
+      "error": "Nie udało się dołączyć",
+      "consent": "Dołączając potwierdzasz zgodę rodzica lub opiekuna."
+    }
   },
   "editProfile": {
     "title": "Edytuj profil",

@@ -5,13 +5,17 @@ import { useCoachAuth } from '../context/CoachAuthContext'
 
 export default function TeamPage() {
   const navigate = useNavigate()
-  const { currentTeam, user } = useCoachAuth()
+  const { currentTeam, user, refreshTeams } = useCoachAuth()
   const [members, setMembers] = useState([])
   const [invites, setInvites] = useState([])
   const [attendance, setAttendance] = useState([])  // [{ player_id, practice_id, scheduled_at, status }]
   const [loading, setLoading] = useState(true)
   const [showInvite, setShowInvite] = useState(false)
   const [loadError, setLoadError] = useState(null)
+  // Join code (players self-join by typing it in the player app)
+  const [joinCode, setJoinCode] = useState(currentTeam?.join_code || '')
+  const [codeCopied, setCodeCopied] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
 
   useEffect(() => {
     if (!currentTeam) return
@@ -58,6 +62,24 @@ export default function TeamPage() {
       try { if (channel) supabase.removeChannel(channel) } catch {}
     }
   }, [currentTeam?.id])
+
+  // Keep the displayed code in sync when the team switches / refreshes
+  useEffect(() => { setJoinCode(currentTeam?.join_code || '') }, [currentTeam?.id, currentTeam?.join_code])
+
+  function copyJoinCode() {
+    if (!joinCode) return
+    try { navigator.clipboard?.writeText(joinCode) } catch {}
+    setCodeCopied(true)
+    setTimeout(() => setCodeCopied(false), 1500)
+  }
+
+  async function handleRegenCode() {
+    if (regenerating || !currentTeam) return
+    setRegenerating(true)
+    const { data, error } = await supabase.rpc('regenerate_team_code', { p_team_id: currentTeam.id })
+    setRegenerating(false)
+    if (!error && data) { setJoinCode(data); refreshTeams?.() }
+  }
 
   async function loadRoster() {
     setLoading(true)
@@ -119,6 +141,33 @@ export default function TeamPage() {
           <button className="coach-btn-primary" onClick={() => setShowInvite(true)}>+ Dodaj zawodnika</button>
         </div>
       </header>
+
+      {/* Kod dołączenia — trener udostępnia, zawodnik wpisuje w apce */}
+      <div className="coach-card" style={{
+        marginBottom: 14, display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', gap: 14, flexWrap: 'wrap',
+      }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#8A9AB0', marginBottom: 4 }}>
+            Kod dołączenia
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: 4, color: '#1A2233', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
+            {joinCode || '••••••'}
+          </div>
+          <div style={{ fontSize: 12, color: '#8A9AB0', marginTop: 4 }}>
+            Podaj go zawodnikom — dołączą w aplikacji w Ustawieniach.
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button className="coach-btn-secondary" onClick={copyJoinCode} disabled={!joinCode}>
+            {codeCopied ? '✓ Skopiowano' : 'Kopiuj'}
+          </button>
+          <button className="coach-btn-ghost" onClick={handleRegenCode} disabled={regenerating}
+            style={{ color: '#8A9AB0' }} title="Wygeneruj nowy kod — stary przestanie działać">
+            {regenerating ? '...' : 'Nowy kod'}
+          </button>
+        </div>
+      </div>
 
       {loadError && (
         <div className="coach-card" style={{
