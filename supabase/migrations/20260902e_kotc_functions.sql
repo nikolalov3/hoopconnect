@@ -31,6 +31,15 @@ alter table public.kotc_sessions
   add column if not exists vote_cooldown_sec int         not null default 180,
   add column if not exists confirm_votes     int         not null default 2;
 
+-- ─── 0b. Głosy: denormalizowane session_id → realtime filtrowany po sesji ─────
+-- Bez tego klient subskrybował WSZYSTKIE głosy ze wszystkich sesji (brak kolumny
+-- do filtra) → każdy głos gdziekolwiek = pełny reload u każdego. Backfill istniejących.
+alter table public.kotc_game_votes
+  add column if not exists session_id uuid references public.kotc_sessions(id) on delete cascade;
+update public.kotc_game_votes v set session_id = g.session_id
+  from public.kotc_games g where g.id = v.game_id and v.session_id is null;
+create index if not exists kotc_game_votes_session_idx on public.kotc_game_votes(session_id);
+
 -- ─── 1. kotc_cleanup_stale — kasuj martwe sesje (cascade sprząta resztę) ────
 create or replace function public.kotc_cleanup_stale()
 returns void
@@ -195,8 +204,8 @@ begin
 
   if p_voted_team_id not in (v_game.team_a, v_game.team_b) then raise exception 'Można głosować tylko na drużynę z tej gierki'; end if;
 
-  insert into public.kotc_game_votes(game_id, voter_id, voted_team_id)
-  values (p_game_id, auth.uid(), p_voted_team_id)
+  insert into public.kotc_game_votes(game_id, voter_id, voted_team_id, session_id)
+  values (p_game_id, auth.uid(), p_voted_team_id, v_s.id)
   on conflict (game_id, voter_id) do update set voted_team_id = excluded.voted_team_id, created_at = now();
 
   select count(*) into v_neutral from public.kotc_session_players sp
@@ -273,7 +282,36 @@ begin
   return jsonb_build_object('mvp', v_mvp, 'votes', v_cnt);
 end $$;
 
--- ─── 9. Uprawnienia — tylko zalogowani wołają RPC ───────────────────────────
+-- ─── 9. kotc_session_state — CAŁY stan sesji w JEDNYM zapytaniu ─────────────
+-- Spójny snapshot (jedna transakcja) zamiast 6 osobnych selectów z klienta na
+-- każde zdarzenie realtime. Nazwy/ramki dołączane server-side z public_profiles
+-- (tylko publiczne kolumny). Zwraca tylko bieżącą gierkę 'voting' — historia gier
+-- nie była nigdzie używana.
+create or replace function public.kotc_session_state(p_session_id uuid)
+returns jsonb
+language sql stable security definer set search_path = public, pg_temp as $$
+  select jsonb_build_object(
+    'session', (select to_jsonb(s) from public.kotc_sessions s where s.id = p_session_id),
+    'teams', (select coalesce(jsonb_agg(to_jsonb(t) order by t.queue_pos), '[]'::jsonb)
+                from public.kotc_session_teams t where t.session_id = p_session_id),
+    'players', (select coalesce(jsonb_agg(jsonb_build_object(
+                  'user_id', sp.user_id, 'session_team_id', sp.session_team_id,
+                  'name', coalesce(pp.name, '—'), 'frame', coalesce(pp.equipped_frame, 'none'))), '[]'::jsonb)
+                from public.kotc_session_players sp
+                left join public.public_profiles pp on pp.id = sp.user_id
+                where sp.session_id = p_session_id),
+    'current_game', (select to_jsonb(g) from public.kotc_games g
+                       where g.session_id = p_session_id and g.status = 'voting'
+                       order by g.created_at desc limit 1),
+    'votes', (select coalesce(jsonb_agg(to_jsonb(v)), '[]'::jsonb)
+                from public.kotc_game_votes v
+                join public.kotc_games g on g.id = v.game_id
+                where g.session_id = p_session_id and g.status = 'voting')
+  );
+$$;
+
+-- ─── 10. Uprawnienia — tylko zalogowani wołają RPC ──────────────────────────
+revoke all on function public.kotc_session_state(uuid)                                     from public;
 revoke all on function public.kotc_cleanup_stale()                                        from public;
 revoke all on function public.kotc_abandon(uuid)                                           from public;
 revoke all on function public.kotc_leave(uuid)                                             from public;
@@ -291,3 +329,4 @@ grant execute on function public.kotc_join(text)                                
 grant execute on function public.kotc_start(uuid)                                             to authenticated;
 grant execute on function public.kotc_cast_vote(uuid, uuid)                                   to authenticated;
 grant execute on function public.kotc_vote_mvp(uuid, uuid)                                    to authenticated;
+grant execute on function public.kotc_session_state(uuid)                                     to authenticated;

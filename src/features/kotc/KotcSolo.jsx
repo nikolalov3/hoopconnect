@@ -63,12 +63,16 @@ export default function KotcSolo({ onClose, initialSessionId = null }) {
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const prevStatus = useRef(null)
+  const seq = useRef(0)   // odrzucaj spóźnione odpowiedzi — starszy fetch nie nadpisze nowszego stanu
 
   useEffect(() => { supabase.auth.getUser().then(({ data }) => setMe(data.user?.id)) }, [])
 
   const load = useCallback(() => {
     if (!sessionId) return
-    api.getSessionState(sessionId).then(setSt).catch(() => { setSt(null); setSessionId(null) })
+    const my = ++seq.current
+    api.getSessionState(sessionId)
+      .then(d => { if (my === seq.current) setSt(d) })
+      .catch(() => { if (my === seq.current) { setSt(null); setSessionId(null) } })
   }, [sessionId])
 
   useEffect(() => {
@@ -270,9 +274,19 @@ function TeamStandRow({ t, place, s, final, onCard }) {
   )
 }
 
+// Odliczanie cooldownu — tyka co sekundę TYLKO tutaj (nie cały panel) i gaśnie przy zerze.
+function Cooldown({ until }) {
+  const [secs, setSecs] = useState(() => Math.max(0, Math.ceil((until - Date.now()) / 1000)))
+  useEffect(() => {
+    const tick = () => Math.max(0, Math.ceil((until - Date.now()) / 1000))
+    setSecs(tick())
+    const i = setInterval(() => { const n = tick(); setSecs(n); if (n <= 0) clearInterval(i) }, 1000)
+    return () => clearInterval(i)
+  }, [until])
+  return <div style={{ textAlign: 'center', fontSize: 12.5, color: '#E5A93C', padding: '8px 0' }}>🔒 Głosowanie za {Math.floor(secs / 60)}:{String(secs % 60).padStart(2, '0')}</div>
+}
+
 function Live({ s, onVote, onCard, onAbandon, onLeave }) {
-  const [now, setNow] = useState(Date.now())
-  useEffect(() => { const i = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(i) }, [])
   const rk = rankedIds(s)
   const g = s.game
   const a = g && s.teams[g.a], b = g && s.teams[g.b]
@@ -280,8 +294,16 @@ function Live({ s, onVote, onCard, onAbandon, onLeave }) {
   const neutral = s.myTeam && g && s.myTeam !== g.a && s.myTeam !== g.b
   const playing = s.myTeam && g && (s.myTeam === g.a || s.myTeam === g.b)
   const cdEnd = new Date(s.session.last_confirmed_at).getTime() + (s.session.vote_cooldown_sec || CD) * 1000
-  const locked = now < cdEnd
-  const secsLeft = Math.max(0, Math.ceil((cdEnd - now) / 1000))
+  // Jedno przełączenie locked→unlocked dokładnie w chwili końca cooldownu — panel NIE
+  // re-renderuje się co sekundę; samo odliczanie tyka osobno w <Cooldown/>.
+  const [locked, setLocked] = useState(() => Date.now() < cdEnd)
+  useEffect(() => {
+    const ms = cdEnd - Date.now()
+    if (ms <= 0) { setLocked(false); return }
+    setLocked(true)
+    const t = setTimeout(() => setLocked(false), ms)
+    return () => clearTimeout(t)
+  }, [cdEnd])
   const needed = Math.max(1, Math.min(s.session.confirm_votes ?? 2, s.neutralCount))
   const votesFor = (id) => s.votes.filter(v => v.voted_team_id === id).length
   const myVote = s.votes.find(v => v.voter_id === s.me)?.voted_team_id
@@ -317,7 +339,7 @@ function Live({ s, onVote, onCard, onAbandon, onLeave }) {
               ? <div style={{ textAlign: 'center', fontSize: 12.5, color: MUTED, padding: '8px 0' }}>Jesteś na boisku — wynik potwierdza drużyna czekająca ({votesFor(g.a)}·{votesFor(g.b)}/{needed})</div>
               : neutral
                 ? (locked
-                    ? <div style={{ textAlign: 'center', fontSize: 12.5, color: '#E5A93C', padding: '8px 0' }}>🔒 Głosowanie za {Math.floor(secsLeft / 60)}:{String(secsLeft % 60).padStart(2, '0')}</div>
+                    ? <Cooldown until={cdEnd} />
                     : <div style={{ display: 'flex', gap: 10 }}>{voteBtn(a)}{voteBtn(b)}</div>)
                 : <div style={{ textAlign: 'center', fontSize: 12.5, color: DIM, padding: '8px 0' }}>Podgląd sesji</div>}
           </div>
