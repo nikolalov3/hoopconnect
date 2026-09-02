@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
-import KotcOnline from '../features/kotc/KotcOnline'
+import KotcSolo from '../features/kotc/KotcSolo'
 import { getMyActiveSession as kotcActiveSession } from '../features/kotc/api'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, useDragControls, useMotionValue, useTransform, animate } from 'framer-motion'
@@ -1603,7 +1603,7 @@ function ModerationActions({ targetId, targetName, context }) {
 
 // ── Lightweight player profile opened from a match (tap a joined player). Same
 //    3D card as the roster sheet, plus report/block — no club-owner actions. ──
-function MatchPlayerSheet({ player, uid, onClose }) {
+export function MatchPlayerSheet({ player, uid, onClose }) {
   const { profile, stats, loading } = usePlayerProfileData(player.user_id)
   const bgCatalog = useBackgroundCatalog()
   const cardBg = backgroundAsset(bgCatalog, profile?.equipped_background)
@@ -1882,7 +1882,7 @@ function SectionDivider() {
 // Roster — one row per team by default; 5v5 wraps to two sub-rows. `rows` overrides
 // the sub-row split (used to mirror the two stacked teams so they meet at the VS).
 // Player hexagons are the focal point now (no club crest), so they're sized up.
-function RosterGrid({ players, slots, color, size = 32, uid, myFrame, rows }) {
+function RosterGrid({ players, slots, color, size = 32, uid, myFrame, rows, onPlayer }) {
   const rowConfig = rows || (slots === 5 ? [3, 2] : [slots])
   let slot = 0
   return (
@@ -1896,7 +1896,9 @@ function RosterGrid({ players, slots, color, size = 32, uid, myFrame, rows }) {
             // For the viewer's own hex use their live frame (myFrame) — the match
             // snapshot can be stale right after they change it; others use snapshot.
             return p
-              ? <HexAvatar key={s} name={p.profile?.name} size={size} variant={(p.user_id === uid ? myFrame : p.profile?.equipped_frame) || 'none'} noAnim/>
+              ? (onPlayer
+                  ? <button key={s} onClick={(e) => { e.stopPropagation(); onPlayer(p) }} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', lineHeight: 0 }}><HexAvatar name={p.profile?.name} size={size} variant={(p.user_id === uid ? myFrame : p.profile?.equipped_frame) || 'none'} noAnim/></button>
+                  : <HexAvatar key={s} name={p.profile?.name} size={size} variant={(p.user_id === uid ? myFrame : p.profile?.equipped_frame) || 'none'} noAnim/>)
               : <HexSlot key={s} filled={false} color={color} size={size * 0.76}/>
           })}
         </div>
@@ -1905,7 +1907,7 @@ function RosterGrid({ players, slots, color, size = 32, uid, myFrame, rows }) {
   )
 }
 
-export function MatchCard({ match, dist, uid, myFrame, userClubId, userClubName, onPress }) {
+export function MatchCard({ match, dist, uid, myFrame, userClubId, userClubName, onPress, kotc = false, onPlayer, homeColor, awayColor }) {
   const { t } = useTranslation('club')
   const slots = MODE_SLOTS[match.mode]
   const homePlayers = match.players.filter(p => p.team === 'home')
@@ -2020,12 +2022,16 @@ export function MatchCard({ match, dist, uid, myFrame, userClubId, userClubName,
               </div>
             )}
           </div>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: C.accent, flexShrink: 0 }}>
-            <svg width="8" height="11" viewBox="0 0 24 30" fill={C.accent}>
-              <path d="M12 0C7.6 0 4 3.6 4 8c0 6 8 22 8 22s8-16 8-22c0-4.4-3.6-8-8-8zm0 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
-            </svg>
-            {fmtDist(dist)}
-          </span>
+          {kotc ? (
+            <img src="/hoop.svg" alt="HoopConnect" style={{ height: 20, width: 20, objectFit: 'contain', flexShrink: 0, opacity: 0.9 }}/>
+          ) : (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: C.accent, flexShrink: 0 }}>
+              <svg width="8" height="11" viewBox="0 0 24 30" fill={C.accent}>
+                <path d="M12 0C7.6 0 4 3.6 4 8c0 6 8 22 8 22s8-16 8-22c0-4.4-3.6-8-8-8zm0 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
+              </svg>
+              {fmtDist(dist)}
+            </span>
+          )}
         </div>
 
         {/* ── Duel: teams STACKED (home on top, away on the bottom) so each roster
@@ -2037,11 +2043,11 @@ export function MatchCard({ match, dist, uid, myFrame, userClubId, userClubName,
           <span style={{
             textAlign: 'center', fontSize: 9.5, fontWeight: 800, letterSpacing: 1.2,
             textTransform: 'uppercase', lineHeight: 1.2, maxWidth: '100%',
-            color: homeIsMine ? C.accentHi : C.text,
+            color: homeColor || (homeIsMine ? C.accentHi : C.text),
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{homeTeamName}</span>
           <RosterGrid players={homePlayers} slots={slots} rows={slots === 5 ? [3, 2] : undefined}
-            color={TEAM_BLUE} size={54} uid={uid} myFrame={myFrame}/>
+            color={TEAM_BLUE} size={54} uid={uid} myFrame={myFrame} onPlayer={onPlayer}/>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0' }}>
             <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, rgba(160,200,255,0.20))' }}/>
@@ -2061,16 +2067,17 @@ export function MatchCard({ match, dist, uid, myFrame, userClubId, userClubName,
           </div>
 
           <RosterGrid players={awayPlayers} slots={slots} rows={slots === 5 ? [2, 3] : undefined}
-            color={TEAM_RED} size={54} uid={uid} myFrame={myFrame}/>
+            color={TEAM_RED} size={54} uid={uid} myFrame={myFrame} onPlayer={onPlayer}/>
           <span style={{
             textAlign: 'center', fontSize: 9.5, fontWeight: 800, letterSpacing: 1.2,
             textTransform: 'uppercase', lineHeight: 1.2, maxWidth: '100%',
-            color: awayIsMine ? C.accentHi : C.text,
+            color: awayColor || (awayIsMine ? C.accentHi : C.text),
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{awayTeamName}</span>
         </div>
 
         {/* Date/time + location — centered, no box, date on top (primary) */}
+        {!kotc && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, textAlign: 'center' }}>
           <span style={{
             fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 800, letterSpacing: 0.5,
@@ -2085,6 +2092,7 @@ export function MatchCard({ match, dist, uid, myFrame, userClubId, userClubName,
             {match.address || t('matchCard.locationOnMap')}
           </span>
         </div>
+        )}
 
         {/* CTA bar — only when the match still has open slots; once both teams are
             full there's nothing to join, so the bar is dropped entirely (tapping
@@ -4852,7 +4860,7 @@ function ClubView({ club, onUpdate, uid }) {
       <PanelDots active={panel} onChange={setPanel}/>
 
       {kotcOpen && (
-        <KotcOnline
+        <KotcSolo
           initialSessionId={kotcSid}
           onClose={() => { setKotcOpen(false); setKotcSid(null); reloadKotc() }}
         />
