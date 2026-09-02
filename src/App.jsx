@@ -35,7 +35,7 @@ const CardLab         = lazy(() => import('./pages/CardLab'))
 const QrLandingPage   = lazy(() => import('./pages/QrLandingPage'))
 const ArenaRoad       = lazy(() => import('./components/ArenaRoad'))
 const KingOfTheCourt  = lazy(() => import('./features/kotc/KingOfTheCourt'))
-const KotcOnline      = lazy(() => import('./features/kotc/KotcOnline'))
+const KotcSolo        = lazy(() => import('./features/kotc/KotcSolo'))
 const AppOnboarding   = lazy(() => import('./components/ui/AppOnboarding'))
 
 // Wrapper trasy /arena — XP z profilu, powrót przyciskiem wstecz
@@ -283,11 +283,6 @@ export default function App() {
                 <KingOfTheCourt />
               </Suspense>
             } />
-            <Route path="/kotc-live"       element={
-              <Suspense fallback={<PageLoader />}>
-                <KotcOnline />
-              </Suspense>
-            } />
             <Route path="/cardlab"         element={
               <Suspense fallback={<PageLoader />}>
                 <CardLab />
@@ -304,9 +299,9 @@ export default function App() {
                 <OnboardingPage />
               </Suspense>
             } />
-            <Route path="/kotclab"         element={
+            <Route path="/kotcsolo"        element={
               <Suspense fallback={<PageLoader />}>
-                <KotcOnline onClose={() => { window.location.href = '/' }} />
+                <KotcSolo onClose={() => { window.location.href = '/' }} />
               </Suspense>
             } />
             <Route path="/arenalab"        element={
