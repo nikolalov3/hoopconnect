@@ -34,6 +34,15 @@ const QrLandingPage   = lazy(() => import('./pages/QrLandingPage'))
 const ArenaRoad       = lazy(() => import('./components/ArenaRoad'))
 const AppOnboarding   = lazy(() => import('./components/ui/AppOnboarding'))
 
+// Zalogowany user (token Supabase w localStorage) i tak wyląduje na HomePage —
+// zacznij ściągać jej chunk już teraz, RÓWNOLEGLE z fetchem sesji/profilu, zamiast
+// dopiero po nim (React.lazy startowałby import po spinnerze auth = jeden hop
+// sieciowy więcej na każdym otwarciu apki). Wylogowany nie płaci tymi bajtami —
+// ekran logowania zostaje lekki. Ten sam import() co w lazy() → jeden chunk, bez dubla.
+try {
+  if (Object.keys(localStorage).some(k => k.startsWith('sb-') && k.endsWith('-auth-token'))) import('./pages/HomePage')
+} catch { /* localStorage zablokowany */ }
+
 // Wrapper trasy /arena — XP z profilu, powrót przyciskiem wstecz
 function ArenaRoadRoute() {
   const { profile } = useAuth()
