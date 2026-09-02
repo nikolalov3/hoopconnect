@@ -73,7 +73,8 @@ if (isAdminSubdomain) {
   })
 } else {
   // i18n (PL/EN auto-detect) — tylko player app, coach/admin app go nie ładują
-  Promise.all([import('./App.jsx'), import('./i18n')]).then(([{ default: App }]) => {
+  // i18n ładuje tylko wykryty język (osobny chunk) — czekamy na `ready`, nie na sam moduł.
+  Promise.all([import('./App.jsx'), import('./i18n').then(m => m.ready)]).then(([{ default: App }]) => {
     root.render(
       <StrictMode>
         <SentryErrorBoundary fallback={fallback} showDialog={false}>

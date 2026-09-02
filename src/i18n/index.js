@@ -2,110 +2,92 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 
-// ── Locale resources — player app (hoopconnect.pl) only ─────────────────────
-// Coach panel (trener.hoopconnect.pl) and admin (gu.hoopconnect.pl) are
-// separate apps and not covered by this i18n instance.
-import enCommon from './locales/en/common.json'
-import enAuth from './locales/en/auth.json'
-import enOnboarding from './locales/en/onboarding.json'
-import enHome from './locales/en/home.json'
-import enShooting from './locales/en/shooting.json'
-import enCalendar from './locales/en/calendar.json'
-import enStats from './locales/en/stats.json'
-import enAchievements from './locales/en/achievements.json'
-import enRecovery from './locales/en/recovery.json'
-import enClub from './locales/en/club.json'
-import enJoinClub from './locales/en/joinClub.json'
-import enQrLanding from './locales/en/qrLanding.json'
-import enArenaRoad from './locales/en/arenaRoad.json'
-import enSettings from './locales/en/settings.json'
-import enLeaderboard from './locales/en/leaderboard.json'
-import enNotifications from './locales/en/notifications.json'
-import enFrames from './locales/en/frames.json'
-import enLeagueInfo from './locales/en/leagueInfo.json'
-import enAddSession from './locales/en/addSession.json'
-import enTrainingCard from './locales/en/trainingCard.json'
-import enAppStory from './locales/en/appStory.json'
-
-import plCommon from './locales/pl/common.json'
-import plAuth from './locales/pl/auth.json'
-import plOnboarding from './locales/pl/onboarding.json'
-import plHome from './locales/pl/home.json'
-import plShooting from './locales/pl/shooting.json'
-import plCalendar from './locales/pl/calendar.json'
-import plStats from './locales/pl/stats.json'
-import plAchievements from './locales/pl/achievements.json'
-import plRecovery from './locales/pl/recovery.json'
-import plClub from './locales/pl/club.json'
-import plJoinClub from './locales/pl/joinClub.json'
-import plQrLanding from './locales/pl/qrLanding.json'
-import plArenaRoad from './locales/pl/arenaRoad.json'
-import plSettings from './locales/pl/settings.json'
-import plLeaderboard from './locales/pl/leaderboard.json'
-import plNotifications from './locales/pl/notifications.json'
-import plFrames from './locales/pl/frames.json'
-import plLeagueInfo from './locales/pl/leagueInfo.json'
-import plAddSession from './locales/pl/addSession.json'
-import plTrainingCard from './locales/pl/trainingCard.json'
-import plAppStory from './locales/pl/appStory.json'
+// ── Player app (hoopconnect.pl) — ładujemy TYLKO wykryty język ──────────────
+// Wcześniej oba języki (21 namespace'ów × 2) siedziały w jednym chunku (~113 KB)
+// ładowanym przed pierwszym renderem — Polak ściągał cały angielski. Teraz każdy
+// język to osobny chunk (locales/<lng>/index.js), a ładujemy jeden. PL jest
+// kompletny względem EN (zweryfikowane), więc nie potrzebuje fallbacku na en.
+// Coach (trener.) i admin (gu.) to osobne apki — nie używają tej instancji.
 
 const LANG_STORAGE_KEY = 'hc_lang'
+const SUPPORTED = ['en', 'pl']
+const NAMESPACES = [
+  'common', 'auth', 'onboarding', 'home', 'shooting', 'calendar', 'stats',
+  'achievements', 'recovery', 'club', 'joinClub', 'qrLanding', 'arenaRoad',
+  'settings', 'leaderboard', 'notifications', 'frames', 'leagueInfo', 'addSession',
+  'trainingCard', 'appStory',
+]
 
-// Każdy język systemu inny niż polski → angielski. Polska → polski (domyślna,
-// historyczna wersja apki). Wykrywane z `navigator.language` (ustawienia
-// systemowe telefonu/przeglądarki), bez żadnego promptu o lokalizację.
+// Ta sama reguła co detector poniżej (localStorage → język systemu), tylko
+// synchronicznie — żeby wiedzieć, KTÓRY chunk ściągnąć, zanim i18next wystartuje.
+// Każdy język systemu inny niż polski → angielski. Bez promptu o lokalizację.
+function systemLanguageOrPolish() {
+  const primary = (typeof navigator !== 'undefined' && navigator.language) || ''
+  const langs = (typeof navigator !== 'undefined' && navigator.languages) || []
+  return [primary, ...langs].filter(Boolean).some(l => l.toLowerCase().startsWith('pl')) ? 'pl' : 'en'
+}
+function detectLang() {
+  try {
+    const stored = localStorage.getItem(LANG_STORAGE_KEY)
+    if (SUPPORTED.includes(stored)) return stored
+  } catch { /* localStorage może być zablokowany */ }
+  return systemLanguageOrPolish()
+}
+
+// Vite z `./locales/${lng}/index.js` robi glob po locales/*/index.js → jeden
+// chunk na język, ładowany na żądanie.
+async function loadBundle(lng) {
+  const { default: res } = await import(`./locales/${lng}/index.js`)
+  return res
+}
+
+// Dociągnij język, którego jeszcze nie ma w pamięci (zmiana języka w runtime,
+// albo gdyby detector wybrał inaczej niż detectLang). Idempotentne.
+export async function ensureLanguage(lng) {
+  if (!SUPPORTED.includes(lng) || i18n.hasResourceBundle(lng, 'common')) return
+  const res = await loadBundle(lng)
+  for (const [ns, data] of Object.entries(res)) i18n.addResourceBundle(lng, ns, data, true, true)
+}
+
+// Bezpieczna zmiana języka: najpierw bundle, potem przełączenie (zero mignięcia kluczy).
+export async function changeLanguage(lng) {
+  await ensureLanguage(lng)
+  return i18n.changeLanguage(lng)
+}
+
 const detector = new LanguageDetector()
-detector.addDetector({
-  name: 'systemLanguageOrPolish',
-  lookup() {
-    const langs = (typeof navigator !== 'undefined' && navigator.languages) || []
-    const primary = (typeof navigator !== 'undefined' && navigator.language) || ''
-    const all = [primary, ...langs].filter(Boolean)
-    return all.some(l => l.toLowerCase().startsWith('pl')) ? 'pl' : 'en'
-  },
-})
+detector.addDetector({ name: 'systemLanguageOrPolish', lookup: systemLanguageOrPolish })
 
-i18n
-  .use(detector)
-  .use(initReactI18next)
-  .init({
-    resources: {
-      en: {
-        common: enCommon, auth: enAuth, onboarding: enOnboarding, home: enHome,
-        shooting: enShooting, calendar: enCalendar, stats: enStats,
-        achievements: enAchievements, recovery: enRecovery, club: enClub,
-        joinClub: enJoinClub, qrLanding: enQrLanding, arenaRoad: enArenaRoad,
-        settings: enSettings, leaderboard: enLeaderboard,
-        notifications: enNotifications, frames: enFrames, leagueInfo: enLeagueInfo,
-        addSession: enAddSession, trainingCard: enTrainingCard,
-        appStory: enAppStory,
+const initialLng = detectLang()
+
+// main.jsx czeka na `ready` przed pierwszym renderem (zamiast na sam import modułu).
+export const ready = loadBundle(initialLng).then(res =>
+  i18n
+    .use(detector)
+    .use(initReactI18next)
+    .init({
+      resources: { [initialLng]: res },
+      fallbackLng: 'en',
+      supportedLngs: SUPPORTED,
+      defaultNS: 'common',
+      ns: NAMESPACES,
+      partialBundledLanguages: true,   // zasoby częściowe (jeden język) — nie próbuj nic doładowywać sam
+      detection: {
+        order: ['localStorage', 'systemLanguageOrPolish'],
+        lookupLocalStorage: LANG_STORAGE_KEY,
+        caches: ['localStorage'],
       },
-      pl: {
-        common: plCommon, auth: plAuth, onboarding: plOnboarding, home: plHome,
-        shooting: plShooting, calendar: plCalendar, stats: plStats,
-        achievements: plAchievements, recovery: plRecovery, club: plClub,
-        joinClub: plJoinClub, qrLanding: plQrLanding, arenaRoad: plArenaRoad,
-        settings: plSettings, leaderboard: plLeaderboard,
-        notifications: plNotifications, frames: plFrames, leagueInfo: plLeagueInfo,
-        addSession: plAddSession, trainingCard: plTrainingCard,
-        appStory: plAppStory,
-      },
-    },
-    fallbackLng: 'en',
-    supportedLngs: ['en', 'pl'],
-    defaultNS: 'common',
-    ns: [
-      'common', 'auth', 'onboarding', 'home', 'shooting', 'calendar', 'stats',
-      'achievements', 'recovery', 'club', 'joinClub', 'qrLanding', 'arenaRoad',
-      'settings', 'leaderboard', 'notifications', 'frames', 'leagueInfo', 'addSession',
-      'trainingCard', 'appStory',
-    ],
-    detection: {
-      order: ['localStorage', 'systemLanguageOrPolish'],
-      lookupLocalStorage: LANG_STORAGE_KEY,
-      caches: ['localStorage'],
-    },
-    interpolation: { escapeValue: false },
-  })
+      interpolation: { escapeValue: false },
+      // Gdy bundle języka dojdzie PO przełączeniu (bezpośrednie i18n.changeLanguage
+      // skądś indziej), react-i18next ma przerenderować — domyślnie nie słucha 'added'.
+      react: { bindI18nStore: 'added' },
+    })
+    // Gdyby detector wybrał inny język niż detectLang (nie powinien — ta sama
+    // reguła), dociągamy go, zamiast pokazywać surowe klucze.
+    .then(() => (i18n.language !== initialLng ? ensureLanguage(i18n.language) : undefined))
+)
+
+// Siatka bezpieczeństwa dla bezpośrednich wywołań i18n.changeLanguage skądś indziej.
+i18n.on('languageChanged', (lng) => { ensureLanguage(lng) })
 
 export default i18n
