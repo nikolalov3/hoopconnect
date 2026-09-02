@@ -32,7 +32,6 @@ const ClubPage        = lazy(() => import('./pages/ClubPage'))
 const JoinClubPage    = lazy(() => import('./pages/JoinClubPage'))
 const QrLandingPage   = lazy(() => import('./pages/QrLandingPage'))
 const ArenaRoad       = lazy(() => import('./components/ArenaRoad'))
-const KingOfTheCourt  = lazy(() => import('./features/kotc/KingOfTheCourt'))
 const AppOnboarding   = lazy(() => import('./components/ui/AppOnboarding'))
 
 // Wrapper trasy /arena — XP z profilu, powrót przyciskiem wstecz
@@ -273,11 +272,6 @@ export default function App() {
             <Route path="/dolacz/:clubId"  element={
               <Suspense fallback={<PageLoader />}>
                 <JoinClubPage />
-              </Suspense>
-            } />
-            <Route path="/kotc"            element={
-              <Suspense fallback={<PageLoader />}>
-                <KingOfTheCourt />
               </Suspense>
             } />
             <Route path="/*"               element={<AppShell />} />

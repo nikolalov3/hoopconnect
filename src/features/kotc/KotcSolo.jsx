@@ -28,19 +28,6 @@ const COLORS = [
 const COL = Object.fromEntries(COLORS.map(c => [c.id, c]))
 const CD = 180  // cooldown sekundy (fallback)
 
-function TeamHex({ team, size = 30 }) {
-  const g = `khx-${team.id}-${size}`
-  return (
-    <svg width={size} height={size} viewBox="0 0 90 90" style={{ flexShrink: 0 }}>
-      <defs><linearGradient id={g} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor={team.light} /><stop offset="45%" stopColor={team.base} /><stop offset="100%" stopColor={team.dark} />
-      </linearGradient></defs>
-      <polygon points="45,3 82,24 82,66 45,87 8,66 8,24" fill={`url(#${g})`} stroke="rgba(255,255,255,0.28)" strokeWidth="1.5" />
-      <text x="45" y="55" textAnchor="middle" fill="#fff" fontSize="34" fontWeight="900" fontFamily="'Barlow Condensed', sans-serif">{team.ini}</text>
-    </svg>
-  )
-}
-
 // Realny stan sesji → kształt, którego używają widoki.
 function mapState(st, me, revealed) {
   const session = st?.session
@@ -256,7 +243,6 @@ function Reveal({ s, onGo, onCard }) {
   )
 }
 
-function statusOf(s, id) { return id === s.king ? 'king' : (s.game && (id === s.game.a || id === s.game.b) ? 'court' : 'wait') }
 const rankedIds = (s) => [...s.order].sort((a, b) => s.teams[b].score - s.teams[a].score || s.teams[b].wins - s.teams[a].wins)
 
 function TeamStandRow({ t, place, s, final, onCard }) {
