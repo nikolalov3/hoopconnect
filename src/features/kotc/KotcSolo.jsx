@@ -101,7 +101,7 @@ export default function KotcSolo({ onClose, initialSessionId = null }) {
   const s = mapState(st, me, revealed)
 
   const run = (fn) => async (...a) => { setBusy(true); setErr(''); try { await fn(...a) } catch (e) { setErr(e.message || 'Błąd') } finally { setBusy(false) } }
-  const create = run(async () => { const sess = await api.createSession({}); setRevealed(true); setSessionId(sess.id) })
+  const create = run(async (confirmVotes = 2) => { const sess = await api.createSession({ confirmVotes }); setRevealed(true); setSessionId(sess.id) })
   const join = run(async (code) => { const sess = await api.joinByCode(code); setRevealed(true); setSessionId(sess.id) })
   const start = run(async () => { await api.startSession(sessionId); load() })
   const leave = run(async () => { await api.leaveSession(sessionId); setSessionId(null) })
@@ -154,6 +154,8 @@ function Header({ onClose }) {
 
 function Home({ onCreate, onJoin, busy }) {
   const [code, setCode] = useState('')
+  const [conf, setConf] = useState(2)
+  const stepBtn = { width: 34, height: 34, borderRadius: 10, border: '1px solid rgba(255,255,255,0.16)', background: 'rgba(255,255,255,0.06)', color: TXT, fontSize: 20, fontWeight: 700, cursor: 'pointer', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '72vh' }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
@@ -164,7 +166,24 @@ function Home({ onCreate, onJoin, busy }) {
       <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="KOD SESJI" maxLength={6}
         style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 12, padding: '13px', color: TXT, fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, letterSpacing: 6, textAlign: 'center', textTransform: 'uppercase', outline: 'none', marginBottom: 10 }} />
       <button style={{ ...btnGhost, width: '100%', opacity: (busy || code.length < 4) ? 0.5 : 1 }} disabled={busy || code.length < 4} onClick={() => onJoin(code)}>Dołącz kodem</button>
-      <button style={{ ...btnPrimary, width: '100%', marginTop: 12, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={onCreate}>Utwórz sesję</button>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '18px 0 12px' }}>
+        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.10)' }} />
+        <span style={{ fontSize: 11, color: DIM, letterSpacing: 1, textTransform: 'uppercase' }}>albo utwórz</span>
+        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.10)' }} />
+      </div>
+      <div style={{ ...glass, borderRadius: 12, padding: '11px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>Potwierdzenia wyniku</div>
+          <div style={{ fontSize: 11, color: MUTED }}>Ilu z czekającej drużyny musi potwierdzić gierkę</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <button style={stepBtn} onClick={() => setConf(c => Math.max(1, c - 1))}>−</button>
+          <span style={{ ...h1, fontSize: 22, minWidth: 18, textAlign: 'center', color: BLUE }}>{conf}</span>
+          <button style={stepBtn} onClick={() => setConf(c => Math.min(5, c + 1))}>+</button>
+        </div>
+      </div>
+      <button style={{ ...btnPrimary, width: '100%', opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={() => onCreate(conf)}>Utwórz sesję</button>
     </div>
   )
 }
@@ -178,6 +197,9 @@ function Lobby({ s, onStart, onLeave, onAbandon, busy, onCard }) {
         <div style={{ fontSize: 12, color: MUTED, letterSpacing: 1, textTransform: 'uppercase' }}>Kod sesji</div>
         <div style={{ ...h1, fontSize: 46, color: BLUE, letterSpacing: 8 }}>{s.code}</div>
         <div style={{ fontSize: 13, color: MUTED }}>Podaj kod, żeby dołączyli — solo</div>
+        <div style={{ display: 'inline-flex', gap: 5, alignItems: 'center', marginTop: 9, padding: '4px 11px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11, color: MUTED }}>
+          <b style={{ color: BLUE }}>{s.session.confirm_votes}</b> potwierdzeń czekających zamyka gierkę
+        </div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
         <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: BLUE }}>{n} graczy w lobby</span>
@@ -275,7 +297,7 @@ function Live({ s, onVote, onCard, onAbandon, onLeave }) {
   const cdEnd = new Date(s.session.last_confirmed_at).getTime() + (s.session.vote_cooldown_sec || CD) * 1000
   const locked = now < cdEnd
   const secsLeft = Math.max(0, Math.ceil((cdEnd - now) / 1000))
-  const needed = Math.floor(s.neutralCount / 2) + 1
+  const needed = Math.max(1, Math.min(s.session.confirm_votes ?? 2, s.neutralCount))
   const votesFor = (id) => s.votes.filter(v => v.voted_team_id === id).length
   const myVote = s.votes.find(v => v.voter_id === s.me)?.voted_team_id
   const myFrame = s.players.find(p => p.id === s.me)?.frame || 'none'
