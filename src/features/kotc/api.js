@@ -14,6 +14,7 @@ export async function createSession(config = {}) {
     p_team_size: config.teamSize ?? 3,
     p_min_teams: config.minTeams ?? 3,
     p_max_teams: config.maxTeams ?? 6,
+    p_confirm_votes: config.confirmVotes ?? 2,
   })
   if (error) throw error
   return data
