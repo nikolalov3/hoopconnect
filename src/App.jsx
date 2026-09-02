@@ -34,7 +34,6 @@ const JoinClubPage    = lazy(() => import('./pages/JoinClubPage'))
 const CardLab         = lazy(() => import('./pages/CardLab'))
 const QrLandingPage   = lazy(() => import('./pages/QrLandingPage'))
 const ArenaRoad       = lazy(() => import('./components/ArenaRoad'))
-const KingOfTheCourt  = lazy(() => import('./features/kotc/KingOfTheCourt'))
 const KotcSolo        = lazy(() => import('./features/kotc/KotcSolo'))
 const AppOnboarding   = lazy(() => import('./components/ui/AppOnboarding'))
 
@@ -276,11 +275,6 @@ export default function App() {
             <Route path="/dolacz/:clubId"  element={
               <Suspense fallback={<PageLoader />}>
                 <JoinClubPage />
-              </Suspense>
-            } />
-            <Route path="/kotc"            element={
-              <Suspense fallback={<PageLoader />}>
-                <KingOfTheCourt />
               </Suspense>
             } />
             <Route path="/cardlab"         element={

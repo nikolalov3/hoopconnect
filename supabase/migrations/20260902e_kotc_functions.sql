@@ -1,54 +1,107 @@
 -- ============================================================================
--- KotC solo — DOMKNIĘCIE backendu (po 20260902_kotc_solo.sql). CREATE OR REPLACE,
--- więc bezpiecznie po odpaleniu poprzedniej. Zamyka 3 dziury + 1 regułę:
+-- KotC solo — KANONICZNA warstwa funkcji. IDEMPOTENTNA — odpalaj ile razy chcesz.
 --
---   1) COOLDOWN głosowania — nie można potwierdzać wyniku wcześniej niż
---      vote_cooldown_sec (domyślnie 180 = 3 min) po ostatniej zmianie składu na
---      boisku. Licznik startuje na kotc_start (pierwsza gierka liczy od losowania)
---      i przy każdym potwierdzeniu. Kolumna NOT NULL default now() → nigdy null.
---   2) PUNKTACJA MOMENTUM — obrona króla eskaluje 12/14/16 (10 + 2*momentum),
---      upset = 12 + 2*(seria obalonego króla), a nowemu królowi momentum→0.
---      Król schodzi po rotate_after obronach.
---   3) RPC głosowania MVP (kotc_vote_mvp) — po zakończeniu sesji.
---   4) JEDNA aktywna sesja naraz — kotc_create_session/kotc_join odrzucają, gdy
---      user jest już w sesji 'lobby'/'live'.
+-- ZASTĘPUJE (i usuwa potrzebę) 20260902b / 20260902c / 20260902d. Te trzy pliki
+-- warstwowały CREATE OR REPLACE na tych samych funkcjach z ukrytą kolejnością —
+-- pominięcie jednego (tak stało się z `c`) dawało ciche awarie w stylu
+-- "function kotc_cleanup_stale() does not exist". Ten plik jest JEDYNYM źródłem
+-- prawdy dla funkcji KotC: każdą definiuje w postaci końcowej, bez zależności od
+-- tego, które wcześniejsze migracje poszły na bazę.
 --
--- Run once w Supabase → SQL Editor.
+-- WYMAGA tabel z 20260902_kotc_solo.sql (kotc_sessions, kotc_session_teams,
+-- kotc_session_players, kotc_games, kotc_game_votes, kotc_mvp_votes,
+-- kotc_gen_code(), kotc_award_xp) — to jednorazowy schemat, ten plik go nie rusza.
+--
+-- Zasady gry (stan końcowy):
+--   • solo: wchodzisz kodem, host startuje, losowe kolorowe drużyny po 3 (%3, ≥3 drużyny)
+--   • wynik potwierdza WYŁĄCZNIE drużyna czekająca (neutralni); grający nie głosują
+--   • próg = confirm_votes ustawiony przez hosta, clamp do liczby neutralnych
+--   • cooldown vote_cooldown_sec (180 s) od ostatniej zmiany składu na boisku
+--   • punktacja MOMENTUM: obrona króla 12/14/16, upset 12+2*seria, król schodzi po rotate_after
+--   • sprzątanie martwych sesji (lobby >2h / live >2h bez potwierdzenia) przed create/join
+--   • host może zakończyć sesję (abandon), gracz może wyjść także w LIVE
+--
+-- Run w Supabase → SQL Editor.
 -- ============================================================================
 
--- ─── 0. Kolumny ─────────────────────────────────────────────────────────────
+-- ─── 0. Kolumny stanu (idempotentnie) ───────────────────────────────────────
 alter table public.kotc_sessions
   add column if not exists momentum          int         not null default 0,
   add column if not exists last_confirmed_at timestamptz not null default now(),
-  add column if not exists vote_cooldown_sec int         not null default 180;  -- 3 min
+  add column if not exists vote_cooldown_sec int         not null default 180,
+  add column if not exists confirm_votes     int         not null default 2;
 
--- ─── 1. kotc_create_session — + blokada „jedna aktywna sesja" ───────────────
-create or replace function public.kotc_create_session(
+-- ─── 1. kotc_cleanup_stale — kasuj martwe sesje (cascade sprząta resztę) ────
+create or replace function public.kotc_cleanup_stale()
+returns void
+language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  delete from public.kotc_sessions
+   where (status = 'lobby' and created_at        < now() - interval '2 hours')
+      or (status = 'live'  and last_confirmed_at < now() - interval '2 hours');
+end $$;
+
+-- ─── 2. kotc_abandon — host kończy/kasuje sesję (lobby lub live) ────────────
+create or replace function public.kotc_abandon(p_session_id uuid)
+returns void
+language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_host uuid; v_status text;
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  select host_id, status into v_host, v_status from public.kotc_sessions where id = p_session_id;
+  if not found then return; end if;
+  if v_host <> auth.uid() then raise exception 'Tylko host może zakończyć sesję'; end if;
+  if v_status = 'finished' then return; end if;
+  delete from public.kotc_sessions where id = p_session_id;  -- cascade
+end $$;
+
+-- ─── 3. kotc_leave — gracz wychodzi (także w LIVE) ──────────────────────────
+create or replace function public.kotc_leave(p_session_id uuid)
+returns void
+language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_status text;
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  select status into v_status from public.kotc_sessions where id = p_session_id;
+  if v_status = 'finished' then return; end if;
+  delete from public.kotc_session_players where session_id = p_session_id and user_id = auth.uid();
+end $$;
+
+-- ─── 4. kotc_create_session — host tworzy; próg potwierdzeń ustawia sam ──────
+-- Drop obu możliwych starych podpisów (7-arg solo, 8-arg klubowy z innymi nazwami
+-- parametrów) — CREATE OR REPLACE nie umie zmienić nazw parametrów (42P13).
+drop function if exists public.kotc_create_session(int, int, int, int, int, int, int);
+drop function if exists public.kotc_create_session(int, int, int, int, int, int, int, int);
+
+create function public.kotc_create_session(
   p_target int default 67, p_rotate_after int default 3, p_win_pts int default 15,
-  p_streak3_bonus int default 5, p_team_size int default 3, p_min_teams int default 3, p_max_teams int default 6
+  p_streak3_bonus int default 5, p_team_size int default 3, p_min_teams int default 3,
+  p_max_teams int default 6, p_confirm_votes int default 2
 ) returns public.kotc_sessions
 language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_session public.kotc_sessions;
 begin
   if auth.uid() is null then raise exception 'not authenticated'; end if;
+  perform public.kotc_cleanup_stale();
   if exists (select 1 from public.kotc_session_players sp join public.kotc_sessions ss on ss.id = sp.session_id
              where sp.user_id = auth.uid() and ss.status in ('lobby','live')) then
     raise exception 'Jesteś już w aktywnej sesji KotC — najpierw ją zakończ albo z niej wyjdź';
   end if;
-  insert into public.kotc_sessions(code, host_id, target, rotate_after, win_pts, streak3_bonus, team_size, min_teams, max_teams)
-  values (public.kotc_gen_code(), auth.uid(), p_target, p_rotate_after, p_win_pts, p_streak3_bonus, p_team_size, p_min_teams, p_max_teams)
+  insert into public.kotc_sessions(code, host_id, target, rotate_after, win_pts, streak3_bonus, team_size, min_teams, max_teams, confirm_votes)
+  values (public.kotc_gen_code(), auth.uid(), p_target, p_rotate_after, p_win_pts, p_streak3_bonus, p_team_size, p_min_teams, p_max_teams, greatest(1, p_confirm_votes))
   returning * into v_session;
   insert into public.kotc_session_players(session_id, user_id) values (v_session.id, auth.uid());
   return v_session;
 end $$;
 
--- ─── 2. kotc_join — + blokada „jedna aktywna sesja" ─────────────────────────
+-- ─── 5. kotc_join — dołącz SOLO kodem ───────────────────────────────────────
 create or replace function public.kotc_join(p_code text)
 returns public.kotc_sessions
 language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_session public.kotc_sessions; v_count int;
 begin
   if auth.uid() is null then raise exception 'not authenticated'; end if;
+  perform public.kotc_cleanup_stale();
   if exists (select 1 from public.kotc_session_players sp join public.kotc_sessions ss on ss.id = sp.session_id
              where sp.user_id = auth.uid() and ss.status in ('lobby','live')) then
     raise exception 'Jesteś już w aktywnej sesji KotC — najpierw z niej wyjdź';
@@ -65,7 +118,7 @@ begin
   return v_session;
 end $$;
 
--- ─── 3. kotc_start — ustaw last_confirmed_at (cooldown od losowania) + momentum ─
+-- ─── 6. kotc_start — host startuje: losowe kolorowe drużyny, cooldown od losowania ─
 create or replace function public.kotc_start(p_session_id uuid)
 returns public.kotc_sessions
 language plpgsql security definer set search_path = public, pg_temp as $$
@@ -111,7 +164,7 @@ begin
   return v_s;
 end $$;
 
--- ─── 4. kotc_cast_vote — COOLDOWN + neutralni + PUNKTACJA MOMENTUM ───────────
+-- ─── 7. kotc_cast_vote — neutralni potwierdzają; próg hosta; cooldown; momentum ─
 create or replace function public.kotc_cast_vote(p_game_id uuid, p_voted_team_id uuid)
 returns jsonb
 language plpgsql security definer set search_path = public, pg_temp as $$
@@ -148,7 +201,8 @@ begin
 
   select count(*) into v_neutral from public.kotc_session_players sp
     where sp.session_id = v_s.id and sp.session_team_id is not null and sp.session_team_id not in (v_game.team_a, v_game.team_b);
-  v_needed := v_neutral / 2 + 1;
+  -- PRÓG = ustawiony przez hosta, ale nigdy więcej niż liczba neutralnych (brak zakleszczenia)
+  v_needed := greatest(1, least(v_s.confirm_votes, v_neutral));
 
   select count(*) into v_votes from public.kotc_game_votes where game_id = p_game_id and voted_team_id = p_voted_team_id;
   if v_votes < v_needed then
@@ -197,7 +251,7 @@ begin
   return jsonb_build_object('status','confirmed','winner',v_winner,'next_game',jsonb_build_array(v_na,v_nb));
 end $$;
 
--- ─── 5. kotc_vote_mvp — głos MVP po zakończeniu sesji ───────────────────────
+-- ─── 8. kotc_vote_mvp — głos MVP po zakończeniu sesji ───────────────────────
 create or replace function public.kotc_vote_mvp(p_session_id uuid, p_player_id uuid)
 returns jsonb
 language plpgsql security definer set search_path = public, pg_temp as $$
@@ -219,6 +273,21 @@ begin
   return jsonb_build_object('mvp', v_mvp, 'votes', v_cnt);
 end $$;
 
--- ─── uprawnienia ────────────────────────────────────────────────────────────
-revoke all on function public.kotc_vote_mvp(uuid, uuid) from public;
-grant execute on function public.kotc_vote_mvp(uuid, uuid) to authenticated;
+-- ─── 9. Uprawnienia — tylko zalogowani wołają RPC ───────────────────────────
+revoke all on function public.kotc_cleanup_stale()                                        from public;
+revoke all on function public.kotc_abandon(uuid)                                           from public;
+revoke all on function public.kotc_leave(uuid)                                             from public;
+revoke all on function public.kotc_create_session(int, int, int, int, int, int, int, int)  from public;
+revoke all on function public.kotc_join(text)                                              from public;
+revoke all on function public.kotc_start(uuid)                                             from public;
+revoke all on function public.kotc_cast_vote(uuid, uuid)                                   from public;
+revoke all on function public.kotc_vote_mvp(uuid, uuid)                                    from public;
+
+grant execute on function public.kotc_cleanup_stale()                                        to authenticated;
+grant execute on function public.kotc_abandon(uuid)                                           to authenticated;
+grant execute on function public.kotc_leave(uuid)                                             to authenticated;
+grant execute on function public.kotc_create_session(int, int, int, int, int, int, int, int)  to authenticated;
+grant execute on function public.kotc_join(text)                                              to authenticated;
+grant execute on function public.kotc_start(uuid)                                             to authenticated;
+grant execute on function public.kotc_cast_vote(uuid, uuid)                                   to authenticated;
+grant execute on function public.kotc_vote_mvp(uuid, uuid)                                    to authenticated;
