@@ -33,7 +33,9 @@
     <!-- Manrope usunięte: 4 wagi ładowane, 0 użyć w kodzie (zweryfikowane grepem). -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Barlow:wght@300;400;500;600&display=swap" />
     <!-- Umami analytics — defer, zero render impact, auto-tracks SPA routes -->
-    <script defer src="https://cloud.umami.is/script.js" data-website-id="a7d4cc36-01ca-4b44-b767-133919650fcb"></script>
+    <!-- data-domains: w natywnej apce (Capacitor, host "localhost") nie wysyłaj odsłon —
+         zaśmiecałyby statystyki webu jako "localhost". Natywną analitykę podepniemy osobno. -->
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="a7d4cc36-01ca-4b44-b767-133919650fcb" data-domains="hoopconnect.pl"></script>
   </head>
   <body>
     <div id="root">

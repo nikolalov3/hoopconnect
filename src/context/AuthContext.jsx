@@ -79,6 +79,8 @@ export function AuthProvider({ children }) {
         setBlockedIds(new Set())
         setProfileReady(true)
         profileReadyRef.current = true
+        // Nie zostawiaj profilu w localStorage po wylogowaniu / usunięciu konta.
+        try { Object.keys(localStorage).filter(k => k.startsWith('hc:profile:')).forEach(k => localStorage.removeItem(k)) } catch { /* localStorage zablokowany */ }
       }
     })
 
@@ -136,13 +138,15 @@ export function AuthProvider({ children }) {
 
       // Backfill username if missing (DB trigger may create the row without email).
       // Show it optimistically now; persist in the background (don't block paint).
-      if (data && !data.username && sessionUser?.email) {
-        setProfile({ ...data, username: sessionUser.email })
+      const prof = (data && !data.username && sessionUser?.email) ? { ...data, username: sessionUser.email } : data
+      if (prof && prof !== data) {
         supabase.from('profiles').update({ username: sessionUser.email }).eq('id', userId)
           .then(() => {}, () => {})
-      } else {
-        setProfile(data)
       }
+      setProfile(prof)
+      // Ostatni dobry profil na tym urządzeniu — fallback dla zimnego startu bez sieci
+      // (gałąź catch niżej). Czyszczone przy wylogowaniu.
+      try { if (prof) localStorage.setItem(`hc:profile:${userId}`, JSON.stringify(prof)) } catch { /* localStorage zablokowany */ }
 
       // Unblock the render gate as soon as the profile is in.
       markReady()
@@ -163,7 +167,12 @@ export function AuthProvider({ children }) {
         setTimeout(() => fetchProfile(userId, sessionUser, attempt + 1), 400 * (attempt + 1))
         return
       }
-      setProfile(null)
+      // Sieć padła na dobre (np. zimny start natywnej apki w trybie samolotowym):
+      // użyj ostatniego dobrego profilu z tego urządzenia zamiast null — null wysłałby
+      // zalogowanego usera na ONBOARDING. Realtime / resync po powrocie sieci odświeży.
+      let cached = null
+      try { cached = JSON.parse(localStorage.getItem(`hc:profile:${userId}`) || 'null') } catch { /* brak / uszkodzony */ }
+      setProfile(cached)
       markReady()
     }
   }
