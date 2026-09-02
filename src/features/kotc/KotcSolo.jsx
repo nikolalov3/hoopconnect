@@ -113,7 +113,10 @@ export default function KotcSolo({ onClose, initialSessionId = null }) {
       <Header onClose={onClose} />
       <div style={{ padding: '16px 20px 40px', flex: 1 }}>
         {err && <ErrBox msg={err} />}
-        {s.phase === 'home' && <Home onCreate={create} onJoin={join} busy={busy} />}
+        {/* Powrót do trwającej sesji: sessionId już jest, stan dopiero się ładuje —
+            bez tego strażnika przez chwilę mignąłby ekran tworzenia sesji. */}
+        {sessionId && !st && <div style={{ textAlign: 'center', color: MUTED, fontSize: 14, padding: '80px 0' }}>Wracam do sesji…</div>}
+        {s.phase === 'home' && !sessionId && <Home onCreate={create} onJoin={join} busy={busy} />}
         {s.phase === 'lobby' && <Lobby s={s} onStart={start} onLeave={leave} onAbandon={abandon} busy={busy} onCard={openCard} />}
         {s.phase === 'reveal' && <Reveal s={s} onGo={() => setRevealed(true)} onCard={openCard} />}
         {s.phase === 'live' && <Live s={s} onVote={vote} onCard={openCard} onAbandon={abandon} onLeave={leave} />}
@@ -122,7 +125,7 @@ export default function KotcSolo({ onClose, initialSessionId = null }) {
       {preview && (
         <MatchPlayerSheet
           player={{ user_id: preview.userId, profile: { name: preview.name, equipped_frame: preview.frame } }}
-          uid={me} onClose={() => setPreview(null)} />
+          onClose={() => setPreview(null)} />
       )}
     </div>
   )
