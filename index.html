@@ -25,6 +25,9 @@
     <!-- DNS preconnect for Google Fonts — eliminates extra RTT on cold load -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Supabase: pierwszy fetch sesji/profilu i websocket realtime idą tu — rozgrzej
+         DNS/TCP/TLS już przy parsowaniu HTML. %VITE_SUPABASE_URL% podmienia Vite. -->
+    <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
     <!-- Fonts as a direct <link> instead of a CSS @import: the @import was a
          render-blocking 3-hop waterfall (html → app CSS → fonts CSS → woff2). -->
     <!-- Manrope usunięte: 4 wagi ładowane, 0 użyć w kodzie (zweryfikowane grepem). -->
