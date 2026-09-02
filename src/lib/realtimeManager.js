@@ -38,6 +38,13 @@ function buildChannel() {
         (payload) => dispatch(table, payload)
       )
     }
+    // Mecze, w których klub jest GOŚCIEM: wiersz ma club_id = gospodarz, więc filtr
+    // po club_id ich nie łapie — druga subskrypcja po away_club_id domyka „moje mecze"
+    // (wynik, walkower, status wpisane przez gospodarza docierają też do gości).
+    channel.on('postgres_changes',
+      { event: '*', schema: 'public', table: 'club_matches', filter: `away_club_id=eq.${clubId}` },
+      (payload) => dispatch('club_matches', payload)
+    )
   }
   channel.subscribe((status) => {
     if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
