@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useCoachAuth } from '../context/CoachAuthContext'
-import { addDays, startOfDay, formatDateShort } from '../lib/dateUtil'
+import { addDays, startOfDay } from '../lib/dateUtil'
 
 // ── DEMO MODE ───────────────────────────────────────────────────────────────
 // Odwiedź panel z ?demo=1 aby zobaczyć w pełni wypełniony pulpit (14 zawodników,

@@ -298,7 +298,6 @@ export default function StatsPage() {
 
   const totalMade      = filtered.reduce((a, s) => a + s.made, 0)
   const totalAttempted = filtered.reduce((a, s) => a + s.attempted, 0)
-  const totalPct       = calcPct(totalMade, totalAttempted)
 
   const filterLabel = filter === '7d' ? t('filterLabelRecent7') : filter === '30d' ? t('filterLabelRecent30') : t('filterLabelAll')
 

@@ -198,7 +198,6 @@ export default function RecoveryPage() {
   const tip = TIPS[tipIndex]
 
   const scoreColor = recoveryScore >= 80 ? '#1E8449' : recoveryScore >= 50 ? '#D4800A' : '#5D9CEC'
-  const scoreBg    = recoveryScore >= 80 ? 'rgba(39,174,96,0.12)' : recoveryScore >= 50 ? 'rgba(212,128,10,0.10)' : 'rgba(93,156,236,0.10)'
 
   return (
     <div className="page-content" style={{

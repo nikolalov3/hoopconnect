@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { fetchAchievementsCatalog, getCurrentStage, getTrainingCategoryIds, getCurrentAttendanceStreak, checkTeamPracticeStreak, revokeStaleAchievements } from '../lib/achievements'
+import { fetchAchievementsCatalog, getTrainingCategoryIds, getCurrentAttendanceStreak, checkTeamPracticeStreak, revokeStaleAchievements } from '../lib/achievements'
 import { getCache, setCache, bustCache } from '../lib/queryCache'
 import { calendarWeekNumber } from '../lib/week'
 

@@ -195,7 +195,7 @@ export default function BottomNav() {
           '0 8px 24px rgba(0,0,0,0.42)',           // float ambient
         ].join(', '),
       }}>
-        {TABS.map(({ path, Icon, label, center }) => {
+        {TABS.map(({ path, Icon, center }) => {
           const active = pathname === path
           const showDot = path === '/achievements' && hasUnread && !active
           const showMatchDot = path === '/club' && hasNewMatch && !active

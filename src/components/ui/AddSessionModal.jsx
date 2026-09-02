@@ -320,14 +320,6 @@ function StrengthBuilder({ onSave, saving }) {
   )
 }
 
-const inputStyle = {
-  width: '100%', boxSizing: 'border-box',
-  padding: '10px 12px', borderRadius: 10,
-  background: 'rgba(8,16,30,0.6)', border: '1px solid rgba(150,200,255,0.14)',
-  color: 'var(--text-primary)', fontSize: 14, fontFamily: 'var(--font-body)',
-  textAlign: 'center',
-}
-
 // ── Main modal ──────────────────────────────────────────────────────────────
 export default function AddSessionModal({ open, onClose, onSaveStrength, saving }) {
   const { t } = useTranslation('addSession')

@@ -51,7 +51,7 @@ function ArenaBadge({ idx, arena, size = 150, locked }) {
 }
 
 // ── Placeholder dla etapu bez ramki (idx 0 — "Rozgrzewka", 0-500 XP) ────────
-function NoFrameNode({ size = 150, glow }) {
+function NoFrameNode({ size = 150 }) {
   return (
     <div style={{ width: size, height: size, position: 'relative' }}>
       <svg width={size} height={size} viewBox="0 0 90 90">
