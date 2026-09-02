@@ -70,12 +70,12 @@ export async function getSessionState(sessionId) {
   const profById = {}
   if (ids.length) {
     const { data: profs } = await supabase.from('public_profiles')
-      .select('id, username, equipped_frame').in('id', ids)
+      .select('id, name, equipped_frame').in('id', ids)
     ;(profs || []).forEach(p => { profById[p.id] = p })
   }
   const playersFull = (players || []).map(p => ({
     ...p,
-    name: profById[p.user_id]?.username || '—',
+    name: profById[p.user_id]?.name || '—',
     frame: profById[p.user_id]?.equipped_frame || 'none',
   }))
 
