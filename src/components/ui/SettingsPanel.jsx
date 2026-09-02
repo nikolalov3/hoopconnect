@@ -11,6 +11,7 @@ import { useCardStats } from '../../hooks/useCardStats'
 import { FRAME_CATALOG, frameSeenKey } from '../../lib/frames'
 import { useBackgroundCatalog, backgroundAsset, useOwnedBackgrounds, redeemCode } from '../../lib/cardCatalog'
 import { validateName } from '../../lib/nameFilter'
+import { changeLanguage } from '../../i18n'   // ładuje bundle języka PRZED przełączeniem (bez mignięcia kluczy)
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 // Bardziej szary, przygaszone baby-blue ramki
@@ -1163,7 +1164,7 @@ export default function SettingsPanel({ open, onClose }) {
                     <CardGroup>
                       {[{ code: 'pl', label: t('polish') }, { code: 'en', label: t('english') }].map(l => (
                         <Row key={l.code} label={l.label}
-                          onClick={() => i18n.changeLanguage(l.code)}
+                          onClick={() => changeLanguage(l.code)}
                           right={i18n.language === l.code ? (
                             <div style={{ width: 18, height: 18, borderRadius: '50%',
                               background: C.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
