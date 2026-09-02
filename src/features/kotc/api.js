@@ -2,8 +2,8 @@ import { supabase } from '../../lib/supabase'
 
 // ── King of the Court — warstwa danych, TRYB SOLO (bez klubów) ────────────────
 // Wchodzisz solo kodem, host startuje, apka losuje kolorowe drużyny (RPC).
-// Stan sesji czytany z: kotc_sessions + kotc_session_teams (kolor) +
-// kotc_session_players (skład + profil) + kotc_games + kotc_game_votes.
+// Stan sesji = JEDNO wywołanie RPC kotc_session_state (spójny snapshot, 1 round-trip
+// zamiast 6 zapytań). Realtime: zdarzenia z 5 tabel, filtrowane po sesji, z debounce.
 
 export async function createSession(config = {}) {
   const { data, error } = await supabase.rpc('kotc_create_session', {
@@ -55,53 +55,36 @@ export async function voteMvp(sessionId, playerId) {
   return data
 }
 
-// Pełny stan sesji. Profile graczy dociągane osobno (public_profiles po id),
-// żeby nie zależeć od embedu FK.
+// Pełny stan sesji w jednym RPC — nazwy/ramki graczy dołączone server-side.
+// Brak sesji (skasowana / sprzątnięta) → rzuca, a komponent wraca do ekranu startowego.
 export async function getSessionState(sessionId) {
-  const [{ data: session }, { data: teams }, { data: players }, { data: games }] = await Promise.all([
-    supabase.from('kotc_sessions').select('*').eq('id', sessionId).single(),
-    supabase.from('kotc_session_teams').select('*').eq('session_id', sessionId),
-    supabase.from('kotc_session_players').select('session_id, user_id, session_team_id').eq('session_id', sessionId),
-    supabase.from('kotc_games').select('*').eq('session_id', sessionId).order('created_at', { ascending: false }),
-  ])
-
-  // profile (nick + ramka) dla wszystkich graczy w jednym zapytaniu
-  const ids = [...new Set((players || []).map(p => p.user_id))]
-  const profById = {}
-  if (ids.length) {
-    const { data: profs } = await supabase.from('public_profiles')
-      .select('id, name, equipped_frame').in('id', ids)
-    ;(profs || []).forEach(p => { profById[p.id] = p })
-  }
-  const playersFull = (players || []).map(p => ({
-    ...p,
-    name: profById[p.user_id]?.name || '—',
-    frame: profById[p.user_id]?.equipped_frame || 'none',
-  }))
-
-  const currentGame = (games || []).find(g => g.status === 'voting') || null
-  let votes = []
-  if (currentGame) {
-    const { data: v } = await supabase.from('kotc_game_votes').select('*').eq('game_id', currentGame.id)
-    votes = v || []
-  }
-
+  const { data, error } = await supabase.rpc('kotc_session_state', { p_session_id: sessionId })
+  if (error) throw error
+  if (!data?.session) throw new Error('Sesja nie istnieje')
+  const teams = data.teams || [], players = data.players || []
   const teamsById = {}
-  ;(teams || []).forEach(t => { teamsById[t.id] = { ...t, players: playersFull.filter(p => p.session_team_id === t.id) } })
-
-  return { session, teams: teams || [], teamsById, players: playersFull, currentGame, votes, games: games || [] }
+  teams.forEach(t => { teamsById[t.id] = { ...t, players: players.filter(p => p.session_team_id === t.id) } })
+  return { session: data.session, teams, teamsById, players, currentGame: data.current_game || null, votes: data.votes || [] }
 }
 
+// Realtime: każda zmiana w sesji → jeden przeładunek stanu. Zdarzenia z jednej
+// transakcji (potwierdzenie = głos + wyniki drużyn + gierka + sesja) zlewają się
+// w JEDEN reload dzięki debounce — zamiast pięciu równoległych. Wszystkie tabele
+// filtrowane po sesji (głosy mają denormalizowane session_id).
+const DEBOUNCE_MS = 200
 export function subscribeSession(sessionId, onChange) {
+  let timer = null
+  const fire = () => { clearTimeout(timer); timer = setTimeout(onChange, DEBOUNCE_MS) }
+  const bySession = `session_id=eq.${sessionId}`
   const ch = supabase
     .channel(`kotc-${sessionId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'kotc_sessions', filter: `id=eq.${sessionId}` }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'kotc_session_teams', filter: `session_id=eq.${sessionId}` }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'kotc_session_players', filter: `session_id=eq.${sessionId}` }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'kotc_games', filter: `session_id=eq.${sessionId}` }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'kotc_game_votes' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'kotc_sessions',        filter: `id=eq.${sessionId}` }, fire)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'kotc_session_teams',   filter: bySession }, fire)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'kotc_session_players', filter: bySession }, fire)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'kotc_games',           filter: bySession }, fire)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'kotc_game_votes',      filter: bySession }, fire)
     .subscribe()
-  return () => { try { supabase.removeChannel(ch) } catch {} }
+  return () => { clearTimeout(timer); try { supabase.removeChannel(ch) } catch {} }
 }
 
 // Aktywna sesja usera (dla karty „🔴 na żywo" w zakładce Klub) — po kotc_session_players.
