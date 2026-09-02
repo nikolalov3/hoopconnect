@@ -5020,6 +5020,15 @@ function NoClubScreen({ onCreated, profile }) {
 
   const joinRef = useRef(null)
 
+  // ── King of the Court — wejście solo (działa też BEZ klubu) ───────────────
+  const { setNavHidden } = useUI()
+  const [kotcOpen, setKotcOpen] = useState(false)
+  const [kotcSid,  setKotcSid]  = useState(null)
+  const [kotcLive, setKotcLive] = useState(null)
+  const reloadKotc = useCallback(() => { kotcActiveSession().then(setKotcLive).catch(() => {}) }, [])
+  useEffect(() => { reloadKotc() }, [reloadKotc])
+  useEffect(() => { setNavHidden(kotcOpen); return () => setNavHidden(false) }, [kotcOpen, setNavHidden])
+
   // Auto-lookup when code reaches 5 chars
   useEffect(() => {
     const raw = codeInput.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 5)
@@ -5110,6 +5119,36 @@ function NoClubScreen({ onCreated, profile }) {
           {t('noClub.subtitle')}
         </p>
       </motion.div>
+
+      {/* ── King of the Court — zagraj solo, nie potrzebujesz klubu ─────── */}
+      {kotcOpen && (
+        <KotcSolo
+          initialSessionId={kotcSid}
+          onClose={() => { setKotcOpen(false); setKotcSid(null); reloadKotc() }}
+        />
+      )}
+      <motion.button
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.18, duration: 0.28 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => { setKotcSid(kotcLive?.id || null); setKotcOpen(true) }}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px',
+          borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit', color: '#EEF4FF', marginBottom: 22,
+          border: `1px solid ${kotcLive ? 'rgba(91,184,245,0.5)' : 'rgba(228,236,248,0.42)'}`,
+          background: kotcLive ? 'rgba(91,184,245,0.12)' : 'rgba(255,255,255,0.05)',
+          boxShadow: kotcLive ? 'none'
+            : 'inset 0 1px 0 rgba(255,255,255,0.40), inset 0 -1px 0 rgba(120,140,170,0.18), 0 2px 14px rgba(0,0,0,0.22)',
+        }}>
+        <img src="/kotklogo.png" alt="" style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }}/>
+        <div style={{ flex: 1, textAlign: 'left' }}>
+          <div style={{ fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', letterSpacing: 0.3, fontSize: 16 }}>King of the Court</div>
+          <div style={{ fontSize: 12, color: kotcLive ? '#5BB8F5' : 'rgba(238,244,255,0.5)' }}>
+            {kotcLive ? '🔴 Sesja na żywo — wejdź' : 'Zagraj solo · utwórz lub dołącz kodem'}
+          </div>
+        </div>
+        <span style={{ color: 'rgba(238,244,255,0.4)', fontSize: 18 }}>›</span>
+      </motion.button>
 
       {/* ── Primary CTA ────────────────────────────────────────────────── */}
       <motion.button
