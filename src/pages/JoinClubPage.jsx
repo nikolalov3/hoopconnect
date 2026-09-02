@@ -43,7 +43,7 @@ export default function JoinClubPage() {
   const { clubId }         = useParams()
   const [params]           = useSearchParams()
   const navigate           = useNavigate()
-  const { user, profile }  = useAuth()
+  const { user }  = useAuth()
 
   const invitedPos = (params.get('pos') || '').toUpperCase()
 

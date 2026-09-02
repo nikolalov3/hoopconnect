@@ -56,7 +56,6 @@ const MUTED = '#8A9AB0'
 export function buildDocDefinition(data, logoDataUrl) {
   const d = data || {}
   const ph = '____________________________________________________'
-  const nameField = (v, fallback = ph) => v ? { text: v, bold: true } : { text: fallback }
 
   const klubNazwaLine = d.klub_nazwa
     ? { text: d.klub_nazwa, bold: true, fontSize: 10 }
@@ -78,7 +77,7 @@ export function buildDocDefinition(data, logoDataUrl) {
       sub:      { fontSize: 10, color: TEXT, alignment: 'justify', margin: [28, 0, 0, 4] },
       body:     { fontSize: 10, color: TEXT, alignment: 'justify', margin: [0, 0, 0, 6] },
     },
-    footer: (currentPage, pageCount) => ({
+    footer: (currentPage) => ({
       columns: [
         { text: 'HoopConnect · Not A Slop Mikołaj Kretowicz · NIP 6662124313',
           fontSize: 7.5, color: MUTED, margin: [62, 12, 0, 0] },

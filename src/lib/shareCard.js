@@ -117,89 +117,6 @@ function drawHexLogo(ctx, cx, cy, size, color) {
   ctx.restore()
 }
 
-// ── SHOT TYPE GRAPHIC ─────────────────────────────────────────────────────────
-// Draws a simplified court-line icon at (cx, cy) representing the shot zone.
-function drawShotTypeGraphic(ctx, cx, cy, color) {
-  ctx.save()
-  ctx.strokeStyle = `${color}70`
-  ctx.lineWidth = 7
-  ctx.lineCap = 'round'
-
-  // Basket (small circle at top)
-  const baskY = cy - 110
-  ctx.beginPath()
-  ctx.arc(cx, baskY, 18, 0, Math.PI * 2)
-  ctx.fillStyle = `${color}25`
-  ctx.fill()
-  ctx.strokeStyle = `${color}88`
-  ctx.lineWidth = 6
-  ctx.stroke()
-
-  // Rim line
-  ctx.beginPath()
-  ctx.moveTo(cx - 24, baskY + 18)
-  ctx.lineTo(cx + 24, baskY + 18)
-  ctx.strokeStyle = `${color}55`
-  ctx.lineWidth = 5
-  ctx.stroke()
-
-  // Shot arc / line — differs by type
-  ctx.lineWidth = 6
-  ctx.strokeStyle = `${color}60`
-
-  // The three arcs are centred on the *basket*, curving from the shooter's spot
-  // We draw them from cy (shooter level) up toward the basket
-  const rad3  = 200   // 3pt — wide arc
-  const rad2  = 130   // 2pt — mid arc
-  const radFT = 0     // ft  — straight
-
-  if (color /* always true, just for structure */) {
-    // Ball dot (shooter position)
-    ctx.beginPath()
-    ctx.arc(cx, cy, 22, 0, Math.PI * 2)
-    ctx.fillStyle = `${color}30`
-    ctx.fill()
-    ctx.strokeStyle = `${color}70`
-    ctx.lineWidth = 5
-    ctx.stroke()
-    ctx.beginPath()
-    ctx.arc(cx, cy, 10, 0, Math.PI * 2)
-    ctx.fillStyle = color
-    ctx.shadowColor = color
-    ctx.shadowBlur = 14
-    ctx.fill()
-    ctx.shadowBlur = 0
-  }
-
-  ctx.restore()
-}
-
-// Draws a basketball-court zone indicator below the badge area
-function drawCourtZone(ctx, W, shotType, pctColor) {
-  // position: right side, vertically between header and big %
-  const cx = W - 72 - 90, cy = 175
-  const sz  = 54
-
-  ctx.save()
-
-  // Background hex
-  drawHexLogo(ctx, cx, cy, sz, pctColor)
-
-  // Shot-type label inside (already drawn by hex logo as "HC")
-  // Overwrite inner text with shot type abbreviation
-  const abbr = shotType === '3pt' ? '3PT' : shotType === '2pt' ? '2PT' : 'FT'
-  ctx.fillStyle = pctColor
-  ctx.font = `900 ${Math.round(sz * 0.5)}px "Barlow Condensed", sans-serif`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.shadowColor = pctColor
-  ctx.shadowBlur = 10
-  ctx.fillText(abbr, cx, cy + sz * 0.04)
-  ctx.shadowBlur = 0
-  ctx.textBaseline = 'alphabetic'
-  ctx.restore()
-}
-
 // ── helpers do premium-grade layoutu ────────────────────────────────────────
 
 async function loadOptionalImage(src) {
@@ -488,88 +405,6 @@ function drawHeroPercent(ctx, cx, cy, pct, color) {
   ctx.restore()
 }
 
-// Glass stat panel with circular icon + value + label
-function drawGlassStat(ctx, x, y, w, h, opts) {
-  const { value, label, color, icon } = opts
-  ctx.save()
-  // panel bg
-  const bgG = ctx.createLinearGradient(x, y, x, y + h)
-  bgG.addColorStop(0, 'rgba(40,55,85,0.35)')
-  bgG.addColorStop(1, 'rgba(22,32,52,0.28)')
-  ctx.fillStyle = bgG
-  roundRect(ctx, x, y, w, h, 24); ctx.fill()
-
-  // luminance top edge in panel color
-  ctx.strokeStyle = `${color}55`
-  ctx.lineWidth = 1
-  roundRect(ctx, x + 0.5, y + 0.5, w - 1, h - 1, 24); ctx.stroke()
-
-  // icon circle (left)
-  const iconCX = x + 70, iconCY = y + h / 2
-  ctx.beginPath()
-  ctx.arc(iconCX, iconCY, 38, 0, Math.PI * 2)
-  ctx.fillStyle = `${color}18`
-  ctx.shadowColor = color; ctx.shadowBlur = 30
-  ctx.fill()
-  ctx.shadowBlur = 0
-  ctx.strokeStyle = `${color}AA`
-  ctx.lineWidth = 2
-  ctx.stroke()
-
-  // icon glyph (check or X)
-  ctx.strokeStyle = color
-  ctx.lineWidth = 5
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
-  ctx.shadowColor = color; ctx.shadowBlur = 16
-  ctx.beginPath()
-  if (icon === 'check') {
-    ctx.moveTo(iconCX - 16, iconCY + 2)
-    ctx.lineTo(iconCX - 4,  iconCY + 14)
-    ctx.lineTo(iconCX + 18, iconCY - 12)
-  } else {
-    ctx.moveTo(iconCX - 13, iconCY - 13)
-    ctx.lineTo(iconCX + 13, iconCY + 13)
-    ctx.moveTo(iconCX + 13, iconCY - 13)
-    ctx.lineTo(iconCX - 13, iconCY + 13)
-  }
-  ctx.stroke()
-  ctx.shadowBlur = 0
-
-  // value (large)
-  ctx.fillStyle = color
-  ctx.font = '900 88px "Barlow Condensed", sans-serif'
-  ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
-  ctx.shadowColor = color; ctx.shadowBlur = 14
-  ctx.fillText(String(value), iconCX + 60, iconCY - 6)
-  ctx.shadowBlur = 0
-
-  // label below value (letter-spaced ręcznie)
-  ctx.textBaseline = 'middle'
-  drawLetterSpacedLeft(ctx, label, iconCX + 60, iconCY + 32, {
-    font: '700 18px Barlow, sans-serif',
-    color: `${color}99`,
-    letterSpacing: 2,
-  })
-
-  ctx.textBaseline = 'alphabetic'
-  ctx.restore()
-}
-
-// Letter-spaced left-aligned variant
-function drawLetterSpacedLeft(ctx, text, x, y, opts) {
-  ctx.save()
-  ctx.font = opts.font
-  ctx.fillStyle = opts.color
-  ctx.textAlign = 'left'
-  let cx = x
-  for (const ch of text) {
-    ctx.fillText(ch, cx, y)
-    cx += ctx.measureText(ch).width + opts.letterSpacing
-  }
-  ctx.restore()
-}
-
 // Letter-spaced text — Canvas nie ma niezawodnego letter-spacing, więc rysujemy
 // znak po znaku z dodatkową przerwą. textAlign='center' liczy całkowitą szerokość.
 function drawLetterSpaced(ctx, text, cx, y, opts) {
@@ -589,38 +424,6 @@ function drawLetterSpaced(ctx, text, cx, y, opts) {
   ctx.restore()
 }
 
-// Mała ikona "trending up" (chart) — SVG-like draw
-function drawTrendingIcon(ctx, cx, cy, size, color) {
-  ctx.save()
-  ctx.strokeStyle = color
-  ctx.lineWidth = 3
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
-  // bez shadow w footer — czysty kontur
-  const barW = size * 0.18
-  const baseY = cy + size * 0.35
-  ctx.fillStyle = color
-  ;[0.30, 0.55, 0.85].forEach((h, i) => {
-    const bx = cx - size * 0.55 + i * (barW + size * 0.10)
-    const bh = size * h
-    ctx.fillRect(bx, baseY - bh, barW, bh)
-  })
-  // arrow up-right
-  const ax1 = cx - size * 0.55, ay1 = cy - size * 0.05
-  const ax2 = cx + size * 0.55, ay2 = cy - size * 0.55
-  ctx.beginPath()
-  ctx.moveTo(ax1, ay1); ctx.lineTo(ax2, ay2)
-  ctx.stroke()
-  // arrowhead
-  ctx.beginPath()
-  ctx.moveTo(ax2 - size * 0.20, ay2)
-  ctx.lineTo(ax2, ay2)
-  ctx.lineTo(ax2, ay2 + size * 0.20)
-  ctx.stroke()
-  ctx.shadowBlur = 0
-  ctx.restore()
-}
-
 // ── SESSION CARD — new graffiti-inspired layout ──────────────────────────────
 
 // Lazy-load Google Font — wstrzykuje <link> i czeka na faktyczne dostępność glyphów.
@@ -636,7 +439,7 @@ async function loadGoogleFontFamily(family, weight) {
   try { await document.fonts.load(`${weight} 16px "${family}"`) } catch {}
 }
 
-export async function shareSessionCard({ made, attempted, target, shotType, playerName }) {
+export async function shareSessionCard({ made, attempted, target }) {
   // Sora ExtraBold dla hero % — athletic luxury (Apple / Nike / NBA vibe)
   await loadGoogleFontFamily('Sora', 800)
   await document.fonts.ready
@@ -923,7 +726,7 @@ export async function shareStatsCard({ sessions, profile, filter }) {
 
 // ── MATCH CARD ───────────────────────────────────────────────────────────────
 
-export async function shareMatchCard({ match, clubName, playerName }) {
+export async function shareMatchCard({ match, clubName }) {
   await document.fonts.ready
 
   const W = 1080, H = 1080

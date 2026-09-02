@@ -62,12 +62,6 @@ export async function getTrainingCategoryIds() {
   return _trainingCategoryCache
 }
 
-// Wyczyść cache (np. po dodaniu nowego osiągnięcia przez admina)
-export function clearAchievementsCache() {
-  _catalogCache = null
-  _trainingCategoryCache = null
-}
-
 // ── SERIA OBECNOŚCI NA TRENINGACH DRUŻYNOWYCH ─────────────────────────────────
 // Zwraca aktualną serię (consecutive) treningów drużynowych, gdzie zawodnik
 // był 'present' lub 'late'. 'absent' resetuje serię. Brak zaznaczenia
@@ -135,39 +129,6 @@ export async function checkTeamPracticeStreak(userId, weekNumber) {
   return newlyUnlocked
 }
 
-
-// ── COFNIĘCIE OSIĄGNIĘĆ ───────────────────────────────────────────────────────
-// Sprawdza czy użytkownik nadal spełnia progi dla osiągnięć danego base_id.
-// Jeśli currentCount spadł poniżej progu — usuwa osiągnięcie z user_achievements.
-// Wywołuj po każdym cofnięciu treningu/aktywności.
-
-export async function revokeAchievementsIfNeeded(userId, baseId, currentCount) {
-  const catalog = await fetchAchievementsCatalog()
-  const ach = catalog.find(a => a.id === baseId)
-  if (!ach) return []
-
-  const { data: userAchs } = await supabase
-    .from('user_achievements')
-    .select('achievement_id')
-    .eq('user_id', userId)
-    .eq('base_id', baseId)
-
-  if (!userAchs?.length) return []
-
-  const toRevoke = userAchs.filter(ua => {
-    const stage = (ach.stages || []).find(s => `${ach.id}_${s.medal}` === ua.achievement_id)
-    return stage && currentCount < stage.threshold
-  })
-
-  for (const ua of toRevoke) {
-    await supabase.from('user_achievements')
-      .delete()
-      .eq('user_id', userId)
-      .eq('achievement_id', ua.achievement_id)
-  }
-
-  return toRevoke.map(ua => ua.achievement_id)
-}
 
 // ── PEŁNA RESYNC STAGED ACHIEVEMENTS ─────────────────────────────────────────
 // Przelicza wszystkie staged achievements dla użytkownika na podstawie
@@ -259,60 +220,6 @@ export async function revokeStaleAchievements(userId) {
     .delete()
     .eq('user_id', userId)
     .in('achievement_id', toRevoke)
-}
-
-// Wygodny wrapper — sprawdza wszystkie shot achievements po cofnięciu sesji
-// Zoptymalizowane: jedna query do user_achievements zamiast N (po jednej na ach.id)
-export async function revokeShotAchievementsIfNeeded(userId, shotType) {
-  const catalog = await fetchAchievementsCatalog()
-  const shotAchs = catalog.filter(
-    a => a.type === 'staged' && a.shot_type === shotType
-  )
-  if (!shotAchs.length) return []
-
-  // Aktualna suma trafionych rzutów + perfect count w jednej query
-  const { data: sessions } = await supabase
-    .from('shooting_sessions')
-    .select('made, attempted')
-    .eq('user_id', userId)
-    .eq('shot_type', shotType)
-  const totalMade = (sessions || []).reduce((sum, r) => sum + (r.made || 0), 0)
-  const perfectCount = (sessions || []).filter(
-    s => s.made === s.attempted && s.attempted > 0
-  ).length
-
-  // Pobierz WSZYSTKIE earned achievements raz, filtruj w pamięci
-  const baseIds = shotAchs.map(a => a.id)
-  const { data: earned } = await supabase
-    .from('user_achievements')
-    .select('achievement_id, base_id')
-    .eq('user_id', userId)
-    .in('base_id', baseIds)
-
-  if (!earned?.length) return []
-
-  // Zbuduj mapę base_id → ach
-  const achById = Object.fromEntries(shotAchs.map(a => [a.id, a]))
-
-  const toRevoke = []
-  for (const ua of earned) {
-    const ach = achById[ua.base_id]
-    if (!ach) continue
-    const stage = (ach.stages || []).find(s => `${ach.id}_${s.medal}` === ua.achievement_id)
-    if (!stage) continue
-    const currentCount = ach.id.startsWith('perfect_') ? perfectCount : totalMade
-    if (currentCount < stage.threshold) toRevoke.push(ua.achievement_id)
-  }
-
-  if (!toRevoke.length) return []
-
-  // Batch delete jedną query (wcześniej: pętla N delete'ów)
-  await supabase.from('user_achievements')
-    .delete()
-    .eq('user_id', userId)
-    .in('achievement_id', toRevoke)
-
-  return toRevoke
 }
 
 // ── ZWYCIĘSTWA DRUŻYNOWE ──────────────────────────────────────────────────────

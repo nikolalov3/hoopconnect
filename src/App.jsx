@@ -66,7 +66,7 @@ function PageLoader() {
 function AppShell() {
   const { t } = useTranslation('frames')
   const { user, profile, loading, profileReady, recovery } = useAuth()
-  const { leaderboardOpen, frameUnlockOpen, setFrameUnlockOpen, frameUnlockData, setFrameUnlockData, storyOpen, setStoryOpen, navHidden } = useUI()
+  const { frameUnlockOpen, setFrameUnlockOpen, frameUnlockData, setFrameUnlockData, storyOpen, setStoryOpen, navHidden } = useUI()
   const location = useLocation()
 
   // ── Story onboarding ─────────────────────────────────────────────────────────

@@ -356,7 +356,7 @@ function AttendanceDots({ items }) {
   )
 }
 
-function InvitePlayerModal({ team, coachId, onClose, onInvited }) {
+function InvitePlayerModal({ team, onClose, onInvited }) {
   const [email, setEmail] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')

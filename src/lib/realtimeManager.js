@@ -39,7 +39,7 @@ function buildChannel() {
       )
     }
   }
-  channel.subscribe((status, err) => {
+  channel.subscribe((status) => {
     if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
       // Auto-reconnect z exponential backoff (1s start). Ratuje cross-device
       // sync gdy Safari zabije WS w tle albo Supabase zrestartuje połączenie.

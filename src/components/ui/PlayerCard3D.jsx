@@ -143,7 +143,7 @@ export default function PlayerCard3D({ name, hcId, arenaLevel = 0, xp = 0, frame
       raf = requestAnimationFrame(loop)
     }
     const kick = () => { if (!running) { running = true; raf = requestAnimationFrame(loop) } }
-    const down = (e) => { dragging = true; sx = e.clientX; sy = e.clientY; brx = rx; bry = ry; try { card.setPointerCapture(e.pointerId) } catch (_) {}; kick() }
+    const down = (e) => { dragging = true; sx = e.clientX; sy = e.clientY; brx = rx; bry = ry; try { card.setPointerCapture(e.pointerId) } catch {}; kick() }
     const move = (e) => { if (!dragging) return; ty = clamp(bry + (e.clientX - sx) * 0.38, -46, 46); tx = clamp(brx - (e.clientY - sy) * 0.34, -34, 34); kick() }
     const up = () => { if (!dragging) return; dragging = false; tx = REST_X; ty = REST_Y; kick() }
     card.addEventListener('pointerdown', down)

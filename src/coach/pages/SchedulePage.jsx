@@ -28,7 +28,6 @@ export default function SchedulePage() {
   const [viewMode, setViewMode]   = useState('week')   // 'week' | 'month'
   const [anchorDate, setAnchorDate] = useState(() => new Date())
   const [practices, setPractices] = useState([])
-  const [loading, setLoading]     = useState(true)
   const [loadError, setLoadError] = useState(null)
   const [editPractice, setEditPractice] = useState(null)   // istniejący wiersz
   const [createForDate, setCreateForDate] = useState(null) // Date | null
@@ -76,7 +75,7 @@ export default function SchedulePage() {
   }, [currentTeam?.id])
 
   async function loadPractices() {
-    setLoading(true); setLoadError(null)
+    setLoadError(null)
     const { data, error } = await supabase
       .from('team_practice')
       .select('id, scheduled_at, duration_min, category, location, notes')
@@ -86,7 +85,6 @@ export default function SchedulePage() {
       .order('scheduled_at', { ascending: true })
     if (error) { setLoadError(error.message); console.error(error) }
     setPractices(data || [])
-    setLoading(false)
   }
 
   // Pogrupowane po dniu (klucz: YYYY-MM-DD)

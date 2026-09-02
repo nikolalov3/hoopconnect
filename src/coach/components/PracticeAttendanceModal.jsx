@@ -2,13 +2,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatTime } from '../lib/dateUtil'
 
-export const ATT_COLORS = {
-  present:    '#3FA86A',
-  late:       '#E5A93C',
-  absent:     '#D85546',
-  not_marked: '#D4DDE8',
-}
-
 const STATUS_BUTTONS = [
   { value: 'present', label: 'Obecny',     short: '✓', color: '#3FA86A' },
   { value: 'late',    label: 'Spóźniony',  short: '◐', color: '#E5A93C' },

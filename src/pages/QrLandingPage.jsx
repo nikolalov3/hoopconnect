@@ -41,7 +41,7 @@ const METEOR_CSS = `
 function Meteors({ count = 28 }) {
   // Zafiksowane parametry przez useMemo, żeby nie regenerowały się przy każdym renderze
   const meteors = useMemo(() => {
-    return Array.from({ length: count }, (_, i) => ({
+    return Array.from({ length: count }, () => ({
       left:     Math.random() * 100,           // start x: 0–100%
       duration: 1.4 + Math.random() * 1.6,     // 1.4–3.0s — szybszy "rain"
       delay:    Math.random() * 4,             // 0–4s — gęściej

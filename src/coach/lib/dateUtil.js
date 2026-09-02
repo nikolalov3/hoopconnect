@@ -1,6 +1,5 @@
 // Minimalne narzędzia datowe (PL, tygodnie zaczynają w poniedziałek)
 
-export const PL_DAY_FULL  = ['niedziela','poniedziałek','wtorek','środa','czwartek','piątek','sobota']
 export const PL_DAY_SHORT = ['Nd','Pon','Wt','Śr','Czw','Pt','Sob']
 
 export function startOfDay(d) {
@@ -13,16 +12,8 @@ export function startOfWeek(d) {
   x.setDate(x.getDate() + offset)
   return x
 }
-export function endOfWeek(d) {
-  const monday = startOfWeek(d)
-  return addDays(monday, 7)             // następny poniedziałek (exclusive)
-}
 export function startOfMonth(d) {
   const x = startOfDay(d); x.setDate(1); return x
-}
-export function endOfMonth(d) {
-  const first = startOfMonth(d)
-  return addMonths(first, 1)            // pierwszy następnego miesiąca (exclusive)
 }
 export function addDays(d, n) {
   const x = new Date(d); x.setDate(x.getDate() + n); return x

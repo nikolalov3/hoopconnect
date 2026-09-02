@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { onTableChange } from '../lib/realtimeManager'
 import TrainingCard from '../components/training/TrainingCard'
-import { fetchAchievementsCatalog, getNewlyUnlocked, awardMedalPoints, revokeStaleAchievements } from '../lib/achievements'
+import { fetchAchievementsCatalog, awardMedalPoints, revokeStaleAchievements } from '../lib/achievements'
 import SettingsPanel from '../components/ui/SettingsPanel'
 import LeagueInfoPanel from '../components/ui/LeagueInfoPanel'
 import { useUI } from '../context/UIContext'
@@ -1254,7 +1254,7 @@ function DayDoneModal({ completedCount, onClose }) {
 
 // ── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function HomePage() {
-  const { t, i18n } = useTranslation('home')
+  const { t } = useTranslation('home')
   const { profile, refreshProfile } = useAuth()
   const [trainings, setTrainings] = useState([])
   // Trzymamy pełną listę aktywnych treningów (do swap-funkcji "nie mam sprzętu").
@@ -1269,14 +1269,13 @@ export default function HomePage() {
   const [reportLoading, setReportLoading] = useState(true)
   const [daysUntilReport, setDaysUntilReport] = useState(0)  // raport odblokowany od startu (rozgrzewka), bez blokady 7-dniowej
   const [achievementToast, setAchievementToast] = useState(null) // { title, stage }
-  const { setSettingsOpen, leagueOpen, setLeagueOpen, setFrameUnlockOpen, setFrameUnlockData, frameUnlockData, setNotificationsOpen, setStoryOpen } = useUI()
+  const { setSettingsOpen, leagueOpen, setLeagueOpen, setFrameUnlockOpen, frameUnlockData, setNotificationsOpen, setStoryOpen } = useUI()
   const { unreadCount: notifUnreadCount } = useNotifications()
   const { practices: teamPractices } = useTodayTeamPractice()
   const [showSettings, setShowSettings] = useState(false)
 
   function openSettings() { setShowSettings(true); setSettingsOpen(true) }
   function closeSettings() { setShowSettings(false); setSettingsOpen(false) }
-  function openLeague()  { setLeagueOpen(true)  }
   function closeLeague() { setLeagueOpen(false) }
 
   // ── Frame notification dot — show if there's a pending frame in UIContext ───
@@ -1564,7 +1563,6 @@ export default function HomePage() {
       .gte('date', effectiveFromISO)
     const runningTotal = (pointsData || []).reduce((sum, r) => sum + (r.points || 0), 0)
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
       console.log('[weekly-report]', { currentWeek, joinWeek, weekStartISO, rows: pointsData })
     }
 

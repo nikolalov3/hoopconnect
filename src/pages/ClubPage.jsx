@@ -142,24 +142,6 @@ const ARENAS = [
   { level: 6, name: 'Seraphim',     threshold: 7500 },
 ]
 
-function arenaProgress(xp = 0, level = 0) {
-  const current = ARENAS[level] ?? ARENAS[0]
-  const next = ARENAS[level + 1] ?? null
-  if (!next) return { current, next: null, pct: 1 }
-  const span = next.threshold - current.threshold
-  const pct = span > 0 ? Math.min(1, Math.max(0, (xp - current.threshold) / span)) : 1
-  return { current, next, pct }
-}
-
-// Per-arena color theme — drives the glow / accents / progress bar / buttons
-// shown on the player's profile card, sourced from lib/arenas.js (badge gradient
-// + glow color, the same palette used by Droga Aren).
-function getArenaTheme(level = 0) {
-  const a = ARENA_THEMES[level] ?? ARENA_THEMES[0]
-  const [hi, mid, lo] = a.badge || ['#AABBD8', '#5566AA', '#0C0E22']
-  return { glow: a.glow, hi, mid, lo, name: a.name }
-}
-
 // Small arena badge icon — current arena, shown in place of the old text pill.
 // Falls back to a flat hex with the arena's gradient if the PNG is missing
 // (e.g. level 0 "Rozgrzewka", which has no badge artwork yet).
@@ -1479,15 +1461,12 @@ function ProfileOverlay({ onClose, children }) {
   )
 }
 
-function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, onRemove, onLeave, removing, onOpenClub }) {
+function PlayerProfileSheet({ member, isOwner, isSelf, onClose, onRemove, onLeave, removing }) {
   const { t } = useTranslation('club')
   const { profile: myProfile } = useAuth()
   const { profile, stats, loading } = usePlayerProfileData(member.id)
   const bgCatalog = useBackgroundCatalog()
   const cardBg = backgroundAsset(bgCatalog, profile?.equipped_background)
-  const country = COUNTRIES.find(c => c.code === profile?.country) || null
-  const { next: nextArena, pct } = arenaProgress(profile?.xp, profile?.arena_level)
-  const theme = getArenaTheme(profile?.arena_level ?? 0)
   // The card only renders once the fresh DB row (`profile`) has loaded (guard below),
   // so profile.equipped_frame is always authoritative here. Do NOT fall back to any
   // snapshot: for the self-card the AuthContext (myProfile) snapshot is a fine fill-in
@@ -1497,10 +1476,6 @@ function PlayerProfileSheet({ club, posKey, member, isOwner, isSelf, onClose, on
   const frameVariant = isSelf
     ? (profile?.equipped_frame || myProfile?.equipped_frame || 'none')
     : (profile?.equipped_frame || 'none')
-  const [flagOk, setFlagOk] = useState(true)
-  const [showArenaRoad, setShowArenaRoad] = useState(false)
-  useEffect(() => { setFlagOk(true) }, [country?.flagFile])
-  const role = member.isOwner ? t('profile.roleCaptain') : t('profile.rolePlayer')
   const showDanger = isSelf || (isOwner && !member.isOwner)
 
   // ── Twój własny profil = latająca karta 3D. Pod spodem tylko opuść/rozwiąż klub. ──
@@ -1603,7 +1578,7 @@ function ModerationActions({ targetId, targetName, context }) {
 
 // ── Lightweight player profile opened from a match (tap a joined player). Same
 //    3D card as the roster sheet, plus report/block — no club-owner actions. ──
-export function MatchPlayerSheet({ player, uid, onClose }) {
+export function MatchPlayerSheet({ player, onClose }) {
   const { profile, stats, loading } = usePlayerProfileData(player.user_id)
   const bgCatalog = useBackgroundCatalog()
   const cardBg = backgroundAsset(bgCatalog, profile?.equipped_background)
@@ -2533,7 +2508,7 @@ export function CreateMatchSheet({ club, uid, onClose, onCreated }) {
 // ── MATCH DETAIL SHEET ────────────────────────────────────────────────────────
 function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoined, onLeft, onDeleted }) {
   const { t } = useTranslation('club')
-  const { profile, refreshProfile, setProfileData } = useAuth()
+  const { profile, setProfileData } = useAuth()
   const [local,         setLocal]         = useState(match)
   const [joining,       setJoining]       = useState(false)
   const [leaving,       setLeaving]       = useState(false)
@@ -2952,9 +2927,6 @@ function MatchDetailSheet({ match, uid, userClubId, userClubName, onClose, onJoi
                   const locked = (team === 'home' && !isHomeClubMember) || (team === 'away' && isAwayLocked)
                   const disabled = joining || teamFull || locked
                   const isActive = !disabled
-                  const lockedLabel = team === 'home'
-                    ? t('matchDetail.lockedHome')
-                    : `🔒 ${local._awayClub?.abbr || local._awayClub?.name || t('matchDetail.lockedAwayOther')}`
 
                   // Hide fully locked teams if there's at least one joinable
                   if (locked && joinable.length > 0) return null
@@ -3472,7 +3444,6 @@ function JoinSuccessModal({ match, uid, clubName, playerName, onClose }) {
   const { t } = useTranslation('club')
   const [sharing, setSharing] = useState(false)
   const color = MODE_COLOR[match.mode] || C.accent
-  const modeLabels = { '2v2': '2 na 2', '3v3': '3 na 3', '5v5': '5 na 5' }
   const myPlayer = match.players?.find(p => p.user_id === uid)
   // Always show the user's own club name regardless of which team slot they joined
   const teamLabel = myPlayer?.team === 'home' ? (match._club?.name || t('joinSuccess.homeFallback')) : (clubName || t('joinSuccess.yourClubFallback'))
@@ -4599,7 +4570,7 @@ function ClubPreviewSheet({ club, onClose }) {
 }
 
 // ── COURT PANEL ───────────────────────────────────────────────────────────────
-function CourtPanel({ club, uid, onUpdate, onTokenTap, swapMode, setSwapMode, swapSrc, swapping, swapError }) {
+function CourtPanel({ club, uid, onTokenTap, swapMode, setSwapMode, swapSrc, swapping, swapError }) {
   const { t } = useTranslation('club')
   const isOwner = club.ownerId === uid
 
@@ -4911,7 +4882,7 @@ function ClubView({ club, onUpdate, uid }) {
           {/* Panel 1 — Skład */}
           <div style={{ width: '33.333%', height: '100%', overflowY: 'auto' }}>
             <CourtPanel
-              club={club} uid={uid} onUpdate={onUpdate}
+              club={club} uid={uid}
               onTokenTap={handleTokenTap}
               swapMode={swapMode} setSwapMode={v => { setSwapMode(v); setSwapSrc(null); setSwapError(null) }}
               swapSrc={swapSrc} swapping={swapping} swapError={swapError}/>
@@ -5064,8 +5035,6 @@ function NoClubScreen({ onCreated, profile }) {
       setJoining(false)
     }
   }
-
-  const codeRaw = codeInput.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 5)
 
   const STEPS = [
     {

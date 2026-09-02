@@ -552,7 +552,7 @@ function SpinPicker({ label, value, onChange, min, max, unit = '' }) {
 
 // ── Sub-view: Edytuj profil ───────────────────────────────────────────────────
 // Zawiera: dane profilowe + dane fizyczne + plan tygodnia + ramka avatara
-function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFrameChange }) {
+function EditProfileView({ onBack, onClose, profile, user, onProfileSaved }) {
   const { t } = useTranslation('settings')
   const uid = user?.id
   const currentYear = new Date().getFullYear()
@@ -568,8 +568,6 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
   })
   const [saveState,  setSaveState]  = useState('idle')
   const [nameError,  setNameError]  = useState('')
-  const [frameId,    setFrameId]    = useState(profile?.equipped_frame || 'none')
-  const [frameState, setFrameState] = useState('idle')
 
   const dirty = name.trim() !== (profile?.name || '').trim()
     || city.trim() !== (profile?.city || '').trim()
@@ -600,32 +598,6 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved, onFra
       console.error('[EditProfileView] handleSave:', e)
       setSaveState('error')
       setTimeout(() => setSaveState('idle'), 2000)
-    }
-  }
-
-  async function handlePickFrame(id) {
-    if (frameState === 'saving') return
-    const equipped = id === 'none' ? null : id
-    setFrameId(id)
-    onFrameChange?.(equipped)
-    setFrameState('saving')
-    try {
-      const { error } = await supabase.from('profiles')
-        .update({ equipped_frame: equipped })
-        .eq('id', uid)
-        .select('equipped_frame')
-      if (error) throw error
-      // Remember ownership: any frame you equip stays selectable after switching
-      // away (otherwise it vanishes once it's no longer `current`).
-      if (equipped && uid) localStorage.setItem(frameSeenKey(equipped, uid), '1')
-      setFrameState('saved')
-      setTimeout(() => setFrameState('idle'), 1400)
-    } catch (e) {
-      console.error('[EditProfileView] handlePickFrame:', e)
-      setFrameId(profile?.equipped_frame || 'none')
-      onFrameChange?.(profile?.equipped_frame ?? null)
-      setFrameState('error')
-      setTimeout(() => setFrameState('idle'), 2000)
     }
   }
 
@@ -978,9 +950,6 @@ export default function SettingsPanel({ open, onClose }) {
     ((draftBg || null) !== (profile?.equipped_background || null) ||
      draftFrameNorm !== (profile?.equipped_frame || null))
 
-  const memberSince = profile?.created_at
-    ? new Date(profile.created_at).toLocaleDateString(i18n.language === 'pl' ? 'pl-PL' : 'en-US', { month: 'long', year: 'numeric' })
-    : null
 
   const isMain = view === 'main'
 
@@ -1181,9 +1150,7 @@ export default function SettingsPanel({ open, onClose }) {
                 <EditProfileView
                   onBack={() => setView('main')} onClose={onClose}
                   profile={profile} user={user}
-                  onProfileSaved={refreshProfile}
-                  onFrameChange={frame => setProfileData({ equipped_frame: frame })}
-                />
+                  onProfileSaved={refreshProfile}                />
               )}
               {view === 'account' && (
                 <AccountView onBack={() => setView('main')} onClose={onClose} user={user}/>
