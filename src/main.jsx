@@ -5,6 +5,12 @@ import './index.css'
 import { initSentry, SentryErrorBoundary } from './lib/sentry'
 import AppErrorFallback from './components/ui/AppErrorFallback'
 
+// Vercel Speed Insights ma sens tylko na webie (raportuje do /_vercel/...). W natywnej
+// powłoce Capacitora (origin https://localhost) tylko sypałby 404-kami do konsoli.
+function Insights() {
+  return (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) ? null : <SpeedInsights />
+}
+
 // Subdomain-based app split:
 //   trener.hoopconnect.pl → CoachApp  (light theme, sidebar, B2B panel for coaches)
 //   gu.hoopconnect.pl     → AdminApp  (admin tools: contracts, invoices, history)
@@ -56,7 +62,7 @@ if (isAdminSubdomain) {
         <SentryErrorBoundary fallback={fallback} showDialog={false}>
           <AdminApp />
         </SentryErrorBoundary>
-        <SpeedInsights />
+        <Insights />
       </StrictMode>,
     )
   })
@@ -67,7 +73,7 @@ if (isAdminSubdomain) {
         <SentryErrorBoundary fallback={fallback} showDialog={false}>
           <CoachApp />
         </SentryErrorBoundary>
-        <SpeedInsights />
+        <Insights />
       </StrictMode>,
     )
   })
@@ -80,7 +86,7 @@ if (isAdminSubdomain) {
         <SentryErrorBoundary fallback={fallback} showDialog={false}>
           <App />
         </SentryErrorBoundary>
-        <SpeedInsights />
+        <Insights />
       </StrictMode>,
     )
   })

@@ -938,6 +938,16 @@ export async function shareMatchCard({ match, clubName }) {
 
 // ── WEB SHARE / DOWNLOAD ─────────────────────────────────────────────────────
 
+// PNG → base64 bez prefiksu data-URL (tego oczekuje Capacitor Filesystem.writeFile).
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(String(r.result).split(',')[1] || '')
+    r.onerror = reject
+    r.readAsDataURL(blob)
+  })
+}
+
 // Otwiera systemowy share sheet (iOS / Android / desktop). User wybiera np. IG
 // → Stories, Messages, AirDrop, Photos albo Save. Pełna integracja Web Share L2.
 // meta = { title, text } — opcjonalny kontekst dla aplikacji odbierającej.
@@ -947,6 +957,22 @@ export async function doShare(blob, filename = 'hoopconnect.png', meta = {}) {
     files: [file],
     title: meta.title || 'HoopConnect',
     text:  meta.text  || 'Sprawdź mój wynik na HoopConnect 🏀',
+  }
+  // Natywna powłoka (Capacitor): Android WebView zwykle NIE ma navigator.share, a
+  // fallback <a download> nie ma menedżera pobierań → udostępnianie cicho nic nie robi.
+  // Zapisz PNG do cache apki i otwórz systemowy share sheet pluginem. Pluginy dochodzą
+  // przy pakowaniu (@capacitor/share + @capacitor/filesystem); bez nich — jak na webie.
+  const cap = typeof window !== 'undefined' ? window.Capacitor : null
+  if (cap?.isNativePlatform?.() && cap.Plugins?.Share && cap.Plugins?.Filesystem) {
+    try {
+      const data = await blobToBase64(blob)
+      const { uri } = await cap.Plugins.Filesystem.writeFile({ path: filename, data, directory: 'CACHE' })
+      await cap.Plugins.Share.share({ title: shareData.title, text: shareData.text, files: [uri], dialogTitle: shareData.title })
+      return { ok: true, method: 'native' }
+    } catch (e) {
+      if (/cancel/i.test(String(e?.message || e))) return { ok: false, method: 'cancelled' }
+      console.warn('[share] native share failed', e)
+    }
   }
   try {
     if (navigator.share && navigator.canShare?.({ files: [file] })) {

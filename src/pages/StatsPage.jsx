@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
@@ -197,6 +197,15 @@ export default function StatsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('7d')
   const [addOpen, setAddOpen] = useState(false)
+  // Lekki toast zamiast window.alert — natywny alert w WebView (Capacitor) pokazuje
+  // dialog „localhost mówi:", a na webie i tak wygląda obco. Znika sam po 3,5 s.
+  const [toast, setToast] = useState(null)
+  const toastTimer = useRef(null)
+  function showToast(msg) {
+    setToast(msg)
+    clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(null), 3500)
+  }
   const [savingStrength, setSavingStrength] = useState(false)
   const [strengthSessions, setStrengthSessions] = useState([])
 
@@ -229,7 +238,7 @@ export default function StatsPage() {
         .eq('user_id', profile.id)
         .eq('date', today)
       if ((count || 0) >= 3) {
-        alert(t('strengthLimitAlert'))
+        showToast(t('strengthLimitAlert'))
         return
       }
       const { error } = await supabase.from('strength_sessions').insert({
@@ -237,7 +246,7 @@ export default function StatsPage() {
       })
       if (error) {
         console.error('[strength insert]', error)
-        alert(t('saveErrorAlert', { error: error.message }))
+        showToast(t('saveErrorAlert', { error: error.message }))
         return
       }
       setAddOpen(false)
@@ -335,6 +344,16 @@ export default function StatsPage() {
 
   return (
     <div className="page-content" style={{ padding: 'max(52px, calc(env(safe-area-inset-top) + 20px)) 22px 22px' }}>
+      {toast && (
+        <div role="status" style={{
+          position: 'fixed', left: '50%', transform: 'translateX(-50%)',
+          top: 'max(16px, calc(env(safe-area-inset-top) + 8px))', zIndex: 10000,
+          maxWidth: 'min(92vw, 400px)', padding: '11px 16px', borderRadius: 12,
+          background: 'rgba(20,28,44,0.96)', color: '#EEF4FF', fontSize: 13, fontWeight: 600,
+          textAlign: 'center', border: '1px solid rgba(255,255,255,0.12)',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+        }}>{toast}</div>
+      )}
       {/* WIP: AddSessionModal — widoczne tylko w dev do czasu pełnego flow.
           Na produkcji ukryte, żeby userzy nie trafiali na niedokończone ścieżki. */}
       <AddSessionModal

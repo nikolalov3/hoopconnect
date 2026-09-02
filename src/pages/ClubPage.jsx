@@ -893,7 +893,7 @@ function EmptySlotSheet({ club, posKey, onClose }) {
   const code = club.joinCode ?? null
 
   function copyText(text) {
-    navigator.clipboard.writeText(text)
+    navigator.clipboard?.writeText(text)
       .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500) })
   }
 
@@ -4942,7 +4942,7 @@ function JoinCodeChip({ code }) {
   return (
     <motion.button
       whileTap={{ scale: 0.94 }}
-      onClick={() => navigator.clipboard.writeText(code)
+      onClick={() => navigator.clipboard?.writeText(code)
         .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 7,
