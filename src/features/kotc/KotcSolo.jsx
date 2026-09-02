@@ -183,7 +183,6 @@ function Lobby({ s, onStart, onLeave, onAbandon, busy, onCard }) {
       <div style={{ textAlign: 'center', margin: '6px 0 22px' }}>
         <div style={{ fontSize: 12, color: MUTED, letterSpacing: 1, textTransform: 'uppercase' }}>Kod sesji</div>
         <div style={{ ...h1, fontSize: 46, color: BLUE, letterSpacing: 8 }}>{s.code}</div>
-        <div style={{ fontSize: 13, color: MUTED }}>Podaj kod, żeby dołączyli — solo</div>
         <div style={{ display: 'inline-flex', gap: 5, alignItems: 'center', marginTop: 9, padding: '4px 11px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11, color: MUTED }}>
           <b style={{ color: BLUE }}>{s.session.confirm_votes}</b> potwierdzeń czekających zamyka gierkę
         </div>
