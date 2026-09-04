@@ -47,7 +47,10 @@ language plpgsql security definer set search_path = public, pg_temp as $$
 begin
   delete from public.kotc_sessions
    where (status = 'lobby' and created_at        < now() - interval '2 hours')
-      or (status = 'live'  and last_confirmed_at < now() - interval '2 hours');
+      or (status = 'live'  and last_confirmed_at < now() - interval '2 hours')
+      -- host sam w lobby > 15 min (utworzył i zapomniał) → zamknij, żeby nie wisiało na liście
+      or (status = 'lobby' and created_at < now() - interval '15 minutes'
+          and (select count(*) from public.kotc_session_players p where p.session_id = kotc_sessions.id) <= 1);
 end $$;
 
 -- ─── 2. kotc_abandon — host kończy/kasuje sesję (lobby lub live) ────────────
@@ -310,7 +313,30 @@ language sql stable security definer set search_path = public, pg_temp as $$
   );
 $$;
 
--- ─── 10. Uprawnienia — tylko zalogowani wołają RPC ──────────────────────────
+-- ─── 10. kotc_list_active — aktywne sesje globalnie (lista bez kodu) ─────────
+-- Sprząta martwe (w tym samotne lobby > 15 min), potem zwraca lobby + live z hostem,
+-- liczbą graczy, pojemnością i flagą "jestem w środku". Lobby pierwsze, najnowsze wyżej.
+create or replace function public.kotc_list_active()
+returns jsonb
+language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  perform public.kotc_cleanup_stale();
+  return coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'id', s.id, 'code', s.code, 'status', s.status, 'created_at', s.created_at,
+      'host_name', coalesce(pp.name, '—'),
+      'players',  (select count(*) from public.kotc_session_players p where p.session_id = s.id),
+      'capacity', s.max_teams * s.team_size,
+      'i_am_in',  exists (select 1 from public.kotc_session_players p where p.session_id = s.id and p.user_id = auth.uid())
+    ) order by (s.status = 'lobby') desc, s.created_at desc)
+    from public.kotc_sessions s
+    left join public.public_profiles pp on pp.id = s.host_id
+    where s.status in ('lobby', 'live')
+  ), '[]'::jsonb);
+end $$;
+
+-- ─── 11. Uprawnienia — tylko zalogowani wołają RPC ──────────────────────────
+revoke all on function public.kotc_list_active()                                          from public;
 revoke all on function public.kotc_session_state(uuid)                                     from public;
 revoke all on function public.kotc_cleanup_stale()                                        from public;
 revoke all on function public.kotc_abandon(uuid)                                           from public;
@@ -330,3 +356,4 @@ grant execute on function public.kotc_start(uuid)                               
 grant execute on function public.kotc_cast_vote(uuid, uuid)                                   to authenticated;
 grant execute on function public.kotc_vote_mvp(uuid, uuid)                                    to authenticated;
 grant execute on function public.kotc_session_state(uuid)                                     to authenticated;
+grant execute on function public.kotc_list_active()                                          to authenticated;

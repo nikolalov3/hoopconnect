@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import KotcSolo from '../features/kotc/KotcSolo'
-import { getMyActiveSession as kotcActiveSession } from '../features/kotc/api'
+import { getMyActiveSession as kotcActiveSession, joinByCode as kotcJoin } from '../features/kotc/api'
+import KotcActiveSessions from '../features/kotc/KotcActiveSessions'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, useDragControls, useMotionValue, useTransform, animate } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
@@ -368,7 +369,7 @@ async function apiCancelMatch(matchId) {
   if (error) throw error
 }
 
-async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds = [], myClubId = null) {
+async function apiFetchMatches(userLat, userLng, radiusKm = null, myClubMemberIds = [], myClubId = null) {
   // Window: -7 dni do +60 dni od dziś. Stare mecze są bezużyteczne na liście,
   // a bez okna przy 5k userów łatwo o tabelę z dziesiątkami tysięcy wierszy.
   const now = new Date()
@@ -403,6 +404,7 @@ async function apiFetchMatches(userLat, userLng, radiusKm = 25, myClubMemberIds 
     !(!m.away_club_id && new Date(m.scheduled_at).getTime() < staleBefore
         && !AWAITING_RESULT.includes(m.status)) &&
     ((myClubId && (m.club_id === myClubId || m.away_club_id === myClubId)) ||
+      radiusKm == null ||                                           // bez filtra dystansu
       haversineKm(userLat, userLng, m.lat, m.lng) <= radiusKm)
   )
   if (!visible.length) return []
@@ -551,9 +553,11 @@ async function apiConfirmAwayScore(matchId) {
 
 // Away captain disputes — scores don't match
 async function apiDisputeScore(matchId) {
-  const { error } = await supabase.from('club_matches')
-    .update({ status: 'disputed' }).eq('id', matchId)
+  // .select() + row-count: bez tego odrzucenie przez RLS = 0 wierszy BEZ błędu.
+  const { data, error } = await supabase.from('club_matches')
+    .update({ status: 'disputed' }).eq('id', matchId).select('id')
   if (error) throw error
+  if (!data?.length) throw new Error(i18n.t('club:errors.confirmFailed'))
 }
 
 // Mark walkover: 'home_cancelled' (creator cancels < 2h) or 'away_noshow'
@@ -3675,8 +3679,10 @@ function MatchesPanel({ club, uid, isActive }) {
   const [pendingRole, setPendingRole] = useState('home')
   const [joinedMatch, setJoinedMatch] = useState(null)
   const [autoCancelNotif, setAutoCancelNotif] = useState(false)
-  const RADIUS_OPTIONS = [5, 10, 25]
-  const [radius, setRadius] = useState(25)
+  // null = bez filtra dystansu. Domyślnie WSZYSTKIE mecze — jest za mało graczy,
+  // żeby ciąć listę po odległości; promień to opcja, nie domyślny filtr.
+  const RADIUS_OPTIONS = [null, 5, 10, 25]
+  const [radius, setRadius] = useState(null)
   const MODE_OPTIONS = ['Wszystkie', '2v2', '3v3', '5v5']
   const [modeFilter, setModeFilter] = useState('Wszystkie')
 
@@ -3935,7 +3941,7 @@ function MatchesPanel({ club, uid, isActive }) {
         {/* Radius filter — pills, reloads the list on change */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
           {RADIUS_OPTIONS.map(km => (
-            <button key={km} onClick={() => setRadius(km)}
+            <button key={String(km)} onClick={() => setRadius(km)}
               style={{
                 flex: 1, padding: '7px 0', borderRadius: 12, cursor: 'pointer',
                 fontSize: 11, fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: 0.5,
@@ -3944,7 +3950,7 @@ function MatchesPanel({ club, uid, isActive }) {
                 color: radius === km ? C.accentHi : C.sub,
                 transition: 'all 0.15s ease',
               }}>
-              {km} km
+              {km == null ? t('matchesPanel.modeAll') : `${km} km`}
             </button>
           ))}
         </div>
@@ -4726,6 +4732,9 @@ function ClubView({ club, onUpdate, uid }) {
   const [kotcLive, setKotcLive]   = useState(null)
   const reloadKotc = useCallback(() => { kotcActiveSession().then(setKotcLive).catch(() => {}) }, [])
   useEffect(() => { reloadKotc() }, [reloadKotc])
+  const openKotc = (id) => { setKotcSid(id || null); setKotcOpen(true) }
+  // Dołącz do sesji z listy (bez kodu) → od razu otwórz panel na tej sesji.
+  const joinKotc = async (code) => { const s = await kotcJoin(code); openKotc(s.id) }
 
   // KotC to pełnoekranowa nakładka — chowamy dolny pasek nawigacji (brak miss-clicków).
   const { setNavHidden } = useUI()
@@ -4875,6 +4884,10 @@ function ClubView({ club, onUpdate, uid }) {
                 </div>
                 <span style={{ color: 'rgba(238,244,255,0.4)', fontSize: 18 }}>›</span>
               </button>
+            </div>
+            {/* Aktywne sesje KotC (globalnie) — widoczne w Meczach, dołączenie bez kodu */}
+            <div style={{ padding: '0 16px 14px' }}>
+              <KotcActiveSessions onJoin={joinKotc} onOpen={openKotc} compact />
             </div>
             <MatchesPanel club={club} uid={uid} isActive={panel === 0}/>
           </div>

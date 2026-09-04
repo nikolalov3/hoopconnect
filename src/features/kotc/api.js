@@ -91,8 +91,19 @@ export function subscribeSession(sessionId, onChange) {
 export async function getMyActiveSession() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
+  // Sprzątnij martwe sesje (m.in. samotne lobby > 15 min), żeby karta „🔴 na żywo"
+  // nie reklamowała sesji, której nie ma już sensu wznawiać.
+  try { await supabase.rpc('kotc_cleanup_stale') } catch { /* best-effort */ }
   const { data } = await supabase.from('kotc_session_players')
     .select('session_id, kotc_sessions(*)').eq('user_id', user.id)
   const active = (data || []).map(r => r.kotc_sessions).find(s => s && (s.status === 'lobby' || s.status === 'live'))
   return active || null
+}
+
+// Globalna lista aktywnych sesji (lobby + live) — do dołączania bez kodu.
+// Server-side sprząta martwe sesje przed zwróceniem listy.
+export async function listActiveSessions() {
+  const { data, error } = await supabase.rpc('kotc_list_active')
+  if (error) throw error
+  return data || []
 }

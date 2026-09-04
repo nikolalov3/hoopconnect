@@ -3,6 +3,7 @@ import HexAvatar from '../../components/ui/HexAvatar'
 import { MatchCard, MatchPlayerSheet } from '../../pages/ClubPage'
 import { supabase } from '../../lib/supabase'
 import * as api from './api'
+import KotcActiveSessions from './KotcActiveSessions'
 
 // ── King of the Court — TRYB SOLO (realny, na Supabase) ──────────────────────
 // create/join kodem → lobby (realtime) → host start → reveal → live (głosują
@@ -116,7 +117,7 @@ export default function KotcSolo({ onClose, initialSessionId = null }) {
         {/* Powrót do trwającej sesji: sessionId już jest, stan dopiero się ładuje —
             bez tego strażnika przez chwilę mignąłby ekran tworzenia sesji. */}
         {sessionId && !st && <div style={{ textAlign: 'center', color: MUTED, fontSize: 14, padding: '80px 0' }}>Wracam do sesji…</div>}
-        {s.phase === 'home' && !sessionId && <Home onCreate={create} onJoin={join} busy={busy} />}
+        {s.phase === 'home' && !sessionId && <Home onCreate={create} onJoin={join} onOpen={(id) => { setRevealed(true); setSessionId(id) }} busy={busy} />}
         {s.phase === 'lobby' && <Lobby s={s} onStart={start} onLeave={leave} onAbandon={abandon} busy={busy} onCard={openCard} />}
         {s.phase === 'reveal' && <Reveal s={s} onGo={() => setRevealed(true)} onCard={openCard} />}
         {s.phase === 'live' && <Live s={s} onVote={vote} onCard={openCard} onAbandon={abandon} onLeave={leave} />}
@@ -146,7 +147,7 @@ function Header({ onClose }) {
   )
 }
 
-function Home({ onCreate, onJoin, busy }) {
+function Home({ onCreate, onJoin, onOpen, busy }) {
   const [code, setCode] = useState('')
   const [conf, setConf] = useState(2)
   const stepBtn = { width: 34, height: 34, borderRadius: 10, border: '1px solid rgba(255,255,255,0.16)', background: 'rgba(255,255,255,0.06)', color: TXT, fontSize: 20, fontWeight: 700, cursor: 'pointer', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }
@@ -160,6 +161,11 @@ function Home({ onCreate, onJoin, busy }) {
       <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="KOD SESJI" maxLength={6}
         style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 12, padding: '13px', color: TXT, fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, letterSpacing: 6, textAlign: 'center', textTransform: 'uppercase', outline: 'none', marginBottom: 10 }} />
       <button style={{ ...btnGhost, width: '100%', opacity: (busy || code.length < 4) ? 0.5 : 1 }} disabled={busy || code.length < 4} onClick={() => onJoin(code)}>Dołącz kodem</button>
+
+      {/* Aktywne sesje globalnie — dołączasz jednym tapnięciem, bez kodu */}
+      <div style={{ marginTop: 14 }}>
+        <KotcActiveSessions onJoin={onJoin} onOpen={onOpen} />
+      </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '18px 0 12px' }}>
         <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.10)' }} />
