@@ -2008,7 +2008,7 @@ export function MatchCard({ match, dist, uid, myFrame, userClubId, userClubName,
               <svg width="8" height="11" viewBox="0 0 24 30" fill={C.accent}>
                 <path d="M12 0C7.6 0 4 3.6 4 8c0 6 8 22 8 22s8-16 8-22c0-4.4-3.6-8-8-8zm0 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
               </svg>
-              {fmtDist(dist)}
+              {dist != null ? fmtDist(dist) : null}
             </span>
           )}
         </div>
@@ -4237,34 +4237,13 @@ function PanelDots({ active, onChange }) {
 // ── STATS PANEL ───────────────────────────────────────────────────────────────
 function StatsPanel({ club }) {
   const { t } = useTranslation('club')
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const uid = user?.id
+  const myFrame = profile?.equipped_frame || 'none'
   const [completed, setCompleted] = useState([])
   const [upcoming,  setUpcoming]  = useState([])
   const [loading,   setLoading]   = useState(true)
   const [detailMatch, setDetailMatch] = useState(null)  // tapped past result → detail sheet
-
-  // Tap a recent result → open the same MatchDetailSheet as Mecze. The roster + club
-  // names are ALREADY stored (match_players / clubs); we just read them on demand for
-  // that one match (no extra storage, one small query only when a row is tapped).
-  async function openDetail(m) {
-    const [{ data: mps }, { data: clubRows }] = await Promise.all([
-      supabase.from('match_players').select('*').eq('match_id', m.id),
-      supabase.from('clubs').select('id,name,abbr,country_flag').in('id', [m.club_id, m.away_club_id].filter(Boolean)),
-    ])
-    const uids = [...new Set((mps || []).map(p => p.user_id))]
-    const profs = uids.length
-      ? (await supabase.from('public_profiles').select('id,name,equipped_frame').in('id', uids)).data || []
-      : []
-    const pm = Object.fromEntries(profs.map(p => [p.id, p]))
-    const cmap = Object.fromEntries((clubRows || []).map(c => [c.id, c]))
-    setDetailMatch({
-      ...m,
-      players: (mps || []).map(p => ({ ...p, profile: pm[p.user_id] || null })),
-      _club: cmap[m.club_id] || null,
-      _awayClub: m.away_club_id ? (cmap[m.away_club_id] || null) : null,
-    })
-  }
 
   useEffect(() => {
     if (!club?.id) return
@@ -4273,7 +4252,7 @@ function StatsPanel({ club }) {
       const now = new Date().toISOString()
       const [{ data: comp }, { data: up }, { data: compAway }] = await Promise.all([
         supabase.from('club_matches')
-          .select('id,score_home,score_away,scheduled_at,mode,walkover,club_id,away_club_id')
+          .select('*')
           .eq('club_id', club.id)
           .eq('status', 'completed')
           .order('scheduled_at', { ascending: false })
@@ -4286,7 +4265,7 @@ function StatsPanel({ club }) {
           .order('scheduled_at', { ascending: true })
           .limit(5),
         supabase.from('club_matches')
-          .select('id,score_home,score_away,scheduled_at,mode,walkover,club_id,away_club_id')
+          .select('*')
           .eq('away_club_id', club.id)
           .eq('status', 'completed')
           .order('scheduled_at', { ascending: false })
@@ -4295,7 +4274,29 @@ function StatsPanel({ club }) {
 
       const all = [...(comp || []), ...(compAway || [])]
         .sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at))
-      setCompleted(all)
+        .slice(0, 10)
+      // Historia jako PEŁNE karty meczu (jak w Meczach): składy + profile + nazwy
+      // klubów dla całej listy naraz (3 zapytania), zamiast dociągania per-tap.
+      const ids = all.map(m => m.id)
+      const clubIds = [...new Set(all.flatMap(m => [m.club_id, m.away_club_id]).filter(Boolean))]
+      const [{ data: mps }, { data: clubRows }] = ids.length
+        ? await Promise.all([
+            supabase.from('match_players').select('*').in('match_id', ids),
+            supabase.from('clubs').select('id,name,abbr,country_flag').in('id', clubIds),
+          ])
+        : [{ data: [] }, { data: [] }]
+      const uids = [...new Set((mps || []).map(p => p.user_id))]
+      const profs = uids.length
+        ? (await supabase.from('public_profiles').select('id,name,equipped_frame').in('id', uids)).data || []
+        : []
+      const pm = Object.fromEntries(profs.map(p => [p.id, p]))
+      const cmap = Object.fromEntries((clubRows || []).map(c => [c.id, c]))
+      setCompleted(all.map(m => ({
+        ...m,
+        players: (mps || []).filter(p => p.match_id === m.id).map(p => ({ ...p, profile: pm[p.user_id] || null })),
+        _club: cmap[m.club_id] || null,
+        _awayClub: m.away_club_id ? (cmap[m.away_club_id] || null) : null,
+      })))
       setUpcoming(up || [])
       setLoading(false)
     }
@@ -4396,61 +4397,21 @@ function StatsPanel({ club }) {
         ))}
       </div>
 
-      {/* Recent */}
+      {/* Recent — ta sama karta co w Meczach: zajęte sloty (kto grał) + wynik na środku */}
       <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2.8,
         textTransform: 'uppercase', color: C.dim, margin: '0 0 10px 2px' }}>
         {t('statsPanel.recentMatches')}
       </p>
-      <div style={{ borderRadius: 14, background: C.surface,
-        border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
-        {!loading && completed.length === 0 ? (
-          <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-            <p style={{ fontSize: 11, color: C.sub, fontWeight: 500 }}>{t('statsPanel.noRecent')}</p>
-          </div>
-        ) : completed.slice(0, 10).map((m, i) => {
-          const isHome   = m.club_id === club.id
-          let result = '–', resultColor = C.sub
-          if (m.walkover) {
-            const won = (m.walkover === 'away_noshow' && isHome) || (m.walkover === 'home_cancelled' && !isHome)
-            result = won ? 'W' : 'L'
-            resultColor = won ? C.win : C.loss
-          } else if (m.score_home != null && m.score_away != null) {
-            const cs = isHome ? m.score_home : m.score_away
-            const os = isHome ? m.score_away : m.score_home
-            result = cs > os ? 'W' : cs < os ? 'L' : 'R'
-            resultColor = cs > os ? C.win : cs < os ? C.loss : C.sub
-          }
-          const sh = isHome ? m.score_home : m.score_away
-          const sa = isHome ? m.score_away : m.score_home
-          return (
-            <motion.div key={m.id} whileTap={{ scale: 0.99, backgroundColor: 'rgba(255,255,255,0.03)' }}
-              onClick={() => openDetail(m)} style={{
-              padding: '12px 16px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
-              borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
-            }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: C.text, minWidth: 52 }}>
-                {fmtDate(m.scheduled_at)}
-              </span>
-              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1,
-                textTransform: 'uppercase', color: C.sub }}>{fmtMode(m.mode)}</span>
-              <span style={{ fontSize: 13, fontWeight: 900, color: C.text, minWidth: 48, textAlign: 'center',
-                fontFamily: 'var(--font-display)' }}>
-                {m.walkover ? 'WO' : (sh != null ? `${sh}:${sa}` : '–:–')}
-              </span>
-              <span style={{ fontSize: 13, fontWeight: 900, color: resultColor,
-                textShadow: `0 0 12px ${resultColor}56`, minWidth: 16, textAlign: 'right',
-                fontFamily: 'var(--font-display)' }}>
-                {result}
-              </span>
-              <svg width="6" height="10" viewBox="0 0 12 20" fill="none" stroke={C.dim} strokeWidth="2.4"
-                strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                <path d="M2 2l8 8-8 8"/>
-              </svg>
-            </motion.div>
-          )
-        })}
-      </div>
+      {!loading && completed.length === 0 ? (
+        <div style={{ padding: '20px 16px', textAlign: 'center', borderRadius: 14, background: C.surface,
+          border: '1px solid rgba(255,255,255,0.05)' }}>
+          <p style={{ fontSize: 11, color: C.sub, fontWeight: 500 }}>{t('statsPanel.noRecent')}</p>
+        </div>
+      ) : completed.map(m => (
+        <MatchCard key={m.id} match={m} dist={null} uid={uid} myFrame={myFrame}
+          userClubId={club.id} userClubName={club.name}
+          onPress={() => setDetailMatch(m)}/>
+      ))}
 
       {/* Tapped past result → same detail panel (roster + score) as Mecze, read-only */}
       <AnimatePresence>
