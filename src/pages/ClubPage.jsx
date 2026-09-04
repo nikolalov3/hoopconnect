@@ -1908,6 +1908,12 @@ export function MatchCard({ match, dist, uid, myFrame, userClubId, userClubName,
   // Match where the current user has already joined — strongest highlight
   const isParticipating = uid && match.players.some(p => p.user_id === uid)
   const totalJoined = homePlayers.length + awayPlayers.length
+  // Kolor WYGRANEGO wyniku z perspektywy widza: mój klub wygrał → zielony, mój klub
+  // przegrał → czerwony (widz spoza obu klubów: zielony). Przegrany wynik zostaje neutralny.
+  const homeWon = match.score_home > match.score_away
+  const awayWon = match.score_away > match.score_home
+  const iLost = (homeIsMine && awayWon) || (awayIsMine && homeWon)
+  const winColor = iLost ? C.loss : C.win
 
   const frameGlow = isParticipating
     ? `0 0 34px rgba(0,210,255,0.22), inset 0 1px 0 rgba(255,255,255,0.10)`
@@ -1921,9 +1927,9 @@ export function MatchCard({ match, dist, uid, myFrame, userClubId, userClubName,
       : '1px solid rgba(120,180,255,0.14)'
 
   return (
-    <motion.div whileTap={{ scale: 0.975 }} onClick={onPress}
+    <motion.div whileTap={onPress ? { scale: 0.975 } : undefined} onClick={onPress}
       style={{
-        position: 'relative', borderRadius: 16, marginBottom: 12, cursor: 'pointer',
+        position: 'relative', borderRadius: 16, marginBottom: 12, cursor: onPress ? 'pointer' : 'default',
         overflow: 'hidden', isolation: 'isolate',
         border: frameBorder,
         boxShadow: frameGlow,
@@ -2032,11 +2038,11 @@ export function MatchCard({ match, dist, uid, myFrame, userClubId, userClubName,
             <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, rgba(160,200,255,0.20))' }}/>
             {match.status === 'completed' && match.score_home != null ? (
               <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, fontFamily: 'var(--font-display)', fontWeight: 900, lineHeight: 1 }}>
-                <span style={{ fontSize: 22, color: match.score_home > match.score_away ? C.win : C.text,
-                  textShadow: match.score_home > match.score_away ? `0 0 14px ${C.win}48` : 'none' }}>{match.score_home}</span>
+                <span style={{ fontSize: 22, color: homeWon ? winColor : C.text,
+                  textShadow: homeWon ? `0 0 14px ${winColor}48` : 'none' }}>{match.score_home}</span>
                 <span style={{ fontSize: 12, color: C.dim }}>:</span>
-                <span style={{ fontSize: 22, color: match.score_away > match.score_home ? C.win : C.text,
-                  textShadow: match.score_away > match.score_home ? `0 0 14px ${C.win}48` : 'none' }}>{match.score_away}</span>
+                <span style={{ fontSize: 22, color: awayWon ? winColor : C.text,
+                  textShadow: awayWon ? `0 0 14px ${winColor}48` : 'none' }}>{match.score_away}</span>
               </span>
             ) : (
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 900, letterSpacing: 2,
@@ -4243,7 +4249,7 @@ function StatsPanel({ club }) {
   const [completed, setCompleted] = useState([])
   const [upcoming,  setUpcoming]  = useState([])
   const [loading,   setLoading]   = useState(true)
-  const [detailMatch, setDetailMatch] = useState(null)  // tapped past result → detail sheet
+  const [playerPreview, setPlayerPreview] = useState(null)  // tapnięta ikonka gracza → podgląd profilu
 
   useEffect(() => {
     if (!club?.id) return
@@ -4410,17 +4416,13 @@ function StatsPanel({ club }) {
       ) : completed.map(m => (
         <MatchCard key={m.id} match={m} dist={null} uid={uid} myFrame={myFrame}
           userClubId={club.id} userClubName={club.name}
-          onPress={() => setDetailMatch(m)}/>
+          onPlayer={setPlayerPreview}/>
       ))}
 
-      {/* Tapped past result → same detail panel (roster + score) as Mecze, read-only */}
-      <AnimatePresence>
-        {detailMatch && (
-          <MatchDetailSheet key="statsDetail" match={detailMatch} uid={uid}
-            userClubId={club.id} userClubName={club.name}
-            onClose={() => setDetailMatch(null)}/>
-        )}
-      </AnimatePresence>
+      {/* Karta jest nieklikalna (wszystko widać) — tapnięta ikonka gracza → podgląd profilu */}
+      {playerPreview && (
+        <MatchPlayerSheet player={playerPreview} onClose={() => setPlayerPreview(null)}/>
+      )}
     </div>
   )
 }
