@@ -293,7 +293,8 @@ end $$;
 create or replace function public.kotc_session_state(p_session_id uuid)
 returns jsonb
 language sql stable security definer set search_path = public, pg_temp as $$
-  select jsonb_build_object(
+  -- Tylko dla zalogowanych (anon dostaje domyślne EXECUTE od Supabase).
+  select case when auth.uid() is null then null else jsonb_build_object(
     'session', (select to_jsonb(s) from public.kotc_sessions s where s.id = p_session_id),
     'teams', (select coalesce(jsonb_agg(to_jsonb(t) order by t.queue_pos), '[]'::jsonb)
                 from public.kotc_session_teams t where t.session_id = p_session_id),
@@ -310,7 +311,7 @@ language sql stable security definer set search_path = public, pg_temp as $$
                 from public.kotc_game_votes v
                 join public.kotc_games g on g.id = v.game_id
                 where g.session_id = p_session_id and g.status = 'voting')
-  );
+  ) end;
 $$;
 
 -- ─── 10. kotc_list_active — aktywne sesje globalnie (lista bez kodu) ─────────
@@ -320,6 +321,8 @@ create or replace function public.kotc_list_active()
 returns jsonb
 language plpgsql security definer set search_path = public, pg_temp as $$
 begin
+  -- Supabase nadaje anon EXECUTE domyślnie — lista tylko dla zalogowanych.
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
   perform public.kotc_cleanup_stale();
   return coalesce((
     select jsonb_agg(jsonb_build_object(
