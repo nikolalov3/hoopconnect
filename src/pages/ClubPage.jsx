@@ -1,5 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import KotcSolo from '../features/kotc/KotcSolo'
+import KotcErrorBoundary from '../features/kotc/KotcErrorBoundary'
 import { getMyActiveSession as kotcActiveSession, joinByCode as kotcJoin } from '../features/kotc/api'
 import KotcActiveSessions from '../features/kotc/KotcActiveSessions'
 import { createPortal } from 'react-dom'
@@ -4809,10 +4810,12 @@ function ClubView({ club, onUpdate, uid }) {
       <PanelDots active={panel} onChange={setPanel}/>
 
       {kotcOpen && (
-        <KotcSolo
-          initialSessionId={kotcSid}
-          onClose={() => { setKotcOpen(false); setKotcSid(null); reloadKotc() }}
-        />
+        <KotcErrorBoundary onClose={() => { setKotcOpen(false); setKotcSid(null); reloadKotc() }}>
+          <KotcSolo
+            initialSessionId={kotcSid}
+            onClose={() => { setKotcOpen(false); setKotcSid(null); reloadKotc() }}
+          />
+        </KotcErrorBoundary>
       )}
 
       {/* ── Sliding content area only ── */}
@@ -5073,10 +5076,12 @@ function NoClubScreen({ onCreated, profile }) {
 
       {/* ── King of the Court — zagraj solo, nie potrzebujesz klubu ─────── */}
       {kotcOpen && (
-        <KotcSolo
-          initialSessionId={kotcSid}
-          onClose={() => { setKotcOpen(false); setKotcSid(null); reloadKotc() }}
-        />
+        <KotcErrorBoundary onClose={() => { setKotcOpen(false); setKotcSid(null); reloadKotc() }}>
+          <KotcSolo
+            initialSessionId={kotcSid}
+            onClose={() => { setKotcOpen(false); setKotcSid(null); reloadKotc() }}
+          />
+        </KotcErrorBoundary>
       )}
       <motion.button
         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}

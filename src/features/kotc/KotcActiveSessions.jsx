@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useId } from 'react'
 import { supabase } from '../../lib/supabase'
 import { listActiveSessions } from './api'
 
@@ -14,6 +14,7 @@ export default function KotcActiveSessions({ onJoin, onOpen, compact = false }) 
   const [rows, setRows] = useState(null)      // null = ładowanie
   const [busy, setBusy] = useState(null)      // id sesji w trakcie dołączania
   const [err, setErr] = useState('')
+  const cid = useId()   // unikalny topic realtime per instancja (dwie listy naraz się nie biją)
 
   const load = useCallback(() => {
     listActiveSessions().then(setRows).catch(() => setRows([]))
@@ -23,12 +24,12 @@ export default function KotcActiveSessions({ onJoin, onOpen, compact = false }) 
     load()
     let t = null
     const fire = () => { clearTimeout(t); t = setTimeout(load, 300) }
-    const ch = supabase.channel('kotc-active-list')
+    const ch = supabase.channel(`kotc-active-list-${cid}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'kotc_sessions' }, fire)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'kotc_session_players' }, fire)
       .subscribe()
     return () => { clearTimeout(t); try { supabase.removeChannel(ch) } catch { /* już zamknięty */ } }
-  }, [load])
+  }, [load, cid])
 
   async function join(row) {
     setBusy(row.id); setErr('')
@@ -42,9 +43,12 @@ export default function KotcActiveSessions({ onJoin, onOpen, compact = false }) 
   )
 
   if (rows === null) return <div>{label}<div style={{ fontSize: 12, color: MUTED }}>Szukam sesji…</div></div>
-  if (!rows.length) {
+  // Do dołączenia pokazujemy TYLKO sesje w lobby (zbierające graczy) + własną
+  // aktywną (żeby dało się do niej wrócić). Trwające cudze sesje nie zaśmiecają listy.
+  const shown = rows.filter(r => r.status === 'lobby' || r.i_am_in)
+  if (!shown.length) {
     return (
-      <div>{label}<div style={{ fontSize: 12.5, color: MUTED }}>Brak aktywnych sesji — utwórz pierwszą i podaj kod na boisku.</div></div>
+      <div>{label}<div style={{ fontSize: 12.5, color: MUTED }}>Brak sesji do dołączenia — utwórz pierwszą i podaj kod na boisku.</div></div>
     )
   }
 
@@ -53,7 +57,7 @@ export default function KotcActiveSessions({ onJoin, onOpen, compact = false }) 
       {label}
       {err && <div style={{ fontSize: 12, color: '#F3A6A6', marginBottom: 8 }}>{err}</div>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {rows.map(r => {
+        {shown.map(r => {
           const lobby = r.status === 'lobby'
           const full = r.players >= r.capacity
           const mine = !!r.i_am_in
