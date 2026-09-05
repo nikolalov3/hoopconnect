@@ -12,6 +12,12 @@
 -- są POMINIĘTE. security definer, wywoływalne przez anon + authenticated. Idempotentna.
 -- ============================================================================
 
+-- Próg widoczności miasta w filtrze I w rank_board: mniej niż tyle sklasyfikowanych graczy →
+-- miasto ukryte. Jedno pokrętło dla obu funkcji. To także prywatność: "Miasteczko 1" + filtr
+-- po tym mieście wskazywałoby jedną konkretną osobę na publicznej stronie.
+create or replace function public.rank_min_city_users()
+returns int language sql immutable as $$ select 10 $$;
+
 create or replace function public.rank_board(
   p_metric text, p_city text default null, p_period text default 'all', p_limit int default 100
 ) returns jsonb
@@ -20,6 +26,15 @@ declare
   v_since timestamptz := case when p_period = '30d' then now() - interval '30 days' else null end;
   v_limit int := least(greatest(coalesce(p_limit, 100), 1), 200);
 begin
+  -- Miasto poniżej progu: nie filtruj i nie zdradzaj — pusta lista (UI takich miast nie
+  -- pokazuje dzięki rank_cities, ale RPC wywołane ręcznie też nie może deanonimizować).
+  if p_city is not null and (
+       select count(*) from public.profiles p
+        where p.city = p_city and p.name is not null and coalesce(p.fraud_probability, 0) <= 0.5
+     ) < public.rank_min_city_users() then
+    return '[]'::jsonb;
+  end if;
+
   if p_metric = 'xp' then
     return coalesce((select jsonb_agg(r) from (
       select p.id as user_id, p.name, coalesce(p.equipped_frame, 'none') as frame, p.arena_level as arena,
@@ -77,7 +92,8 @@ language sql stable security definer set search_path = public, pg_temp as $$
     from (select p.city, count(*) as n
             from public.profiles p
            where p.city is not null and p.name is not null and coalesce(p.fraud_probability, 0) <= 0.5
-           group by p.city) c
+           group by p.city
+          having count(*) >= public.rank_min_city_users()) c
 $$;
 
 revoke all on function public.rank_board(text, text, text, int) from public;
