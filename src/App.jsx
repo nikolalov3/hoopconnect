@@ -35,6 +35,7 @@ const CardLab         = lazy(() => import('./pages/CardLab'))
 const QrLandingPage   = lazy(() => import('./pages/QrLandingPage'))
 const ArenaRoad       = lazy(() => import('./components/ArenaRoad'))
 const KotcSolo        = lazy(() => import('./features/kotc/KotcSolo'))
+import KotcErrorBoundary from './features/kotc/KotcErrorBoundary'
 const AppOnboarding   = lazy(() => import('./components/ui/AppOnboarding'))
 const RankPage        = lazy(() => import('./pages/RankPage'))   // publiczny ranking /rank (bez logowania)
 
@@ -311,7 +312,9 @@ export default function App() {
             } />
             <Route path="/kotcsolo"        element={
               <Suspense fallback={<PageLoader />}>
-                <KotcSolo onClose={() => { window.location.href = '/' }} />
+                <KotcErrorBoundary onClose={() => { window.location.href = '/' }}>
+                  <KotcSolo onClose={() => { window.location.href = '/' }} />
+                </KotcErrorBoundary>
               </Suspense>
             } />
             <Route path="/arenalab"        element={
