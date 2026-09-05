@@ -12,6 +12,7 @@ import { FRAME_CATALOG, frameSeenKey } from '../../lib/frames'
 import { useBackgroundCatalog, backgroundAsset, useOwnedBackgrounds, redeemCode } from '../../lib/cardCatalog'
 import { validateName } from '../../lib/nameFilter'
 import { changeLanguage } from '../../i18n'   // ładuje bundle języka PRZED przełączeniem (bez mignięcia kluczy)
+import { resolveCity, cityFromCoords } from '../../lib/city'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 // Bardziej szary, przygaszone baby-blue ramki
@@ -554,7 +555,7 @@ function SpinPicker({ label, value, onChange, min, max, unit = '' }) {
 // ── Sub-view: Edytuj profil ───────────────────────────────────────────────────
 // Zawiera: dane profilowe + dane fizyczne + plan tygodnia + ramka avatara
 function EditProfileView({ onBack, onClose, profile, user, onProfileSaved }) {
-  const { t } = useTranslation('settings')
+  const { t, i18n } = useTranslation('settings')
   const uid = user?.id
   const currentYear = new Date().getFullYear()
   const [name,       setName]       = useState(profile?.name || '')
@@ -569,6 +570,20 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved }) {
   })
   const [saveState,  setSaveState]  = useState('idle')
   const [nameError,  setNameError]  = useState('')
+  const [cityHint,   setCityHint]   = useState('')   // „Rozpoznano: Kraków" / błąd wykrywania
+  const [detecting,  setDetecting]  = useState(false)
+
+  // 📍 Miasto z lokalizacji telefonu → kanoniczna nazwa (lib/city.js).
+  function detectCity() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) { setCityHint(t('editProfile.cityDetectFailed')); return }
+    setDetecting(true); setCityHint('')
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const c = await cityFromCoords(pos.coords.latitude, pos.coords.longitude, i18n.language)
+      setDetecting(false)
+      if (c) { setCity(c); setCityHint(t('editProfile.cityDetected', { city: c })) }
+      else setCityHint(t('editProfile.cityDetectFailed'))
+    }, () => { setDetecting(false); setCityHint(t('editProfile.cityDetectFailed')) }, { timeout: 10000, maximumAge: 300000 })
+  }
 
   const dirty = name.trim() !== (profile?.name || '').trim()
     || city.trim() !== (profile?.city || '').trim()
@@ -581,9 +596,13 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved }) {
     setNameError('')
     setSaveState('saving')
     try {
+      // Miasto → forma kanoniczna (KRK → Kraków, "krakow" → Kraków, nieznane → Nominatim →
+      // Title Case). Jedno pisanie w bazie = działające filtry/rankingi po mieście.
+      const resolvedCity = await resolveCity(city, i18n.language)
+      if (resolvedCity && resolvedCity !== city.trim()) { setCity(resolvedCity); setCityHint(t('editProfile.cityDetected', { city: resolvedCity })) }
       const { error } = await supabase.from('profiles').update({
         name:          name.trim(),
-        city:          city.trim() || null,
+        city:          resolvedCity,
         training_days: days,
         birth_year:    birthYear || null,
         height_cm:     heightCm  || null,
@@ -614,6 +633,14 @@ function EditProfileView({ onBack, onClose, profile, user, onProfileSaved }) {
           <Field label={t('editProfile.nameLabel')} value={name} onChange={(v) => { setName(v); if (nameError) setNameError('') }} placeholder={t('editProfile.namePlaceholder')}/>
           {nameError && <p style={{ margin: '-2px 2px 0', color: '#FF6B6B', fontSize: 12 }}>{nameError}</p>}
           <Field label={t('editProfile.cityLabel')} value={city} onChange={setCity} placeholder={t('editProfile.cityPlaceholder')}/>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, margin: '-2px 2px 0' }}>
+            <span style={{ fontSize: 11, color: C.sub, minHeight: 14 }}>{cityHint}</span>
+            <button type="button" onClick={detectCity} disabled={detecting}
+              style={{ background: 'none', border: 'none', color: C.accent, fontSize: 12, fontWeight: 700,
+                cursor: 'pointer', padding: '4px 0', fontFamily: 'inherit', opacity: detecting ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+              {detecting ? t('editProfile.detecting') : t('editProfile.useMyLocation')}
+            </button>
+          </div>
         </div>
 
         {/* ── Dane fizyczne ── */}
