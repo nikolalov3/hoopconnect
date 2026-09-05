@@ -21,9 +21,10 @@ import leagueInfo from './leagueInfo.json'
 import addSession from './addSession.json'
 import trainingCard from './trainingCard.json'
 import appStory from './appStory.json'
+import rank from './rank.json'
 
 export default {
   common, auth, onboarding, home, shooting, calendar, stats, achievements, recovery,
   club, joinClub, qrLanding, arenaRoad, settings, leaderboard, notifications, frames,
-  leagueInfo, addSession, trainingCard, appStory,
+  leagueInfo, addSession, trainingCard, appStory, rank,
 }

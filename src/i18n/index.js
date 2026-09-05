@@ -15,7 +15,7 @@ const NAMESPACES = [
   'common', 'auth', 'onboarding', 'home', 'shooting', 'calendar', 'stats',
   'achievements', 'recovery', 'club', 'joinClub', 'qrLanding', 'arenaRoad',
   'settings', 'leaderboard', 'notifications', 'frames', 'leagueInfo', 'addSession',
-  'trainingCard', 'appStory',
+  'trainingCard', 'appStory', 'rank',
 ]
 
 // Ta sama reguła co detector poniżej (localStorage → język systemu), tylko

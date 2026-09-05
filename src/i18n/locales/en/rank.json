@@ -1,0 +1,16 @@
+{
+  "title": "Ranking",
+  "subtitle": "HoopConnect's best — XP from matches, wins and King of the Court",
+  "tabs": { "xp": "XP", "matches": "Matches", "kotc": "King of the Court" },
+  "allCities": "All cities",
+  "period": { "all": "All time", "30d": "30 days" },
+  "you": "You",
+  "games": "games",
+  "sessions": "sessions",
+  "wins": "W",
+  "loading": "Loading ranking…",
+  "empty": "No results for this filter.",
+  "unavailable": "Ranking temporarily unavailable.",
+  "cta": "Play ball? Join HoopConnect",
+  "ctaSub": "Earn XP for real matches and get on the board."
+}
