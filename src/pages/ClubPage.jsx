@@ -1419,10 +1419,16 @@ function usePlayerProfileData(memberId) {
 // corner, well away from the card. Scroll root (overflowY:auto + inner margin
 // auto) so the card + action button stay reachable on short screens.
 function ProfileOverlay({ onClose, children }) {
+  // Portal wynosi kartę z DOM-u panelu, ale zdarzenia React bąbelkują po DRZEWIE
+  // KOMPONENTÓW — dotyk na karcie docierał do handlerów swipe'a w ClubView i przesuwał
+  // panele pod spodem. Zatrzymujemy tu propagację gestów i kliknięć; własne handlery
+  // karty (np. obrót PlayerCard3D) działają dalej, bo siedzą niżej w drzewie.
+  const stop = (e) => e.stopPropagation()
   return createPortal(
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      onClick={onClose}
+      onClick={(e) => { e.stopPropagation(); onClose() }}
+      onTouchStart={stop} onTouchMove={stop} onTouchEnd={stop}
       style={{
         position: 'fixed', inset: 0, zIndex: 9000,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
