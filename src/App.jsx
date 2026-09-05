@@ -33,6 +33,7 @@ const JoinClubPage    = lazy(() => import('./pages/JoinClubPage'))
 const QrLandingPage   = lazy(() => import('./pages/QrLandingPage'))
 const ArenaRoad       = lazy(() => import('./components/ArenaRoad'))
 const AppOnboarding   = lazy(() => import('./components/ui/AppOnboarding'))
+const RankPage        = lazy(() => import('./pages/RankPage'))   // publiczny ranking /rank (bez logowania)
 
 // Zalogowany user (token Supabase w localStorage) i tak wyląduje na HomePage —
 // zacznij ściągać jej chunk już teraz, RÓWNOLEGLE z fetchem sesji/profilu, zamiast
@@ -281,6 +282,12 @@ export default function App() {
             <Route path="/dolacz/:clubId"  element={
               <Suspense fallback={<PageLoader />}>
                 <JoinClubPage />
+              </Suspense>
+            } />
+            {/* Publiczny ranking — bez logowania (RPC rank_board/rank_cities dla anon) */}
+            <Route path="/rank"            element={
+              <Suspense fallback={<PageLoader />}>
+                <RankPage />
               </Suspense>
             } />
             <Route path="/*"               element={<AppShell />} />
