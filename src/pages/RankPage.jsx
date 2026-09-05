@@ -15,6 +15,9 @@ import { ARENAS } from '../lib/arenas'
 // filtry jako chipy, tabela zwija kolumny dodatkowe do podtytułu wiersza.
 
 const METRICS = ['xp', 'matches', 'kotc']
+// Lustro rank_min_city_users() w bazie: miasta z mniejszą liczbą graczy nie trafiają do
+// filtra. Serwer jest źródłem prawdy (prywatność); tu — natychmiast i defensywnie.
+const MIN_CITY_USERS = 10
 const MEDAL = ['#FFC940', '#C9D4E3', '#D9925B']
 
 const CSS = `
@@ -164,7 +167,7 @@ export default function RankPage() {
               <p className="rk-gt">{t('cityLabel')}</p>
               <div className="rk-opts">
                 <button className={`rk-opt${city === null ? ' on' : ''}`} onClick={() => setCity(null)}>{t('allCities')}</button>
-                {cities.map(c => (
+                {cities.filter(c => c.n >= MIN_CITY_USERS).map(c => (
                   <button key={c.city} className={`rk-opt${city === c.city ? ' on' : ''}`} onClick={() => setCity(c.city)}>
                     {c.city} <small>{c.n}</small>
                   </button>
