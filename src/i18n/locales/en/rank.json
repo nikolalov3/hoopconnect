@@ -11,6 +11,17 @@
   "loading": "Loading ranking…",
   "empty": "No results for this filter.",
   "unavailable": "Ranking temporarily unavailable.",
+  "periodLabel": "Period",
+  "cityLabel": "City",
+  "players": "players ranked",
+  "colPlayer": "Player",
+  "colArena": "Arena",
+  "colXp": "XP",
+  "colWins": "Wins",
+  "colGames": "Games",
+  "colPct": "Win %",
+  "colKotcWins": "Session wins",
+  "colSessions": "Sessions",
   "cta": "Play ball? Join HoopConnect",
   "ctaSub": "Earn XP for real matches and get on the board."
 }
