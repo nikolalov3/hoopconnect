@@ -8,6 +8,7 @@ import { onTableChange } from '../lib/realtimeManager'
 import TrainingCard from '../components/training/TrainingCard'
 import { fetchAchievementsCatalog, awardMedalPoints, revokeStaleAchievements } from '../lib/achievements'
 import SettingsPanel from '../components/ui/SettingsPanel'
+import { useAutoCity } from '../hooks/useAutoCity'
 import LeagueInfoPanel from '../components/ui/LeagueInfoPanel'
 import { useUI } from '../context/UIContext'
 import StreakToast from '../components/ui/StreakToast'
@@ -1257,7 +1258,10 @@ function DayDoneModal({ completedCount, onClose }) {
 // ── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function HomePage() {
   const { t } = useTranslation('home')
-  const { profile, refreshProfile } = useAuth()
+  const { profile, refreshProfile, setProfileData } = useAuth()
+  // Pierwsze uruchomienie bez miasta w profilu → ustal z lokalizacji (jedna próba na
+  // urządzenie; użytkownik może zmienić w Ustawieniach). Fundament pod filtry po mieście.
+  useAutoCity(profile, setProfileData)
   const [trainings, setTrainings] = useState([])
   // Trzymamy pełną listę aktywnych treningów (do swap-funkcji "nie mam sprzętu").
   const allActiveTrainingsRef = useRef([])
