@@ -11,6 +11,17 @@
   "loading": "Ładuję ranking…",
   "empty": "Brak wyników dla tego filtra.",
   "unavailable": "Ranking chwilowo niedostępny.",
+  "periodLabel": "Okres",
+  "cityLabel": "Miasto",
+  "players": "graczy w rankingu",
+  "colPlayer": "Gracz",
+  "colArena": "Arena",
+  "colXp": "XP",
+  "colWins": "Wygrane",
+  "colGames": "Mecze",
+  "colPct": "% wygranych",
+  "colKotcWins": "Wygrane sesje",
+  "colSessions": "Sesje",
   "cta": "Grasz w kosza? Dołącz do HoopConnect",
   "ctaSub": "Zdobywaj XP za prawdziwe mecze i wejdź na tablicę."
 }
