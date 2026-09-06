@@ -11,7 +11,7 @@ import { ARENAS } from '../lib/arenas'
 // Dane: RPC rank_board / rank_cities (security definer) → tylko publiczne pola; miasto
 // jest filtrem, nie kolumną per osoba; profile z flagą anti-cheat pominięte.
 // Layout: JEDEN markup, CSS decyduje — desktop (≥ 900px): nagłówek z tabami metryk,
-// sidebar (okres, miasta) + podium w rzędzie + tabela z kolumnami; mobile: kolumna,
+// sidebar (okres, miasta) + jedna lista od miejsca 1 (top 3 tylko kolorem medalu); mobile: kolumna,
 // filtry jako chipy (scroll poziomy), tabela zwija kolumny dodatkowe do podtytułu wiersza.
 // Wizualnie: "liquid glass" — jedno tło z pływającymi orbami światła, a każda powierzchnia
 // (.rk-glass) to półprzezroczyste szkło: backdrop blur + saturacja, 1px krawędź, refleks
@@ -94,19 +94,11 @@ const CSS = `
 .rk-opt.on small{color:var(--txt);background:rgba(91,184,245,.28)}
 
 .rk-meta{color:var(--dim);font-size:12.5px;margin:0 0 12px 4px}
-.rk-podium{display:grid;grid-template-columns:1fr 1.18fr 1fr;gap:14px;align-items:end;margin-bottom:16px}
-.rk-card{--medal:#C9D4E3;padding:20px 14px 18px;text-align:center;border-radius:24px;animation:rk-in .6s cubic-bezier(.2,.8,.2,1) both;
-  box-shadow:var(--shadow),0 0 0 1px color-mix(in srgb,var(--medal) 30%,transparent),0 34px 70px -40px color-mix(in srgb,var(--medal) 75%,transparent)}
-.rk-card.p1{animation-delay:.06s}.rk-card.p2{animation-delay:.12s}
-.rk-card.p0{padding-top:30px;padding-bottom:24px;
-  background:linear-gradient(160deg,color-mix(in srgb,var(--medal) 18%,transparent),rgba(255,255,255,.05) 45%,rgba(255,255,255,.07))}
-.rk-place{font-family:var(--disp);font-weight:900;font-size:28px;line-height:1;color:var(--medal);text-shadow:0 0 18px color-mix(in srgb,var(--medal) 55%,transparent)}
-.rk-card.p0 .rk-place{font-size:40px}
-.rk-hex{display:flex;justify-content:center;margin:12px 0 10px;filter:drop-shadow(0 10px 22px rgba(0,0,0,.45))}
-.rk-name{font-size:14.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rk-val{font-family:var(--disp);font-weight:900;font-size:22px;margin-top:6px;font-variant-numeric:tabular-nums;color:var(--medal)}
-.rk-card.p0 .rk-val{font-size:30px}
-.rk-small{font-size:11.5px;color:var(--muted);margin-top:4px}
+/* top 3 = zwykłe wiersze listy, tylko numer w kolorze medalu + delikatny tint */
+.rk-table tr.top td:first-child{color:var(--medal);font-size:21px;text-shadow:0 0 16px color-mix(in srgb,var(--medal) 60%,transparent)}
+.rk-table tr.top td{background:linear-gradient(90deg,color-mix(in srgb,var(--medal) 13%,transparent),rgba(255,255,255,.035) 45%)}
+.rk-table tr.top td.val{color:var(--medal)}
+.rk-table tr.me td{background:linear-gradient(90deg,rgba(91,184,245,.22),rgba(91,184,245,.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
 
 .rk-board{padding:8px}
 .rk-table{width:100%;border-collapse:separate;border-spacing:0 4px}
@@ -117,7 +109,6 @@ const CSS = `
 .rk-table tr:hover td{background:rgba(255,255,255,.075)}
 .rk-table td:first-child{border-radius:14px 0 0 14px;width:60px;font-family:var(--disp);font-weight:900;font-size:18px;color:var(--dim);text-align:center}
 .rk-table td:last-child{border-radius:0 14px 14px 0}
-.rk-table tr.me td{background:linear-gradient(90deg,rgba(91,184,245,.22),rgba(91,184,245,.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
 .rk-player{display:flex;align-items:center;gap:12px;min-width:0}
 .rk-player .n{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rk-player .you{color:var(--blue)}
@@ -139,7 +130,7 @@ const CSS = `
 
 @keyframes rk-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes rk-sh{to{background-position:-200% 0}}
-@media (prefers-reduced-motion:reduce){.rk-orb,.rk-table tbody tr,.rk-card,.rk-skel i{animation:none}}
+@media (prefers-reduced-motion:reduce){.rk-orb,.rk-table tbody tr,.rk-skel i{animation:none}}
 
 @media (max-width:900px){
   .rk-wrap{padding-left:14px;padding-right:14px;padding-bottom:56px}
@@ -154,8 +145,6 @@ const CSS = `
   .rk-opts{flex-direction:row;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
   .rk-opts::-webkit-scrollbar{display:none}
   .rk-opt{width:auto;flex:none;padding:7px 12px;border-radius:999px;font-size:12px}
-  .rk-podium{gap:8px}.rk-card{padding:12px 8px;border-radius:18px}.rk-card.p0{padding:18px 10px 14px}
-  .rk-val{font-size:18px}.rk-card.p0 .rk-val{font-size:24px}
   .rk-board{padding:4px}
   .rk-table th{display:none}
   .rk-table td.ex,.rk-hide-m{display:none}
@@ -194,11 +183,8 @@ export default function RankPage() {
     return () => { alive = false }
   }, [qkey])
 
-  const value = (r) => metric === 'xp' ? `${r.value} XP` : metric === 'kotc' ? `${r.value} 🏆` : `${r.value} ${t('wins')}`
   const mobileSub = (r) => metric === 'matches' ? `${r.played} ${t('games')} · ${r.pct ?? 0}%`
     : metric === 'kotc' ? `${r.played ?? 0} ${t('sessions')}` : (ARENAS[r.arena]?.name || '')
-  const podium = rows ? rows.slice(0, 3) : []
-  const rest   = rows ? rows.slice(3) : []
 
   return (
     <div className="rk">
@@ -261,26 +247,7 @@ export default function RankPage() {
             {rows && err && <p className="rk-state err">{t('unavailable')}</p>}
             {rows && !err && rows.length === 0 && <p className="rk-state">{t('empty')}</p>}
 
-            {podium.length > 0 && (
-              <div className="rk-podium">
-                {[podium[1], podium[0], podium[2]].map((r, i) => {
-                  if (!r) return <div key={`e${i}`} />
-                  const place = i === 1 ? 0 : i === 0 ? 1 : 2
-                  const mine = r.user_id === me
-                  return (
-                    <div key={r.user_id} className={`rk-card rk-glass p${place}`} style={{ '--medal': mine ? '#5BB8F5' : MEDAL[place] }}>
-                      <div className="rk-place">{place + 1}</div>
-                      <div className="rk-hex"><HexAvatar name={r.name} variant={r.frame} size={place === 0 ? 84 : 64} noAnim /></div>
-                      <div className="rk-name">{r.name}{mine ? ` · ${t('you')}` : ''}</div>
-                      <div className="rk-val">{value(r)}</div>
-                      <div className="rk-small">{mobileSub(r)}</div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {rest.length > 0 && (
+            {rows && !err && rows.length > 0 && (
               <div className="rk-board rk-glass">
                 <table className="rk-table">
                   <thead>
@@ -293,11 +260,11 @@ export default function RankPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rest.map((r, i) => {
+                    {rows.map((r, i) => {
                       const mine = r.user_id === me
                       return (
-                        <tr key={r.user_id} className={mine ? 'me' : ''} style={{ '--i': i }}>
-                          <td>{i + 4}</td>
+                        <tr key={r.user_id} className={`${i < 3 ? 'top' : ''}${mine ? ' me' : ''}`} style={{ '--i': i, '--medal': i < 3 ? MEDAL[i] : undefined }}>
+                          <td>{i + 1}</td>
                           <td>
                             <div className="rk-player">
                               <HexAvatar name={r.name} variant={r.frame} size={38} noAnim />
