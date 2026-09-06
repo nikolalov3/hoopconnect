@@ -1,0 +1,40 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+html,body{margin:0}
+body{width:560px;height:1000px;position:relative;overflow:hidden;background:#050A14;font-family:system-ui,sans-serif}
+.bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 45% at 50% -8%,rgba(91,184,245,.20),transparent 60%),linear-gradient(170deg,#0F1D33 0%,#0A1426 48%,#050A14 100%)}
+.orb{position:absolute;border-radius:50%;filter:blur(60px);opacity:.5}
+.orb.a{width:420px;height:420px;left:-140px;top:-120px;background:radial-gradient(circle,rgba(91,184,245,.55),transparent 70%)}
+.orb.b{width:380px;height:380px;right:-130px;bottom:-80px;background:radial-gradient(circle,rgba(84,110,255,.42),transparent 70%)}
+.phone{position:absolute;left:50%;top:44px;transform:translateX(-50%);width:404px;padding:7px;border-radius:44px;
+  background:linear-gradient(160deg,#1A2436,#070B14);
+  box-shadow:0 50px 90px -30px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.05),0 30px 80px -30px rgba(91,184,245,.35)}
+.screen{position:relative;width:390px;height:872px;border-radius:37px;overflow:hidden;background:#060F1E}
+.screen img{position:absolute;top:0;left:0;width:390px;display:block}
+.notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:130px;height:26px;border-radius:999px;background:#05080F;z-index:3}
+/* Floating dock (odtworzone z BottomNav.jsx) */
+.dock{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:4px;
+  background:rgba(18,24,38,0.72);backdrop-filter:blur(20px);border-radius:9999px;padding:4px 6px;
+  box-shadow:inset 0 1px 0 rgba(200,225,255,.10),inset 0 -1px 0 rgba(0,0,0,.22),0 8px 24px rgba(0,0,0,.5)}
+.tab{width:52px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:9999px;position:relative}
+.tab.on{background:linear-gradient(145deg,rgba(40,130,220,.92),rgba(16,90,180,.96));border:1px solid rgba(91,184,245,.5);
+  box-shadow:0 4px 20px rgba(91,184,245,.5),inset 0 1px 0 rgba(180,230,255,.25)}
+.tab.on::after{content:"";position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#5BB8F5;box-shadow:0 0 8px 2px rgba(91,184,245,.54)}
+</style></head><body>
+<div class="bg"><div class="orb a"></div><div class="orb b"></div></div>
+<div class="phone"><div class="screen">
+  <img id="shot" src="screen-2.png" alt="">
+  <div class="notch"></div>
+  <div class="dock">
+    <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(180,120,80,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></div>
+    <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(180,120,80,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div>
+    <div class="tab on"><svg width="22" height="22" viewBox="0 0 90 90" style="overflow:visible"><polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round"/></svg></div>
+    <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(180,120,80,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+    <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(180,120,80,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v6a6 6 0 0 1-12 0V2z"/><path d="M6 4H3a1 1 0 0 0-1 1v1a4 4 0 0 0 4 4"/><path d="M18 4h3a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4"/><path d="M12 14v4"/><path d="M8 22h8"/></svg></div>
+  </div>
+</div></div>
+<script>
+const f=new URLSearchParams(location.search).get('f')||'2';
+document.getElementById('shot').src='screen-'+f+'.png';
+Promise.all([...document.images].map(i=>i.decode().catch(()=>{}))).then(()=>{const r=document.createElement('i');r.id='ready';document.body.appendChild(r)});
+</script></body></html>

@@ -55,3 +55,17 @@ node assets/brand/generator/cdpshot.cjs "file://$PWD/assets/brand/generator/comp
 node assets/brand/generator/cdpshot.cjs "file://$PWD/assets/brand/generator/compose-club.html?v=square" assets/brand/press/club-preview-square.png 1000 1000 2 0 "#ready" 1500
 ```
 `cdpshot.cjs` doszły 2 opcjonalne argumenty: `clipSel` (przytnij do elementu) i `transparent` (0/1, wycinek PNG).
+
+## GIF: sesja meczu zapełnia się (`press/club-session-filling.gif`)
+Zakładka Klub (dolne menu, Klub aktywny) — sesja umówionego 3v3 wypełnia się gracz po graczu do kompletu.
+`club-session-full.png` = ostatnia klatka (komplet 6/6) jako statyczny obraz.
+
+Pipeline (wszystko w `generator/`):
+1. TEMP w `src/pages/MatchLab.jsx`: gałąź `?club&n=N` renderuje ekran Klub (nagłówek HOOPCONNECT + taby +
+   prawdziwy `<MatchCard>` ze składem `ALL.slice(0,N)`, ramki tylko early_access/brak) w `#screen`. Cofnij `git checkout` po zrzutach.
+2. `gif-capture-frames.cjs` — Brave headless po DevTools Protocol robi klatki #screen dla n=2..6 (jedna sesja,
+   BEZ `setDeviceMetricsOverride` — ta metoda WIESZA się na tej stronie; klatka i tak jest przycinana z `scale:3`).
+   `PROF=… OUT=… NS='[2,3,4,5,6]' node assets/brand/generator/gif-capture-frames.cjs`
+3. `compose-gif.html?f=N` — ramka telefonu + odtworzony dolny dok (Klub aktywny) wokół `screen-N.png`; zrzut przez `cdpshot.cjs` (file://).
+4. `gif-encode.cjs` (potrzebuje `npm i --no-save gifenc`) — składa klatki w GIF:
+   `FRAMESDIR=… OUT=…/club-session-filling.gif WIDTH=460 SEQ='[[2,650],[3,720],[4,720],[5,720],[6,1900]]' node assets/brand/generator/gif-encode.cjs`
