@@ -1,0 +1,41 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- Grafika poglądowa /rank do artykułów: okno przeglądarki (desktop) + telefon (mobile).
+     Wejście: ../press/rank-desktop@2x.png (1440x900 @2x) i ../press/rank-mobile@3x.png (390x844 @3x)
+     — robione przez cdpshot.cjs. Render: node cdpshot.cjs "file://$PWD/compose.html?v=wide" out.png 1200 675 2 0 "#ready" 1500 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:#050A14}
+body{font-family:'Barlow',sans-serif;color:#EEF4FF;position:relative;overflow:hidden}
+body.wide{width:1200px;height:675px} body.square{width:1000px;height:1000px}
+.bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(91,184,245,.22),transparent 60%),linear-gradient(170deg,#0F1D33 0%,#0A1426 45%,#050A14 100%)}
+.orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.6}
+.orb.a{width:640px;height:640px;left:-180px;top:-260px;background:radial-gradient(circle,rgba(91,184,245,.55),rgba(91,184,245,0) 70%)}
+.orb.b{width:560px;height:560px;right:-160px;top:220px;background:radial-gradient(circle,rgba(84,110,255,.45),rgba(84,110,255,0) 70%)}
+.orb.c{width:420px;height:420px;left:35%;bottom:-240px;background:radial-gradient(circle,rgba(255,201,64,.22),rgba(255,201,64,0) 70%)}
+.win{position:absolute;border-radius:16px;overflow:hidden;background:#0B1424;
+  box-shadow:0 60px 120px -40px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.13),0 30px 90px -30px rgba(91,184,245,.25)}
+.bar{height:36px;display:flex;align-items:center;gap:8px;padding:0 14px;background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.04));border-bottom:1px solid rgba(255,255,255,.08)}
+.bar i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.22)}
+.bar .url{margin:0 auto;font-size:12px;font-weight:600;letter-spacing:.3px;color:rgba(238,244,255,.7);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:5px 14px;display:flex;align-items:center;gap:7px}
+.bar .url b{width:6px;height:6px;border-radius:50%;background:#5BF5A6;box-shadow:0 0 8px #5BF5A6}
+.win .screen{overflow:hidden;position:relative}
+.win img{display:block;width:100%}
+.phone{position:absolute;border-radius:38px;padding:8px;background:linear-gradient(160deg,#1A2436,#070B14);
+  box-shadow:0 60px 110px -35px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.2),inset 0 0 0 1px rgba(255,255,255,.06),0 40px 100px -30px rgba(91,184,245,.4)}
+/* pasek statusu: treść zaczyna się pod notchem, jak w prawdziwej apce */
+.phone .screen{border-radius:30px;overflow:hidden;background:#0F1D33;padding-top:44px}
+.phone img{display:block;width:100%}
+.phone .notch{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:36%;height:22px;border-radius:999px;background:#05080F}
+body.wide .win{left:60px;top:70px;width:820px} body.wide .win .screen{height:480px}
+body.wide .phone{left:850px;top:110px;width:250px} body.wide .phone .screen{height:520px}
+body.square .win{left:40px;top:110px;width:760px} body.square .win .screen{height:auto}
+body.square .phone{left:650px;top:330px;width:270px} body.square .phone .screen{height:580px}
+</style></head><body>
+<div class="bg"><div class="orb a"></div><div class="orb b"></div><div class="orb c"></div></div>
+<div class="win"><div class="bar"><i></i><i></i><i></i><div class="url"><b></b>hoopconnect.pl/rank</div></div>
+  <div class="screen"><img src="../press/rank-desktop@2x.png" alt=""></div></div>
+<div class="phone"><div class="screen"><img src="../press/rank-mobile@3x.png" alt=""></div><div class="notch"></div></div>
+<script>
+document.body.className=new URLSearchParams(location.search).get('v')||'wide';
+Promise.all([...document.images].map(i=>i.decode().catch(()=>{}))).then(()=>document.fonts.ready).then(()=>{const r=document.createElement('i');r.id='ready';document.body.appendChild(r)});
+</script></body></html>
