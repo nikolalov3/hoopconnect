@@ -1,0 +1,57 @@
+<!doctype html><html><head><meta charset="utf-8"><title>lockup gen</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@900&display=swap">
+<style>body{background:#151515;color:#ccc;font:14px monospace;padding:20px;margin:0}
+canvas{max-width:100%;display:block;margin:12px 0;background:repeating-conic-gradient(#3a3a3a 0 25%,#2a2a2a 0 50%) 0 0/24px 24px}</style>
+</head><body><div id="log">starting…</div><div id="out"></div>
+<script>
+const WHITE='#EEF4FF', BLUE='#5BB8F5', INK='#0B1B33';
+const log=m=>{document.getElementById('log').textContent=m;};
+const loadSvg=()=>new Promise((ok,err)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=err;i.src='/hoop.svg';});
+const FONT=px=>`900 ${px}px "Barlow Condensed"`;
+function setFont(ctx,px){ctx.font=FONT(px);ctx.letterSpacing=(px*0.02)+'px';ctx.textBaseline='alphabetic';}
+function metrics(ctx,px){setFont(ctx,px);const a=ctx.measureText('HOOP'),b=ctx.measureText('CONNECT'),h=ctx.measureText('H');
+  return {w:a.width+b.width,w1:a.width,cap:h.actualBoundingBoxAscent};}
+function drawWord(ctx,x,y,px,c1,c2,glow){setFont(ctx,px);const w1=ctx.measureText('HOOP').width;
+  ctx.fillStyle=c1;ctx.fillText('HOOP',x,y);
+  if(glow){ctx.shadowColor='rgba(91,184,245,0.5)';ctx.shadowBlur=px*0.5;}
+  ctx.fillStyle=c2;ctx.fillText('CONNECT',x+w1,y);ctx.shadowBlur=0;ctx.shadowColor='transparent';}
+function navyBg(ctx,W,H){const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.7);
+  g.addColorStop(0,'#10233A');g.addColorStop(1,'#08111C');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+const V=[
+ {name:'hoopconnect-horizontal-on-dark', kind:'h', bg:false, c1:WHITE, c2:BLUE, glow:false},
+ {name:'hoopconnect-horizontal-navy-bg', kind:'h', bg:true,  c1:WHITE, c2:BLUE, glow:true},
+ {name:'hoopconnect-horizontal-on-light',kind:'h', bg:false, c1:INK,   c2:BLUE, glow:false},
+ {name:'hoopconnect-stacked-on-dark',    kind:'s', bg:false, c1:WHITE, c2:BLUE, glow:false},
+ {name:'hoopconnect-stacked-navy-bg',    kind:'s', bg:true,  c1:WHITE, c2:BLUE, glow:true},
+ {name:'hoopconnect-stacked-on-light',   kind:'s', bg:false, c1:INK,   c2:BLUE, glow:false},
+ {name:'hoopconnect-wordmark-on-dark',   kind:'w', bg:false, c1:WHITE, c2:BLUE, glow:false},
+ {name:'hoopconnect-wordmark-on-light',  kind:'w', bg:false, c1:INK,   c2:BLUE, glow:false},
+ {name:'hoopconnect-sygnet-2048', kind:'i', size:2048},
+ {name:'hoopconnect-sygnet-1024', kind:'i', size:1024},
+];
+async function render(v,svg){
+  const px=400, pad=px*0.3;
+  const m0=document.createElement('canvas').getContext('2d'); const m=metrics(m0,px);
+  let W,H,draw;
+  if(v.kind==='h'){const ic=px*1.25, gap=px*0.22; W=Math.ceil(pad+ic+gap+m.w+pad); H=Math.ceil(pad+ic+pad);
+    draw=ctx=>{ctx.drawImage(svg,pad,pad,ic,ic); const cy=pad+ic/2; drawWord(ctx,pad+ic+gap,cy+m.cap/2,px,v.c1,v.c2,v.glow);};}
+  else if(v.kind==='s'){const ic=px*1.9, gap=px*0.3; W=Math.ceil(Math.max(ic,m.w)+2*pad); H=Math.ceil(pad+ic+gap+m.cap+pad);
+    draw=ctx=>{ctx.drawImage(svg,(W-ic)/2,pad,ic,ic); drawWord(ctx,(W-m.w)/2,pad+ic+gap+m.cap,px,v.c1,v.c2,v.glow);};}
+  else if(v.kind==='i'){W=H=v.size; draw=ctx=>ctx.drawImage(svg,0,0,W,H);}
+  else {W=Math.ceil(m.w+2*pad); H=Math.ceil(m.cap+2*pad); draw=ctx=>drawWord(ctx,pad,pad+m.cap,px,v.c1,v.c2,v.glow);}
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
+  if(v.bg) navyBg(ctx,W,H); draw(ctx);
+  document.getElementById('out').appendChild(c);
+  const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+  const r=await fetch('/save?name='+v.name,{method:'POST',body:blob}); return `${v.name} ${W}x${H} → ${await r.text()}`;
+}
+(async()=>{
+  try{
+    await document.fonts.load(FONT(100)); await document.fonts.ready;
+    const ok=document.fonts.check(FONT(100)); if(!ok){log('FONT MISSING: Barlow Condensed not loaded');return;}
+    const svg=await loadSvg(); const out=[];
+    for(const v of V){out.push(await render(v,svg));}
+    log('DONE '+out.length+' files\n'+out.join('\n'));
+  }catch(e){log('ERROR '+(e&&e.message||e));}
+})();
+</script></body></html>
