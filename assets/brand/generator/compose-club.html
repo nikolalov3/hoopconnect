@@ -1,0 +1,48 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- Grafika do postu: zakładka Klub — zakończony mecz (statystyki) + karta gracza.
+     Wejście: ../press/club-match.png (karta meczu na ciemnym tle) i ../press/club-playercard.png
+     (wycinek karty gracza, przezroczysty). Render: node cdpshot.cjs "file://$PWD/compose-club.html?v=wide" out.png 1200 675 2 0 "#ready" 1500 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800;900&family=Barlow:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:#050A14}
+body{font-family:'Barlow',sans-serif;color:#EEF4FF;position:relative;overflow:hidden}
+body.wide{width:1200px;height:675px} body.square{width:1000px;height:1000px}
+.bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(91,184,245,.22),transparent 60%),linear-gradient(170deg,#0F1D33 0%,#0A1426 45%,#050A14 100%)}
+.orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.6}
+.orb.a{width:640px;height:640px;left:-200px;top:-260px;background:radial-gradient(circle,rgba(91,184,245,.55),rgba(91,184,245,0) 70%)}
+.orb.b{width:560px;height:560px;right:-160px;top:120px;background:radial-gradient(circle,rgba(84,110,255,.45),rgba(84,110,255,0) 70%)}
+.orb.c{width:420px;height:420px;left:20%;bottom:-240px;background:radial-gradient(circle,rgba(255,201,64,.20),rgba(255,201,64,0) 70%)}
+.brand{position:absolute;display:flex;align-items:center;gap:12px;z-index:5}
+.brand img{filter:drop-shadow(0 6px 16px rgba(91,184,245,.5))}
+.brand span{font-family:'Barlow Condensed',sans-serif;font-weight:900;letter-spacing:.6px;text-transform:uppercase;line-height:1}
+.brand span i{font-style:normal;color:#5BB8F5}
+.eyebrow{position:absolute;font-size:12px;font-weight:700;letter-spacing:2.4px;text-transform:uppercase;color:rgba(238,244,255,.55);z-index:5}
+.match{position:absolute;border-radius:18px;overflow:hidden;
+  box-shadow:0 50px 100px -35px rgba(0,0,0,.9),0 0 0 1px rgba(150,200,255,.14),0 30px 80px -30px rgba(91,184,245,.28)}
+.match img{display:block;width:100%}
+.card{position:absolute;filter:drop-shadow(0 46px 60px rgba(0,0,0,.6)) drop-shadow(0 0 60px rgba(91,184,245,.28))}
+.card img{display:block;width:100%}
+
+/* WIDE 1200x675 */
+body.wide .brand{left:56px;top:44px}
+body.wide .brand img{width:34px;height:34px} body.wide .brand span{font-size:24px}
+body.wide .eyebrow{left:58px;top:108px}
+body.wide .match{left:56px;top:170px;width:600px;transform:rotate(-3deg)}
+body.wide .card{right:70px;top:70px;width:360px;transform:rotate(4deg)}
+
+/* SQUARE 1000x1000 */
+body.square .brand{left:60px;top:56px}
+body.square .brand img{width:38px;height:38px} body.square .brand span{font-size:28px}
+body.square .eyebrow{left:62px;top:118px}
+body.square .match{left:60px;top:190px;width:600px;transform:rotate(-3deg)}
+body.square .card{right:44px;bottom:60px;width:400px;transform:rotate(4deg)}
+</style></head><body>
+<div class="bg"><div class="orb a"></div><div class="orb b"></div><div class="orb c"></div></div>
+<div class="brand"><img src="../../logo-crest.svg" alt=""><span>Hoop<i>Connect</i></span></div>
+<div class="eyebrow">Klub · Mecze · Karta gracza</div>
+<div class="match"><img src="../press/club-match.png" alt=""></div>
+<div class="card"><img src="../press/club-playercard.png" alt=""></div>
+<script>
+document.body.className=new URLSearchParams(location.search).get('v')||'wide';
+Promise.all([...document.images].map(i=>i.decode().catch(()=>{}))).then(()=>document.fonts.ready).then(()=>{const r=document.createElement('i');r.id='ready';document.body.appendChild(r)});
+</script></body></html>

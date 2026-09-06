@@ -38,3 +38,20 @@ node assets/brand/generator/cdpshot.cjs "file://$PWD/assets/brand/generator/comp
 node assets/brand/generator/cdpshot.cjs "file://$PWD/assets/brand/generator/compose.html?v=square" assets/brand/press/rank-preview-square.png 1000 1000 2 0 "#ready" 1500
 ```
 (argumenty: url, plik, szerokość, wysokość, skala, mobile 0/1, selektor „gotowe”, dodatkowe ms). Układ kompozycji: `generator/compose.html`.
+
+## Grafika postu: Klub / mecz / karta gracza (`press/club-*`)
+- `club-preview-wide.png` (16:9) + `club-preview-square.png` (social) — panel zakończonego meczu (statystyki) + karta gracza.
+- Źródła: `club-match.png` (karta meczu na ciemnym tle) i `club-playercard.png` (wycinek karty gracza, PRZEZROCZYSTY).
+
+Zrzuty prawdziwych komponentów robimy z dev-labów z tymczasowo podmienionymi mock-danymi (fikcyjny klub
+HOOPCONNECT, wymyślone imiona, ramki tylko `early_access`/brak), potem `git checkout` cofa laby:
+```bash
+# w MatchLab.jsx: klub/imiona/ramki + stan 'completed'; w #cap owinąć <MatchCard/>
+node assets/brand/generator/cdpshot.cjs "http://localhost:3000/matchlab" assets/brand/press/club-match.png 480 1000 3 0 "#cap" 3800 "#cap" 0
+# w CardLab.jsx: gałąź ?bare renderuje gołą <PlayerCard3D frameVariant=early_access> na przezroczystym tle (html,body,#root transparent)
+node assets/brand/generator/cdpshot.cjs "http://localhost:3000/cardlab?bare" assets/brand/press/club-playercard.png 700 1000 3 0 "#cap" 3800 "#cap" 1
+git checkout src/pages/MatchLab.jsx src/pages/CardLab.jsx   # cofnij mock-dane
+node assets/brand/generator/cdpshot.cjs "file://$PWD/assets/brand/generator/compose-club.html?v=wide"   assets/brand/press/club-preview-wide.png   1200 675  2 0 "#ready" 1500
+node assets/brand/generator/cdpshot.cjs "file://$PWD/assets/brand/generator/compose-club.html?v=square" assets/brand/press/club-preview-square.png 1000 1000 2 0 "#ready" 1500
+```
+`cdpshot.cjs` doszły 2 opcjonalne argumenty: `clipSel` (przytnij do elementu) i `transparent` (0/1, wycinek PNG).
