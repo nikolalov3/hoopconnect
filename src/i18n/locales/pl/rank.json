@@ -1,9 +1,15 @@
 {
   "title": "Ranking",
-  "subtitle": "Najlepsi gracze HoopConnect — XP za mecze, wygrane i King of the Court",
-  "tabs": { "xp": "XP", "matches": "Mecze", "kotc": "King of the Court" },
+  "tabs": {
+    "xp": "XP",
+    "matches": "Mecze",
+    "kotc": "King of the Court"
+  },
   "allCities": "Wszystkie miasta",
-  "period": { "all": "Cały czas", "30d": "30 dni" },
+  "period": {
+    "all": "Cały czas",
+    "30d": "30 dni"
+  },
   "you": "Ty",
   "games": "gier",
   "sessions": "sesji",
@@ -23,5 +29,6 @@
   "colKotcWins": "Wygrane sesje",
   "colSessions": "Sesje",
   "cta": "Grasz w kosza? Dołącz do HoopConnect",
-  "ctaSub": "Zdobywaj XP za prawdziwe mecze i wejdź na tablicę."
+  "ctaSub": "Zdobywaj XP za prawdziwe mecze i wejdź na tablicę.",
+  "ctaBtn": "Otwórz aplikację"
 }
