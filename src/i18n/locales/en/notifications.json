@@ -33,6 +33,12 @@
     "removed": "The coach removed you from team {{teamName}}.",
     "ok": "OK, got it"
   },
+  "matchResult": {
+    "badge": "Result to confirm",
+    "score": "{{home}} {{scoreHome}} : {{scoreAway}} {{away}}",
+    "body": "The {{home}} captain entered the score. Confirm it or dispute it — you have 24h, then it auto-confirms.",
+    "cta": "View & confirm"
+  },
   "ok": "OK",
   "generic": "Notification"
 }
