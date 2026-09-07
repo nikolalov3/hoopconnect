@@ -38,12 +38,21 @@ declare
 begin
   -- Only on the transition INTO result_pending (home captain just submitted).
   if NEW.status = 'result_pending' and (OLD.status is distinct from 'result_pending') then
-    -- Away captain = away player in the lowest slot (mirrors the app's awayLeadId).
-    select user_id into v_away_lead
-      from public.match_players
-     where match_id = NEW.id and team = 'away'
-     order by slot asc
+    -- Away captain = the away CLUB'S OWNER if they're on the away roster (a captain
+    -- who joined second must still be the one to confirm); otherwise fall back to
+    -- the away player in the lowest slot. Mirrors the app's awayLeadId exactly.
+    select mp.user_id into v_away_lead
+      from public.match_players mp
+      join public.clubs c on c.id = NEW.away_club_id
+     where mp.match_id = NEW.id and mp.team = 'away' and mp.user_id = c.owner_id
      limit 1;
+    if v_away_lead is null then
+      select user_id into v_away_lead
+        from public.match_players
+       where match_id = NEW.id and team = 'away'
+       order by slot asc
+       limit 1;
+    end if;
 
     if v_away_lead is not null then
       select name into v_home_name from public.clubs where id = NEW.club_id;

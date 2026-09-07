@@ -3883,7 +3883,12 @@ function MatchesPanel({ club, uid, isActive }) {
       const away = m.players.filter(p => p.team === 'away').sort((a,b) => a.slot - b.slot)
       const ownerInHome = home.some(p => p.user_id === club.ownerId)
       const homeLeadId = (ownerInHome ? home.find(p => p.user_id === club.ownerId) : home[0])?.user_id
-      const awayLeadId  = away[0]?.user_id
+      // Away captain = the away club's OWNER if they're on the away roster (when the
+      // viewer is on the away team, `club` IS the away club, so club.ownerId is that
+      // owner); otherwise the lowest away slot. Mirrors homeLeadId and the server
+      // trigger that sends the confirm notification — same person on both sides.
+      const ownerInAway = away.some(p => p.user_id === club.ownerId)
+      const awayLeadId  = (ownerInAway ? away.find(p => p.user_id === club.ownerId) : away[0])?.user_id
 
       // result_pending → away captain needs to confirm
       if (m.status === 'result_pending' && uid === awayLeadId) {
