@@ -102,6 +102,7 @@ export default function NotificationsSheet() {
                     onMarkRead={markRead}
                     onClose={close}
                     onAccepted={closeAndGoHome}
+                    onNavigate={(url) => { setNotificationsOpen(false); navigate(url || '/club') }}
                   />
                 ))}
               </div>
@@ -114,7 +115,7 @@ export default function NotificationsSheet() {
   )
 }
 
-function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMarkRead, onClose, onAccepted }) {
+function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMarkRead, onClose, onAccepted, onNavigate }) {
   const { t } = useTranslation('notifications')
   const { type, payload } = notification
   const [busy, setBusy] = useState(false)
@@ -288,6 +289,32 @@ function NotificationCard({ notification, onAcceptInvite, onDeclineInvite, onMar
           style={{ padding: '8px 14px', fontSize: 12 }}
         >
           {t('teamRemoved.ok')}
+        </button>
+      </div>
+    )
+  }
+
+  // Wynik do potwierdzenia — kapitan away dostaje to, gdy home wpisze wynik.
+  // CTA prowadzi do /club, gdzie checkPendingResult otwiera arkusz potwierdzenia.
+  if (type === 'match_result_confirm') {
+    const p = payload || {}
+    return (
+      <div className="card" style={{ padding: 16 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: '#FFC940', marginBottom: 6 }}>
+          {t('matchResult.badge')}
+        </div>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+          {t('matchResult.score', { home: p.home_name, scoreHome: p.score_home ?? '–', scoreAway: p.score_away ?? '–', away: p.away_name })}
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 10, lineHeight: 1.55 }}>
+          {t('matchResult.body', { home: p.home_name })}
+        </div>
+        <button
+          className="btn-primary"
+          onClick={async () => { await onMarkRead(notification.id); onNavigate?.(notification.action_url) }}
+          style={{ marginTop: 14, padding: '10px 16px', fontSize: 13, width: '100%' }}
+        >
+          {t('matchResult.cta')}
         </button>
       </div>
     )

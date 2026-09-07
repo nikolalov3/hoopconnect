@@ -33,6 +33,12 @@
     "removed": "Trener usunął Cię z drużyny {{teamName}}.",
     "ok": "OK, rozumiem"
   },
+  "matchResult": {
+    "badge": "Wynik do potwierdzenia",
+    "score": "{{home}} {{scoreHome}} : {{scoreAway}} {{away}}",
+    "body": "Kapitan {{home}} wpisał wynik. Potwierdź go albo zgłoś inny — masz 24h, potem zatwierdzi się sam.",
+    "cta": "Zobacz i potwierdź"
+  },
   "ok": "OK",
   "generic": "Powiadomienie"
 }
