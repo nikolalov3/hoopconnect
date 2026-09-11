@@ -73,6 +73,9 @@ function AppRoutes() {
         <Route path="/"          element={<PublicRoute><LandingPage /></PublicRoute>} />
         <Route path="/login"     element={<PublicRoute><AuthPage mode="login" /></PublicRoute>} />
         <Route path="/register"  element={<PublicRoute><AuthPage mode="register" /></PublicRoute>} />
+        {/* Oferta = strona sprzedażowa panelu (do linkowania z zewnątrz). Ta sama co
+            landing, ale ze stabilnym URL /oferta + CTA „Wypróbuj za darmo" → /register. */}
+        <Route path="/oferta"    element={<PublicRoute><LandingPage /></PublicRoute>} />
 
         {/* Onboarding (logged in but no teams) */}
         <Route path="/onboarding" element={

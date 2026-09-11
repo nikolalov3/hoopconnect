@@ -91,7 +91,7 @@ export default function LandingPage() {
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link to="/register">
             <button className="coach-btn-primary" style={{ padding: '14px 28px', fontSize: 15 }}>
-              Zacznij za darmo
+              Wypróbuj za darmo
             </button>
           </Link>
           <Link to="/login">
