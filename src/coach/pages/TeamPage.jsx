@@ -18,6 +18,8 @@ export default function TeamPage() {
   const [codeCopied, setCodeCopied] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const [scores, setScores] = useState({})  // player_id -> { arena_level, xp, last_week_score }
+  const [manual, setManual] = useState([])  // zawodnicy dodani ręcznie (bez konta)
+  const [showManual, setShowManual] = useState(false)
 
   useEffect(() => {
     if (!currentTeam) return
@@ -50,6 +52,10 @@ export default function TeamPage() {
         }, () => loadRoster())
         .on('postgres_changes', {
           event: '*', schema: 'public', table: 'team_invites',
+          filter: `team_id=eq.${teamId}`,
+        }, () => loadRoster())
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'team_manual_players',
           filter: `team_id=eq.${teamId}`,
         }, () => loadRoster())
         .subscribe((status) => {
@@ -89,11 +95,12 @@ export default function TeamPage() {
     // get_team_roster joins team_members + auth.users.email server-side
     // so the UI can show the email-local-part as a label fallback when
     // first/last name haven't been typed yet.
-    const [rosterRes, invitesRes, attRes, scoresRes] = await Promise.all([
+    const [rosterRes, invitesRes, attRes, scoresRes, manualRes] = await Promise.all([
       supabase.rpc('get_team_roster', { p_team_id: currentTeam.id }),
       supabase.from('team_invites').select('*').eq('team_id', currentTeam.id).eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.rpc('get_team_attendance_recent', { p_team_id: currentTeam.id, p_limit: 10 }),
       supabase.rpc('get_team_scores', { p_team_id: currentTeam.id }),  // optional — degrades if migration not run
+      supabase.from('team_manual_players').select('*').eq('team_id', currentTeam.id).order('created_at', { ascending: true }),  // optional — degrades if migration not run
     ])
 
     const errors = []
@@ -107,11 +114,18 @@ export default function TeamPage() {
 
     setMembers(rosterRes.data || [])
     setInvites(invitesRes.data || [])
+    setManual(manualRes.data || [])   // manualRes.error (pre-migracja) non-fatal
     setAttendance(attRes.data || [])
     const scoreMap = {}
     for (const s of (scoresRes.data || [])) scoreMap[s.player_id] = s
     setScores(scoreMap)   // scoresRes.error (e.g. pre-migration) is non-fatal — roster still renders
     setLoading(false)
+  }
+
+  async function deleteManual(id) {
+    if (!window.confirm('Usunąć tego zawodnika z listy?')) return
+    await supabase.from('team_manual_players').delete().eq('id', id)
+    loadRoster()
   }
 
   if (!currentTeam) return null
@@ -122,7 +136,8 @@ export default function TeamPage() {
         <div>
           <h1 className="coach-h1">Drużyna · {currentTeam.name}</h1>
           <p className="coach-subtitle">
-            {members.length} {members.length === 1 ? 'zawodnik' : members.length >= 2 && members.length <= 4 ? 'zawodników' : 'zawodników'}
+            {members.length + manual.length} w składzie
+            {manual.length > 0 && ` · ${manual.length} bez konta`}
             {invites.length > 0 && ` · ${invites.length} zaproszeń oczekuje`}
           </p>
         </div>
@@ -144,7 +159,8 @@ export default function TeamPage() {
             </svg>
             Odśwież
           </button>
-          <button className="coach-btn-primary" onClick={() => setShowInvite(true)}>+ Dodaj zawodnika</button>
+          <button className="coach-btn-secondary" onClick={() => setShowManual(true)}>+ Dodaj ręcznie</button>
+          <button className="coach-btn-primary" onClick={() => setShowInvite(true)}>+ Zaproś kodem / e-mailem</button>
         </div>
       </header>
 
@@ -190,12 +206,15 @@ export default function TeamPage() {
       ) : (
         <>
           {/* Members list */}
-          {members.length === 0 && invites.length === 0 ? (
+          {members.length === 0 && manual.length === 0 && invites.length === 0 ? (
             <div className="coach-card">
               <div className="coach-placeholder" style={{ minHeight: 240 }}>
                 <div className="coach-placeholder-title">Brak zawodników</div>
-                <div style={{ marginBottom: 18 }}>Wyślij zaproszenie e-mailowe — zawodnik zaakceptuje je w aplikacji.</div>
-                <button className="coach-btn-primary" onClick={() => setShowInvite(true)}>Dodaj pierwszego zawodnika</button>
+                <div style={{ marginBottom: 18 }}>Dodaj zawodnika ręcznie albo zaproś go kodem lub e-mailem — dołączy w aplikacji.</div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button className="coach-btn-secondary" onClick={() => setShowManual(true)}>Dodaj ręcznie</button>
+                  <button className="coach-btn-primary" onClick={() => setShowInvite(true)}>Zaproś zawodnika</button>
+                </div>
               </div>
             </div>
           ) : (
@@ -260,6 +279,30 @@ export default function TeamPage() {
                 )
               })}
 
+              {manual.map(p => {
+                const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Zawodnik'
+                const initials = ((p.first_name?.charAt(0) || '') + (p.last_name?.charAt(0) || '')) || '?'
+                const bits = []
+                if (p.jersey_number) bits.push(`#${p.jersey_number}`)
+                if (p.birth_date) bits.push(new Date(p.birth_date).getFullYear())
+                const subLine = bits.join(' · ') || 'bez numeru'
+                return (
+                  <div key={`manual-${p.id}`} className="coach-card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 14 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 11, background: '#EEF1F5', color: '#4D5C73', fontWeight: 700, fontSize: 14, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                      {initials}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#1A2233', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fullName}</div>
+                      <div style={{ fontSize: 12, color: '#8A9AB0' }}>{subLine}</div>
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#6B7688', background: '#EEF1F5', padding: '4px 9px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      Bez konta
+                    </span>
+                    <button onClick={() => deleteManual(p.id)} className="coach-btn-ghost" style={{ fontSize: 12, padding: '6px 10px', color: '#D85546' }}>Usuń</button>
+                  </div>
+                )
+              })}
+
               {invites.length > 0 && (
                 <>
                   <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#8A9AB0', padding: '12px 4px 4px' }}>
@@ -316,6 +359,97 @@ export default function TeamPage() {
           onInvited={() => { setShowInvite(false); loadRoster() }}
         />
       )}
+
+      {showManual && (
+        <AddManualPlayerModal
+          team={currentTeam}
+          onClose={() => setShowManual(false)}
+          onAdded={() => { setShowManual(false); loadRoster() }}
+        />
+      )}
+    </div>
+  )
+}
+
+/**
+ * Ręczne dodanie zawodnika bez konta (ghost). Trener wpisuje imię i nazwisko,
+ * opcjonalnie datę urodzenia i numer na koszulce. Ląduje w team_manual_players.
+ */
+function AddManualPlayerModal({ team, onClose, onAdded }) {
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [birthDate, setBirthDate] = useState('')
+  const [jersey, setJersey] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setError(null)
+    if (!firstName.trim() || !lastName.trim()) {
+      setError('Podaj imię i nazwisko.')
+      return
+    }
+    setSubmitting(true)
+    const { error: insErr } = await supabase.from('team_manual_players').insert({
+      team_id: team.id,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      birth_date: birthDate || null,
+      jersey_number: jersey.trim() ? parseInt(jersey, 10) : null,
+    })
+    setSubmitting(false)
+    if (insErr) { setError(insErr.message); return }
+    onAdded()
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(20, 35, 60, 0.4)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 200,
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#FFFFFF', width: '100%', maxWidth: 460, borderRadius: 18, padding: 28 }}>
+        <h2 className="coach-h2" style={{ marginBottom: 4 }}>Dodaj zawodnika ręcznie</h2>
+        <p className="coach-subtitle" style={{ marginBottom: 20 }}>
+          Bez konta w aplikacji. Przyda się do listy obecności i składek. Konto możesz podpiąć później kodem.
+        </p>
+
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label className="coach-label">Imię *</label>
+              <input className="coach-input" type="text" value={firstName} onChange={e => setFirstName(e.target.value)} autoFocus required />
+            </div>
+            <div>
+              <label className="coach-label">Nazwisko *</label>
+              <input className="coach-input" type="text" value={lastName} onChange={e => setLastName(e.target.value)} required />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label className="coach-label">Data urodzenia (opcjonalnie)</label>
+              <input className="coach-input" type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
+            </div>
+            <div>
+              <label className="coach-label">Numer (opcjonalnie)</label>
+              <input className="coach-input" type="number" min="0" max="99" value={jersey} onChange={e => setJersey(e.target.value)} placeholder="np. 7" />
+            </div>
+          </div>
+
+          {error && (
+            <div style={{ background: '#FCE5E2', border: '1px solid #F4B5AB', color: '#A1372A', padding: '10px 12px', borderRadius: 10, fontSize: 13 }}>
+              {error}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+            <button type="button" onClick={onClose} className="coach-btn-secondary" style={{ flex: 1 }}>Anuluj</button>
+            <button type="submit" className="coach-btn-primary" disabled={submitting} style={{ flex: 1, opacity: submitting ? 0.6 : 1 }}>
+              {submitting ? 'Dodawanie...' : 'Dodaj zawodnika'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

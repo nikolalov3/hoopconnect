@@ -11,6 +11,7 @@ const DashboardPage    = lazy(() => import('./pages/DashboardPage'))
 const TeamPage         = lazy(() => import('./pages/TeamPage'))
 const PlayerPage       = lazy(() => import('./pages/PlayerPage'))
 const SchedulePage     = lazy(() => import('./pages/SchedulePage'))
+const PaymentsPage     = lazy(() => import('./pages/PaymentsPage'))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const TeamsHubPage     = lazy(() => import('./pages/TeamsHubPage'))
 const SettingsPage     = lazy(() => import('./pages/SettingsPage'))
@@ -88,6 +89,7 @@ function AppRoutes() {
           <Route path="/team"             element={<TeamPage />} />
           <Route path="/team/:playerId"   element={<PlayerPage />} />
           <Route path="/schedule"         element={<SchedulePage />} />
+          <Route path="/payments"         element={<PaymentsPage />} />
           <Route path="/notifications"    element={<NotificationsPage />} />
           <Route path="/teams"            element={<TeamsHubPage />} />
           <Route path="/settings"         element={<SettingsPage />} />
