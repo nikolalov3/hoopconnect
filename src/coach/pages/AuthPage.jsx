@@ -18,6 +18,7 @@ export default function AuthPage({ mode = 'login' }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [accepted, setAccepted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
@@ -31,6 +32,11 @@ export default function AuthPage({ mode = 'login' }) {
       if (isRegister) {
         if (!name.trim()) {
           setError('Podaj imię i nazwisko.')
+          setSubmitting(false)
+          return
+        }
+        if (!accepted) {
+          setError('Musisz zaakceptować Regulamin i Politykę prywatności.')
           setSubmitting(false)
           return
         }
@@ -147,23 +153,32 @@ export default function AuthPage({ mode = 'login' }) {
             }}>{error}</div>
           )}
 
+          {isRegister && (
+            <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 12, color: '#4D5C73', lineHeight: 1.5, cursor: 'pointer', margin: '2px 2px 0' }}>
+              <input
+                type="checkbox"
+                checked={accepted}
+                onChange={e => setAccepted(e.target.checked)}
+                style={{ marginTop: 2, width: 16, height: 16, flexShrink: 0, cursor: 'pointer', accentColor: '#2563EB' }}
+              />
+              <span>
+                Akceptuję{' '}
+                <a href="https://hoopconnect.pl/terms" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 600, color: '#2563EB' }}>Regulamin</a>
+                {' '}oraz{' '}
+                <a href="https://hoopconnect.pl/privacy" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 600, color: '#2563EB' }}>Politykę prywatności</a>
+                {' '}i wyrażam zgodę na przetwarzanie moich danych osobowych zgodnie z RODO.
+              </span>
+            </label>
+          )}
+
           <button
             type="submit"
             className="coach-btn-primary"
-            disabled={submitting}
-            style={{ marginTop: 6, padding: '12px 18px', fontSize: 14, opacity: submitting ? 0.6 : 1 }}
+            disabled={submitting || (isRegister && !accepted)}
+            style={{ marginTop: 6, padding: '12px 18px', fontSize: 14, opacity: (submitting || (isRegister && !accepted)) ? 0.6 : 1 }}
           >
             {submitting ? '...' : (isRegister ? 'Załóż konto' : 'Zaloguj się')}
           </button>
-
-          {isRegister && (
-            <p style={{ fontSize: 11.5, color: '#4D5C73', textAlign: 'center', lineHeight: 1.55, margin: '4px 2px 0' }}>
-              Zakładając konto, akceptujesz{' '}
-              <a href="https://hoopconnect.pl/terms" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 600, color: '#2563EB' }}>Regulamin</a>
-              {' '}oraz{' '}
-              <a href="https://hoopconnect.pl/privacy" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 600, color: '#2563EB' }}>Politykę prywatności</a>.
-            </p>
-          )}
         </form>
 
         <div style={{

@@ -135,7 +135,7 @@ export default function PaymentsPage() {
     <div>
       <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 className="coach-h1">Płatności · {currentTeam.name}</h1>
+          <h1 className="coach-h1">Finanse · {currentTeam.name}</h1>
           <p className="coach-subtitle">Składki i inne opłaty drużyny. Kwoty w zł.</p>
         </div>
         <button className="coach-btn-primary" onClick={() => setShowAdd(true)}>+ Dodaj płatność</button>

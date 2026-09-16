@@ -319,6 +319,9 @@
     footer { border-top: 1px solid var(--line); padding: 30px 0; }
     .foot-in { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 14px; }
     .foot-in .brand b { font-size: 18px; }
+    .foot-legal { display: flex; gap: 8px; align-items: center; }
+    .foot-legal a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+    .foot-legal a:hover { color: var(--fg, #fff); }
 
     @media (max-width: 880px) {
       .hero-grid, .prob-grid, .feat-grid, .shot-grid { grid-template-columns: 1fr; }
@@ -649,6 +652,11 @@
     <div class="wrap foot-in">
       <a class="brand" href="#top"><img src="/hoop.svg" alt="HoopConnect" style="width:26px;height:26px" /><b>HoopConnect</b></a>
       <div>© 2026 HoopConnect · System, do którego zawodnicy chcą wracać</div>
+      <div class="foot-legal">
+        <a href="/terms" target="_blank" rel="noopener">Regulamin</a>
+        <span aria-hidden="true">·</span>
+        <a href="/privacy" target="_blank" rel="noopener">Polityka prywatności</a>
+      </div>
     </div>
   </footer>
 
