@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wzór zgody rodzica – HoopConnect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink:#14181F; --muted:#5A6472; --line:#C4CDD8; --hair:#E6EBF1;
+    --accent:#1E4E79; --field:#F5F8FC;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#E9EDF2;color:var(--ink);
+    font-family:"Barlow",-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    font-size:11px;line-height:1.45}
+  .toolbar{max-width:800px;margin:16px auto 10px;padding:0 14px;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .toolbar p{margin:0;font-size:12px;color:var(--muted);line-height:1.5;max-width:520px}
+  .printbtn{border:none;background:var(--accent);color:#fff;font-weight:700;font-size:13px;
+    padding:9px 16px;border-radius:8px;cursor:pointer;white-space:nowrap}
+  .sheet{background:#fff;max-width:800px;margin:0 auto 36px;padding:34px 42px 38px;
+    box-shadow:0 4px 24px rgba(20,30,50,.12)}
+  .brandline{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--accent);font-weight:700;margin-bottom:4px}
+  h1{font-size:18px;line-height:1.2;margin-bottom:2px;letter-spacing:-.2px}
+  .sub{font-size:11px;color:var(--muted);margin-bottom:14px}
+  h2{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:var(--accent);
+    margin:16px 0 8px;padding-bottom:4px;border-bottom:1.4px solid var(--hair)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}
+  .f{display:flex;flex-direction:column;gap:3px}
+  .f label{font-size:9.5px;color:var(--muted);font-weight:600}
+  .f .box{border-bottom:1.3px solid var(--line);min-height:20px}
+  .consent{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+  .chk{width:13px;height:13px;border:1.5px solid var(--ink);border-radius:3px;flex-shrink:0;margin-top:1px}
+  .consent .t{font-size:11px;line-height:1.45}
+  .tag{display:inline-block;font-size:8.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.4px;padding:1px 6px;border-radius:4px;margin-left:2px}
+  .tag.req{background:#FBE7E4;color:#A1372A}
+  .tag.opt{background:#E7F0E9;color:#2E6B44}
+  .rodo{background:var(--field);border:1px solid var(--hair);border-radius:7px;
+    padding:11px 13px;font-size:9.5px;line-height:1.5;color:#3A424E}
+  .rodo b{color:var(--ink)}
+  .rodo ol{margin:5px 0 0;padding-left:15px}
+  .rodo li{margin-bottom:2px}
+  .sign{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:30px}
+  .sign .line{border-top:1.3px solid var(--line);padding-top:5px;font-size:9.5px;
+    color:var(--muted);text-align:center}
+  .foot{margin-top:18px;font-size:8.5px;color:#9AA4B2;line-height:1.45;
+    border-top:1px solid var(--hair);padding-top:9px}
+  @media print{
+    body{background:#fff}
+    .toolbar{display:none}
+    .sheet{box-shadow:none;margin:0;max-width:none;padding:0}
+    @page{size:A4;margin:12mm}
+  }
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <p>Wzór do druku. Uzupełnij dane klubu/trenera, wydrukuj i poproś rodzica/opiekuna o podpis.
+       Podpisany egzemplarz przechowuj u siebie.</p>
+    <button class="printbtn" onclick="window.print()">Drukuj / Zapisz PDF</button>
+  </div>
+
+  <div class="sheet">
+    <div class="brandline">Zgoda opiekuna</div>
+    <h1>Zgoda na przetwarzanie danych osobowych zawodnika</h1>
+    <div class="sub">Dokument wypełnia i przechowuje trener / klub prowadzący drużynę.</div>
+
+    <h2>Administrator danych (klub / trener)</h2>
+    <div class="grid">
+      <div class="f"><label>Nazwa klubu / imię i nazwisko trenera</label><div class="box"></div></div>
+      <div class="f"><label>Nazwa drużyny</label><div class="box"></div></div>
+      <div class="f"><label>Miejscowość</label><div class="box"></div></div>
+      <div class="f"><label>Kontakt (e-mail / telefon)</label><div class="box"></div></div>
+    </div>
+
+    <h2>Dane zawodnika</h2>
+    <div class="grid">
+      <div class="f"><label>Imię</label><div class="box"></div></div>
+      <div class="f"><label>Nazwisko</label><div class="box"></div></div>
+      <div class="f"><label>Data urodzenia</label><div class="box"></div></div>
+      <div class="f"><label>Numer na koszulce (opcjonalnie)</label><div class="box"></div></div>
+    </div>
+
+    <h2>Rodzic / opiekun prawny (dla osoby niepełnoletniej)</h2>
+    <div class="grid">
+      <div class="f"><label>Imię i nazwisko</label><div class="box"></div></div>
+      <div class="f"><label>Kontakt (e-mail / telefon)</label><div class="box"></div></div>
+    </div>
+
+    <h2>Treść zgody</h2>
+    <div class="consent">
+      <div class="chk"></div>
+      <div class="t"><b>Wyrażam zgodę</b> na przetwarzanie danych osobowych mojego dziecka / podopiecznego
+        w celu jego udziału w drużynie: listy zawodników, frekwencji na treningach, rozliczania składek
+        oraz komunikacji. <span class="tag req">wymagane do udziału</span></div>
+    </div>
+    <div class="consent">
+      <div class="chk"></div>
+      <div class="t">Przyjmuję do wiadomości, że administrator korzysta z aplikacji <b>HoopConnect</b>,
+        która przetwarza te dane wyłącznie na jego zlecenie jako <b>podmiot przetwarzający</b>
+        i nie wykorzystuje ich do własnych celów.</div>
+    </div>
+    <div class="consent">
+      <div class="chk"></div>
+      <div class="t"><b>Zgoda dodatkowa:</b> na utrwalanie i publikację wizerunku dziecka (zdjęcia,
+        nagrania z treningów i meczów) w materiałach klubu. <span class="tag opt">dobrowolne</span></div>
+    </div>
+
+    <h2>Informacja RODO (art. 13)</h2>
+    <div class="rodo">
+      <ol>
+        <li><b>Administrator:</b> klub / trener wskazany powyżej.</li>
+        <li><b>Cel i podstawa:</b> udział w drużynie — zgoda (art. 6 ust. 1 lit. a) oraz organizacja zajęć (lit. b).</li>
+        <li><b>Odbiorcy:</b> dostawca aplikacji HoopConnect jako podmiot przetwarzający na podstawie umowy powierzenia. Dane nie są sprzedawane ani używane do marketingu.</li>
+        <li><b>Okres:</b> czas przynależności do drużyny; usuwane po jej zakończeniu lub na wniosek.</li>
+        <li><b>Prawa:</b> dostęp, sprostowanie, usunięcie, ograniczenie, sprzeciw i cofnięcie zgody w dowolnym momencie.</li>
+        <li><b>Dobrowolność:</b> podanie danych jest dobrowolne, lecz niezbędne do udziału w drużynie.</li>
+      </ol>
+    </div>
+
+    <div class="sign">
+      <div class="line">Miejscowość i data</div>
+      <div class="line">Czytelny podpis rodzica / opiekuna</div>
+    </div>
+
+    <div class="foot">Wzór pomocniczy udostępniony przez HoopConnect. Nie stanowi porady prawnej —
+      przed użyciem zweryfikuj treść pod kątem specyfiki klubu.</div>
+  </div>
+</body>
+</html>
