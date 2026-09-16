@@ -321,13 +321,20 @@ export default function SettingsPage() {
       </div>
 
       {/* ── Wyloguj ──────────────────────────────────────────────────── */}
-      <div style={{ padding: '24px 0 16px', textAlign: 'center' }}>
+      <div style={{ padding: '24px 0 8px', textAlign: 'center' }}>
         <button onClick={handleSignOut} style={{
           background: 'none', border: 'none', cursor: 'pointer',
           fontSize: 13, fontWeight: 600, color: '#D85546', padding: '8px 16px',
         }}>
           Wyloguj się
         </button>
+      </div>
+
+      {/* ── Dokumenty ────────────────────────────────────────────────── */}
+      <div style={{ padding: '0 0 20px', textAlign: 'center', fontSize: 12, color: '#8A9AB0' }}>
+        <a href="https://hoopconnect.pl/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#8A9AB0', textDecoration: 'underline' }}>Regulamin</a>
+        {' · '}
+        <a href="https://hoopconnect.pl/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#8A9AB0', textDecoration: 'underline' }}>Polityka prywatności</a>
       </div>
     </div>
   )
