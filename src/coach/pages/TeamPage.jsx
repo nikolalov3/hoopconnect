@@ -442,6 +442,15 @@ function AddManualPlayerModal({ team, onClose, onAdded }) {
             </div>
           )}
 
+          <div style={{
+            background: '#F5F8FC', border: '1px solid #E0E7EF', borderRadius: 10,
+            padding: '10px 12px', fontSize: 12, color: '#5A6A80', lineHeight: 1.5,
+          }}>
+            Dodając zawodnika oświadczasz, że masz podstawę prawną do przetwarzania jego danych
+            w ramach prowadzonej drużyny — a w przypadku osoby niepełnoletniej dysponujesz zgodą
+            jej rodzica lub opiekuna. HoopConnect przetwarza te dane wyłącznie na Twoje zlecenie.
+          </div>
+
           <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
             <button type="button" onClick={onClose} className="coach-btn-secondary" style={{ flex: 1 }}>Anuluj</button>
             <button type="submit" className="coach-btn-primary" disabled={submitting} style={{ flex: 1, opacity: submitting ? 0.6 : 1 }}>
