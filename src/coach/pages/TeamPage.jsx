@@ -449,6 +449,12 @@ function AddManualPlayerModal({ team, onClose, onAdded }) {
             Dodając zawodnika oświadczasz, że masz podstawę prawną do przetwarzania jego danych
             w ramach prowadzonej drużyny — a w przypadku osoby niepełnoletniej dysponujesz zgodą
             jej rodzica lub opiekuna. HoopConnect przetwarza te dane wyłącznie na Twoje zlecenie.
+            <div style={{ marginTop: 6 }}>
+              <a href="/wzor-zgody-rodzica.html" target="_blank" rel="noopener"
+                style={{ color: '#1E4E79', fontWeight: 600, textDecoration: 'underline' }}>
+                Pobierz wzór zgody rodzica (do druku)
+              </a>
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
