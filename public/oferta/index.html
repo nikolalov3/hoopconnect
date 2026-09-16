@@ -225,6 +225,9 @@ details p{padding:0 0 24px;color:var(--ink-2);font-size:16.5px;max-width:64ch}
 footer{padding:46px 0;border-top:1px solid var(--rule)}
 .foot{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;
   font-size:14.5px;color:var(--ink-3)}
+.foot-legal{display:inline-flex;gap:8px;align-items:center}
+.foot-legal a{color:var(--ink-3);text-decoration:underline;text-underline-offset:3px}
+.foot-legal a:hover{color:var(--ink)}
 
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--paper);
   border-top:1px solid var(--rule);padding:10px 16px;display:none;gap:10px}
@@ -505,6 +508,11 @@ footer{padding:46px 0;border-top:1px solid var(--rule)}
   <div class="wrap foot">
     <a class="brand" href="#top" style="font-size:20px"><img src="/hoop.svg" alt="" style="width:26px;height:26px" /><span class="wm">Hoop<i>Connect</i></span></a>
     <span>Mikołaj Kretowicz · kontakt@hoopconnect.pl · 607 118 228</span>
+    <span class="foot-legal">
+      <a href="/terms" target="_blank" rel="noopener">Regulamin</a>
+      ·
+      <a href="/privacy" target="_blank" rel="noopener">Polityka prywatności</a>
+    </span>
   </div>
 </footer>
 
