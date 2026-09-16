@@ -20,6 +20,7 @@ export default function PlayerPage() {
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [removing, setRemoving] = useState(false)
   const [stats, setStats] = useState(null)
+  const [payments, setPayments] = useState(null)  // null = ładowanie/pre-migracja, [] = brak
 
   useEffect(() => {
     if (!currentTeam?.id || !playerId) return
@@ -39,6 +40,13 @@ export default function PlayerPage() {
       // Player stats — fire-and-forget, non-fatal (degrades before the migration runs)
       supabase.rpc('get_player_stats', { p_team_id: currentTeam.id, p_player_id: playerId })
         .then(r => { if (!cancelled) setStats(r.data || null) })
+      // Płatności zawodnika — read-only podgląd (zarządzanie w zakładce Finanse).
+      // Non-fatal: degraduje przed migracją team_payments.
+      supabase.from('team_payments')
+        .select('id, title, category, amount, period, status, due_date, paid_at')
+        .eq('team_id', currentTeam.id).eq('member_id', playerId)
+        .order('due_date', { ascending: false, nullsFirst: false })
+        .then(r => { if (!cancelled) setPayments(r.error ? [] : (r.data || [])) })
       setLoading(false)
     })()
     return () => { cancelled = true }
@@ -197,6 +205,47 @@ export default function PlayerPage() {
             )}
           </div>
 
+          {/* Płatności zawodnika — podgląd; zarządzanie w Finansach */}
+          {payments && payments.length > 0 && (
+            <div className="coach-card" style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4, gap: 12, flexWrap: 'wrap' }}>
+                <h2 className="coach-h2">Płatności</h2>
+                <Link to="/payments" className="coach-btn-ghost" style={{ fontSize: 12, padding: '4px 8px' }}>Zarządzaj w Finansach →</Link>
+              </div>
+              {(() => {
+                const paid = payments.filter(p => p.status === 'paid').reduce((s, p) => s + Number(p.amount || 0), 0)
+                const due  = payments.filter(p => p.status !== 'paid').reduce((s, p) => s + Number(p.amount || 0), 0)
+                return (
+                  <p className="coach-subtitle" style={{ marginBottom: 16 }}>
+                    Zapłacone: <b style={{ color: '#3FA86A' }}>{zl(paid)}</b> · Do zapłaty: <b style={{ color: due > 0 ? '#D85546' : '#8A9AB0' }}>{zl(due)}</b>
+                  </p>
+                )
+              })()}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {payments.map(p => {
+                  const paid = p.status === 'paid'
+                  return (
+                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 11, background: '#FAFBFC', border: '1px solid #E6ECF3' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#1A2233' }}>
+                          {p.title}{p.category === 'skladka' && p.period ? ` · ${p.period}` : ''}
+                        </div>
+                        {p.due_date && <div style={{ fontSize: 11, color: '#8A9AB0' }}>termin {new Date(p.due_date).toLocaleDateString('pl-PL')}</div>}
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#1A2233' }}>{zl(p.amount)}</span>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4,
+                        padding: '3px 8px', borderRadius: 99,
+                        color: paid ? '#1E6B3D' : '#A37416',
+                        background: paid ? '#E2F4EB' : '#FCF2DE',
+                      }}>{paid ? 'Zapłacone' : 'Oczekuje'}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Strefa niebezpieczna — usuwanie */}
           <div className="coach-card" style={{ borderColor: '#FCE5E2' }}>
             <h2 className="coach-h2" style={{ color: '#D85546', marginBottom: 4 }}>Usuń z drużyny</h2>
@@ -225,6 +274,10 @@ export default function PlayerPage() {
       )}
     </div>
   )
+}
+
+function zl(n) {
+  return Number(n || 0).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' zł'
 }
 
 function StatTile({ label, value, sub, accent }) {

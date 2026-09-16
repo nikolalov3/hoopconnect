@@ -34,21 +34,28 @@ export default function PracticeAttendanceModal({ practice, onClose }) {
     setLoading(false)
   }
 
-  async function mark(playerId, status) {
+  // Ghost (ręczni) zawodnicy idą przez osobny RPC, bo praktyczna frekwencja z kontem
+  // trzyma się profiles. player_id dla ghosta = manual_id (osobne UUID → brak kolizji).
+  function markOne(row, status) {
+    return row.is_manual
+      ? supabase.rpc('mark_manual_attendance', {
+          p_practice_id: practice.id, p_manual_id: row.player_id, p_status: status,
+        })
+      : supabase.rpc('mark_attendance', {
+          p_practice_id: practice.id, p_player_id: row.player_id, p_status: status,
+        })
+  }
+
+  async function mark(row, status) {
     // Toggle off when clicking the same status that's already set
-    const current = roster.find(r => r.player_id === playerId)?.status
-    const next = (current === status) ? null : status
+    const next = (row.status === status) ? null : status
 
     // Optimistic
     setRoster(prev => prev.map(r =>
-      r.player_id === playerId ? { ...r, status: next } : r
+      r.player_id === row.player_id ? { ...r, status: next } : r
     ))
-    setSavingId(playerId)
-    const { error } = await supabase.rpc('mark_attendance', {
-      p_practice_id: practice.id,
-      p_player_id:   playerId,
-      p_status:      next,
-    })
+    setSavingId(row.player_id)
+    const { error } = await markOne(row, next)
     setSavingId(null)
     if (error) {
       setError(error.message)
@@ -63,11 +70,7 @@ export default function PracticeAttendanceModal({ practice, onClose }) {
     const targets = roster.filter(r => r.status !== status)
     setRoster(prev => prev.map(r => ({ ...r, status })))
     for (const r of targets) {
-      const { error } = await supabase.rpc('mark_attendance', {
-        p_practice_id: practice.id,
-        p_player_id:   r.player_id,
-        p_status:      status,
-      })
+      const { error } = await markOne(r, status)
       if (error) { setError(error.message); break }
     }
     setSavingId(null)
@@ -156,7 +159,18 @@ export default function PracticeAttendanceModal({ practice, onClose }) {
                     <div style={{
                       fontSize: 14, fontWeight: 600, color: '#1A2233',
                       whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    }}>{label}</div>
+                      display: 'flex', alignItems: 'center', gap: 8,
+                    }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+                      {p.is_manual && (
+                        <span style={{
+                          flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: 0.3,
+                          textTransform: 'uppercase', color: '#8A9AB0',
+                          background: '#EEF2F7', border: '1px solid #E0E7EF',
+                          padding: '1px 6px', borderRadius: 5,
+                        }}>Bez konta</span>
+                      )}
+                    </div>
                     {p.jersey_number != null && (
                       <div style={{ fontSize: 11, color: '#8A9AB0' }}>#{p.jersey_number}</div>
                     )}
@@ -166,7 +180,7 @@ export default function PracticeAttendanceModal({ practice, onClose }) {
                       const active = p.status === s.value
                       return (
                         <button key={s.value}
-                          onClick={() => mark(p.player_id, s.value)}
+                          onClick={() => mark(p, s.value)}
                           disabled={savingId === p.player_id || savingId === '__all__'}
                           title={s.label}
                           style={{
