@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro'
-import { APP_URL, RANK_URL, COACH_URL, APP_SCHEMA } from '../consts'
+import { APP_URL, RANK_URL, COACH_OFFER_URL, APP_SCHEMA } from '../consts'
 
 const title = 'FAQ'
 const description =
@@ -125,7 +125,7 @@ const GROUPS: Group[] = [
         q: 'Czy HoopConnect ma coś dla trenerów i klubów?',
         a: 'Tak. Panel dla trenerów to osobne narzędzie do prowadzenia drużyny: dodawanie zawodników (kodem lub ręcznie), lista obecności na treningach, ' +
           'rozliczanie składek oraz statystyki zawodników. Zawodnicy z kontem widzą swój rozwój w aplikacji gracza.',
-        link: { href: COACH_URL, label: 'Panel dla trenerów', external: true },
+        link: { href: COACH_OFFER_URL, label: 'Oferta dla trenerów', external: true },
       },
       {
         q: 'Czy panel trenera jest płatny?',

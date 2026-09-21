@@ -2,6 +2,8 @@
 export const SITE = 'https://hoopconnect.pl'
 export const APP_URL = 'https://app.hoopconnect.pl'
 export const COACH_URL = 'https://trener.hoopconnect.pl'
+// Landing sprzedażowy dla trenerów. Goły trener.* to prosty landing/login — kierujemy na /oferta.
+export const COACH_OFFER_URL = `${COACH_URL}/oferta`
 export const RANK_URL = `${APP_URL}/rank`
 
 export const BRAND = {
@@ -35,5 +37,5 @@ export const NAV: { label: string; href: string; soon?: boolean; external?: bool
   { label: 'Klub', href: '/klub' },
   { label: 'Ranking', href: '/ranking' },
   { label: 'FAQ', href: '/faq' },
-  { label: 'Dla trenerów', href: COACH_URL, external: true },
+  { label: 'Dla trenerów', href: COACH_OFFER_URL, external: true },
 ]
