@@ -17,17 +17,31 @@ export const BRAND = {
 }
 
 // Schema aplikacji (JSON-LD) — apka gracza jest darmowa. Wpinane na home i FAQ.
+// Bogate pola (featureList, publisher, screenshot) poprawiają cytowalność przez asystentów AI.
 export const APP_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: 'HoopConnect',
+  alternateName: 'HoopConnect 3x3',
   applicationCategory: 'SportsApplication',
+  applicationSubCategory: 'Basketball',
   operatingSystem: 'Web',
   url: APP_URL,
   inLanguage: 'pl-PL',
   description:
     'Aplikacja do koszykówki ulicznej 3x3: znajdź grę i graczy w okolicy, graj King of the Court, ' +
-    'trenuj indywidualnie, zbieraj XP i wbijaj się w rankingi.',
+    'trenuj indywidualnie według planu dopasowanego do liczby dni w tygodniu, zbieraj XP i wbijaj się w rankingi.',
+  featureList: [
+    'Znajdowanie gier i graczy 3x3 na boiskach w okolicy',
+    'King of the Court z automatycznym losowaniem trzyosobowych drużyn',
+    'Indywidualny asystent treningu z codziennymi ćwiczeniami dopasowanymi do gracza',
+    'Ćwiczenia regeneracyjne na dni odpoczynku',
+    'System XP, areny i publiczne rankingi z filtrem po mieście',
+    'Panel dla trenerów i klubów: frekwencja na treningach i rozliczanie składek',
+  ],
+  screenshot: new URL('/brand/rank.png', SITE).href,
+  image: new URL('/brand/horizontal.png', SITE).href,
+  publisher: { '@type': 'Organization', name: 'HoopConnect', url: SITE },
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'PLN' },
 }
 

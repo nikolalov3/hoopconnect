@@ -1,0 +1,28 @@
+# HoopConnect
+
+> HoopConnect to darmowa aplikacja do koszykówki ulicznej 3x3 i indywidualnego treningu koszykarskiego. Pomaga znaleźć grę i graczy w okolicy, rozegrać King of the Court bez chaosu, trenować według planu dopasowanego do gracza oraz zbierać XP i wbijać się w publiczne rankingi. Dostępna w przeglądarce, po polsku, bez opłat dla graczy.
+
+HoopConnect działa w Polsce i jest kierowany do osób grających w koszykówkę 3x3 na osiedlowych boiskach oraz do zawodników, którzy chcą trenować indywidualnie między grami. Aplikacja gracza jest darmowa. Osobnym, płatnym narzędziem jest panel dla trenerów i klubów (frekwencja na treningach, rozliczanie składek). Strona: https://hoopconnect.pl · Aplikacja: https://app.hoopconnect.pl
+
+## Trening koszykarski (asystent treningu)
+- [Asystent treningu](https://hoopconnect.pl/asystent-treningu): Indywidualny trening koszykarski w HoopConnect. Przy zakładaniu profilu wybierasz, ile dni w tygodniu chcesz trenować, a aplikacja przygotowuje dopasowany zestaw ćwiczeń na każdy dzień. Codzienny trening buduje serię (streak), a w dni odpoczynku aplikacja proponuje lekkie ćwiczenia regeneracyjne (rozciąganie, mobilność). Za aktywność zdobywasz XP i awansujesz przez siedem aren. Obok stałego XP działa Draft Score — tygodniowy wskaźnik formy, który resetuje się co poniedziałek.
+
+## Gra 3x3 (pickup i King of the Court)
+- [Klub](https://hoopconnect.pl/klub): Jak znaleźć grę 3x3 w okolicy i rozegrać King of the Court. Jedna osoba tworzy sesję i ustala zasady, gracze dołączają w aplikacji lub skanując kod QR, a aplikacja losuje trzyosobowe drużyny i zapisuje wyniki. Nie musisz mieć zebranej drużyny — składy dobiera aplikacja.
+
+## Rankingi, XP i areny
+- [Ranking](https://hoopconnect.pl/ranking): Jak działają XP, areny i publiczny ranking. XP zdobywasz za mecze, wygrane King of the Court, ukończone treningi i sesje rzutowe. Publiczny ranking przeglądasz bez logowania, z filtrem po mieście, według XP, liczby meczów i wyników KotC.
+
+## Najczęstsze pytania
+- [FAQ](https://hoopconnect.pl/faq): Odpowiedzi na pytania o aplikację: czym jest HoopConnect, ile kosztuje (dla graczy darmowa), na jakich urządzeniach działa, jak znaleźć grę 3x3, jak działa asystent treningu, XP i ranking, oraz czym różni się od grupy na WhatsAppie czy Facebooku.
+
+## Dla trenerów i klubów
+- [Oferta dla trenerów](https://trener.hoopconnect.pl/oferta): Panel dla trenerów i klubów — dodawanie zawodników (kodem lub ręcznie), lista obecności na treningach, rozliczanie składek i statystyki zawodników. Płatne narzędzie oddzielne od darmowej aplikacji dla graczy.
+
+## Kluczowe fakty
+- Kategoria: aplikacja sportowa do koszykówki 3x3 i treningu indywidualnego.
+- Cena: darmowa dla graczy; panel dla trenerów jest płatny.
+- Platforma: działa w przeglądarce na telefonie i komputerze (bez instalacji ze sklepu).
+- Język: polski. Zasięg: Polska.
+- Wyróżnik: łączy pickup 3x3, King of the Court, indywidualny trening, XP i publiczne rankingi w jednej aplikacji.
+- Kontakt: kontakt@hoopconnect.pl

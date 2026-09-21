@@ -42,8 +42,34 @@ const baseSchema: Record<string, unknown>[] = [
     inLanguage: 'pl-PL',
   },
 ]
+// WebPage node — każda strona jako maszynowo czytelny obiekt (dla wyszukiwarek i asystentów AI).
+const webPage: Record<string, unknown> = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: fullTitle,
+  description,
+  url: canonical,
+  inLanguage: 'pl-PL',
+  isPartOf: { '@type': 'WebSite', name: BRAND.name, url: SITE },
+  primaryImageOfPage: new URL(ogImage, SITE).href,
+  about: { '@type': 'SoftwareApplication', name: BRAND.name, applicationCategory: 'SportsApplication' },
+}
+
+// Breadcrumb dla podstron (Home > Strona) — czytelna hierarchia w SERP i dla LLM.
+const isHome = path === '/' || path === ''
+const breadcrumb: Record<string, unknown> | null = isHome
+  ? null
+  : {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Strona główna', item: SITE },
+        { '@type': 'ListItem', position: 2, name: title, item: canonical },
+      ],
+    }
+
 const pageSchema = schema ? (Array.isArray(schema) ? schema : [schema]) : []
-const jsonLd = [...baseSchema, ...pageSchema]
+const jsonLd = [...baseSchema, webPage, ...(breadcrumb ? [breadcrumb] : []), ...pageSchema]
 ---
 <!doctype html>
 <html lang="pl">
@@ -55,12 +81,17 @@ const jsonLd = [...baseSchema, ...pageSchema]
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/logo-crest.svg" />
 
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="author" content={BRAND.name} />
+    <meta name="publisher" content={BRAND.name} />
+
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={BRAND.name} />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={new URL(ogImage, SITE).href} />
+    <meta property="og:image:alt" content={`${BRAND.name} — ${description}`} />
     <meta property="og:locale" content="pl_PL" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#060F1E" />
