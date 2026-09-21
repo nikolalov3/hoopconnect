@@ -1,0 +1,535 @@
+---
+import Base from '../layouts/Base.astro'
+import { APP_URL } from '../consts'
+const description =
+  'Asystent treningu w HoopConnect: codzienne ćwiczenia, siedem aren i Draft Score, czyli tygodniowy ' +
+  'wskaźnik formy, który zamienia się w stałe XP. Zobacz, jak działa progresja i za co dostajesz XP.'
+
+// Areny z aplikacji (src/lib/arenas.js). Grafiki: /arenas/arena-N.png (1..6 = odznaki).
+const ARENAS = [
+  { n: '00', name: 'Rozgrzewka', xp: 0,    img: null,   note: 'Start. Zbierasz pierwsze XP i odblokowujesz pierwszą arenę HC.' },
+  { n: '01', name: 'Street Court', xp: 500,  img: '/arenas/arena-1.png', note: 'Pierwsze boisko, pierwszy realny progres.' },
+  { n: '02', name: 'City Run',    xp: 1500, img: '/arenas/arena-2.png', note: 'Miasto w ruchu, coraz więcej graczy i większa rywalizacja.' },
+  { n: '03', name: 'Golden Reign', xp: 2700, img: '/arenas/arena-3.png', note: 'Wysoka arena dla tych, którzy nie zwalniają tempa.' },
+  { n: '04', name: 'Ankh Court',  xp: 3900, img: '/arenas/arena-4.png', note: 'Zostaw po sobie ślad. Droga, która trwa dalej.' },
+  { n: '05', name: 'Void Gem',    xp: 5500, img: '/arenas/arena-5.png', note: 'Inny poziom gry. Docierają tu tylko najbardziej aktywni.' },
+  { n: '06', name: 'Seraphim',    xp: 7500, img: '/arenas/arena-6.png', note: 'Szczyt świata HC. Dla graczy, którzy przeszli całą drogę.' },
+]
+
+// Aktywności na dzień odpoczynku (z zakładki Regeneracja w apce).
+const REST = [
+  { name: 'Sen', min: '8 h' },
+  { name: 'Rozciąganie', min: '15 min' },
+  { name: 'Foam rolling', min: '20 min' },
+  { name: 'Joga', min: '20 min' },
+  { name: 'Medytacja', min: '10 min' },
+  { name: 'Spacer', min: '30 min' },
+  { name: 'Zimny prysznic', min: '5 min' },
+  { name: 'Mobilność', min: '10 min' },
+  { name: 'Zdrowy posiłek', min: '45 min' },
+  { name: 'Drzemka', min: '20 min' },
+]
+---
+<Base title="Asystent treningu" description={description}>
+  <article>
+    <!-- NAGŁÓWEK -->
+    <section class="section post-head">
+      <div class="wrap ph-grid">
+        <div class="ph-copy">
+          <h1>Asystent<br />treningu</h1>
+          <p class="lead">
+            Część HoopConnect, która prowadzi Twój indywidualny rozwój na boisku. Codzienne ćwiczenia,
+            progresja przez siedem aren i Draft Score, czyli tygodniowy wskaźnik formy. Poniżej pokazujemy,
+            jak to działa i za co dostajesz XP.
+          </p>
+          <div class="meta">
+            <span>7 aren</span><i></i><span>XP: stałe</span><i></i><span>Draft Score: tygodniowy</span>
+          </div>
+        </div>
+
+        <!-- Animacja: zaliczasz kolejne treningi, a Draft Score rośnie. Liczba w hexie areny. -->
+        <div class="ph-anim" aria-hidden="true">
+          <div class="anim-stack">
+            <div class="anim-hexwrap">
+              <img class="anim-hex" src="/arenas/arena-2.png" alt="" />
+              <span class="anim-hexnum" id="dsNum">120</span>
+              <span class="anim-pop" id="dsPop">+50</span>
+            </div>
+            <span class="anim-lab">Draft Score</span>
+            <div class="anim-bar"><span id="dsBar"></span></div>
+            <div class="anim-window">
+              <div class="anim-list" id="trList">
+                <div class="anim-row">
+                  <span class="anim-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+                  <span class="anim-tx"><b>Rzuty za 3</b><i>Celność</i></span>
+                  <span class="anim-pkt">+50</span>
+                </div>
+                <div class="anim-row">
+                  <span class="anim-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+                  <span class="anim-tx"><b>Kozłowanie slalom</b><i>Praca nóg</i></span>
+                  <span class="anim-pkt">+50</span>
+                </div>
+                <div class="anim-row">
+                  <span class="anim-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+                  <span class="anim-tx"><b>Bieg wahadłowy</b><i>Kondycja</i></span>
+                  <span class="anim-pkt">+50</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CZYM JEST XP (kompaktowa plakietka) -->
+    <section class="section ruled">
+      <div class="wrap">
+        <div class="xp-plaque panel cut-tr">
+          <img class="xp-plaque-ic" src="/brand/xp.png" alt="Ikona XP" width="120" height="120" />
+          <div class="xp-plaque-tx">
+            <h2>Czym jest XP</h2>
+            <p>
+              Punkty doświadczenia (XP) to główna waluta progresu w HoopConnect. Zdobywasz je przede wszystkim za
+              granie, a one odblokowują kolejne areny i budują Twoją pozycję w rankingu. Raz zdobyte, zostają na stałe.
+            </p>
+            <a href="/ranking">Pełna rozpiska XP w Rankingu <span class="arw">→</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRENING CODZIENNY -->
+    <section class="section ruled">
+      <div class="wrap">
+        <div class="tc-grid">
+          <div class="tc-copy">
+            <h2>Trening codzienny,<br />ułożony pod Ciebie</h2>
+            <p class="lead">
+              Przy zakładaniu profilu wybierasz, ile dni w tygodniu chcesz trenować. Resztą zajmuje się aplikacja:
+              każdego dnia dostajesz gotowy zestaw ćwiczeń dopasowany specjalnie pod Ciebie.
+            </p>
+            <ul class="ticks">
+              <li>Wybierasz liczbę dni treningowych i zmieniasz ją, kiedy chcesz.</li>
+              <li>Zestaw na każdy dzień układa się sam, pod Twój poziom i cel.</li>
+              <li>Dni dzielą się na treningowe, odpoczynek i wolne, plan reguluje się sam.</li>
+            </ul>
+          </div>
+          <div class="tc-day panel cut-tr">
+            <div class="tc-day-head"><span class="tc-day-t">Dziś · Środa</span><span class="tc-prog">2 / 3</span></div>
+            <div class="tc-row done">
+              <span class="anim-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+              <span class="tc-tx"><b>Rzuty za 3</b><i>Celność</i></span><span class="tc-pts">+2</span>
+            </div>
+            <div class="tc-row done">
+              <span class="anim-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+              <span class="tc-tx"><b>Kozłowanie slalom</b><i>Praca nóg</i></span><span class="tc-pts">+2</span>
+            </div>
+            <div class="tc-row">
+              <span class="anim-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+              <span class="tc-tx"><b>Trucht 20 min</b><i>Kondycja</i></span><span class="tc-pts">+1</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="week" role="img" aria-label="Przykładowy rytm tygodnia: cztery dni treningowe, odpoczynek i dni wolne">
+          <div class="day"><span class="dd">Pn</span><span class="dc t">Trening</span></div>
+          <div class="day"><span class="dd">Wt</span><span class="dc t">Trening</span></div>
+          <div class="day"><span class="dd">Śr</span><span class="dc r">Odpoczynek</span></div>
+          <div class="day"><span class="dd">Cz</span><span class="dc t">Trening</span></div>
+          <div class="day"><span class="dd">Pt</span><span class="dc t">Trening</span></div>
+          <div class="day"><span class="dd">So</span><span class="dc o">Wolne</span></div>
+          <div class="day"><span class="dd">Nd</span><span class="dc r">Odpoczynek</span></div>
+        </div>
+        <div class="week-legend">
+          <span><i class="lg t"></i>Trening</span>
+          <span><i class="lg r"></i>Odpoczynek</span>
+          <span><i class="lg o"></i>Wolne</span>
+        </div>
+
+        <div class="rest">
+          <div class="rest-copy">
+            <h3>A dzień odpoczynku?</h3>
+            <p>To nie strata, tylko część planu. Aplikacja podpowiada lekkie aktywności regeneracyjne, a odpoczynek też podtrzymuje Twoją serię. Wybierasz, co pasuje na dziś:</p>
+          </div>
+          <div class="marquee">
+            <div class="marquee-track">
+              {[...REST, ...REST].map((a) => (
+                <span class="rest-chip"><b>{a.name}</b><span>{a.min}</span></span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRENING / XP -->
+    <section class="section ruled">
+      <div class="wrap post-body">
+        <div class="prose">
+          <h2>Jak zdobywasz XP w treningu</h2>
+          <p>
+            Trening w HoopConnect robisz indywidualnie: wykonujesz ćwiczenia z puli treningowej, a aplikacja
+            zapisuje Twoją aktywność. Na koniec tygodnia część zebranej puli zamienia się w <strong>stałe XP</strong>.
+          </p>
+          <p>
+            Ważna zasada: <strong>trening solo ma sufit 100 XP na tydzień</strong>. To celowe, bo realna gra z ludźmi
+            ma znaczyć więcej niż samotny grind. Tydzień treningu to mniej więcej tyle, co jeden do dwóch wygranych meczów.
+          </p>
+        </div>
+        <aside class="callout panel cut-tr">
+          <h4>W skrócie</h4>
+          <ul>
+            <li><b>Trening (tydzień)</b><span class="v">do 100 <img class="xpi" src="/brand/xp.png" alt="XP" /></span></li>
+            <li><b>Wygrany mecz</b><span class="v">+75 <img class="xpi" src="/brand/xp.png" alt="XP" /></span></li>
+            <li><b>Przegrany mecz</b><span class="v">+40 <img class="xpi" src="/brand/xp.png" alt="XP" /></span></li>
+          </ul>
+          <p class="fine">Realna gra ponad trening solo. King of the Court rozliczamy osobno, wg miejsca. Pełna tabela XP w <a href="/ranking">Rankingu</a>.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ARENY (karuzela po 3) -->
+    <section class="section ruled">
+      <div class="wrap">
+        <div class="arenas-head">
+          <div>
+            <h2>Siedem aren,<br />od Rozgrzewki po Seraphim</h2>
+            <p class="lead">Każdy próg XP odblokowuje kolejną arenę. To Twoja tożsamość w HoopConnect, widoczna na karcie gracza i rosnąca razem z Tobą.</p>
+          </div>
+          <div class="car-nav">
+            <button class="car-btn" data-dir="-1" aria-label="Poprzednie areny"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <button class="car-btn" data-dir="1" aria-label="Następne areny"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+          </div>
+        </div>
+
+        <div class="car-track" id="arenaTrack">
+          {ARENAS.map((a) => (
+            <article class="arena-card panel">
+              <div class="ac-badge">
+                {a.img
+                  ? <img src={a.img} width="260" height="260" alt={`Arena ${a.name}`} loading="lazy" />
+                  : <img src="/logo-crest.svg" width="86" height="86" alt="" class="crest" />}
+              </div>
+              <span class="ac-no">Arena {a.n}</span>
+              <h3>{a.name}</h3>
+              <span class="ac-xp">{a.xp.toLocaleString('pl-PL')} <img class="xpi" src="/brand/xp.png" alt="XP" /></span>
+              <p class="ac-note">{a.note}</p>
+            </article>
+          ))}
+          <article class="arena-card soon panel">
+            <div class="soon-orb"><span></span></div>
+            <h3>Kolejne areny</h3>
+            <span class="ac-xp">Wkrótce</span>
+            <p class="ac-note">Świat HC rośnie. Nowe areny i szczyty pojawią się wraz z kolejnymi sezonami.</p>
+          </article>
+        </div>
+
+        <div class="prose arenas-more">
+          <p>
+            Awans działa prosto: <strong>zbierasz XP, przekraczasz próg, odblokowujesz arenę</strong>. Nowa arena
+            od razu ląduje na Twojej karcie gracza, a przy okazji <strong>zeruje Draft Score</strong>, więc każdy
+            poziom to świeży start formy. Im wyżej, tym mocniejszy dowód, że regularnie wychodzisz na boisko.
+            Szczyt to Seraphim, a kolejne areny są już w drodze.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- DRAFT SCORE -->
+    <section class="section ruled">
+      <div class="wrap post-body">
+        <div class="prose">
+          <h2>Draft Score, Twoja aktualna forma</h2>
+          <p>
+            Obok stałego XP działa <strong>Draft Score</strong>: tygodniowy licznik formy. Zbierasz go za te same
+            rzeczy co XP. Wygrany mecz to <strong>+50</strong>, przegrany <strong>+20</strong>, a King of the Court
+            dokłada punkty zależnie od miejsca drużyny (pełna rozpiska w <a href="/ranking">Rankingu</a>).
+          </p>
+          <p>
+            Draft Score <strong>resetuje się co poniedziałek</strong> oraz po awansie na nową arenę. Dzięki temu każdy
+            tydzień to nowy start i nie musisz odrabiać zaległości sprzed miesięcy.
+          </p>
+          <p>
+            Na koniec tygodnia <strong>10% końcowego Draft Score zamienia się w stałe XP</strong>, więc Twoja forma
+            z tego tygodnia realnie popycha Cię w stronę kolejnej areny. Sam Draft Score jest prywatny i
+            <strong> nie trafia do publicznego rankingu</strong>.
+          </p>
+          <p class="tldr">
+            Najprościej: <strong>XP pokazuje drogę, którą masz już za sobą</strong>, a
+            <strong> Draft Score pokazuje, w jakiej formie jesteś teraz</strong>.
+          </p>
+        </div>
+        <aside class="callout panel cut-tr">
+          <h4>Draft Score</h4>
+          <ul>
+            <li><b>Wygrany mecz</b><span>+50</span></li>
+            <li><b>Przegrany mecz</b><span>+20</span></li>
+          </ul>
+          <p class="fine">Reset co poniedziałek. <strong>10% sumy zamienia się w stałe XP</strong>. Prywatny, poza rankingiem. KotC wg miejsca, patrz <a href="/ranking">Ranking</a>.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section ruled">
+      <div class="wrap cta-band">
+        <h2>Zacznij zbierać XP</h2>
+        <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+      </div>
+    </section>
+  </article>
+</Base>
+
+<script>
+  // Karuzela aren — strzałki przewijają o „stronę" (tyle kart, ile widać).
+  const track = document.getElementById('arenaTrack')
+  if (track) {
+    const perPage = () => {
+      const card = track.querySelector('.arena-card')
+      if (!card) return 300
+      const cw = card.getBoundingClientRect().width + 16
+      return cw * Math.max(1, Math.round(track.clientWidth / cw))
+    }
+    document.querySelectorAll('.car-btn').forEach((b) => {
+      b.addEventListener('click', () => {
+        track.scrollBy({ left: Number(b.getAttribute('data-dir')) * perPage(), behavior: 'smooth' })
+      })
+    })
+  }
+
+  // Animacja: zaliczasz kolejne treningi (check), lista zjeżdża na następny, Draft Score rośnie.
+  // Bez cofania i bez pętli — gra raz, gdy wejdzie w widok.
+  const list = document.getElementById('trList')
+  const num = document.getElementById('dsNum')
+  const bar = document.getElementById('dsBar')
+  const pop = document.getElementById('dsPop')
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (list && num && bar && pop) {
+    const rows = Array.from(list.children)
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+    let ds = 120
+    const bars = [40, 52, 64, 76]
+
+    const finalState = () => {
+      rows.forEach((r) => r.classList.add('done'))
+      num.textContent = String(120 + rows.length * 50)
+      bar.style.width = bars[rows.length] + '%'
+      list.style.transform = `translateY(${-(rows.length - 1) * (rows[0].offsetHeight + 12)}px)`
+    }
+
+    const play = async () => {
+      const step = rows[0].offsetHeight + 12
+      for (let i = 0; i < rows.length; i++) {
+        await wait(750)
+        rows[i].classList.add('done')
+        ds += 50; num.textContent = String(ds); bar.style.width = bars[i + 1] + '%'
+        pop.classList.add('show')
+        await wait(900); pop.classList.remove('show')
+        if (i < rows.length - 1) { await wait(350); list.style.transform = `translateY(${-(i + 1) * step}px)` }
+        await wait(500)
+      }
+    }
+
+    if (reduce) { finalState() }
+    else {
+      const target = document.querySelector('.anim-stack') || list
+      let started = false
+      const start = () => { if (!started) { started = true; play() } }
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach((e) => { if (e.isIntersecting) { start(); io.disconnect() } })
+        }, { threshold: 0.25 })
+        io.observe(target)
+      } else { start() }
+      // Awaryjnie: gdyby obserwator nie zadziałał, odpal po chwili.
+      setTimeout(start, 1200)
+    }
+  }
+</script>
+
+<style>
+  /* Nagłówek — dwie kolumny: tekst + animacja */
+  .ph-grid { display: grid; gap: clamp(32px, 5vw, 56px); align-items: center; }
+  .ph-copy h1 { margin: 0 0 22px; }
+  .ph-copy .lead { margin-bottom: 22px; }
+  .meta { display: flex; align-items: center; gap: 14px; font-family: var(--display); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.2px; font-size: 12px; color: var(--text-3); }
+  .meta i { width: 4px; height: 4px; background: var(--line-3); border-radius: 50%; }
+  @media (min-width: 940px) { .ph-grid { grid-template-columns: 1fr 1fr; } }
+
+  /* Animacja: hexagon areny z liczbą Draft Score, pasek i lista treningów (bez ramki) */
+  .ph-anim { display: flex; justify-content: center; }
+  .anim-stack { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px;
+    width: 100%; max-width: 380px; }
+  .anim-hexwrap { position: relative; width: min(280px, 66vw); aspect-ratio: 1; display: grid; place-items: center; }
+  .anim-hex { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 18px 40px rgba(0,0,0,0.55)); }
+  .anim-hexnum { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display);
+    font-weight: 700; font-size: clamp(42px, 10vw, 54px); color: #fff; font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 18px rgba(0,0,0,0.7); letter-spacing: 0.5px; }
+  .anim-pop { position: absolute; top: 6%; left: 50%; transform: translate(-50%, 10px); font-family: var(--display);
+    font-weight: 700; font-size: 18px; color: #37E29A; text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    opacity: 0; transition: opacity .35s ease, transform .6s ease; pointer-events: none; }
+  .anim-pop.show { opacity: 1; transform: translate(-50%, -18px); }
+  .anim-lab { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: 2.2px;
+    font-size: 12px; color: var(--text-2); }
+  .anim-bar { width: 240px; max-width: 86%; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+  .anim-bar span { display: block; height: 100%; width: 40%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-hi)); transition: width .9s cubic-bezier(.3,.8,.3,1); }
+
+  /* Okno listy treningów — widoczny jeden, lista zjeżdża na kolejny */
+  .anim-window { width: 100%; max-width: 340px; height: 74px; overflow: hidden; }
+  .anim-list { display: flex; flex-direction: column; gap: 12px; transition: transform .55s cubic-bezier(.3,.8,.3,1); }
+  .anim-row { min-height: 74px; display: flex; align-items: center; gap: 14px; padding: 0 18px;
+    border-radius: var(--r); border: 1px solid var(--line-2); background: var(--panel);
+    transition: background .35s, border-color .35s; }
+  .anim-row.done { background: rgba(55,226,154,0.10); border-color: rgba(55,226,154,0.34); }
+  .anim-check { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); color: transparent;
+    transition: background .35s, border-color .35s, color .35s; }
+  .anim-check svg { width: 15px; height: 15px; }
+  .anim-row.done .anim-check { background: linear-gradient(135deg, #37E29A, #16A06A); border-color: rgba(55,226,154,0.6); color: #05221A; }
+  .anim-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
+  .anim-tx b { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
+    font-size: 16px; color: var(--text); }
+  .anim-row.done .anim-tx b { color: var(--text-2); text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.25); }
+  .anim-tx i { font-style: normal; font-size: 12px; color: var(--text-3); }
+  .anim-pkt { flex: none; font-family: var(--display); font-weight: 700; font-size: 17px; color: var(--accent-hi);
+    font-variant-numeric: tabular-nums; }
+
+  /* Ikona XP przy liczbach */
+  .xpi { display: inline-block; width: 17px; height: 17px; object-fit: contain; vertical-align: -3px; }
+
+  /* Plakietka „Czym jest XP" — kompaktowa (mniejsza niż na Rankingu) */
+  .xp-plaque { display: flex; align-items: center; gap: clamp(20px, 4vw, 40px); padding: clamp(22px, 3vw, 34px); }
+  .xp-plaque-ic { width: clamp(80px, 13vw, 116px); height: auto; flex: none; filter: drop-shadow(0 12px 28px rgba(0,0,0,0.5)); }
+  .xp-plaque-tx h2 { font-size: clamp(23px, 3vw, 30px); margin-bottom: 10px; }
+  .xp-plaque-tx p { color: var(--text-2); font-size: 15.5px; line-height: 1.6; max-width: 64ch; margin-bottom: 12px; }
+  .xp-plaque-tx a { color: var(--accent-hi); font-family: var(--display); font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.6px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+  @media (max-width: 640px) { .xp-plaque { flex-direction: column; text-align: center; } .xp-plaque-tx p { margin-inline: auto; } }
+
+  /* Trening codzienny — copy + realny plan dnia (zamiast numerowanych boxów) */
+  .tc-grid { display: grid; gap: clamp(28px, 4vw, 52px); align-items: center; margin-bottom: clamp(28px, 4vw, 44px); }
+  @media (min-width: 900px) { .tc-grid { grid-template-columns: 1.1fr 0.9fr; } }
+  .tc-copy h2 { margin-bottom: 16px; }
+  .tc-copy .lead { margin-bottom: 22px; }
+  .ticks { list-style: none; display: flex; flex-direction: column; gap: 13px; }
+  .ticks li { position: relative; padding-left: 30px; color: var(--text-2); font-size: 15.5px; line-height: 1.5; }
+  .ticks li::before { content: ''; position: absolute; left: 0; top: 3px; width: 18px; height: 18px;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%236FC3FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>') center/contain no-repeat; }
+  .tc-day { padding: 8px; }
+  .tc-day-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 12px; }
+  .tc-day-t { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; font-size: 14px; color: var(--text-2); }
+  .tc-prog { font-family: var(--display); font-weight: 700; color: var(--accent-hi); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .tc-row { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--r); background: rgba(255,255,255,0.03); }
+  .tc-row + .tc-row { margin-top: 6px; }
+  .tc-row.done { background: rgba(55,226,154,0.09); }
+  .tc-row.done .anim-check { background: linear-gradient(135deg, #37E29A, #16A06A); border-color: rgba(55,226,154,0.6); color: #05221A; }
+  .tc-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .tc-tx b { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; font-size: 15px; color: var(--text); }
+  .tc-row.done .tc-tx b { color: var(--text-2); text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.25); }
+  .tc-tx i { font-style: normal; font-size: 12px; color: var(--text-3); }
+  .tc-pts { flex: none; font-family: var(--display); font-weight: 700; font-size: 15px; color: var(--accent-hi); font-variant-numeric: tabular-nums; }
+
+  /* Rytm tygodnia (trening codzienny) */
+  .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .day { display: flex; flex-direction: column; gap: 8px; text-align: center; }
+  .dd { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 12px; color: var(--text-3); }
+  .dc { border-radius: var(--r); border: 1px solid var(--line-2); padding: 15px 6px; font-family: var(--display);
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; font-size: 11px; white-space: nowrap; overflow: hidden; }
+  .dc.t { background: rgba(47,145,214,0.15); border-color: rgba(126,196,247,0.42); color: var(--accent-hi); }
+  .dc.r { background: rgba(55,226,154,0.10); border-color: rgba(55,226,154,0.32); color: #7fe6b6; }
+  .dc.o { background: rgba(255,255,255,0.04); color: var(--text-3); }
+  .week-legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 14px; font-size: 13px; color: var(--text-2); }
+  .week-legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .week-legend .lg { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line-2); }
+  .week-legend .lg.t { background: rgba(47,145,214,0.4); border-color: rgba(126,196,247,0.5); }
+  .week-legend .lg.r { background: rgba(55,226,154,0.35); border-color: rgba(55,226,154,0.4); }
+  .week-legend .lg.o { background: rgba(255,255,255,0.08); }
+  @media (max-width: 620px) { .dc { font-size: 0; padding: 18px 0; } }
+
+  /* Dzień odpoczynku + przesuwająca się lista aktywności (marquee) */
+  .rest { margin-top: clamp(28px, 4vw, 44px); border-top: 1px solid var(--line); padding-top: clamp(24px, 3vw, 36px); }
+  .rest-copy { max-width: 68ch; margin-bottom: 20px; }
+  .rest-copy h3 { font-size: clamp(20px, 2.4vw, 26px); margin-bottom: 10px; }
+  .rest-copy p { color: var(--text-2); font-size: 15.5px; line-height: 1.6; }
+  .marquee { overflow: hidden;
+    -webkit-mask: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+    mask: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+  .marquee-track { display: flex; gap: 12px; width: max-content; animation: marq 32s linear infinite; }
+  .marquee:hover .marquee-track { animation-play-state: paused; }
+  @keyframes marq { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .rest-chip { display: inline-flex; align-items: baseline; gap: 9px; padding: 12px 18px; border-radius: 999px;
+    border: 1px solid var(--line-2); background: var(--panel); white-space: nowrap; }
+  .rest-chip b { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
+    font-size: 15px; color: var(--text); }
+  .rest-chip span { color: var(--text-3); font-size: 12px; font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; flex-wrap: wrap; } }
+
+  .post-body { display: grid; gap: clamp(28px, 4vw, 52px); align-items: start; }
+  @media (min-width: 900px) { .post-body { grid-template-columns: 1.6fr 1fr; } }
+
+  .callout { padding: 24px 26px; position: sticky; top: 92px; }
+  .callout h4 { text-transform: uppercase; letter-spacing: 1.6px; color: var(--text-2); margin-bottom: 12px; }
+  .callout ul { list-style: none; display: flex; flex-direction: column; }
+  .callout li { display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding: 13px 0; border-bottom: 1px solid var(--line); }
+  .callout li:last-child { border-bottom: none; }
+  .callout li b { font-weight: 500; color: var(--text-2); font-size: 15px; }
+  .callout li span { font-family: var(--display); font-weight: 700; font-size: 20px; color: var(--accent-hi);
+    font-variant-numeric: tabular-nums; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+  .callout .fine { margin-top: 16px; font-size: 13px; color: var(--text-3); line-height: 1.55; }
+  .callout .fine a { color: var(--accent-hi); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* Areny — karuzela po 3 */
+  .arenas-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
+    margin-bottom: clamp(28px, 4vw, 44px); }
+  .arenas-head h2 { margin-bottom: 16px; }
+  .arenas-head .lead { max-width: 56ch; }
+  .car-nav { display: flex; gap: 10px; flex: none; }
+  .car-btn { width: 48px; height: 48px; display: grid; place-items: center; color: var(--text);
+    background: rgba(255,255,255,0.045); border: 1px solid var(--line-2); border-radius: var(--r);
+    cursor: pointer; transition: background .15s, border-color .15s; }
+  .car-btn:hover { background: rgba(255,255,255,0.09); border-color: var(--line-3); }
+
+  .car-track { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory;
+    padding: 4px 2px 8px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .car-track::-webkit-scrollbar { display: none; }
+  .arena-card { flex: 0 0 calc((100% - 32px) / 3); scroll-snap-align: start;
+    display: flex; flex-direction: column; align-items: center; text-align: center; padding: 30px 24px 26px;
+    transition: transform .2s ease, border-color .2s ease; animation: cardIn .5s ease backwards; }
+  .arena-card:hover { transform: translateY(-4px); border-color: var(--line-3); }
+  .arena-card:hover .ac-badge img { transform: scale(1.05); }
+  .ac-badge img { transition: transform .25s ease; }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .arena-card:nth-child(2){ animation-delay:.05s } .arena-card:nth-child(3){ animation-delay:.10s }
+  .arena-card:nth-child(4){ animation-delay:.15s } .arena-card:nth-child(5){ animation-delay:.20s }
+  @media (max-width: 900px) { .arena-card { flex-basis: calc((100% - 16px) / 2); } }
+  @media (max-width: 620px) { .arena-card { flex-basis: 84%; } }
+
+  .ac-badge { width: 150px; height: 150px; display: grid; place-items: center; margin-bottom: 8px;
+    background: radial-gradient(circle at 50% 42%, rgba(255,255,255,0.07), transparent 68%); }
+  .ac-badge img { width: 100%; height: 100%; object-fit: contain; }
+  .ac-badge .crest { width: 78px; height: 78px; opacity: 0.5; }
+  .ac-no { font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 1.4px;
+    text-transform: uppercase; color: var(--text-3); }
+  .arena-card h3 { font-size: 23px; margin: 4px 0 6px; }
+  .ac-xp { font-family: var(--display); font-weight: 700; color: var(--accent-hi); font-size: 15px;
+    letter-spacing: 0.5px; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 4px; }
+  .ac-note { font-size: 13.5px; color: var(--text-2); line-height: 1.5; margin-top: 12px; }
+
+  .arena-card.soon { justify-content: center; border-style: dashed; border-color: var(--line-2); background: transparent; }
+  .soon-orb { width: 150px; height: 150px; display: grid; place-items: center; margin-bottom: 8px; }
+  .soon-orb span { width: 44px; height: 44px; border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-hi), rgba(47,145,214,0.2) 60%, transparent 72%);
+    animation: soonPulse 2.4s ease-in-out infinite; }
+  @keyframes soonPulse { 0%,100% { transform: scale(0.82); opacity: 0.5; } 50% { transform: scale(1.15); opacity: 1; } }
+  .arena-card.soon .ac-xp { color: var(--text-2); }
+
+  .arenas-more { max-width: 74ch; margin-top: clamp(24px, 3vw, 36px); }
+  .tldr { margin-top: 6px; padding: 18px 20px; border-left: 2px solid var(--accent);
+    background: rgba(255,255,255,0.03); color: var(--text) !important; }
+  .cta-band { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; }
+
+  @media (prefers-reduced-motion: reduce) { .soon-orb span { animation: none; } .anim-list { transition: none; } }
+</style>

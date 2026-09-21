@@ -1,0 +1,77 @@
+---
+import { NAV, APP_URL, BRAND } from '../consts'
+const here = Astro.url.pathname
+const isActive = (href: string) => href !== '/' && here.startsWith(href)
+---
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="/" aria-label={`${BRAND.name} — strona główna`}>
+      <img src="/logo-crest.svg" width="26" height="26" alt="" />
+      <span>Hoop<i>Connect</i></span>
+    </a>
+
+    <nav class="links" aria-label="Główna nawigacja">
+      {NAV.map((item) => (
+        <a
+          href={item.href}
+          class:list={['link', { on: isActive(item.href) }]}
+          target={item.external ? '_blank' : undefined}
+          rel={item.external ? 'noopener' : undefined}
+        >
+          {item.label}
+          {item.soon && <span class="soon">Wkrótce</span>}
+        </a>
+      ))}
+    </nav>
+
+    <a class="btn btn-primary nav-cta" href={APP_URL} target="_blank" rel="noopener">
+      Otwórz aplikację<span class="arw">→</span>
+    </a>
+
+    <input type="checkbox" id="navtoggle" class="navtoggle" aria-label="Menu" />
+    <label for="navtoggle" class="burger" aria-hidden="true"><span></span><span></span><span></span></label>
+    <div class="mobile-menu">
+      {NAV.map((item) => (
+        <a href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener' : undefined}>
+          {item.label}{item.soon && <span class="soon">Wkrótce</span>}
+        </a>
+      ))}
+      <a class="btn btn-primary" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+    </div>
+  </div>
+</header>
+
+<style>
+  .nav { position: sticky; top: 0; z-index: 50; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .nav-inner { display: flex; align-items: center; gap: 28px; height: 72px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--body); font-weight: 600;
+    font-size: 21px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text); }
+  .brand i { font-style: normal; color: inherit; }
+  .links { display: none; gap: 30px; margin-left: auto; }
+  .link { font-size: 13px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-2);
+    display: inline-flex; align-items: center; gap: 8px; position: relative; padding-block: 6px;
+    transition: color .15s; white-space: nowrap; }
+  .link:hover, .link.on { color: var(--text); }
+  .link.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; background: var(--accent); }
+  .soon { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-hi);
+    border: 1px solid rgba(47,145,214,0.4); border-radius: 2px; padding: 2px 5px; }
+  .nav-cta { display: none; --pad-y: 11px; --pad-x: 20px; font-size: 14px; }
+
+  .navtoggle, .burger { display: none; }
+  .burger { margin-left: auto; width: 44px; height: 44px; border: 1px solid var(--line-2); background: var(--bg-2);
+    border-radius: var(--r); place-content: center; gap: 5px; cursor: pointer; }
+  .burger span { width: 20px; height: 2px; background: var(--text); }
+  .mobile-menu { display: none; }
+
+  @media (min-width: 960px) { .links, .nav-cta { display: flex; } }
+  @media (max-width: 959px) {
+    .burger { display: grid; }
+    .mobile-menu { position: absolute; top: 72px; left: 0; right: 0; flex-direction: column;
+      padding: 10px var(--gutter) 24px; background: var(--bg); border-bottom: 1px solid var(--line-2); }
+    .mobile-menu a:not(.btn) { padding: 15px 2px; font-family: var(--display); font-weight: 700; font-size: 18px;
+      text-transform: uppercase; letter-spacing: 0.5px; color: var(--text); border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; gap: 10px; }
+    .mobile-menu .btn { margin-top: 18px; justify-content: center; }
+    .navtoggle:checked ~ .mobile-menu { display: flex; }
+  }
+</style>

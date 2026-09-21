@@ -1,0 +1,22 @@
+---
+import Base from '../layouts/Base.astro'
+import { APP_URL } from '../consts'
+const title = 'Aktualności'
+const description = 'Nowości, wydania i ogłoszenia HoopConnect. Sekcja w przygotowaniu.'
+---
+<Base title={title} description={description}>
+  <section class="section">
+    <div class="wrap">
+      <span class="pill soon">Wkrótce</span>
+      <h1 style="margin-top:14px;">Aktualności</h1>
+      <p class="lead" style="margin-top:16px; max-width:56ch;">
+        Tu będą nowości, wydania i ogłoszenia HoopConnect, a w osobnej bazie wiedzy wytłumaczymy krok po kroku,
+        jak działają poszczególne funkcje aplikacji. Sekcja jest w przygotowaniu.
+      </p>
+      <div class="cta-row" style="display:flex;gap:12px;margin-top:26px;flex-wrap:wrap;">
+        <a class="btn btn-primary" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację</a>
+        <a class="btn btn-ghost" href="/">Strona główna</a>
+      </div>
+    </div>
+  </section>
+</Base>

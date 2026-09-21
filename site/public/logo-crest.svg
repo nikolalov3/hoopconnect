@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 90" fill="none">
+  <defs>
+    <linearGradient id="obDia" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#C8ECFF"/><stop offset="30%" stop-color="#5BB8F5"/><stop offset="65%" stop-color="#2272C3"/><stop offset="100%" stop-color="#0D4A8A"/>
+    </linearGradient>
+    <linearGradient id="obTopF" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.70)"/><stop offset="100%" stop-color="rgba(120,200,255,0.20)"/>
+    </linearGradient>
+    <linearGradient id="obLF" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(40,130,220,0.90)"/><stop offset="100%" stop-color="rgba(91,184,245,0.60)"/>
+    </linearGradient>
+    <linearGradient id="obRF" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(91,184,245,0.60)"/><stop offset="100%" stop-color="rgba(14,70,150,0.95)"/>
+    </linearGradient>
+    <clipPath id="obDiaClip"><polygon points="45,6 82,32 82,58 45,84 8,58 8,32"/></clipPath>
+  </defs>
+  <polygon points="45,9 84,33 84,61 45,87 6,61 6,33" fill="rgba(20,80,180,0.40)"/>
+  <polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill="url(#obDia)"/>
+  <polygon points="45,6 8,32 45,42" fill="url(#obTopF)"/>
+  <polygon points="45,6 82,32 45,42" fill="rgba(255,255,255,0.18)"/>
+  <polygon points="45,84 8,58 45,48" fill="rgba(14,60,140,0.55)"/>
+  <polygon points="45,84 82,58 45,48" fill="rgba(14,50,120,0.75)"/>
+  <polygon points="8,32 8,58 45,48 45,42" fill="url(#obLF)"/>
+  <polygon points="82,32 82,58 45,48 45,42" fill="url(#obRF)"/>
+  <g clip-path="url(#obDiaClip)" stroke="rgba(255,255,255,0.26)" stroke-width="1" fill="none">
+    <line x1="21" y1="0" x2="21" y2="90"/><line x1="33" y1="0" x2="33" y2="90"/><line x1="45" y1="0" x2="45" y2="90"/><line x1="57" y1="0" x2="57" y2="90"/><line x1="69" y1="0" x2="69" y2="90"/>
+    <line x1="0" y1="32" x2="90" y2="32"/><line x1="0" y1="42" x2="90" y2="42"/><line x1="0" y1="48" x2="90" y2="48"/><line x1="0" y1="58" x2="90" y2="58"/>
+  </g>
+  <g stroke="rgba(255,255,255,0.42)" stroke-width="1.2" fill="none" stroke-linejoin="round">
+    <polygon points="45,6 82,32 82,58 45,84 8,58 8,32"/>
+    <line x1="8" y1="32" x2="45" y2="42"/><line x1="82" y1="32" x2="45" y2="42"/><line x1="45" y1="42" x2="45" y2="48"/><line x1="8" y1="58" x2="45" y2="48"/><line x1="82" y1="58" x2="45" y2="48"/>
+  </g>
+</svg>

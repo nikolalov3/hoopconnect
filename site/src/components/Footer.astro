@@ -1,0 +1,56 @@
+---
+import { APP_URL, COACH_URL, BRAND } from '../consts'
+const year = new Date().getFullYear()
+---
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <div class="col brandcol">
+      <a class="brand" href="/">
+        <img src="/logo-crest.svg" width="26" height="26" alt="" />
+        <span>Hoop<i>Connect</i></span>
+      </a>
+      <p class="muted tagline">„{BRAND.tagline}". Mniej klikania, więcej grania.</p>
+    </div>
+
+    <nav class="col">
+      <h4>Produkt</h4>
+      <a href="/asystent-treningu">Asystent treningu</a>
+      <a href="/klub">Klub</a>
+      <a href="/ranking">Ranking</a>
+      <a href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację</a>
+    </nav>
+
+    <nav class="col">
+      <h4>Więcej</h4>
+      <a href="/faq">FAQ</a>
+      <a href="/aktualnosci">Aktualności</a>
+      <a href={COACH_URL} target="_blank" rel="noopener">Dla trenerów</a>
+      <a href="/turnieje">Turnieje</a>
+    </nav>
+
+    <nav class="col">
+      <h4>Informacje</h4>
+      <a href="/privacy">Prywatność</a>
+      <a href="/terms">Regulamin</a>
+      <a href="mailto:kontakt@hoopconnect.pl">Kontakt</a>
+    </nav>
+  </div>
+  <div class="wrap foot-bottom">
+    <span class="muted">© {year} {BRAND.name}. Wszelkie prawa zastrzeżone.</span>
+  </div>
+</footer>
+
+<style>
+  .foot { border-top: 1px solid var(--line); margin-top: 40px; padding-block: 48px 28px; background: transparent; }
+  .foot-inner { display: grid; gap: 32px; grid-template-columns: 1fr; }
+  .brandcol .brand { display: flex; align-items: center; gap: 9px; font-family: var(--body); font-weight: 600;
+    font-size: 20px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text); }
+  .brandcol .brand i { font-style: normal; color: inherit; }
+  .tagline { margin-top: 12px; font-size: 14px; max-width: 30ch; }
+  .col h4 { font-family: var(--font-display); text-transform: uppercase; font-size: 13px; letter-spacing: 1.5px;
+    color: var(--text-2); margin-bottom: 14px; }
+  .col a { display: block; font-size: 14px; color: var(--text-2); padding: 5px 0; transition: color .15s; }
+  .col a:hover { color: var(--text); }
+  .foot-bottom { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 13px; }
+  @media (min-width: 720px) { .foot-inner { grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; } }
+</style>

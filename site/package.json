@@ -1,0 +1,18 @@
+{
+  "name": "hoopconnect-site",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Strona marketingowa hoopconnect.pl (Astro, statyczna). Apka gracza żyje osobno na app.hoopconnect.pl.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^5.6.1",
+    "@astrojs/mdx": "^4.2.0",
+    "@astrojs/sitemap": "^3.3.0"
+  }
+}

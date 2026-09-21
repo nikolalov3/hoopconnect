@@ -1,0 +1,152 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   HoopConnect — system wizualny strony.
+   Kierunek: „scoreboard / streetball editorial". Kondensowana typografia jak na
+   tablicy wyników, ostra geometria (ścięty róg = nawiązanie do heksa, ZERO
+   pigułek), hairline'y jak linie boiska, jeden akcent błękitu używany oszczędnie.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --bg:        #0E0F12;
+  --bg-2:      #15161B;
+  --panel:     #191A20;
+  --panel-2:   #202128;
+
+  --line:      rgba(255,255,255,0.08);
+  --line-2:    rgba(255,255,255,0.14);
+  --line-3:    rgba(255,255,255,0.22);
+
+  --text:      #EDF2FA;
+  --text-2:    #93A4BC;
+  --text-3:    #5C6F88;
+
+  --accent:    #2F91D6;   /* błękit — akcent, oszczędnie */
+  --accent-hi: #6FC3FF;
+  --accent-ink:#05111E;   /* tekst na akcencie */
+  --gold:      #E8B23C;   /* tylko liczby/1. miejsce, rzadko */
+
+  --r:         3px;       /* ciasny promień — nigdy pigułki */
+  --cut:       14px;      /* ścięcie rogu (hex) */
+
+  --display:   'Barlow Condensed', system-ui, sans-serif;
+  --body:      'Barlow', system-ui, sans-serif;
+
+  --maxw:      1200px;
+  --gutter:    clamp(20px, 5vw, 56px);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--body);
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.62;
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+img, svg { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+
+/* ── Typografia — waga jak w wordmarku (700), nie „black slab" ── */
+h1, h2, h3, h4 { font-family: var(--display); font-weight: 700; text-transform: uppercase; line-height: 0.98; letter-spacing: 0; }
+h1 { font-size: clamp(40px, 6.4vw, 76px); }
+h2 { font-size: clamp(28px, 3.8vw, 46px); }
+h3 { font-size: clamp(19px, 2vw, 23px); font-weight: 700; }
+h4 { font-size: 14px; letter-spacing: 1.4px; }
+p  { text-wrap: pretty; }
+/* Emfaza przez JAŚNIEJSZY kolor, nie ciężki bold — czytelniej, mniej „skakania" */
+strong { color: var(--text); font-weight: 500; }
+
+.wrap { max-width: var(--maxw); margin-inline: auto; padding-inline: var(--gutter); }
+.section { padding-block: clamp(64px, 10vw, 132px); }
+.lead { font-size: clamp(17px, 1.5vw, 20px); color: var(--text-2); max-width: 62ch; line-height: 1.6; }
+.muted { color: var(--text-2); }
+
+/* Kicker: „01 —— ETYKIETA" — struktura zamiast koloru */
+.kicker { display: inline-flex; align-items: center; gap: 12px; font-family: var(--body);
+  font-size: 12px; font-weight: 700; letter-spacing: 2.4px; text-transform: uppercase; color: var(--text-3); }
+.kicker::before { content: ''; width: 26px; height: 1px; background: var(--accent); }
+.kicker.on { color: var(--accent-hi); }
+
+/* Tag scoreboardowy (np. „na żywo") — prostokątny, nie pigułka */
+.tag { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 1.6px;
+  text-transform: uppercase; color: var(--text-2); padding: 7px 12px; border: 1px solid var(--line-2);
+  background: var(--bg-2); border-radius: var(--r); }
+.tag.live b { width: 7px; height: 7px; border-radius: 50%; background: #37E29A; box-shadow: 0 0 0 3px rgba(55,226,154,0.18); }
+.tag.soon { color: var(--accent-hi); border-color: rgba(47,145,214,0.4); }
+
+/* ── Przyciski: MATOWY glass + ścięty róg z PEŁNYM obrysem (też na skosie).
+   Dwie warstwy: ::after = obrys (cały kształt), ::before = wypełnienie wcięte o 1px,
+   więc 1px obrysu widać na każdej krawędzi, łącznie z naciętym rogiem. ── */
+.btn { --bd: transparent; --fill: transparent; --pad-y: 15px; --pad-x: 28px;
+  position: relative; isolation: isolate; z-index: 0;
+  display: inline-flex; align-items: center; gap: 10px; cursor: pointer;
+  font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; font-size: 15px;
+  padding: var(--pad-y) var(--pad-x); color: var(--text); background: transparent; border: none;
+  transition: color .18s ease, transform .1s ease; }
+.btn::after { content: ''; position: absolute; inset: 0; z-index: -2; background: var(--bd);
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+.btn::before { content: ''; position: absolute; inset: 1px; z-index: -1; background: var(--fill);
+  -webkit-backdrop-filter: blur(18px) saturate(1.05); backdrop-filter: blur(18px) saturate(1.05);
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
+  transition: background .18s ease; }
+.btn:active { transform: translateY(1px); }
+.btn .arw { transition: transform .18s ease; }
+.btn:hover .arw { transform: translateX(4px); }
+/* Primary: matowy „baby blue" glass — miękki, jasny błękit, nie neon */
+/* Primary: matowy, CIEMNIEJSZY błękit (jak logo) — płaskie translucentne wypełnienie, bez
+   refleksów i poświaty. Szkło daje samo backdrop-blur z .btn::before. Kształt/obrys bez zmian. */
+.btn-primary { color: #EAF3FF; --bd: rgba(96,168,224,0.5); }
+.btn-primary::before { background: rgba(30,104,178,0.52); }
+.btn-primary:hover { --bd: rgba(120,190,238,0.62); }
+.btn-primary:hover::before { background: rgba(36,120,200,0.64); }
+.btn-ghost { color: var(--text); --bd: var(--line-2); --fill: rgba(255,255,255,0.045); }
+.btn-ghost:hover { --bd: var(--line-3); --fill: rgba(255,255,255,0.085); }
+.btn-lg { --pad-y: 17px; --pad-x: 32px; font-size: 16px; }
+
+/* ── Panel (ostry, hairline, opcjonalny ścięty róg) ── */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); }
+.cut-tr { clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+
+/* Ramka obrazu — hairline, kadrowanie o stałych proporcjach (żadnego rozciągania).
+   Proporcję ustawia klasa .ar-*; obraz wypełnia kadr przez object-fit: cover. */
+.shot { position: relative; border: 1px solid var(--line-2); background: var(--bg-2);
+  border-radius: var(--r); overflow: hidden; }
+.shot > img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+.ar-square { aspect-ratio: 1 / 1; }
+.ar-wide   { aspect-ratio: 16 / 10; }
+.ar-tall   { aspect-ratio: 3 / 4; }
+.ar-tall > img { object-position: center top; }
+
+/* Grid */
+.grid { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+@media (min-width: 760px) { .grid-3 { grid-template-columns: repeat(3, 1fr); } .grid-2 { grid-template-columns: repeat(2, 1fr); } }
+
+/* Karta funkcji — bez emoji, hairline separatory. Etykieta .no niesie znaczenie
+   (ikona XP, „3x3", „KOTC" w rankingu); karty bez etykiety dostają akcent-kreskę. */
+.feat { background: var(--panel); padding: clamp(24px, 3vw, 38px); position: relative; }
+.feat .no { font-family: var(--display); font-weight: 900; font-size: 15px; letter-spacing: 1px; color: var(--accent);
+  display: block; margin-bottom: 20px; font-variant-numeric: tabular-nums; }
+.feat:not(:has(.no)) h3 { position: relative; padding-top: 22px; }
+.feat:not(:has(.no)) h3::before { content: ""; position: absolute; top: 0; left: 0;
+  width: 30px; height: 3px; background: var(--accent); border-radius: 0; }
+.feat h3 { margin-bottom: 10px; }
+.feat p { color: var(--text-2); font-size: 15.5px; }
+
+/* Prose */
+.prose { max-width: 68ch; }
+.prose p, .prose ul { margin-block: 1em; color: var(--text-2); }
+.prose h2 { margin-top: 1.5em; margin-bottom: 0.5em; }
+.prose a { color: var(--accent-hi); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+
+/* Sekcja z hairline separatorem u góry */
+.ruled { border-top: 1px solid var(--line); }
+
+:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 3px; }
+
+/* Redukcja ruchu */
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

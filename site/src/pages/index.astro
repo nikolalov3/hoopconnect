@@ -1,0 +1,149 @@
+---
+import Base from '../layouts/Base.astro'
+import { APP_URL, RANK_URL, BRAND, APP_SCHEMA } from '../consts'
+---
+<Base schema={APP_SCHEMA}>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <span class="tag live"><b></b>{BRAND.tagline}</span>
+        <h1>Mniej klikania,<br /><span class="hl">więcej grania</span></h1>
+        <p class="lead">
+          Każde osiedlowe boisko dostaje ranking, a każda sobotnia gra zaczyna się liczyć.
+          HoopConnect zamienia spontaniczną koszykówkę 3x3 w rozgrywkę z wynikiem, historią i królem boiska.
+          Znajdujesz grę w okolicy, dołączasz jednym ruchem, a apka układa składy i zapisuje zwycięstwa.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+          <a class="btn btn-ghost btn-lg" href="/klub">Jak to działa</a>
+        </div>
+      </div>
+      <div class="hero-art">
+        <figure class="shot cut-tr ar-square">
+          <img src="/brand/hero.png" width="1000" height="1000" alt="Ekran klubu w HoopConnect, zakończony mecz 3x3 i karta gracza" loading="eager" />
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- CO ROBI -->
+  <section class="section ruled">
+    <div class="wrap">
+      <div class="head">
+        <h2>Technologia tam,<br />gdzie naprawdę pomaga</h2>
+        <p class="lead">Zbieranie graczy, sesje, składy, wynik i postępy. Reszta dzieje się na boisku.</p>
+      </div>
+      <div class="grid grid-3">
+        <article class="feat">
+          <h3>Znajdź grę i graczy</h3>
+          <p>Sprawdź, kto gra lub planuje sesję na boisku w okolicy. Utwórz mecz, a inni dołączą, bez pisania po grupach.</p>
+        </article>
+        <article class="feat">
+          <h3>King of the Court</h3>
+          <p>Tworzysz sesję, gracze dołączają w apce lub kodem QR, a aplikacja losuje trzyosobowe drużyny. Wygrane się liczą.</p>
+        </article>
+        <article class="feat">
+          <h3>XP i rankingi</h3>
+          <p>Za mecze i zwycięstwa zdobywasz XP i wbijasz się w rankingi. Widać, kto realnie wychodzi na boisko.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ASYSTENT TRENINGU -->
+  <section class="section ruled">
+    <div class="wrap split">
+      <div class="split-copy">
+        <h2>Asystent treningu</h2>
+        <p class="lead">
+          Poza pickupem HoopConnect prowadzi Cię przez indywidualny trening i progresję na kolejne areny.
+          Wchodzisz na wyższe poziomy dzięki aktywności, a apka trzyma Twój rozwój w jednym miejscu.
+        </p>
+        <a class="btn btn-ghost" href="/asystent-treningu">Zobacz, jak działa<span class="arw">→</span></a>
+      </div>
+      <figure class="shot cut-tr ar-tall">
+        <img src="/brand/club.png" width="1120" height="2000" alt="Aplikacja HoopConnect" loading="lazy" />
+      </figure>
+    </div>
+  </section>
+
+  <!-- RANKING -->
+  <section class="section ruled">
+    <div class="wrap split reverse">
+      <div class="split-copy">
+        <span class="tag live"><b></b>Ranking na żywo · beta</span>
+        <h2 class="mt">Ranking, który nagradza aktywność</h2>
+        <p class="lead">
+          Publiczny ranking przeglądasz według XP, liczby meczów i wyników King of the Court,
+          z filtrem po mieście. Bez logowania, prosto z przeglądarki.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href={RANK_URL} target="_blank" rel="noopener">Zobacz ranking<span class="arw">→</span></a>
+          <a class="btn btn-ghost" href="/ranking">Jak liczymy</a>
+        </div>
+      </div>
+      <figure class="shot cut-tr ar-wide">
+        <img src="/brand/rank.png" width="1200" height="675" alt="Publiczny ranking HoopConnect" loading="lazy" />
+      </figure>
+    </div>
+  </section>
+
+  <!-- O NAS PISZĄ -->
+  <section class="section ruled">
+    <div class="wrap press">
+      <blockquote>
+        „HoopConnect powstał, aby uporządkować koszykówkę uliczną i pozwolić graczom skupić się na grze."
+      </blockquote>
+      <a class="press-src" href="https://3x3basket.pl" target="_blank" rel="noopener">3x3basket.pl<span class="arw"> →</span></a>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section ruled">
+    <div class="wrap">
+      <div class="final panel cut-tr">
+        <div>
+          <h2>Zagraj jeszcze<br />jeden mecz</h2>
+          <p class="lead">Najlepsza statystyka nie brzmi „spędziłem godzinę w aplikacji". Brzmi „zagrałem jeszcze jeden mecz".</p>
+        </div>
+        <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .hero { padding-block: clamp(48px, 8vw, 104px); }
+  .hero-grid { display: grid; gap: clamp(36px, 5vw, 64px); align-items: center; }
+  .hero-copy .tag { margin-bottom: 26px; }
+  .hero h1 { margin-bottom: 26px; }
+  .hl { color: var(--accent-hi); }
+  .hero .lead { margin-bottom: 34px; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 14px; }
+  @media (min-width: 940px) { .hero-grid { grid-template-columns: 1.05fr 0.95fr; } }
+
+  .head { max-width: 760px; margin-bottom: clamp(36px, 5vw, 60px); }
+  .head .kicker { margin-bottom: 20px; }
+  .head h2 { margin-bottom: 20px; }
+
+  .split { display: grid; gap: clamp(36px, 5vw, 64px); align-items: center; }
+  .split-copy .kicker, .split-copy .tag { margin-bottom: 20px; }
+  .split-copy h2 { margin-bottom: 20px; }
+  .split-copy h2.mt { margin-top: 0; }
+  .split-copy .lead { margin-bottom: 28px; }
+  @media (min-width: 940px) {
+    .split { grid-template-columns: 1fr 1fr; }
+    .split.reverse .split-copy { order: 2; }
+  }
+
+  .press { max-width: 900px; }
+  .press blockquote { font-family: var(--display); font-weight: 700; text-transform: none; letter-spacing: -0.3px;
+    font-size: clamp(24px, 3.6vw, 40px); line-height: 1.18; margin: 22px 0 20px; }
+  .press-src { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--accent-hi); font-size: 15px; }
+
+  .final { display: grid; gap: 28px; align-items: center; padding: clamp(32px, 5vw, 60px); }
+  .final h2 { margin-bottom: 16px; }
+  @media (min-width: 820px) { .final { grid-template-columns: 1fr auto; gap: 48px; } }
+</style>

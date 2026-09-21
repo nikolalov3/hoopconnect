@@ -1,0 +1,86 @@
+---
+import '../styles/global.css'
+import Nav from '../components/Nav.astro'
+import Footer from '../components/Footer.astro'
+import { SITE, BRAND } from '../consts'
+
+interface Props {
+  title?: string
+  description?: string
+  path?: string
+  ogImage?: string
+  schema?: Record<string, unknown> | Record<string, unknown>[]
+}
+const {
+  title = BRAND.defaultTitle,
+  description = BRAND.defaultDescription,
+  path = Astro.url.pathname,
+  ogImage = '/brand/horizontal.png',
+  schema,
+} = Astro.props
+
+const canonical = new URL(path, SITE).href
+const fullTitle = title === BRAND.defaultTitle ? title : `${title} · ${BRAND.name}`
+
+// Structured data. Organization + WebSite lecą na każdej stronie; strony dokładają
+// swoje (SoftwareApplication, FAQPage) przez prop `schema`.
+const baseSchema: Record<string, unknown>[] = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: BRAND.name,
+    url: SITE,
+    logo: new URL('/brand/horizontal.png', SITE).href,
+    email: 'kontakt@hoopconnect.pl',
+    description: BRAND.defaultDescription,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: BRAND.name,
+    url: SITE,
+    inLanguage: 'pl-PL',
+  },
+]
+const pageSchema = schema ? (Array.isArray(schema) ? schema : [schema]) : []
+const jsonLd = [...baseSchema, ...pageSchema]
+---
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/logo-crest.svg" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={BRAND.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(ogImage, SITE).href} />
+    <meta property="og:locale" content="pl_PL" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#060F1E" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap"
+    />
+
+    {jsonLd.map((entry) => (
+      <script type="application/ld+json" set:html={JSON.stringify(entry)} />
+    ))}
+  </head>
+  <body>
+    <Nav />
+    <main>
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>
