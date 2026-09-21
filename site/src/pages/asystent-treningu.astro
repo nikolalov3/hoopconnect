@@ -176,7 +176,7 @@ const REST = [
             ma znaczyć więcej niż samotny grind. Tydzień treningu to mniej więcej tyle, co jeden do dwóch wygranych meczów.
           </p>
         </div>
-        <aside class="callout panel cut-tr">
+        <aside class="callout callout-xp panel cut-tr">
           <h4>W skrócie</h4>
           <ul>
             <li><b>Trening (tydzień)</b><span class="v">do 100 <img class="xpi" src="/brand/xp.png" alt="XP" /></span></li>
@@ -259,7 +259,7 @@ const REST = [
             <strong> Draft Score pokazuje, w jakiej formie jesteś teraz</strong>.
           </p>
         </div>
-        <aside class="callout panel cut-tr">
+        <aside class="callout callout-draft panel cut-tr">
           <h4>Draft Score</h4>
           <ul>
             <li><b>Wygrany mecz</b><span>+50</span></li>
@@ -371,10 +371,10 @@ const REST = [
     opacity: 0; transition: opacity .35s ease, transform .6s ease; pointer-events: none; }
   .anim-pop.show { opacity: 1; transform: translate(-50%, -18px); }
   .anim-lab { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: 2.2px;
-    font-size: 12px; color: var(--text-2); }
+    font-size: 12px; color: #FF9E52; }
   .anim-bar { width: 240px; max-width: 86%; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
   .anim-bar span { display: block; height: 100%; width: 40%; border-radius: 999px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-hi)); transition: width .9s cubic-bezier(.3,.8,.3,1); }
+    background: linear-gradient(90deg, #E4702A, #FF9E52); transition: width .9s cubic-bezier(.3,.8,.3,1); }
 
   /* Okno listy treningów — widoczny jeden, lista zjeżdża na kolejny */
   .anim-window { width: 100%; max-width: 340px; height: 74px; overflow: hidden; }
@@ -393,7 +393,7 @@ const REST = [
     font-size: 16px; color: var(--text); }
   .anim-row.done .anim-tx b { color: var(--text-2); text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.25); }
   .anim-tx i { font-style: normal; font-size: 12px; color: var(--text-3); }
-  .anim-pkt { flex: none; font-family: var(--display); font-weight: 700; font-size: 17px; color: var(--accent-hi);
+  .anim-pkt { flex: none; font-family: var(--display); font-weight: 700; font-size: 17px; color: #FF9E52;
     font-variant-numeric: tabular-nums; }
 
   /* Ikona XP przy liczbach */
@@ -469,14 +469,25 @@ const REST = [
   .post-body { display: grid; gap: clamp(28px, 4vw, 52px); align-items: start; }
   @media (min-width: 900px) { .post-body { grid-template-columns: 1.6fr 1fr; } }
 
-  .callout { padding: 24px 26px; position: sticky; top: 92px; }
-  .callout h4 { text-transform: uppercase; letter-spacing: 1.6px; color: var(--text-2); margin-bottom: 12px; }
+  /* Panele „w skrócie" — kolorowa ramka wyróżnia typ punktów: XP = baby blue,
+     Draft Score = pomarańczowy. Ramka techniką dwóch pseudo-elementów, żeby objąć
+     też ścięty róg. Kolor sterowany zmiennymi --frame / --accent-c per panel. */
+  .callout { padding: 24px 26px; position: sticky; top: 92px;
+    background: transparent; border: none; isolation: isolate;
+    --frame: var(--line-2); --accent-c: var(--accent-hi); }
+  .callout-xp    { --frame: #6FB7E6; --accent-c: var(--accent-hi); }
+  .callout-draft { --frame: #F2843C; --accent-c: #FF9E52; }
+  .callout::before { content: ''; position: absolute; inset: 0; z-index: -2; background: var(--frame);
+    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+  .callout::after { content: ''; position: absolute; inset: 1.5px; z-index: -1; background: var(--panel);
+    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+  .callout h4 { text-transform: uppercase; letter-spacing: 1.6px; color: var(--accent-c); margin-bottom: 12px; }
   .callout ul { list-style: none; display: flex; flex-direction: column; }
   .callout li { display: flex; align-items: center; justify-content: space-between; gap: 14px;
     padding: 13px 0; border-bottom: 1px solid var(--line); }
   .callout li:last-child { border-bottom: none; }
   .callout li b { font-weight: 500; color: var(--text-2); font-size: 15px; }
-  .callout li span { font-family: var(--display); font-weight: 700; font-size: 20px; color: var(--accent-hi);
+  .callout li span { font-family: var(--display); font-weight: 700; font-size: 20px; color: var(--accent-c);
     font-variant-numeric: tabular-nums; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
   .callout .fine { margin-top: 16px; font-size: 13px; color: var(--text-3); line-height: 1.55; }
   .callout .fine a { color: var(--accent-hi); text-decoration: underline; text-underline-offset: 3px; }
