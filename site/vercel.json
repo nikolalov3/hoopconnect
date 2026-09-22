@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    { "source": "/auth", "destination": "https://app.hoopconnect.pl/auth", "statusCode": 308 },
+    { "source": "/onboarding", "destination": "https://app.hoopconnect.pl/onboarding", "statusCode": 308 },
+    { "source": "/dolacz/:clubId", "destination": "https://app.hoopconnect.pl/dolacz/:clubId", "statusCode": 308 },
+    { "source": "/shooting/:id", "destination": "https://app.hoopconnect.pl/shooting/:id", "statusCode": 308 },
+    { "source": "/calendar", "destination": "https://app.hoopconnect.pl/calendar", "statusCode": 308 },
+    { "source": "/arena", "destination": "https://app.hoopconnect.pl/arena", "statusCode": 308 },
+    { "source": "/club", "destination": "https://app.hoopconnect.pl/club", "statusCode": 308 },
+    { "source": "/stats", "destination": "https://app.hoopconnect.pl/stats", "statusCode": 308 },
+    { "source": "/recovery", "destination": "https://app.hoopconnect.pl/recovery", "statusCode": 308 },
+    { "source": "/achievements", "destination": "https://app.hoopconnect.pl/achievements", "statusCode": 308 },
+    { "source": "/kotcsolo", "destination": "https://app.hoopconnect.pl/kotcsolo", "statusCode": 308 },
+    { "source": "/rank", "destination": "https://app.hoopconnect.pl/rank", "statusCode": 308 }
+  ]
+}

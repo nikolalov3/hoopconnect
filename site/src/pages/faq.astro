@@ -1,0 +1,284 @@
+---
+import Base from '../layouts/Base.astro'
+import { APP_URL, RANK_URL, COACH_OFFER_URL, APP_SCHEMA } from '../consts'
+
+const title = 'FAQ'
+const description =
+  'Najczęstsze pytania o HoopConnect: jak znaleźć grę w koszykówkę 3x3 w okolicy, jak działa King of the Court, ' +
+  'asystent treningu, XP i rankingi, panel dla trenerów oraz prywatność danych.'
+
+// Jedno źródło prawdy: z tego renderujemy widoczną listę ORAZ schema FAQPage.
+// `a` musi być czystym tekstem (trafia do JSON-LD). Linki dokładamy tylko wizualnie przez `link`.
+type QA = { q: string; a: string; link?: { href: string; label: string; external?: boolean } }
+type Group = { heading: string; items: QA[] }
+
+const GROUPS: Group[] = [
+  {
+    heading: 'Podstawy',
+    items: [
+      {
+        q: 'Czym jest HoopConnect?',
+        a: 'HoopConnect to aplikacja do koszykówki ulicznej 3x3. Pomaga znaleźć grę i graczy na boiskach w okolicy, ' +
+          'rozegrać King of the Court bez chaosu, trenować indywidualnie oraz zbierać XP i wbijać się w publiczne rankingi. ' +
+          'Organizację bierze na siebie aplikacja, żebyś mógł skupić się na grze.',
+      },
+      {
+        q: 'Ile kosztuje HoopConnect? Czy jest darmowy?',
+        a: 'Dla graczy aplikacja jest darmowa: zakładasz konto, znajdujesz gry, grasz, trenujesz i jesteś w rankingu bez opłat. ' +
+          'Osobnym, płatnym narzędziem jest panel dla trenerów i klubów.',
+        link: { href: APP_URL, label: 'Otwórz aplikację', external: true },
+      },
+      {
+        q: 'Na jakich urządzeniach działa HoopConnect?',
+        a: 'HoopConnect działa w przeglądarce na telefonie i komputerze — nie musisz nic instalować ze sklepu. ' +
+          'Wystarczy wejść na stronę aplikacji i się zalogować; na telefonie możesz dodać ją do ekranu głównego jak zwykłą apkę.',
+      },
+      {
+        q: 'Kiedy HoopConnect pojawi się w App Store i Google Play?',
+        a: 'Jesteśmy w fazie zaawansowanych testów. Planujemy, że aplikacja trafi do App Store i Google Play ' +
+          'w czwartym kwartale, a o dokładnym terminie poinformujemy w naszych mediach społecznościowych. ' +
+          'Już teraz możesz w pełni korzystać z HoopConnect w przeglądarce na telefonie i komputerze — bez czekania na sklepy.',
+        link: { href: 'https://x.com/HoopConnectApp', label: 'Śledź nas na X', external: true },
+      },
+      {
+        q: 'Czy jest aplikacja HoopConnect na iPhone i Androida?',
+        a: 'Na razie HoopConnect działa jako aplikacja w przeglądarce, którą na telefonie (iPhone i Android) dodajesz do ekranu ' +
+          'głównego i uruchamiasz jak zwykłą apkę. Natywne aplikacje w App Store i Google Play planujemy na czwarty kwartał.',
+      },
+      {
+        q: 'Jak zacząć korzystać z HoopConnect?',
+        a: 'Wejdź na stronę aplikacji, załóż konto e-mailem i uzupełnij podstawowy profil. ' +
+          'Od razu zobaczysz gry i graczy w okolicy oraz możesz zacząć trenować i zdobywać XP.',
+        link: { href: APP_URL, label: 'Załóż konto', external: true },
+      },
+      {
+        q: 'W jakich miastach działa HoopConnect?',
+        a: 'HoopConnect jest dostępny w całej Polsce i rośnie tam, gdzie są aktywni gracze. ' +
+          'Im więcej osób z Twojej okolicy korzysta z aplikacji, tym więcej gier i lepsze rankingi lokalne — dlatego warto zaprosić znajomych z boiska.',
+      },
+    ],
+  },
+  {
+    heading: 'Gra i boisko',
+    items: [
+      {
+        q: 'Jak znaleźć grę w koszykówkę 3x3 w okolicy?',
+        a: 'W zakładce Klub sprawdzasz, kto gra lub planuje sesję na boiskach w pobliżu. ' +
+          'Możesz dołączyć do istniejącego meczu albo utworzyć własny, a inni gracze dopiszą się w aplikacji — bez pisania po grupach na czacie.',
+      },
+      {
+        q: 'Co to jest King of the Court i jak działa w aplikacji?',
+        a: 'King of the Court (król boiska) to format, w którym drużyny rywalizują na jednym koszu, a wygrywająca zostaje na boisku. ' +
+          'W HoopConnect jedna osoba tworzy sesję i ustala zasady, gracze dołączają w apce lub skanując kod QR, a aplikacja losuje trzyosobowe drużyny i zapisuje wyniki.',
+      },
+      {
+        q: 'Czy muszę mieć zebraną drużynę, żeby zagrać?',
+        a: 'Nie. Dołączasz do sesji sam, a aplikacja losowo dobiera trzyosobowe składy, gdy zbierze się odpowiednia liczba osób. ' +
+          'Nie musisz ustalać, kto z kim gra — to załatwia aplikacja.',
+      },
+      {
+        q: 'Jak dołączyć do meczu przez kod QR?',
+        a: 'Organizator sesji pokazuje kod QR na swoim telefonie. Skanujesz go aparatem, co otwiera sesję w HoopConnect i dopisuje Cię do listy graczy. ' +
+          'To najszybszy sposób, żeby dołączyć na miejscu, przy boisku.',
+      },
+      {
+        q: 'Ile osób potrzeba, żeby zagrać w koszykówkę 3x3?',
+        a: 'Do gry 3x3 potrzeba sześciu graczy — dwie drużyny po trzy osoby. W trybie King of the Court dołącza się więcej osób, ' +
+          'a aplikacja tworzy kolejne trzyosobowe drużyny i ustawia je w kolejce do gry o utrzymanie się na boisku.',
+      },
+    ],
+  },
+  {
+    heading: 'Trening',
+    items: [
+      {
+        q: 'Czym jest asystent treningu w HoopConnect?',
+        a: 'Asystent treningu prowadzi Cię przez indywidualny rozwój poza samą grą: ćwiczenia, sesje rzutowe i progresję na kolejne areny. ' +
+          'Trzyma Twój trening i postępy w jednym miejscu, a aktywność przekłada się na XP i wyższe poziomy.',
+        link: { href: '/asystent-treningu', label: 'Zobacz, jak działa asystent treningu' },
+      },
+      {
+        q: 'Czy dostanę plan treningowy dopasowany do mnie?',
+        a: 'Tak. Przy starcie wybierasz, ile dni w tygodniu chcesz trenować, a aplikacja przygotowuje specjalnie dobrany zestaw ćwiczeń. ' +
+          'Plan jest ułożony pod Ciebie, żeby trening był realny do wykonania, a nie oderwany od Twojego tygodnia.',
+      },
+      {
+        q: 'Co to jest trening codzienny?',
+        a: 'Trening codzienny to Twój dzienny zestaw ćwiczeń wynikający z wybranej liczby dni treningowych w tygodniu. ' +
+          'Aplikacja podpowiada, co zrobić danego dnia, a Ty odhaczasz kolejne elementy i budujesz serię (streak).',
+      },
+      {
+        q: 'Co to jest odpoczynek i regeneracja?',
+        a: 'W dni bez mocnego treningu aplikacja proponuje lżejsze ćwiczenia regeneracyjne — rozciąganie i mobilność zamiast pełnej sesji. ' +
+          'Dzięki temu trzymasz rytm i dbasz o ciało, nawet gdy nie trenujesz z pełną intensywnością.',
+      },
+      {
+        q: 'Czy HoopConnect nadaje się dla początkujących koszykarzy?',
+        a: 'Tak. Plan treningowy dobiera się do Ciebie i wybranej liczby dni w tygodniu, więc zaczynasz na swoim poziomie i stopniowo robisz postępy. ' +
+          'Areny pokazują drogę od pierwszych kroków do gracza, który regularnie wychodzi na boisko — niezależnie od tego, czy dopiero zaczynasz, czy grasz od lat.',
+      },
+    ],
+  },
+  {
+    heading: 'XP, areny i ranking',
+    items: [
+      {
+        q: 'Co to jest XP i jak je zdobywam?',
+        a: 'XP to punkty doświadczenia, które pokazują Twoją aktywność w HoopConnect. Zdobywasz je za rozegrane mecze, wygrane King of the Court, ' +
+          'ukończone treningi i sesje rzutowe. Im więcej realnie grasz i trenujesz, tym więcej XP i tym wyżej w rankingu.',
+      },
+      {
+        q: 'Co to są areny i poziomy?',
+        a: 'Areny to poziomy rozwoju w aplikacji. Zbierając XP awansujesz na kolejne areny, co odzwierciedla Twoje zaangażowanie i postępy. ' +
+          'To sposób, żeby zobaczyć drogę od początkującego do gracza, który regularnie wychodzi na boisko.',
+      },
+      {
+        q: 'Jak szybciej zdobywać XP w HoopConnect?',
+        a: 'Najwięcej XP daje realna gra z ludźmi: rozegrane mecze, a zwłaszcza wygrane w King of the Court. ' +
+          'Trening indywidualny też dokłada XP, ale ma tygodniowy limit, żeby nie zastępował gry na boisku. Najlepszy sposób to po prostu regularnie wychodzić i grać.',
+      },
+      {
+        q: 'Jak działa ranking i czy jest publiczny?',
+        a: 'Ranking jest publiczny i przeglądasz go bez logowania, prosto z przeglądarki. Sortujesz graczy według XP, liczby meczów i wyników King of the Court, ' +
+          'z filtrem po mieście. Ranking nagradza aktywność, więc widać, kto naprawdę gra.',
+        link: { href: RANK_URL, label: 'Zobacz ranking na żywo', external: true },
+      },
+    ],
+  },
+  {
+    heading: 'Dla trenerów i klubów',
+    items: [
+      {
+        q: 'Czy HoopConnect ma coś dla trenerów i klubów?',
+        a: 'Tak. Panel dla trenerów to osobne narzędzie do prowadzenia drużyny: dodawanie zawodników (kodem lub ręcznie), lista obecności na treningach, ' +
+          'rozliczanie składek oraz statystyki zawodników. Zawodnicy z kontem widzą swój rozwój w aplikacji gracza.',
+        link: { href: COACH_OFFER_URL, label: 'Oferta dla trenerów', external: true },
+      },
+      {
+        q: 'Czy panel trenera jest płatny?',
+        a: 'Panel dla trenerów i klubów jest rozwijany jako płatne narzędzie, oddzielne od darmowej aplikacji dla graczy. ' +
+          'Jeśli prowadzisz drużynę i chcesz poznać szczegóły oraz aktualny cennik, napisz do nas.',
+        link: { href: 'mailto:kontakt@hoopconnect.pl?subject=Panel%20trenera', label: 'Napisz w sprawie panelu' },
+      },
+    ],
+  },
+  {
+    heading: 'Konto i prywatność',
+    items: [
+      {
+        q: 'Czy potrzebuję konta, żeby zobaczyć ranking?',
+        a: 'Nie. Publiczny ranking obejrzysz bez zakładania konta, wprost z przeglądarki. Konto jest potrzebne dopiero wtedy, gdy chcesz sam grać, ' +
+          'trenować i zdobywać XP.',
+      },
+      {
+        q: 'Czy moje dane są bezpieczne?',
+        a: 'HoopConnect przetwarza dane zgodnie z RODO, szyfruje połączenia i ogranicza dostęp regułami bezpieczeństwa na poziomie bazy danych. ' +
+          'Nie sprzedajemy danych ani nie używamy ich do śledzenia Cię między aplikacjami. Szczegóły opisuje Polityka prywatności.',
+        link: { href: '/privacy', label: 'Polityka prywatności' },
+      },
+      {
+        q: 'Czym HoopConnect różni się od grupy na WhatsAppie albo Facebooku?',
+        a: 'Grupa na czacie gubi ustalenia, składy i wyniki. HoopConnect zbiera to w jednym miejscu: pokazuje gry w okolicy, losuje drużyny, ' +
+          'zapisuje wyniki i przelicza je na XP oraz rankingi. Zamiast przewijać wiadomości, po prostu dołączasz i grasz.',
+      },
+    ],
+  },
+]
+
+// Schema FAQPage — wszystkie pytania i odpowiedzi (czysty tekst).
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: GROUPS.flatMap((g) =>
+    g.items.map((it) => ({
+      '@type': 'Question',
+      name: it.q,
+      acceptedAnswer: { '@type': 'Answer', text: it.a },
+    })),
+  ),
+}
+---
+<Base title={title} description={description} schema={[faqSchema, APP_SCHEMA]}>
+  <section class="section">
+    <div class="wrap faq-head">
+      <span class="kicker">FAQ</span>
+      <h1>Najczęstsze pytania</h1>
+      <p class="lead">
+        Wszystko o HoopConnect w jednym miejscu: gra 3x3 w okolicy, King of the Court, asystent treningu,
+        XP i rankingi oraz panel dla trenerów. Nie ma Twojego pytania?
+        <a href="mailto:kontakt@hoopconnect.pl">Napisz do nas</a>.
+      </p>
+    </div>
+  </section>
+
+  {GROUPS.map((group) => (
+    <section class="section ruled">
+      <div class="wrap faq-group">
+        <h2>{group.heading}</h2>
+        <div class="faq-list">
+          {group.items.map((it) => (
+            <details class="faq-item">
+              <summary>
+                <span class="q">{it.q}</span>
+                <span class="chev" aria-hidden="true"></span>
+              </summary>
+              <div class="a">
+                <p>{it.a}</p>
+                {it.link && (
+                  <a
+                    class="faq-link"
+                    href={it.link.href}
+                    target={it.link.external ? '_blank' : undefined}
+                    rel={it.link.external ? 'noopener' : undefined}
+                  >
+                    {it.link.label}<span class="arw">→</span>
+                  </a>
+                )}
+              </div>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  ))}
+
+  <section class="section ruled">
+    <div class="wrap">
+      <div class="final panel cut-tr">
+        <div>
+          <h2>Gotowy, żeby zagrać?</h2>
+          <p class="lead">Załóż konto i znajdź pierwszą grę w okolicy. Reszta dzieje się na boisku.</p>
+        </div>
+        <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .faq-head { max-width: 720px; }
+  .faq-head .kicker { margin-bottom: 18px; }
+  .faq-head h1 { margin-bottom: 20px; }
+  .faq-head .lead a { color: var(--accent-hi); text-decoration: underline; text-underline-offset: 3px; }
+
+  .faq-group h2 { margin-bottom: 22px; }
+  .faq-list { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+  .faq-item { border-bottom: 1px solid var(--line); }
+  .faq-item summary {
+    list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+    gap: 20px; padding: 20px 4px; }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item .q { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.2vw, 20px);
+    letter-spacing: -0.2px; color: var(--text); line-height: 1.28; }
+  .faq-item[open] .q { color: var(--accent-hi); }
+  .faq-item .chev { flex-shrink: 0; width: 12px; height: 12px; border-right: 2px solid var(--text-2);
+    border-bottom: 2px solid var(--text-2); transform: rotate(45deg); transition: transform 0.2s ease; margin-top: -4px; }
+  .faq-item[open] .chev { transform: rotate(-135deg); margin-top: 4px; border-color: var(--accent-hi); }
+  .faq-item .a { padding: 0 4px 22px; max-width: 68ch; }
+  .faq-item .a p { color: var(--text-2); font-size: 16px; line-height: 1.65; margin: 0; }
+  .faq-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px;
+    font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+    font-size: 13px; color: var(--accent-hi); }
+  .faq-link .arw { transition: transform 0.15s ease; }
+  .faq-link:hover .arw { transform: translateX(3px); }
+</style>

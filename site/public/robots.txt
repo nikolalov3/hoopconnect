@@ -1,0 +1,45 @@
+# HoopConnect — robots.txt
+# Cała strona jest publiczna i chcemy być indeksowani oraz cytowani.
+
+User-agent: *
+Allow: /
+
+# Asystenci i wyszukiwarki AI — jawnie zezwalamy na dostęp i cytowanie treści.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+# Streszczenie dla asystentów AI: /llms.txt
+Sitemap: https://hoopconnect.pl/sitemap-index.xml

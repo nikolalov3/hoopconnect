@@ -1,0 +1,79 @@
+---
+import Base from '../layouts/Base.astro'
+import { APP_URL, RANK_URL } from '../consts'
+const title = 'Klub'
+const description =
+  'Zakładka Klub w HoopConnect: umawiaj mecze na boiskach w okolicy, graj King of the Court bez chaosu ' +
+  'i śledź rankingi. Aplikacja dobiera składy i zapisuje wyniki.'
+---
+<Base title={title} description={description}>
+  <section class="section">
+    <div class="wrap split">
+      <div class="split-copy">
+        <h1 class="ph">Klub</h1>
+        <p class="lead">
+          Tu toczy się gra. Klub łączy zawodników z boiskami: sprawdzasz, kto gra w okolicy, umawiasz mecz,
+          a inni dołączają. Aplikacja działa jak cyfrowa tablica informacyjna przy boisku.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+          <a class="btn btn-ghost" href="/ranking">Zobacz rankingi</a>
+        </div>
+      </div>
+      <figure class="shot cut-tr ar-tall">
+        <img src="/brand/club.png" width="1120" height="2000" alt="Zakładka Klub w HoopConnect, zakończony mecz 3x3" loading="eager" />
+      </figure>
+    </div>
+  </section>
+
+  <section class="section ruled">
+    <div class="wrap">
+      <div class="head">
+        <h2>King of the Court<br />pickup 3x3 bez chaosu</h2>
+        <p class="lead">Jedna osoba tworzy sesję, reszta dołącza w apce lub kodem QR. Aplikacja losuje trzyosobowe drużyny, a wygrane się liczą.</p>
+      </div>
+      <div class="grid grid-3">
+        <article class="feat">
+          <h3>Utwórz sesję</h3>
+          <p>Ustalasz zasady, np. grę do 11 punktów. Gracze dołączają w aplikacji lub skanując kod QR.</p>
+        </article>
+        <article class="feat">
+          <h3>Losowe składy</h3>
+          <p>Gdy zbierze się odpowiednia liczba osób, aplikacja dzieli je losowo na trzyosobowe drużyny. Koniec ustalania, kto z kim gra.</p>
+        </article>
+        <article class="feat">
+          <h3>Wyłoń króla boiska</h3>
+          <p>Rywalizacja trwa, aż drużyna osiągnie próg punktów lub zwycięstw. Liczy się forma przez całą sesję, nie jeden mecz.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section ruled">
+    <div class="wrap prose">
+      <h2>Po meczu</h2>
+      <p>
+        HoopConnect podsumowuje sesję: liczbę zwycięstw, punkty i kolejność drużyn. Najlepsi zawodnicy zdobywają
+        XP i inne wyróżnienia, a wyniki trafiają do <a href="/ranking">rankingów</a>.
+      </p>
+      <h2>Znajdź grę i graczy</h2>
+      <p>
+        Nie musisz mieć stałej ekipy. Widzisz, kto jest zainteresowany grą w okolicy, więc łatwiej zebrać skład i
+        po prostu zacząć. To rozwiązuje najczęstszy problem pickupu: „czy ktoś w ogóle przyjdzie".
+      </p>
+      <p><a href={RANK_URL} target="_blank" rel="noopener">Zobacz publiczny ranking →</a></p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .ph { margin: 22px 0 22px; }
+  .split { display: grid; gap: clamp(36px, 5vw, 64px); align-items: center; }
+  .split-copy .kicker { margin-bottom: 20px; }
+  .split-copy .lead { margin-bottom: 28px; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 14px; }
+  .head { max-width: 780px; margin-bottom: clamp(36px, 5vw, 56px); }
+  .head .kicker { margin-bottom: 20px; }
+  .head h2 { margin-bottom: 20px; }
+  @media (min-width: 940px) { .split { grid-template-columns: 1.05fr 0.95fr; } }
+</style>

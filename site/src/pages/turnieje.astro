@@ -1,0 +1,22 @@
+---
+import Base from '../layouts/Base.astro'
+const title = 'Turnieje'
+const description = 'Turnieje 3x3 z HoopConnect, statystyki i XP podpięte do profili graczy. Funkcja w planach.'
+---
+<Base title={title} description={description}>
+  <section class="section">
+    <div class="wrap">
+      <span class="pill soon">W planach</span>
+      <h1 style="margin-top:14px;">Turnieje</h1>
+      <p class="lead" style="margin-top:16px; max-width:58ch;">
+        Pracujemy nad obsługą turniejów 3x3: rejestracja przez podpięcie profili, podział na drużyny,
+        zapis wyników i automatyczne XP dla zawodników. Chcesz, żeby HoopConnect pojawił się na Twoim turnieju?
+        Napisz do nas.
+      </p>
+      <div class="cta-row" style="display:flex;gap:12px;margin-top:26px;flex-wrap:wrap;">
+        <a class="btn btn-primary" href="mailto:kontakt@hoopconnect.pl?subject=Turniej%20z%20HoopConnect">Napisz do nas</a>
+        <a class="btn btn-ghost" href="/">Strona główna</a>
+      </div>
+    </div>
+  </section>
+</Base>
