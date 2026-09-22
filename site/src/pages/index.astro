@@ -52,9 +52,9 @@ const homeFaqSchema = {
         </div>
       </div>
       <div class="hero-art">
-        <figure class="shot cut-tr ar-square">
-          <img src="/brand/hero.png" width="1000" height="1000" alt="Ekran klubu w HoopConnect, zakończony mecz 3x3 i karta gracza" loading="eager" />
-        </figure>
+        <div class="hero-ball" aria-hidden="true">
+          <canvas id="hoop-ball"></canvas>
+        </div>
       </div>
     </div>
   </section>
@@ -174,6 +174,15 @@ const homeFaqSchema = {
   .cta-row { display: flex; flex-wrap: wrap; gap: 14px; }
   @media (min-width: 940px) { .hero-grid { grid-template-columns: 1.05fr 0.95fr; } }
 
+  .hero-art { display: flex; justify-content: center; }
+  .hero-ball { position: relative; width: 100%; max-width: 460px; aspect-ratio: 1; }
+  /* miękka poświata pod piłką, żeby ciemny model odbił się od ciemnego tła */
+  .hero-ball::before { content: ''; position: absolute; inset: 8%; border-radius: 50%;
+    background: radial-gradient(circle at 50% 42%, rgba(120,140,170,0.18), rgba(47,145,214,0.06) 45%, transparent 70%);
+    filter: blur(14px); z-index: 0; }
+  .hero-ball canvas { position: relative; z-index: 1; width: 100%; height: 100%; display: block; }
+  @media (max-width: 939px) { .hero-ball { max-width: 320px; } }
+
   .head { max-width: 760px; margin-bottom: clamp(36px, 5vw, 60px); }
   .head .kicker { margin-bottom: 20px; }
   .head h2 { margin-bottom: 20px; }
@@ -213,3 +222,86 @@ const homeFaqSchema = {
   .hf-item p { color: var(--text-2); font-size: 15.5px; line-height: 1.65; margin: 0 4px 20px; max-width: 68ch; }
   .faq-more { margin-top: 24px; }
 </style>
+
+<script>
+  import * as THREE from 'three'
+
+  const canvas = document.getElementById('hoop-ball') as HTMLCanvasElement | null
+  if (canvas) {
+    const wrap = canvas.parentElement as HTMLElement
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    // ── Tekstura piłki: ciemnoszara skóra z pebble + trzy wielkie koła (szwy) ──
+    // Trzy okręgi wielkie = klasyczny wygląd piłki: 2 pionowe (przez bieguny) + równik.
+    function makeTexture(kind: 'color' | 'bump') {
+      const W = 1024, H = 512
+      const c = document.createElement('canvas'); c.width = W; c.height = H
+      const x = c.getContext('2d')!
+      x.fillStyle = kind === 'color' ? '#3a3b3f' : '#808080'
+      x.fillRect(0, 0, W, H)
+      // pebble (drobne ziarno skóry)
+      for (let i = 0; i < 24000; i++) {
+        const px = Math.random() * W, py = Math.random() * H, r = Math.random() * 1.5 + 0.3
+        const up = Math.random() > 0.5
+        x.beginPath(); x.arc(px, py, r, 0, Math.PI * 2)
+        if (kind === 'color') x.fillStyle = up ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.12)'
+        else x.fillStyle = up ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
+        x.fill()
+      }
+      // szwy (rowki) — ciemne w color, wcięte (ciemne) w bump
+      x.strokeStyle = kind === 'color' ? '#0c0c0d' : '#000000'
+      x.lineCap = 'round'
+      x.lineWidth = Math.round(H * 0.03)
+      for (const u of [0, 0.25, 0.5, 0.75, 1]) {
+        const px = u * W; x.beginPath(); x.moveTo(px, 0); x.lineTo(px, H); x.stroke()
+      }
+      x.beginPath(); x.moveTo(0, H / 2); x.lineTo(W, H / 2); x.stroke()
+      const tex = new THREE.CanvasTexture(c)
+      tex.anisotropy = 8
+      return tex
+    }
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+
+    const scene = new THREE.Scene()
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100)
+    camera.position.set(0, 0, 3.25)
+
+    const ball = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 96, 96),
+      new THREE.MeshStandardMaterial({
+        map: makeTexture('color'),
+        bumpMap: makeTexture('bump'),
+        bumpScale: 0.012,
+        roughness: 0.82,
+        metalness: 0.0,
+      }),
+    )
+    const group = new THREE.Group()
+    group.add(ball)
+    group.rotation.x = 0.38
+    group.rotation.z = 0.16
+    scene.add(group)
+
+    // Światło: miękkie wypełnienie + key z góry-prawej + chłodny rim od tyłu (odbicie od tła)
+    scene.add(new THREE.HemisphereLight(0x9fb3cc, 0x0a0c10, 0.75))
+    const key = new THREE.DirectionalLight(0xffffff, 1.35); key.position.set(4, 5, 5); scene.add(key)
+    const rim = new THREE.DirectionalLight(0x5aa0e6, 0.6); rim.position.set(-5, -2, -4); scene.add(rim)
+
+    function resize() {
+      const s = Math.max(1, Math.min(wrap.clientWidth, wrap.clientHeight))
+      renderer.setSize(s, s, false)
+      camera.aspect = 1; camera.updateProjectionMatrix()
+    }
+    resize()
+    new ResizeObserver(resize).observe(wrap)
+
+    function frame() {
+      group.rotation.y += 0.0042
+      renderer.render(scene, camera)
+      if (!reduce) requestAnimationFrame(frame)
+    }
+    frame()
+  }
+</script>
