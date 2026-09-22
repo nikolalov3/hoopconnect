@@ -1,8 +1,40 @@
 ---
 import Base from '../layouts/Base.astro'
 import { APP_URL, RANK_URL, BRAND, APP_SCHEMA } from '../consts'
+
+// Teaser FAQ na stronie głównej — cytowalne odpowiedzi + FAQPage schema (rich results).
+const HOME_FAQ = [
+  {
+    q: 'Czym jest HoopConnect?',
+    a: 'HoopConnect to darmowa aplikacja do koszykówki ulicznej 3x3 i indywidualnego treningu. ' +
+      'Znajdujesz grę i graczy w okolicy, grasz King of the Court, trenujesz i zbierasz XP w publicznych rankingach.',
+  },
+  {
+    q: 'Ile kosztuje HoopConnect?',
+    a: 'Dla graczy aplikacja jest darmowa. Płatny jest osobny panel dla trenerów i klubów.',
+  },
+  {
+    q: 'Jak znaleźć grę w koszykówkę 3x3 w okolicy?',
+    a: 'W zakładce Klub widzisz, kto gra lub planuje sesję na boiskach w pobliżu. Dołączasz do meczu albo ' +
+      'tworzysz własny, a aplikacja losuje trzyosobowe drużyny.',
+  },
+  {
+    q: 'Czy HoopConnect ma coś dla trenerów?',
+    a: 'Tak. Panel dla trenerów pozwala prowadzić drużynę: dodawać zawodników, sprawdzać frekwencję na ' +
+      'treningach i rozliczać składki.',
+  },
+]
+const homeFaqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: HOME_FAQ.map((it) => ({
+    '@type': 'Question',
+    name: it.q,
+    acceptedAnswer: { '@type': 'Answer', text: it.a },
+  })),
+}
 ---
-<Base schema={APP_SCHEMA}>
+<Base schema={[APP_SCHEMA, homeFaqSchema]}>
   <!-- HERO -->
   <section class="hero">
     <div class="wrap hero-grid">
@@ -31,12 +63,12 @@ import { APP_URL, RANK_URL, BRAND, APP_SCHEMA } from '../consts'
   <section class="section ruled">
     <div class="wrap">
       <div class="head">
-        <h2>Technologia tam,<br />gdzie naprawdę pomaga</h2>
-        <p class="lead">Zbieranie graczy, sesje, składy, wynik i postępy. Reszta dzieje się na boisku.</p>
+        <h2>Koszykówka 3x3,<br />poukładana</h2>
+        <p class="lead">Wszystko, czego potrzeba do gry: zbieranie graczy, sesje, składy, wynik i postępy. Reszta dzieje się na boisku.</p>
       </div>
       <div class="grid grid-3">
         <article class="feat">
-          <h3>Znajdź grę i graczy</h3>
+          <h3>Znajdź grę 3x3 w okolicy</h3>
           <p>Sprawdź, kto gra lub planuje sesję na boisku w okolicy. Utwórz mecz, a inni dołączą, bez pisania po grupach.</p>
         </article>
         <article class="feat">
@@ -44,7 +76,7 @@ import { APP_URL, RANK_URL, BRAND, APP_SCHEMA } from '../consts'
           <p>Tworzysz sesję, gracze dołączają w apce lub kodem QR, a aplikacja losuje trzyosobowe drużyny. Wygrane się liczą.</p>
         </article>
         <article class="feat">
-          <h3>XP i rankingi</h3>
+          <h3>XP i ranking graczy</h3>
           <p>Za mecze i zwycięstwa zdobywasz XP i wbijasz się w rankingi. Widać, kto realnie wychodzi na boisko.</p>
         </article>
       </div>
@@ -99,6 +131,25 @@ import { APP_URL, RANK_URL, BRAND, APP_SCHEMA } from '../consts'
     </div>
   </section>
 
+  <!-- FAQ TEASER -->
+  <section class="section ruled">
+    <div class="wrap">
+      <div class="head">
+        <h2>Częste pytania</h2>
+        <p class="lead">Krótko o tym, jak działa HoopConnect. Więcej w pełnym <a class="inline-link" href="/faq">FAQ</a>.</p>
+      </div>
+      <div class="home-faq">
+        {HOME_FAQ.map((it) => (
+          <details class="hf-item">
+            <summary><span class="q">{it.q}</span><span class="chev" aria-hidden="true"></span></summary>
+            <p>{it.a}</p>
+          </details>
+        ))}
+      </div>
+      <a class="btn btn-ghost faq-more" href="/faq">Zobacz wszystkie pytania<span class="arw">→</span></a>
+    </div>
+  </section>
+
   <!-- CTA -->
   <section class="section ruled">
     <div class="wrap">
@@ -146,4 +197,19 @@ import { APP_URL, RANK_URL, BRAND, APP_SCHEMA } from '../consts'
   .final { display: grid; gap: 28px; align-items: center; padding: clamp(32px, 5vw, 60px); }
   .final h2 { margin-bottom: 16px; }
   @media (min-width: 820px) { .final { grid-template-columns: 1fr auto; gap: 48px; } }
+
+  .inline-link { color: var(--accent-hi); text-decoration: underline; text-underline-offset: 3px; }
+  .home-faq { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+  .hf-item { border-bottom: 1px solid var(--line); }
+  .hf-item summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+    gap: 20px; padding: 18px 4px; }
+  .hf-item summary::-webkit-details-marker { display: none; }
+  .hf-item .q { font-family: var(--display); font-weight: 600; font-size: clamp(16px, 2vw, 19px);
+    letter-spacing: -0.2px; color: var(--text); line-height: 1.3; }
+  .hf-item[open] .q { color: var(--accent-hi); }
+  .hf-item .chev { flex-shrink: 0; width: 11px; height: 11px; border-right: 2px solid var(--text-2);
+    border-bottom: 2px solid var(--text-2); transform: rotate(45deg); transition: transform .2s ease; margin-top: -4px; }
+  .hf-item[open] .chev { transform: rotate(-135deg); margin-top: 4px; border-color: var(--accent-hi); }
+  .hf-item p { color: var(--text-2); font-size: 15.5px; line-height: 1.65; margin: 0 4px 20px; max-width: 68ch; }
+  .faq-more { margin-top: 24px; }
 </style>

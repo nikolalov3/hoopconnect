@@ -9,7 +9,7 @@ export const RANK_URL = `${APP_URL}/rank`
 export const BRAND = {
   name: 'HoopConnect',
   tagline: 'Phone down, game up',
-  defaultTitle: 'HoopConnect · mniej klikania, więcej grania',
+  defaultTitle: 'HoopConnect · aplikacja do koszykówki 3x3 i treningu',
   defaultDescription:
     'HoopConnect porządkuje koszykówkę uliczną 3x3: znajdź grę i graczy w okolicy, ' +
     'rozegraj King of the Court bez chaosu, zbieraj XP i wbijaj się w rankingi. ' +
