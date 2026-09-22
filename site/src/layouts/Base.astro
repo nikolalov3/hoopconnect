@@ -2,7 +2,7 @@
 import '../styles/global.css'
 import Nav from '../components/Nav.astro'
 import Footer from '../components/Footer.astro'
-import { SITE, BRAND } from '../consts'
+import { SITE, BRAND, SOCIALS } from '../consts'
 
 interface Props {
   title?: string
@@ -33,6 +33,7 @@ const baseSchema: Record<string, unknown>[] = [
     logo: new URL('/brand/horizontal.png', SITE).href,
     email: 'kontakt@hoopconnect.pl',
     description: BRAND.defaultDescription,
+    sameAs: [SOCIALS.x, SOCIALS.facebook],
   },
   {
     '@context': 'https://schema.org',

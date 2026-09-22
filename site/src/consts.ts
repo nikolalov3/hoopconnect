@@ -4,6 +4,12 @@ export const APP_URL = 'https://app.hoopconnect.pl'
 export const COACH_URL = 'https://trener.hoopconnect.pl'
 // Landing sprzedażowy dla trenerów. Goły trener.* to prosty landing/login — kierujemy na /oferta.
 export const COACH_OFFER_URL = `${COACH_URL}/oferta`
+
+// Profile społecznościowe. Używane w stopce i w polu sameAs schema Organization (SEO / knowledge graph).
+export const SOCIALS = {
+  x: 'https://x.com/HoopConnectApp',
+  facebook: 'https://www.facebook.com/profile.php?id=61564709893323&sk=grid',
+}
 export const RANK_URL = `${APP_URL}/rank`
 
 export const BRAND = {
