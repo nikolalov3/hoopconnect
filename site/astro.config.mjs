@@ -7,6 +7,10 @@ import sitemap from '@astrojs/sitemap'
 // (osobny projekt Vercel z tego samego repo). `site` steruje sitemap/OG i kanonikami.
 export default defineConfig({
   site: 'https://hoopconnect.pl',
-  integrations: [mdx(), sitemap()],
+  integrations: [
+    mdx(),
+    // Stuby (noindex do premiery) wykluczone z sitemapy, żeby GSC nie zgłaszał konfliktu.
+    sitemap({ filter: (page) => !/\/(aktualnosci|turnieje)\/?$/.test(page) }),
+  ],
   build: { format: 'directory' },
 })

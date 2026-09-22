@@ -95,7 +95,7 @@ const homeFaqSchema = {
         <a class="btn btn-ghost" href="/asystent-treningu">Zobacz, jak działa<span class="arw">→</span></a>
       </div>
       <figure class="shot cut-tr ar-tall">
-        <img src="/brand/club.png" width="1120" height="2000" alt="Aplikacja HoopConnect" loading="lazy" />
+        <img src="/brand/club.webp" width="1120" height="2000" alt="Aplikacja HoopConnect" loading="lazy" />
       </figure>
     </div>
   </section>
@@ -116,7 +116,7 @@ const homeFaqSchema = {
         </div>
       </div>
       <figure class="shot cut-tr ar-wide">
-        <img src="/brand/rank.png" width="1200" height="675" alt="Publiczny ranking HoopConnect" loading="lazy" />
+        <img src="/brand/rank.webp" width="1200" height="675" alt="Publiczny ranking HoopConnect" loading="lazy" />
       </figure>
     </div>
   </section>
@@ -172,16 +172,27 @@ const homeFaqSchema = {
   .hl { color: var(--accent-hi); }
   .hero .lead { margin-bottom: 34px; }
   .cta-row { display: flex; flex-wrap: wrap; gap: 14px; }
+  .hero-grid { position: relative; }
+  .hero-copy { position: relative; z-index: 2; }
   @media (min-width: 940px) { .hero-grid { grid-template-columns: 1.05fr 0.95fr; } }
 
-  .hero-art { display: flex; justify-content: center; }
-  .hero-ball { position: relative; width: 100%; max-width: 460px; aspect-ratio: 1; }
+  .hero-art { display: flex; justify-content: center; position: relative; z-index: 0; }
+  .hero-ball { position: relative; width: 100%; max-width: 360px; aspect-ratio: 1; margin-inline: auto; }
   /* miękka poświata pod piłką, żeby ciemny model odbił się od ciemnego tła */
-  .hero-ball::before { content: ''; position: absolute; inset: 8%; border-radius: 50%;
-    background: radial-gradient(circle at 50% 42%, rgba(120,140,170,0.18), rgba(47,145,214,0.06) 45%, transparent 70%);
-    filter: blur(14px); z-index: 0; }
+  .hero-ball::before { content: ''; position: absolute; inset: 6%; border-radius: 50%;
+    background: radial-gradient(circle at 50% 42%, rgba(120,140,170,0.20), rgba(47,145,214,0.07) 46%, transparent 72%);
+    filter: blur(16px); z-index: 0; }
   .hero-ball canvas { position: relative; z-index: 1; width: 100%; height: 100%; display: block; }
-  @media (max-width: 939px) { .hero-ball { max-width: 320px; } }
+  @media (max-width: 939px) { .hero-ball { max-width: 300px; } }
+  /* Desktop: piłka duża, wjeżdża spod prawej pod nagłówek (za tekstem) */
+  @media (min-width: 940px) {
+    .hero-art { position: absolute; top: 0; right: -4%; bottom: 0; left: auto; width: 70%; display: block; z-index: 0; }
+    .hero-ball { position: absolute; top: 50%; right: 0; transform: translateY(-50%);
+      width: min(700px, 50vw); max-width: none; margin: 0; }
+    /* lewa krawędź piłki wtapia się w tło — model wyłania się zza tekstu, tekst zostaje czytelny */
+    .hero-art::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+      background: linear-gradient(90deg, var(--bg) 6%, rgba(14,15,18,0.55) 26%, transparent 46%); }
+  }
 
   .head { max-width: 760px; margin-bottom: clamp(36px, 5vw, 60px); }
   .head .kicker { margin-bottom: 20px; }
@@ -248,14 +259,22 @@ const homeFaqSchema = {
         else x.fillStyle = up ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
         x.fill()
       }
-      // szwy (rowki) — ciemne w color, wcięte (ciemne) w bump
-      x.strokeStyle = kind === 'color' ? '#0c0c0d' : '#000000'
-      x.lineCap = 'round'
-      x.lineWidth = Math.round(H * 0.03)
-      for (const u of [0, 0.25, 0.5, 0.75, 1]) {
+      // szwy (rowki) — układ jak w prawdziwej piłce do kosza: jeden pionowy południk
+      // (wielkie koło przez bieguny) + dwa faliste szwy tworzące zakrzywione panele.
+      x.strokeStyle = kind === 'color' ? '#0b0b0c' : '#000000'
+      x.lineCap = 'round'; x.lineJoin = 'round'
+      x.lineWidth = Math.round(H * 0.034)
+      for (const u of [0, 0.5, 1]) {
         const px = u * W; x.beginPath(); x.moveTo(px, 0); x.lineTo(px, H); x.stroke()
       }
-      x.beginPath(); x.moveTo(0, H / 2); x.lineTo(W, H / 2); x.stroke()
+      for (const sign of [1, -1]) {
+        x.beginPath()
+        for (let i = 0; i <= W; i += 3) {
+          const y = H * (0.5 + sign * 0.30 * Math.sin((i / W) * Math.PI * 2))
+          i === 0 ? x.moveTo(i, y) : x.lineTo(i, y)
+        }
+        x.stroke()
+      }
       const tex = new THREE.CanvasTexture(c)
       tex.anisotropy = 8
       return tex
@@ -266,7 +285,7 @@ const homeFaqSchema = {
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100)
-    camera.position.set(0, 0, 3.25)
+    camera.position.set(0, 0, 3.95)
 
     const ball = new THREE.Mesh(
       new THREE.SphereGeometry(1, 96, 96),
