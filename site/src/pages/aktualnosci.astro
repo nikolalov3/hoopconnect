@@ -2,9 +2,10 @@
 import Base from '../layouts/Base.astro'
 import { APP_URL } from '../consts'
 const title = 'Aktualności'
-const description = 'Nowości, wydania i ogłoszenia HoopConnect. Sekcja w przygotowaniu.'
+const description = 'Aktualności HoopConnect: nowe funkcje, wydania i ogłoszenia aplikacji do koszykówki 3x3, ' +
+  'a wkrótce także baza wiedzy z instrukcjami krok po kroku. Sekcja jest w przygotowaniu.'
 ---
-<Base title={title} description={description}>
+<Base title={title} description={description} noindex={true}>
   <section class="section">
     <div class="wrap">
       <span class="pill soon">Wkrótce</span>

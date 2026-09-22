@@ -45,7 +45,7 @@ export const APP_SCHEMA = {
     'System XP, areny i publiczne rankingi z filtrem po mieście',
     'Panel dla trenerów i klubów: frekwencja na treningach i rozliczanie składek',
   ],
-  screenshot: new URL('/brand/rank.png', SITE).href,
+  screenshot: new URL('/brand/rank.webp', SITE).href,
   image: new URL('/brand/horizontal.png', SITE).href,
   publisher: { '@type': 'Organization', name: 'HoopConnect', url: SITE },
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'PLN' },

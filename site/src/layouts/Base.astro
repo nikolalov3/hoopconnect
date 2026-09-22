@@ -10,6 +10,7 @@ interface Props {
   path?: string
   ogImage?: string
   schema?: Record<string, unknown> | Record<string, unknown>[]
+  noindex?: boolean
 }
 const {
   title = BRAND.defaultTitle,
@@ -17,6 +18,7 @@ const {
   path = Astro.url.pathname,
   ogImage = '/brand/horizontal.png',
   schema,
+  noindex = false,
 } = Astro.props
 
 const canonical = new URL(path, SITE).href
@@ -82,7 +84,7 @@ const jsonLd = [...baseSchema, webPage, ...(breadcrumb ? [breadcrumb] : []), ...
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/logo-crest.svg" />
 
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="robots" content={noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'} />
     <meta name="author" content={BRAND.name} />
     <meta name="publisher" content={BRAND.name} />
 
