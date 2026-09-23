@@ -10,7 +10,11 @@ export default defineConfig({
   integrations: [
     mdx(),
     // Stuby (noindex do premiery) wykluczone z sitemapy, żeby GSC nie zgłaszał konfliktu.
-    sitemap({ filter: (page) => !/\/(aktualnosci|turnieje)\/?$/.test(page) }),
+    // lastmod = data buildu — świeży sygnał dla Google przy pierwszym skanie nowej strony.
+    sitemap({
+      filter: (page) => !/\/(aktualnosci|turnieje)\/?$/.test(page),
+      serialize: (item) => ({ ...item, lastmod: new Date().toISOString() }),
+    }),
   ],
   build: { format: 'directory' },
 })

@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/sitemap-index.xml" }
+  ],
   "redirects": [
     { "source": "/auth", "destination": "https://app.hoopconnect.pl/auth", "statusCode": 308 },
     { "source": "/onboarding", "destination": "https://app.hoopconnect.pl/onboarding", "statusCode": 308 },
