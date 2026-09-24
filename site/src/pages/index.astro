@@ -64,18 +64,21 @@ const homeFaqSchema = {
     <div class="wrap">
       <div class="head">
         <h2>Koszykówka 3x3,<br />poukładana</h2>
-        <p class="lead">Wszystko, czego potrzeba do gry: zbieranie graczy, sesje, składy, wynik i postępy. Reszta dzieje się na boisku.</p>
+        <p class="lead">Od pierwszego zawodnika po zapisany wynik, wszystko w jednym miejscu. Reszta dzieje się na boisku.</p>
       </div>
-      <div class="grid grid-3">
-        <article class="feat">
+      <div class="flow">
+        <article class="flow-step">
+          <span class="flow-when">Przed grą</span>
           <h3>Znajdź grę 3x3 w okolicy</h3>
           <p>Sprawdź, kto gra lub planuje sesję na boisku w okolicy. Utwórz mecz, a inni dołączą, bez pisania po grupach.</p>
         </article>
-        <article class="feat">
+        <article class="flow-step">
+          <span class="flow-when">W grze</span>
           <h3>King of the Court</h3>
           <p>Tworzysz sesję, gracze dołączają w apce lub kodem QR, a aplikacja losuje trzyosobowe drużyny. Wygrane się liczą.</p>
         </article>
-        <article class="feat">
+        <article class="flow-step">
+          <span class="flow-when">Po grze</span>
           <h3>XP i ranking graczy</h3>
           <p>Za mecze i zwycięstwa zdobywasz XP i wbijasz się w rankingi. Widać, kto realnie wychodzi na boisko.</p>
         </article>
@@ -197,6 +200,25 @@ const homeFaqSchema = {
   .head { max-width: 760px; margin-bottom: clamp(36px, 5vw, 60px); }
   .head .kicker { margin-bottom: 20px; }
   .head h2 { margin-bottom: 20px; }
+
+  /* Ciąg „przed grą → w grze → po grze" — układ redakcyjny, bez boksów, hairline separatory */
+  .flow { display: grid; gap: 0; }
+  .flow-step { padding: 26px 0; }
+  .flow-step + .flow-step { border-top: 1px solid var(--line); }
+  .flow-when { display: inline-flex; align-items: center; gap: 10px; font-family: var(--display);
+    font-weight: 700; text-transform: uppercase; letter-spacing: 2px; font-size: 12px;
+    color: var(--accent-hi); margin-bottom: 16px; }
+  .flow-when::before { content: ''; width: 22px; height: 2px; background: var(--accent); }
+  .flow-step h3 { font-family: var(--display); font-weight: 700; letter-spacing: -0.3px;
+    font-size: clamp(21px, 2.4vw, 27px); line-height: 1.08; margin-bottom: 12px; color: var(--text); }
+  .flow-step p { color: var(--text-2); font-size: 15.5px; line-height: 1.62; max-width: 44ch; }
+  @media (min-width: 760px) {
+    .flow { grid-template-columns: repeat(3, 1fr); }
+    .flow-step { padding: 6px 36px; }
+    .flow-step:first-child { padding-left: 0; }
+    .flow-step:last-child { padding-right: 0; }
+    .flow-step + .flow-step { border-top: none; border-left: 1px solid var(--line); }
+  }
 
   .split { display: grid; gap: clamp(36px, 5vw, 64px); align-items: center; }
   .split-copy .kicker, .split-copy .tag { margin-bottom: 20px; }
