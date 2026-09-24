@@ -2,7 +2,14 @@
 import '../styles/global.css'
 import Nav from '../components/Nav.astro'
 import Footer from '../components/Footer.astro'
-import { SITE, BRAND, SOCIALS } from '../consts'
+import { SITE, BRAND, SOCIALS, APP_URL } from '../consts'
+import QRCode from 'qrcode'
+
+// QR do aplikacji — generowany w czasie buildu (SVG, bez zewnętrznych usług ani runtime JS).
+const qrSvg = await QRCode.toString(APP_URL, {
+  type: 'svg', margin: 0, errorCorrectionLevel: 'M',
+  color: { dark: '#0E0F12', light: '#FFFFFF' },
+})
 
 interface Props {
   title?: string
@@ -116,5 +123,77 @@ const jsonLd = [...baseSchema, webPage, ...(breadcrumb ? [breadcrumb] : []), ...
       <slot />
     </main>
     <Footer />
+
+    {/* Modal zachęcający do wersji mobilnej — pokazywany na desktopie po „Otwórz aplikację" */}
+    <div class="appmodal" id="appModal" hidden>
+      <div class="appmodal-backdrop" data-close></div>
+      <div class="appmodal-card" role="dialog" aria-modal="true" aria-labelledby="appModalTitle">
+        <button class="appmodal-x" data-close aria-label="Zamknij">×</button>
+        <span class="appmodal-eyebrow">Zagraj z telefonu</span>
+        <h2 class="appmodal-title" id="appModalTitle">Zeskanuj i otwórz na telefonie</h2>
+        <p class="appmodal-text">
+          HoopConnect działa najlepiej na telefonie — tam grasz, dołączasz do meczów i trenujesz.
+          Zeskanuj kod aparatem, a aplikacja otworzy się na Twoim urządzeniu. Pełną wersję na komputer właśnie budujemy.
+        </p>
+        <div class="appmodal-qr" set:html={qrSvg} />
+        <div class="appmodal-url">app.hoopconnect.pl</div>
+        <div class="appmodal-actions">
+          <a class="btn btn-primary js-app-go" href={APP_URL} target="_blank" rel="noopener">Otwórz mimo to<span class="arw">→</span></a>
+          <button class="btn btn-ghost" data-close>Zamknij</button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
+
+<style>
+  .appmodal { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .appmodal[hidden] { display: none; }
+  .appmodal-backdrop { position: absolute; inset: 0; background: rgba(6, 8, 12, 0.68);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  /* Karta z przyciętym rogiem (technika dwóch pseudo-elementów — obrys też na skosie) */
+  .appmodal-card { --cut: 18px; position: relative; z-index: 1; width: 100%; max-width: 420px;
+    padding: 30px 30px 26px; text-align: center; isolation: isolate;
+    animation: appmodal-in .22s cubic-bezier(.2,.8,.3,1) both; }
+  .appmodal-card::before { content: ''; position: absolute; inset: 0; z-index: -2; background: var(--accent);
+    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+  .appmodal-card::after { content: ''; position: absolute; inset: 1.5px; z-index: -1; background: var(--panel);
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+  @keyframes appmodal-in { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+  .appmodal-x { position: absolute; top: 12px; right: 14px; background: transparent; border: none;
+    color: var(--text-3); font-size: 24px; line-height: 1; cursor: pointer; padding: 4px; }
+  .appmodal-x:hover { color: var(--text); }
+  .appmodal-eyebrow { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 1.6px;
+    font-size: 12px; color: var(--accent-hi); }
+  .appmodal-title { font-family: var(--display); font-weight: 800; font-size: 24px; line-height: 1.12;
+    color: var(--text); margin: 10px 0 12px; letter-spacing: -0.2px; }
+  .appmodal-text { font-size: 14px; line-height: 1.6; color: var(--text-2); margin: 0 auto 20px; max-width: 34ch; }
+  .appmodal-qr { width: 190px; height: 190px; margin: 0 auto; padding: 12px; background: #fff; border-radius: 12px; }
+  .appmodal-qr :global(svg) { display: block; width: 100%; height: 100%; }
+  .appmodal-url { font-family: var(--display); font-weight: 700; letter-spacing: 1px; font-size: 14px;
+    color: var(--text); margin: 14px 0 22px; }
+  .appmodal-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+</style>
+
+<script>
+  const APP = 'https://app.hoopconnect.pl'
+  const modal = document.getElementById('appModal')
+  if (modal) {
+    const open = () => { modal.hidden = false; document.body.style.overflow = 'hidden' }
+    const close = () => { modal.hidden = true; document.body.style.overflow = '' }
+
+    document.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement
+      if (t.closest('[data-close]')) { close(); return }
+      const a = t.closest('a') as HTMLAnchorElement | null
+      if (!a || a.closest('.appmodal')) return          // linki wewnątrz modalu działają normalnie
+      if (a.getAttribute('href') !== APP) return          // tylko „Otwórz aplikację" (app root)
+      const isMobile = window.matchMedia('(max-width: 767px)').matches || 'ontouchstart' in window
+      if (isMobile) return                                // na telefonie po prostu otwórz apkę
+      e.preventDefault()
+      open()
+    })
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) close() })
+  }
+</script>
