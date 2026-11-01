@@ -1,6 +1,12 @@
 ---
 import { APP_URL, COACH_OFFER_URL, BRAND, SOCIALS } from '../consts'
+import QRCode from 'qrcode'
 const year = new Date().getFullYear()
+// Mały QR do apki w stopce — ktoś czyta na komputerze, a gra z telefonu. Generowany w buildzie.
+const qrSvg = await QRCode.toString(APP_URL, {
+  type: 'svg', margin: 0, errorCorrectionLevel: 'M',
+  color: { dark: '#0E0F12', light: '#FFFFFF' },
+})
 ---
 <footer class="foot">
   <div class="wrap foot-inner">
@@ -21,6 +27,13 @@ const year = new Date().getFullYear()
             <path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7A10 10 0 0 0 22 12Z"/>
           </svg>
         </a>
+      </div>
+      <div class="qr">
+        <div class="qr-img" set:html={qrSvg} />
+        <div class="qr-tx">
+          <b>Otwórz na telefonie</b>
+          <span class="muted">Zeskanuj aparatem, apka otworzy się w przeglądarce.</span>
+        </div>
       </div>
     </div>
 
@@ -49,11 +62,12 @@ const year = new Date().getFullYear()
   </div>
   <div class="wrap foot-bottom">
     <span class="muted">© {year} {BRAND.name}. Wszelkie prawa zastrzeżone.</span>
+    <a class="top" href="#main">Do góry<span class="arw">↑</span></a>
   </div>
 </footer>
 
 <style>
-  .foot { border-top: 1px solid var(--line); margin-top: 40px; padding-block: 48px 28px; background: transparent; }
+  .foot { border-top: 1px solid var(--line); margin-top: 40px; padding-block: 56px 28px; background: transparent; }
   .foot-inner { display: grid; gap: 32px; grid-template-columns: 1fr; }
   .brandcol .brand { display: flex; align-items: center; gap: 9px; font-family: var(--body); font-weight: 600;
     font-size: 20px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text); }
@@ -62,10 +76,22 @@ const year = new Date().getFullYear()
   .socials { display: flex; gap: 16px; margin-top: 16px; }
   .socials a { display: inline-flex; color: var(--text-2); transition: color .15s; }
   .socials a:hover { color: var(--text); }
-  .col h4 { font-family: var(--font-display); text-transform: uppercase; font-size: 13px; letter-spacing: 1.5px;
+  /* QR tylko na desktopie — na telefonie użytkownik już jest na telefonie */
+  .qr { display: none; margin-top: 26px; align-items: center; gap: 14px; max-width: 300px; }
+  .qr-img { flex-shrink: 0; width: 76px; height: 76px; padding: 6px; background: #fff; border-radius: 4px; }
+  .qr-img :global(svg) { display: block; width: 100%; height: 100%; }
+  .qr-tx { display: grid; gap: 3px; font-size: 13px; line-height: 1.45; }
+  .qr-tx b { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; font-size: 14px; }
+  .col h4 { font-family: var(--display); text-transform: uppercase; font-size: 13px; letter-spacing: 1.5px;
     color: var(--text-2); margin-bottom: 14px; }
   .col a { display: block; font-size: 14px; color: var(--text-2); padding: 5px 0; transition: color .15s; }
   .col a:hover { color: var(--text); }
-  .foot-bottom { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 13px; }
+  .foot-bottom { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 13px;
+    display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .top { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; font-size: 12px; color: var(--text-2); transition: color .15s; }
+  .top:hover { color: var(--text); }
   @media (min-width: 720px) { .foot-inner { grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; } }
+  @media (min-width: 960px) { .qr { display: flex; } }
+  @media (max-width: 767px) { .foot { padding-bottom: 96px; } } /* miejsce na mobilny pasek CTA */
 </style>

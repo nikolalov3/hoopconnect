@@ -22,6 +22,9 @@
   --accent-hi: #6FC3FF;
   --accent-ink:#05111E;   /* tekst na akcencie */
   --gold:      #E8B23C;   /* tylko liczby/1. miejsce, rzadko */
+  --orange:    #F28C28;   /* Draft Score — wyłącznie on, żeby odróżniał się od XP (błękit) */
+  --orange-hi: #FFB067;
+  --green:     #37E29A;   /* „na żywo", zwycięstwo */
 
   --r:         3px;       /* ciasny promień — nigdy pigułki */
   --cut:       14px;      /* ścięcie rogu (hex) */
@@ -36,7 +39,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; }
 
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 body {
   font-family: var(--body);
   color: var(--text);
@@ -53,8 +56,9 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Typografia — waga jak w wordmarku (700), nie „black slab" ── */
 h1, h2, h3, h4 { font-family: var(--display); font-weight: 700; text-transform: uppercase; line-height: 0.98; letter-spacing: 0; }
-h1 { font-size: clamp(40px, 6.4vw, 76px); }
-h2 { font-size: clamp(28px, 3.8vw, 46px); }
+h1, h2 { text-wrap: balance; }
+h1 { font-size: clamp(46px, 7.4vw, 104px); line-height: 0.94; letter-spacing: -0.5px; }
+h2 { font-size: clamp(32px, 4.4vw, 58px); letter-spacing: -0.3px; }
 h3 { font-size: clamp(19px, 2vw, 23px); font-weight: 700; }
 h4 { font-size: 14px; letter-spacing: 1.4px; }
 p  { text-wrap: pretty; }
@@ -146,7 +150,60 @@ strong { color: var(--text); font-weight: 500; }
 /* Sekcja z hairline separatorem u góry */
 .ruled { border-top: 1px solid var(--line); }
 
+/* ── Cutbox: karta ze ściętym rogiem i PEŁNYM obrysem (też na skosie).
+   ::before = obrys (cały kształt), ::after = wypełnienie wcięte o 1.5px.
+   .clip dodatkowo przycina dzieci (obrazy dochodzące do krawędzi). ── */
+.cutbox { --cut: 18px; --bd: var(--line-2); --fill: var(--panel); position: relative; isolation: isolate; }
+.cutbox::before { content: ''; position: absolute; inset: 0; z-index: -2; background: var(--bd);
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+.cutbox::after { content: ''; position: absolute; inset: 1.5px; z-index: -1; background: var(--fill);
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+.cutbox.clip { clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+
+/* ── Marquee: pasek haseł jak ticker na tablicy wyników ── */
+.marquee { overflow: hidden; border-block: 1px solid var(--line); padding-block: 15px; }
+.marquee-track { display: flex; width: max-content; animation: marquee 46s linear infinite; }
+.marquee-track span { display: inline-flex; align-items: center; gap: 26px; padding-inline: 26px 0;
+  font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 1.8px;
+  font-size: 14px; color: var(--text-2); white-space: nowrap; }
+.marquee-track span::after { content: ''; width: 6px; height: 6px; background: var(--accent); transform: rotate(45deg); }
+.marquee.under-court { border-top: 0; background: var(--bg-2); }   /* pod boiskiem: linia końcowa jest górną krawędzią */
+.marquee:hover .marquee-track { animation-play-state: paused; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+/* Lista z „ptaszkiem" — skanowalne punkty pod leadem (bez emoji, czysty CSS) */
+.checks { list-style: none; padding: 0; display: grid; gap: 10px; }
+.checks li { position: relative; padding-left: 28px; color: var(--text-2); font-size: 15.5px; line-height: 1.5; }
+.checks li::before { content: ''; position: absolute; left: 1px; top: 0.42em; width: 13px; height: 7px;
+  border-left: 2px solid var(--accent-hi); border-bottom: 2px solid var(--accent-hi); transform: rotate(-45deg); }
+
+/* Reveal przy scrollu — jedna, spokojna animacja wejścia (IntersectionObserver w Base).
+   Bez JS elementy są widoczne (klasa .in nadawana z JS, a fallback poniżej). */
+.rv { opacity: 0; transform: translateY(16px);
+  transition: opacity .55s ease, transform .55s cubic-bezier(.2,.7,.2,1); }
+.rv.in { opacity: 1; transform: none; }
+.rv-d1 { transition-delay: .08s; } .rv-d2 { transition-delay: .16s; } .rv-d3 { transition-delay: .24s; }
+html.no-js .rv { opacity: 1; transform: none; }
+
+/* Skip link (a11y) */
+.skip { position: absolute; left: -999px; top: 10px; z-index: 1000; padding: 10px 14px; background: var(--accent);
+  color: var(--accent-ink); font-weight: 700; }
+.skip:focus { left: 12px; }
+
+/* Mobilny pasek CTA — pojawia się po zjechaniu poniżej hero (tylko telefon) */
+.mcta { position: fixed; left: 0; right: 0; bottom: 0; z-index: 90; display: none;
+  padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom));
+  background: rgba(14,15,18,0.86); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line-2); transform: translateY(110%); transition: transform .3s ease; }
+.mcta.show { transform: none; }
+.mcta .btn { width: 100%; justify-content: center; }
+@media (max-width: 767px) { .mcta { display: flex; } }
+
 :focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 3px; }
 
 /* Redukcja ruchu */
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+  .rv { opacity: 1; transform: none; }
+}

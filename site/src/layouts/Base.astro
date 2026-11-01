@@ -118,11 +118,17 @@ const jsonLd = [...baseSchema, webPage, ...(breadcrumb ? [breadcrumb] : []), ...
     ))}
   </head>
   <body>
+    <a class="skip" href="#main">Przejdź do treści</a>
     <Nav />
-    <main>
+    <main id="main">
       <slot />
     </main>
     <Footer />
+
+    {/* Mobilny pasek CTA — wjeżdża po przewinięciu hero (tylko na telefonie, patrz global.css) */}
+    <div class="mcta" id="mcta" aria-hidden="true">
+      <a class="btn btn-primary" href={APP_URL} target="_blank" rel="noopener" tabindex="-1">Otwórz aplikację<span class="arw">→</span></a>
+    </div>
 
     {/* Modal zachęcający do wersji mobilnej — pokazywany na desktopie po „Otwórz aplikację" */}
     <div class="appmodal" id="appModal" hidden>
@@ -195,5 +201,32 @@ const jsonLd = [...baseSchema, webPage, ...(breadcrumb ? [breadcrumb] : []), ...
       open()
     })
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) close() })
+  }
+
+  // Reveal przy scrollu: elementy .rv dostają .in, gdy wjadą w widok. Raz, bez cofania.
+  const rv = document.querySelectorAll('.rv')
+  if ('IntersectionObserver' in window && rv.length) {
+    // Element „wjechał" albo został już przeskoczony szybkim scrollem (top < 0) — w obu razach pokaż.
+    const io = new IntersectionObserver((entries) => {
+      for (const en of entries) {
+        if (en.isIntersecting || en.boundingClientRect.top < 0) { en.target.classList.add('in'); io.unobserve(en.target) }
+      }
+    }, { threshold: 0.05, rootMargin: '0px 0px -4% 0px' })
+    rv.forEach((el) => io.observe(el))
+  } else {
+    rv.forEach((el) => el.classList.add('in'))
+  }
+
+  // Mobilny pasek CTA — pokazuj dopiero po zjechaniu poniżej pierwszego ekranu.
+  const mcta = document.getElementById('mcta')
+  if (mcta) {
+    const upd = () => {
+      const show = window.scrollY > window.innerHeight * 0.7
+      mcta.classList.toggle('show', show)
+      mcta.setAttribute('aria-hidden', show ? 'false' : 'true')
+      mcta.querySelector('a')?.setAttribute('tabindex', show ? '0' : '-1')
+    }
+    upd()
+    document.addEventListener('scroll', upd, { passive: true })
   }
 </script>

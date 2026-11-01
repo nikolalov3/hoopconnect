@@ -3,7 +3,7 @@ import { NAV, APP_URL, BRAND } from '../consts'
 const here = Astro.url.pathname
 const isActive = (href: string) => href !== '/' && here.startsWith(href)
 ---
-<header class="nav">
+<header class="nav" id="siteNav">
   <div class="wrap nav-inner">
     <a class="brand" href="/" aria-label={`${BRAND.name} — strona główna`}>
       <img src="/logo-crest.svg" width="26" height="26" alt="" />
@@ -30,20 +30,23 @@ const isActive = (href: string) => href !== '/' && here.startsWith(href)
 
     <input type="checkbox" id="navtoggle" class="navtoggle" aria-label="Menu" />
     <label for="navtoggle" class="burger" aria-hidden="true"><span></span><span></span><span></span></label>
-    <div class="mobile-menu">
+    <div class="mobile-menu" id="mobileMenu">
       {NAV.map((item) => (
         <a href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener' : undefined}>
-          {item.label}{item.soon && <span class="soon">Wkrótce</span>}
+          {item.label}{item.soon && <span class="soon">Wkrótce</span>}<span class="arw">→</span>
         </a>
       ))}
-      <a class="btn btn-primary" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+      <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
     </div>
   </div>
 </header>
 
 <style>
-  .nav { position: sticky; top: 0; z-index: 50; background: var(--bg); border-bottom: 1px solid var(--line); }
-  .nav-inner { display: flex; align-items: center; gap: 28px; height: 72px; }
+  .nav { --navh: 68px; position: sticky; top: 0; z-index: 50;
+    background: rgba(14,15,18,0.72); -webkit-backdrop-filter: blur(16px) saturate(1.2); backdrop-filter: blur(16px) saturate(1.2);
+    border-bottom: 1px solid transparent; transition: border-color .2s ease, background .2s ease; }
+  .nav.scrolled { border-bottom-color: var(--line); background: rgba(14,15,18,0.88); }
+  .nav-inner { display: flex; align-items: center; gap: 28px; height: var(--navh); }
   .brand { display: flex; align-items: center; gap: 10px; font-family: var(--body); font-weight: 600;
     font-size: 21px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text); }
   .brand i { font-style: normal; color: inherit; }
@@ -51,8 +54,10 @@ const isActive = (href: string) => href !== '/' && here.startsWith(href)
   .link { font-size: 13px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-2);
     display: inline-flex; align-items: center; gap: 8px; position: relative; padding-block: 6px;
     transition: color .15s; white-space: nowrap; }
+  .link::after { content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; background: var(--accent);
+    transform: scaleX(0); transform-origin: left; transition: transform .2s ease; }
   .link:hover, .link.on { color: var(--text); }
-  .link.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; background: var(--accent); }
+  .link:hover::after, .link.on::after { transform: scaleX(1); }
   .soon { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-hi);
     border: 1px solid rgba(47,145,214,0.4); border-radius: 2px; padding: 2px 5px; }
   .nav-cta { display: none; --pad-y: 11px; --pad-x: 20px; font-size: 14px; }
@@ -60,18 +65,44 @@ const isActive = (href: string) => href !== '/' && here.startsWith(href)
   .navtoggle, .burger { display: none; }
   .burger { margin-left: auto; width: 44px; height: 44px; border: 1px solid var(--line-2); background: var(--bg-2);
     border-radius: var(--r); place-content: center; gap: 5px; cursor: pointer; }
-  .burger span { width: 20px; height: 2px; background: var(--text); }
+  .burger span { width: 20px; height: 2px; background: var(--text); transition: transform .22s ease, opacity .18s ease; }
   .mobile-menu { display: none; }
 
   @media (min-width: 960px) { .links, .nav-cta { display: flex; } }
   @media (max-width: 959px) {
     .burger { display: grid; }
-    .mobile-menu { position: absolute; top: 72px; left: 0; right: 0; flex-direction: column;
-      padding: 10px var(--gutter) 24px; background: var(--bg); border-bottom: 1px solid var(--line-2); }
-    .mobile-menu a:not(.btn) { padding: 15px 2px; font-family: var(--display); font-weight: 700; font-size: 18px;
+    /* absolute (nie fixed): backdrop-filter na .nav robi z niej containing block dla fixed,
+       więc fixed zwijałoby się do wysokości paska. Pasek jest sticky, więc absolute i tak „jedzie" z nim. */
+    .mobile-menu { position: absolute; top: 100%; left: 0; right: 0; height: calc(100vh - var(--navh));
+      height: calc(100dvh - var(--navh)); flex-direction: column;
+      padding: 8px var(--gutter) 28px; background: var(--bg); border-top: 1px solid var(--line);
+      overflow-y: auto; animation: menu-in .22s ease both; }
+    @keyframes menu-in { from { opacity: 0; transform: translateY(-8px); } }
+    .mobile-menu a:not(.btn) { padding: 17px 2px; font-family: var(--display); font-weight: 700; font-size: 22px;
       text-transform: uppercase; letter-spacing: 0.5px; color: var(--text); border-bottom: 1px solid var(--line);
       display: flex; align-items: center; gap: 10px; }
-    .mobile-menu .btn { margin-top: 18px; justify-content: center; }
+    .mobile-menu a:not(.btn) .arw { margin-left: auto; color: var(--text-3); font-weight: 400; }
+    .mobile-menu .btn { margin-top: 22px; justify-content: center; }
     .navtoggle:checked ~ .mobile-menu { display: flex; }
+    .navtoggle:checked ~ .burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .navtoggle:checked ~ .burger span:nth-child(2) { opacity: 0; }
+    .navtoggle:checked ~ .burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
   }
 </style>
+
+<script>
+  const nav = document.getElementById('siteNav')
+  const toggle = document.getElementById('navtoggle') as HTMLInputElement | null
+  const menu = document.getElementById('mobileMenu')
+
+  // Obrys pod paskiem dopiero po zjechaniu — na samej górze pasek „wtapia się" w hero.
+  const onScroll = () => nav?.classList.toggle('scrolled', window.scrollY > 8)
+  onScroll()
+  document.addEventListener('scroll', onScroll, { passive: true })
+
+  // Otwarte menu blokuje przewijanie strony pod spodem; klik w link zamyka menu.
+  toggle?.addEventListener('change', () => { document.body.style.overflow = toggle.checked ? 'hidden' : '' })
+  menu?.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('a') && toggle) { toggle.checked = false; document.body.style.overflow = '' }
+  })
+</script>
