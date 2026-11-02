@@ -34,6 +34,14 @@
 
   --maxw:      1200px;
   --gutter:    clamp(20px, 5vw, 56px);
+
+  /* Tokeny ruchu (BRAND.md §10). Animujemy tylko transform i opacity. */
+  --ease:      cubic-bezier(.2,.7,.2,1);
+  --dur-1:     420ms;   /* mikro: hover, przełączniki */
+  --dur-2:     640ms;   /* wejście elementu */
+  --dur-3:     900ms;   /* zmiana stanu sceny */
+  --stagger:   70ms;
+  --reveal-y:  16px;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -179,10 +187,12 @@ strong { color: var(--text); font-weight: 500; }
 
 /* Reveal przy scrollu — jedna, spokojna animacja wejścia (IntersectionObserver w Base).
    Bez JS elementy są widoczne (klasa .in nadawana z JS, a fallback poniżej). */
-.rv { opacity: 0; transform: translateY(16px);
-  transition: opacity .55s ease, transform .55s cubic-bezier(.2,.7,.2,1); }
+.rv { opacity: 0; transform: translateY(var(--reveal-y));
+  transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
 .rv.in { opacity: 1; transform: none; }
-.rv-d1 { transition-delay: .08s; } .rv-d2 { transition-delay: .16s; } .rv-d3 { transition-delay: .24s; }
+.rv-d1 { transition-delay: var(--stagger); }
+.rv-d2 { transition-delay: calc(var(--stagger) * 2); }
+.rv-d3 { transition-delay: calc(var(--stagger) * 3); }
 html.no-js .rv { opacity: 1; transform: none; }
 
 /* Skip link (a11y) */

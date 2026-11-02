@@ -1,28 +1,19 @@
 ---
 import Base from '../layouts/Base.astro'
 import PlayerCard from '../components/PlayerCard.astro'
-import { APP_URL, RANK_URL, COACH_OFFER_URL, BRAND, APP_SCHEMA } from '../consts'
+import { APP_URL, RANK_URL, COACH_OFFER_URL, APP_SCHEMA } from '../consts'
 import QRCode from 'qrcode'
 
-// QR w sekcji końcowej — ktoś czyta na laptopie, gra z telefonu. Generowany w buildzie.
+// QR w zamknięciu: ktoś czyta na laptopie, gra z telefonu. Generowany w buildzie.
 const qrSvg = await QRCode.toString(APP_URL, {
   type: 'svg', margin: 0, errorCorrectionLevel: 'M',
   color: { dark: '#0E0F12', light: '#FFFFFF' },
 })
 
-// Ticker pod hero — same fakty o produkcie, żadnych wymyślonych liczb.
+// Ticker pod linią końcową boiska: same fakty o produkcie, żadnych wymyślonych liczb.
 const TICKER = [
   'King of the Court', 'Ranking XP na żywo', 'Siedem aren', 'Karta gracza', 'Asystent treningu',
-  'Draft Score', 'Darmowa dla graczy', 'Kraków i cała Polska', 'Phone down, game up',
-]
-
-// Losowanie składów w kaflu KotC: 9 graczy, start w siatce 3x3, po „losowaniu" kolumna = drużyna.
-// dx/dy = przesunięcie w komórkach siatki (ustawiane w CSS jako translate).
-// Start (wiersz,kolumna) → cel: drużyna A = kolumna 0, B = 1, C = 2; każda komórka celu unikalna.
-const DRAW = [
-  { l: 'K', dx: 0, dy: 2, t: 'a' },  { l: 'M', dx: 0, dy: 2, t: 'b' },  { l: 'F', dx: 0, dy: 1, t: 'c' },
-  { l: 'A', dx: 1, dy: -1, t: 'b' }, { l: 'B', dx: -1, dy: -1, t: 'a' }, { l: 'S', dx: 0, dy: -1, t: 'c' },
-  { l: 'J', dx: 1, dy: -1, t: 'b' }, { l: 'O', dx: -1, dy: -1, t: 'a' }, { l: 'W', dx: 0, dy: 0, t: 'c' },
+  'Draft Score', 'Darmowa dla graczy', 'Kraków i cała Polska', 'Phone down, game up.',
 ]
 
 // Pięć kart gracza na boisku (hero). Pozycje w % kontenera boiska. Dane poglądowe, bez nazwisk.
@@ -41,13 +32,40 @@ const CARDS = [
     desc: 'Najwyżej w ekipie. Cztery wygrane sesje KotC i najwięcej meczów na koncie.' },
 ]
 
-// Areny z aplikacji (src/lib/arenas.js) — do karuzeli w kaflu „Siedem aren".
+// Rozdział „Znajdź grę obok": telefon z zakładką Klub (odtworzony w HTML na podstawie brand/session.webp),
+// trzy kroki tekstu; aktywny krok zmienia stan ekranu klasą (data-step na scenie).
+const CLUB_STEPS = [
+  { t: 'Widzisz, kto gra obok', d: 'Sesje z godziną, miejscem i składem. Dwa kilometry od Ciebie, sobota, 19:30.' },
+  { t: 'Dołączasz', d: 'Jeden ruch. Twój hex ląduje w składzie i ekipa widzi, że wchodzisz.' },
+  { t: 'Skład się zapełnia', d: 'Sześć miejsc, sześć hexów. Jest mecz. Reszta dzieje się na boisku.' },
+]
+// Hexy na ekranie telefonu: skład z zrzutu (K, M, F vs A, B + wolne miejsce, które zajmujesz Ty).
+const PH_HOME = [{ l: 'K', f: true }, { l: 'M', f: false }, { l: 'F', f: true }]
+const PH_AWAY = [{ l: 'A', f: false }, { l: 'B', f: true }]
+
+// Losowanie w King of the Court: dziewięciu graczy solo, trzy trójki w kolorach z apki
+// (src/features/kotc/KotcSolo.jsx: Blue / Green / Red). Przebieg losowania robi skrypt na dole.
+const DRAW_PLAYERS = ['K', 'M', 'F', 'A', 'B', 'S', 'J', 'O', 'W']
+const DRAW_TEAMS = [
+  { name: 'Blue', color: '#3B82F6' }, { name: 'Green', color: '#22C55E' }, { name: 'Red', color: '#F43F5E' },
+]
+
+// Rozdział „Karta gracza": cztery kroki, każdy obraca kartę i podświetla jeden jej element.
+const CARD_STEPS = [
+  { t: 'Hex z inicjałem', d: 'Twój znak w składzie, w rankingu i na karcie. Ten sam wszędzie.' },
+  { t: 'Arena', d: 'Siedem poziomów, od Rozgrzewki po Seraphim. Nazwa na karcie mówi, jak daleko zaszedłeś.' },
+  { t: 'Pasek XP', d: 'Ile brakuje do następnej areny. Każdy mecz przesuwa go w prawo. Nigdy w lewo.' },
+  { t: 'Wygrane mecze i KotC', d: 'Dwie liczby, których nie da się wyklikać. Tylko to, co zagrałeś.' },
+]
+
+// Siedem aren z apki (src/lib/arenas.js): Rozgrzewka bez ramki, potem sześć z grafiką z public/arenas.
 const ARENAS = [
+  { n: 0, name: 'Rozgrzewka', xp: 0 },
   { n: 1, name: 'Street Court', xp: 500 }, { n: 2, name: 'City Run', xp: 1500 }, { n: 3, name: 'Golden Reign', xp: 2700 },
   { n: 4, name: 'Ankh Court', xp: 3900 }, { n: 5, name: 'Void Gem', xp: 5500 }, { n: 6, name: 'Seraphim', xp: 7500 },
 ]
 
-// Teaser FAQ na stronie głównej — cytowalne odpowiedzi + FAQPage schema (rich results).
+// Teaser FAQ na stronie głównej: cytowalne odpowiedzi + FAQPage schema (rich results).
 const HOME_FAQ = [
   {
     q: 'Czym jest HoopConnect?',
@@ -85,22 +103,17 @@ const homeFaqSchema = {
     <div class="hero-glow" aria-hidden="true"></div>
     <div class="wrap hero-grid">
       <div class="hero-copy">
-      <span class="tag live"><b></b>{BRAND.tagline}</span>
       <h1>Zostań królem<br /><span class="hl">swojego boiska</span></h1>
-      <p class="lead">
-        Osiedlowy pickup 3x3 z wynikiem, rankingiem i historią. Znajdujesz grę, dołączasz jednym ruchem,
-        wygrywasz i zgarniasz XP. Ekipa widzi, kto naprawdę gra.
-      </p>
+      <p class="lead">Widzisz, kto gra obok, i dołączasz jednym ruchem. Grasz 3x3. Wynik zostaje na Twojej karcie.</p>
       <div class="cta-row">
         <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Zagraj dziś<span class="arw">→</span></a>
-        <a class="btn btn-ghost btn-lg" href={RANK_URL} target="_blank" rel="noopener">Zobacz ranking</a>
       </div>
       <ul class="hero-proof">
         <li>Darmowa dla graczy</li>
         <li>Bez instalacji, z przeglądarki</li>
         <li>Ranking bez logowania</li>
       </ul>
-      <p class="stage-hint"><span aria-hidden="true"></span>Dotknij podświetlonej karty, żeby zobaczyć, jak działa karta gracza</p>
+      <p class="stage-hint"><span aria-hidden="true"></span>Dotknij podświetlonej karty.</p>
       </div>
 
       <!-- Boisko: na desktopie prawa kolumna, linia końcowa = dolna krawędź hero, pod nią pasek. Pięć kart na pozycjach. -->
@@ -196,13 +209,13 @@ const homeFaqSchema = {
       <button class="cm-x" data-cm-close aria-label="Zamknij">×</button>
       <div class="cm-big" id="cmBig"></div>
       <div class="cm-tx">
-        <span class="kicker on" id="cmKicker">Karta gracza</span>
         <h2 id="cmTitle">Kuba</h2>
+        <p class="cm-pos" id="cmKicker">Karta gracza</p>
         <p class="cm-desc" id="cmDesc"></p>
         <ul class="cm-legend">
-          <li><b>Hex z inicjałem</b> to Twój awatar. Obramowanie zmienia się z areną.</li>
+          <li><b>Hex z inicjałem</b> to Twój znak. Ten sam w składzie, w rankingu i na karcie.</li>
           <li><b>Arena</b> pokazuje poziom. Pasek pod nią to XP do następnej.</li>
-          <li><b>Mecze i KotC</b> liczą tylko to, co realnie zagrałeś.</li>
+          <li><b>Mecze i KotC</b> liczą tylko to, co naprawdę zagrałeś.</li>
         </ul>
         <a class="btn btn-primary" href={APP_URL} target="_blank" rel="noopener">Stwórz swoją kartę<span class="arw">→</span></a>
       </div>
@@ -218,184 +231,226 @@ const homeFaqSchema = {
     </div>
   </div>
 
-  <!-- ═══ BENTO: produkt ═══ -->
-  <section class="section">
+  <!-- ═══ 2. GRA, KTÓRA SIĘ LICZY ═══ -->
+  <section class="ch ch-center" id="mecz">
     <div class="wrap">
-      <div class="head rv">
-        <h2>Każda wygrana<br />zostaje z Tobą</h2>
-        <p class="lead">Od pierwszego „kto gra?" do zapisanego wyniku. Jedna apka zamiast grupy na Messengerze.</p>
+      <div class="ch-head rv">
+        <h2>Wynik zostaje.<br />Król boiska ma imię.</h2>
+        <p class="lead">Zapisany wynik, naliczone XP i wygrana na karcie, zanim zejdziecie z boiska. Koniec dyskusji, kto wygrał.</p>
       </div>
+      <figure class="matchcard rv rv-d1">
+        <img src="/brand/match.webp" width="1600" height="1224" alt="Zakończony mecz 3x3 w HoopConnect: HoopConnect 21, Street Kings 16" loading="lazy" decoding="async" />
+        <figcaption>Wygrana to <b>75 XP</b>. Przegrana <b>40 XP</b>. Oba zostają.</figcaption>
+      </figure>
+    </div>
+  </section>
 
-      <div class="bento">
-        <article class="tile cutbox clip t-session rv">
-          <div class="tile-tx">
-            <h3>Zawsze jest z kim zagrać</h3>
-            <p>Widzisz, kto gra na boiskach obok i o której. Dołączasz jednym ruchem albo zakładasz mecz i patrzysz, jak skład się zapełnia.</p>
-          </div>
-          <img class="tile-art art-session" src="/brand/session.webp" width="900" height="1607" alt="Zakładka Klub: spotkania w pobliżu" loading="lazy" />
-        </article>
-
-        <article class="tile cutbox clip t-kotc rv rv-d1">
-          <div class="tile-tx">
-            <h3>Składy losuje apka. Ty grasz.</h3>
-            <p>Dziewięciu graczy, trzy trójki, jeden król boiska. Nikt nie wybiera kumpli, każdy ma równe szanse.</p>
-          </div>
-          <div class="draw" aria-hidden="true">
-            <div class="draw-labels"><span class="ta">A</span><span class="tb">B</span><span class="tc">C</span></div>
-            <div class="draw-grid">
-              {DRAW.map((p) => (
-                <span class={`hx t-${p.t}`} style={`--dx:${p.dx}; --dy:${p.dy}`}><i>{p.l}</i></span>
-              ))}
+  <!-- ═══ 3. ZNAJDŹ GRĘ OBOK: sticky telefon, trzy kroki ═══ -->
+  <section class="ch" id="klub">
+    <div class="wrap">
+      <div class="ch-head rv">
+        <h2>Znajdź grę obok</h2>
+        <p class="lead">Zakładka Klub pokazuje sesje na boiskach w Twojej okolicy. Reszta to trzy ruchy.</p>
+      </div>
+      <div class="scene" data-scene="club" data-step="1">
+        <div class="scene-visual">
+          <div class="phone-crop">
+            <div class="phone" aria-hidden="true">
+              <div class="screen">
+                <div class="ph-top">Polska</div>
+                <div class="ph-title">Hoop<i>Connect</i></div>
+                <div class="ph-tabs"><span class="on">Mecze</span><span>Skład</span><span>Statystyki</span></div>
+                <div class="ph-label">Spotkania w pobliżu</div>
+                <div class="ph-card">
+                  <div class="ph-tags">
+                    <span class="ph-tag">3v3</span>
+                    <span class="ph-tag ph-you"><b></b>Grasz</span>
+                    <span class="ph-dist">2,0 km</span>
+                  </div>
+                  <div class="ph-team">HoopConnect</div>
+                  <div class="ph-row">
+                    {PH_HOME.map((h) => <span class:list={['ph-hex', { framed: h.f }]}><b>{h.l}</b></span>)}
+                  </div>
+                  <div class="ph-vs"><b><span class="v1">vs</span><span class="v2">Skład 6/6</span></b></div>
+                  <div class="ph-row">
+                    {PH_AWAY.map((h) => <span class:list={['ph-hex', { framed: h.f }]}><b>{h.l}</b></span>)}
+                    <span class="ph-slot">
+                      <svg class="ph-dash" viewBox="0 0 40 40"><polygon points="20,4 34,12 34,28 20,36 6,28 6,12" /></svg>
+                      <i class="ph-plus"></i>
+                      <span class="ph-hex ph-me"><b>S</b></span>
+                    </span>
+                  </div>
+                  <div class="ph-team away">Rywale</div>
+                  <div class="ph-when">Sob, 29 sie · 19:30</div>
+                  <div class="ph-where">Aleja 3 Maja, Stare Miasto</div>
+                </div>
+                <div class="ph-card ph-next">
+                  <div class="ph-tags"><span class="ph-tag">3v3</span><span class="ph-dist">3,4 km</span></div>
+                  <div class="ph-when">Nd, 30 sie · 17:00 <span class="ph-where">Błonia, Kraków</span></div>
+                </div>
+                <div class="ph-nav"><span></span><span></span><span class="on"></span><span></span><span></span></div>
+              </div>
             </div>
           </div>
-        </article>
-
-        <article class="tile cutbox clip t-rank rv rv-d2">
-          <div class="tile-tx">
-            <h3>Ranking, który widzą wszyscy</h3>
-            <p>XP, mecze i King of the Court z filtrem po mieście. Link podsyłasz ekipie.</p>
-          </div>
-          <img class="tile-art art-rank" src="/brand/rank-mobile.webp" width="780" height="1688" alt="Ranking HoopConnect" loading="lazy" />
-        </article>
-
-        <article class="tile cutbox clip t-arenas rv rv-d3">
-          <div class="tile-tx">
-            <h3>Siedem aren do zdobycia</h3>
-            <p>Każda wygrana przybliża Cię do następnej. Zdobyte XP zostaje na zawsze.</p>
-          </div>
-          <!-- Karuzela aren: przesuwa się sama, pauza na hover -->
-          <div class="arenas" aria-hidden="true">
-            <div class="arenas-track">
-              {[...ARENAS, ...ARENAS].map((a) => (
-                <figure>
-                  <img src={`/arenas/arena-${a.n}.png`} width="72" height="72" alt="" loading="lazy" />
-                  <figcaption><b>{a.name}</b><span>{a.xp} XP</span></figcaption>
-                </figure>
-              ))}
-            </div>
-          </div>
-        </article>
-
-        <article class="tile cutbox clip t-train rv">
-          <div class="ring" aria-hidden="true">
-            <svg viewBox="0 0 120 120">
-              <circle class="ring-bg" cx="60" cy="60" r="52" />
-              <circle class="ring-fg" cx="60" cy="60" r="52" />
-            </svg>
-            <div class="ring-tx"><b>270</b><span>Draft Score</span></div>
-          </div>
-          <div class="tile-tx">
-            <h3>Nie ma meczu? Jest plan.</h3>
-            <p>Codzienne ćwiczenia pod Twoje dni treningowe, regeneracja w wolne. Forma tygodnia zamienia się w XP, a Ty wracasz na boisko mocniejszy.</p>
-            <ul class="checks">
-              <li>Zestaw na każdy dzień układa się sam</li>
-              <li>Dni odpoczynku z regeneracją</li>
-              <li>Draft Score: 10% trafia do stałego XP</li>
-            </ul>
-          </div>
-        </article>
+        </div>
+        <ol class="steps">
+          {CLUB_STEPS.map((s, i) => (
+            <li class:list={['step', { on: i === 0 }]} data-i={i + 1}>
+              <h3>{s.t}</h3>
+              <p>{s.d}</p>
+            </li>
+          ))}
+        </ol>
       </div>
     </div>
   </section>
 
-  <!-- ═══ KING OF THE COURT ═══ -->
-  <section class="section ruled">
+  <!-- ═══ 4. KING OF THE COURT: losowanie trójek ═══ -->
+  <section class="ch" id="kotc">
     <div class="wrap split">
       <div class="split-copy rv">
-        <h2>Jedna sesja.<br />Jeden król.</h2>
-        <p class="lead">
-          King of the Court: ktoś zakłada sesję, reszta dołącza w apce albo kodem QR. Apka losuje trójki,
-          liczy wygrane i na koniec wskazuje króla boiska. Bez dyskusji, kto wygrał.
-        </p>
-        <ul class="checks">
-          <li>Trójki losowane automatycznie, bez wybierania kumpli</li>
-          <li>Gracie do progu punktów albo zwycięstw, Wy ustalacie</li>
-          <li>Wynik zapisany i XP naliczone, zanim zejdziecie z boiska</li>
-        </ul>
-        <a class="btn btn-ghost" href="/klub">Jak działa Klub<span class="arw">→</span></a>
+        <h2>Składy losuje apka.<br />Ty grasz.</h2>
+        <p class="lead">Dziewięciu graczy wchodzi solo, apka losuje trzy trójki. Wygrany zostaje na boisku, a po sesji wiadomo, kto jest królem.</p>
+        <p class="fact">Król boiska zgarnia <b>275 XP</b>, drugie miejsce <b>195</b>, trzecie <b>145</b>.</p>
+        <a class="inline-link" href="/klub">Więcej o King of the Court<span class="arw">→</span></a>
       </div>
-      <div class="rv rv-d1 tilt-wrap">
-        <div class="cutbox clip matchcard tilt" data-tilt>
-          <img src="/brand/match.webp" width="1600" height="1224" alt="Zakończony mecz 3x3 w HoopConnect: 21 do 16" loading="lazy" />
+      <div class="draw rv rv-d1" id="draw">
+        <div class="draw-labels" aria-hidden="true">
+          {DRAW_TEAMS.map((t) => <span style={`--team:${t.color}`}>{t.name}</span>)}
         </div>
+        <div class="draw-grid" role="img" aria-label="Dziewięciu graczy losowanych do trzech drużyn">
+          {DRAW_PLAYERS.map((l) => <span class="dr-hex"><i>{l}</i></span>)}
+        </div>
+        <button class="btn btn-ghost" type="button" id="drawAgain">Losuj jeszcze raz</button>
       </div>
     </div>
   </section>
 
-  <!-- ═══ RANKING ═══ -->
-  <section class="section ruled">
+  <!-- ═══ 5. KARTA GRACZA: sticky karta obracana krokami ═══ -->
+  <section class="ch" id="karta">
     <div class="wrap">
-      <div class="head rv">
-        <span class="tag live"><b></b>Ranking na żywo · beta</span>
-        <h2 class="mt">Widać, kto naprawdę gra</h2>
-        <p class="lead">
-          Nie kto najwięcej klika. Kto wychodzi na boisko. Trzy tablice: XP, mecze i King of the Court,
-          filtr po mieście, bez logowania. Podeślij link ekipie i sprawdź, kto jest wyżej.
-        </p>
-        <div class="cta-row">
+      <div class="ch-head rv">
+        <h2>Karta rośnie z każdym meczem</h2>
+        <p class="lead">Hex, arena, pasek XP i wygrane. Wszystko z meczów, które naprawdę zagrałeś.</p>
+      </div>
+      <div class="scene flip" data-scene="card" data-step="1">
+        <div class="scene-visual">
+          <div class="pc-stage" aria-hidden="true">
+            <PlayerCard name="Kuba" letter="K" arena={4} arenaName="Ankh Court" nextArena="Void Gem" pct={62} toNext={608} wins={12} kotc={3} hcId="20251" frame="default" uid="sc" />
+          </div>
+        </div>
+        <ol class="steps">
+          {CARD_STEPS.map((s, i) => (
+            <li class:list={['step', { on: i === 0 }]} data-i={i + 1}>
+              <h3>{s.t}</h3>
+              <p>{s.d}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 6. ARENY: siedem w rzędzie, przesuwają się same ═══ -->
+  <section class="ch ch-center" id="areny">
+    <div class="wrap">
+      <div class="ch-head rv">
+        <h2>Każda wygrana zostaje</h2>
+        <p class="lead">Wygrana to XP. XP to arena. Arena zostaje. Siedem aren od Rozgrzewki po Seraphim, a raz zdobyte XP nie znika.</p>
+      </div>
+    </div>
+    <div class="arena-row rv rv-d1" aria-label="Siedem aren HoopConnect">
+      <div class="arena-track">
+        {[...ARENAS, ...ARENAS].map((a) => (
+          <figure>
+            {a.n === 0
+              ? <span class="arena-hex"></span>
+              : <img src={`/arenas/arena-${a.n}.png`} width="500" height="500" alt="" loading="lazy" decoding="async" />}
+            <figcaption><b>{a.name}</b><span>{a.xp} XP</span></figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 7. RANKING ═══ -->
+  <section class="ch ch-center" id="ranking">
+    <div class="wrap">
+      <div class="ch-head rv">
+        <h2>Widać, kto naprawdę gra</h2>
+        <p class="lead">Trzy tablice: XP, mecze i King of the Court. Filtr po mieście, bez logowania. Link podsyłasz ekipie.</p>
+        <div class="cta-row center">
           <a class="btn btn-primary" href={RANK_URL} target="_blank" rel="noopener">Otwórz ranking<span class="arw">→</span></a>
-          <a class="btn btn-ghost" href="/ranking">Za co jest XP</a>
+          <a class="inline-link" href="/ranking">Za co jest XP<span class="arw">→</span></a>
         </div>
       </div>
       <div class="browser cutbox clip rv rv-d1">
         <div class="browser-bar"><span class="url">app.hoopconnect.pl/rank</span></div>
-        <img src="/brand/rank-desktop.webp" width="1600" height="1000" alt="Publiczny ranking HoopConnect w przeglądarce" loading="lazy" />
+        <picture>
+          <source media="(max-width: 639px)" srcset="/brand/rank-mobile.webp" width="780" height="1688" />
+          <img src="/brand/rank-desktop.webp" width="1600" height="1000" alt="Publiczny ranking HoopConnect: tablica XP z filtrem po mieście" loading="lazy" decoding="async" />
+        </picture>
       </div>
     </div>
   </section>
 
-  <!-- ═══ DLA TRENERÓW ═══ -->
-  <section class="section ruled">
+  <!-- ═══ 8. ASYSTENT TRENINGU: pierścień Draft Score ═══ -->
+  <section class="ch" id="trening">
+    <div class="wrap split">
+      <div class="ring-wrap rv">
+        <div class="ring" aria-hidden="true">
+          <svg viewBox="0 0 120 120">
+            <defs>
+              <clipPath id="ring-r"><rect x="60" y="0" width="60" height="120" /></clipPath>
+              <clipPath id="ring-l"><rect x="0" y="0" width="60" height="120" /></clipPath>
+            </defs>
+            <circle class="ring-bg" cx="60" cy="60" r="52" />
+            <g clip-path="url(#ring-r)"><g class="arc-g r"><path class="arc" d="M60 8 A52 52 0 0 1 60 112" /></g></g>
+            <g clip-path="url(#ring-l)"><g class="arc-g l"><path class="arc" d="M60 8 A52 52 0 0 1 60 112" /></g></g>
+          </svg>
+          <div class="ring-tx"><b>620</b><span>Draft Score</span><small>z 1000 · ten tydzień</small></div>
+        </div>
+      </div>
+      <div class="split-copy rv rv-d1">
+        <h2>Nie ma meczu?<br />Jest plan.</h2>
+        <p class="lead">Codzienne ćwiczenia pod Twoje dni treningowe, regeneracja w wolne. Draft Score tygodnia jest prywatny, a 10% z niego idzie w XP.</p>
+        <p class="fact">Z treningu wpada do <b>100 XP</b> tygodniowo. Draft Score nigdy nie trafia do rankingu.</p>
+        <a class="inline-link" href="/asystent-treningu">Jak działa asystent treningu<span class="arw">→</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 9. TRENERZY: jeden rozdział, spokojny głos ═══ -->
+  <section class="ch" id="trenerzy">
     <div class="wrap">
-      <div class="coach cutbox rv">
-        <div class="coach-head">
-          <h2>Prowadzisz drużynę?<br />Masz osobny panel.</h2>
-          <a class="btn btn-primary" href={COACH_OFFER_URL} target="_blank" rel="noopener">Zobacz ofertę<span class="arw">→</span></a>
-        </div>
-        <div class="coach-facts">
-          <div>
-            <h3>Frekwencja</h3>
-            <p>Odhaczasz obecność na treningu w kilka sekund. Także zawodników, którzy nie mają konta.</p>
-          </div>
-          <div>
-            <h3>Składki</h3>
-            <p>Widzisz, kto zapłacił, a kto zalega. Statystyki na miesiąc, bez arkusza w Excelu.</p>
-          </div>
-          <div>
-            <h3>Zawodnicy</h3>
-            <p>Profil, historia treningów i wzór zgody rodzica do druku. RODO ogarnięte.</p>
-          </div>
-        </div>
+      <div class="coach rv">
+        <h2>Prowadzisz drużynę?<br />Masz osobny panel.</h2>
+        <p class="lead">Frekwencja na treningu, składki, zawodnicy bez konta i wzór zgody rodzica. Spokojnie, bez arkusza.</p>
+        <a class="btn btn-ghost" href={COACH_OFFER_URL} target="_blank" rel="noopener">Zobacz ofertę<span class="arw">→</span></a>
+        <p class="coach-note">Panel jest płatny, dla trenerów i klubów. Gracze nie płacą nic.</p>
       </div>
     </div>
   </section>
 
-  <!-- ═══ MANIFEST ═══ -->
-  <section class="section ruled">
+  <!-- ═══ 10. MANIFEST ═══ -->
+  <section class="ch" id="manifest">
     <div class="wrap manifest rv">
       <p>Najlepsza statystyka nie brzmi <em>„spędziłem godzinę w aplikacji"</em>.</p>
       <p>Brzmi <strong>„zagrałem jeszcze jeden mecz"</strong>.</p>
+      <p class="manifest-sig">Boisko, które pamięta.</p>
+    </div>
+    <div class="wrap press rv rv-d1">
+      <blockquote>„HoopConnect powstał, aby uporządkować koszykówkę uliczną i pozwolić graczom skupić się na grze."</blockquote>
+      <a class="press-src" href="https://3x3basket.pl" target="_blank" rel="noopener">3x3basket.pl<span class="arw">→</span></a>
     </div>
   </section>
 
-  <!-- ═══ O NAS PISZĄ ═══ -->
-  <section class="section ruled">
-    <div class="wrap press rv">
-      <span class="press-mark" aria-hidden="true">„</span>
-      <blockquote>
-        HoopConnect powstał, aby uporządkować koszykówkę uliczną i pozwolić graczom skupić się na grze."
-      </blockquote>
-      <a class="press-src" href="https://3x3basket.pl" target="_blank" rel="noopener">3x3basket.pl<span class="arw"> →</span></a>
-    </div>
-  </section>
-
-  <!-- ═══ FAQ ═══ -->
-  <section class="section ruled">
-    <div class="wrap faq-grid">
-      <div class="head rv">
+  <!-- ═══ 11. PYTANIA ═══ -->
+  <section class="ch" id="pytania">
+    <div class="wrap faq">
+      <div class="ch-head rv">
         <h2>Częste pytania</h2>
-        <p class="lead">Krótko o tym, jak działa HoopConnect. Więcej w pełnym <a class="inline-link" href="/faq">FAQ</a>.</p>
-        <a class="btn btn-ghost faq-more" href="/faq">Wszystkie pytania<span class="arw">→</span></a>
+        <p class="lead">Krótko o tym, jak działa HoopConnect. Więcej w pełnym <a class="inline-link lower" href="/faq">FAQ</a>.</p>
       </div>
       <div class="home-faq rv rv-d1">
         {HOME_FAQ.map((it) => (
@@ -408,21 +463,20 @@ const homeFaqSchema = {
     </div>
   </section>
 
-  <!-- ═══ CTA ═══ -->
-  <section class="section ruled">
-    <div class="wrap">
-      <div class="final cutbox rv">
-        <div class="final-copy">
-          <h2>Następny mecz<br />jest Twój</h2>
-          <p class="lead">Apka działa w przeglądarce telefonu. Bez sklepu, bez instalacji. Zeskanuj, załóż kartę gracza i wyjdź na boisko.</p>
-          <div class="cta-row">
-            <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Załóż kartę gracza<span class="arw">→</span></a>
-          </div>
+  <!-- ═══ 12. ZAMKNIĘCIE ═══ -->
+  <section class="ch final" id="zagraj">
+    <div class="wrap final-grid">
+      <div class="final-copy rv">
+        <h2>Następny mecz<br />jest Twój</h2>
+        <p class="lead">Apka działa w przeglądarce telefonu, bez sklepu i bez instalacji. Zeskanuj, załóż kartę gracza i wyjdź na boisko.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Załóż kartę gracza<span class="arw">→</span></a>
         </div>
-        <div class="final-qr" aria-hidden="true">
-          <div class="qr-img" set:html={qrSvg} />
-          <span>app.hoopconnect.pl</span>
-        </div>
+        <p class="final-sig">Phone down, game up.</p>
+      </div>
+      <div class="final-qr rv rv-d1" aria-hidden="true">
+        <div class="qr-img" set:html={qrSvg} />
+        <span>app.hoopconnect.pl</span>
       </div>
     </div>
   </section>
@@ -434,12 +488,11 @@ const homeFaqSchema = {
   .hero-glow { position: absolute; inset: auto -10% -10% 30%; height: 80%; pointer-events: none; z-index: 0;
     background: radial-gradient(ellipse 55% 70% at 60% 100%, rgba(47,145,214,0.14), transparent 70%); }
   .hero-grid { position: relative; z-index: 1; display: grid; gap: clamp(28px, 4vw, 48px); }
-  .hero-copy { position: relative; z-index: 2; max-width: 760px; animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
-  .hero-copy .tag { margin-bottom: 28px; }
+  .hero-copy { position: relative; z-index: 2; max-width: 760px; animation: rise .7s var(--ease) both; }
   .hero h1 { margin-bottom: 26px; font-size: clamp(44px, 5vw, 86px); }   /* 2 linie także w węższej kolumnie */
   .hl { color: var(--accent-hi); }
-  .hero .lead { margin-bottom: 34px; max-width: 54ch; }
-  .cta-row { display: flex; flex-wrap: wrap; gap: 14px; }
+  .hero .lead { margin-bottom: 34px; max-width: 50ch; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; }
   .hero-proof { list-style: none; padding: 0; margin-top: 32px; display: flex; flex-wrap: wrap; gap: 10px 26px;
     font-size: 13px; font-weight: 600; letter-spacing: 0.3px; color: var(--text-2); }
   .hero-proof li { display: inline-flex; align-items: center; gap: 9px; }
@@ -447,7 +500,7 @@ const homeFaqSchema = {
   .stage-hint { margin-top: 26px; display: inline-flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700;
     font-size: 11px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--text-3); }
   .stage-hint span { width: 7px; height: 7px; background: var(--accent); transform: rotate(45deg); animation: pulse 2.4s ease-in-out infinite; }
-  @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(47,145,214,0.18); } 50% { box-shadow: 0 0 0 8px rgba(47,145,214,0.06); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: rotate(45deg) scale(1); } 50% { opacity: .45; transform: rotate(45deg) scale(1.5); } }
   @keyframes rise { from { opacity: 0; transform: translateY(16px); } }
   @media (min-width: 940px) {
     .hero-grid { max-width: 1400px; grid-template-columns: 0.85fr 1.15fr; column-gap: clamp(32px, 5vw, 72px); align-items: end; }
@@ -458,7 +511,7 @@ const homeFaqSchema = {
      Dół sceny = linia końcowa. Karta stoi stopą w punkcie (translate -50%, -100%).
      Boisko wtapia się w tło strony eliptyczną maską (góra i boki znikają w tle). ── */
   .court-stage { position: relative; z-index: 1; width: 100%; aspect-ratio: 1.5600 / 0.8455; margin-top: clamp(40px, 5vw, 56px);
-    animation: rise .8s .12s cubic-bezier(.2,.7,.2,1) both; touch-action: pan-y; }
+    animation: rise .8s .12s var(--ease) both; touch-action: pan-y; }
   .court-bg, .court-glint { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
     -webkit-mask-image: radial-gradient(ellipse 100% 150% at 50% 100%, #000 55%, transparent 100%); mask-image: radial-gradient(ellipse 100% 150% at 50% 100%, #000 55%, transparent 100%); }
   /* Błysk: osobna warstwa kompozycji (statyczne filtry nie przeliczają się co klatkę); pauza poza ekranem */
@@ -473,16 +526,19 @@ const homeFaqSchema = {
   @media (prefers-reduced-motion: reduce) { .court-glint { display: none; } }
   /* Bez preserve-3d (karta ma clip-path; zagnieżdżone 3D psuje przycinanie na WebKit — patrz PlayerCard3D w apce) */
   .cards { list-style: none; padding: 0; position: absolute; inset: 0; }
-  .cards li { position: absolute; left: var(--x); top: var(--y); z-index: var(--z, 1); transform: translate(-50%, -100%); }
+  /* Karty wchodzą po boisku: tylny rząd, środek, Alex (transform + opacity, raz, przy ładowaniu) */
+  .cards li { position: absolute; left: var(--x); top: var(--y); z-index: var(--z, 1); transform: translate(-50%, -100%);
+    animation: card-in var(--dur-2) var(--ease) both; animation-delay: calc(.45s + var(--i, 0) * var(--stagger)); }
+  @keyframes card-in { from { opacity: 0; transform: translate(-50%, calc(-100% + 24px)); } }
   .cards li::after { content: ''; position: absolute; left: 50%; bottom: -3%; width: 150%; height: 14%;
     transform: translateX(-50%); background: radial-gradient(ellipse, rgba(0,0,0,0.6), rgba(0,0,0,0.25) 40%, transparent 68%); z-index: -1; }
 
-  /* Skala bazowa per pozycja (lekkie karty, środkowy najbliżej) i kolejność */
-  .cards li:nth-child(1) { --pcsb: 0.26; --z: 1; }
-  .cards li:nth-child(2) { --pcsb: 0.26; --z: 1; }
-  .cards li:nth-child(3) { --pcsb: 0.36; --z: 2; }
-  .cards li:nth-child(4) { --pcsb: 0.36; --z: 2; }
-  .cards li:nth-child(5) { --pcsb: 0.50; --z: 4; }
+  /* Skala bazowa per pozycja (lekkie karty, środkowy najbliżej), kolejność i kolejność wejścia */
+  .cards li:nth-child(1) { --pcsb: 0.26; --z: 1; --i: 0; }
+  .cards li:nth-child(2) { --pcsb: 0.26; --z: 1; --i: 1; }
+  .cards li:nth-child(3) { --pcsb: 0.36; --z: 2; --i: 2; }
+  .cards li:nth-child(4) { --pcsb: 0.36; --z: 2; --i: 3; }
+  .cards li:nth-child(5) { --pcsb: 0.50; --z: 4; --i: 4; }
   /* Karta interaktywna (Alex): poświata pod stopą, reszta statyczna */
   .cards li.live::after { width: 190%; height: 22%; bottom: -8%;
     background: radial-gradient(ellipse, rgba(111,195,255,0.5), rgba(47,145,214,0.18) 42%, transparent 70%);
@@ -517,14 +573,9 @@ const homeFaqSchema = {
   .cm-big { --rx0: -6; --ry0: -12; }
   .cm-big :global(.pc3d-wrap) { --pcs: 0.9; }
   @media (max-width: 719px) { .cm-big :global(.pc3d-wrap) { --pcs: 0.78; } }
-  .cm-big .pc-brand { font-size: 12px; gap: 6px; } .cm-big .pc-brand img { width: 20px; height: 20px; }
-  .cm-big .pc-hex { width: 104px; height: 104px; } .cm-big .pc-hex b { font-size: 36px; }
-  .cm-big .pc-name { font-size: 22px; margin-top: 8px; } .cm-big .pc-arena { font-size: 12px; }
-  .cm-big .pc-bar { height: 5px; margin-top: 8px; }
-  .cm-big .pc-stats { gap: 8px; margin-top: 8px; } .cm-big .pc-stats > span { font-size: 10px; padding: 9px 4px; }
-  .cm-big .pc-stats b { font-size: 26px; } .cm-big .pc-abbr { font-size: 13px; top: 14px; right: 16px; }
-  .cm-tx .kicker { margin-bottom: 14px; }
-  .cm-tx h2 { font-size: clamp(28px, 3.6vw, 40px); margin-bottom: 12px; }
+  .cm-tx h2 { font-size: clamp(28px, 3.6vw, 40px); margin-bottom: 6px; }
+  .cm-pos { font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent-hi); margin-bottom: 14px; }
   .cm-desc { color: var(--text-2); font-size: 16px; line-height: 1.55; margin-bottom: 18px; }
   .cm-legend { list-style: none; padding: 0; display: grid; gap: 10px; margin-bottom: 24px; }
   .cm-legend li { position: relative; padding-left: 18px; font-size: 14px; line-height: 1.5; color: var(--text-2); }
@@ -540,177 +591,282 @@ const homeFaqSchema = {
     .cards li:nth-child(5) { --pcsb: 0.34; }
   }
 
-  /* ═══ NAGŁÓWKI SEKCJI ═══ */
-  .head { max-width: 780px; margin-bottom: clamp(36px, 5vw, 60px); }
-  .head .kicker, .head .tag { margin-bottom: 22px; }
-  .head h2 { margin-bottom: 20px; }
-  .head .lead { margin-bottom: 0; }
-  .head .cta-row { margin-top: 28px; }
+  /* ═══ ROZDZIAŁY: jedna myśl na ekran, przestrzeń zamiast ramek ═══ */
+  .ch { padding-top: clamp(96px, 12vw, 184px); }
+  .ch-head { max-width: 800px; margin-bottom: clamp(40px, 6vw, 72px); }
+  .ch-head h2 { margin-bottom: 20px; font-size: clamp(38px, 5.6vw, 84px); }
+  .ch-head .lead { margin-bottom: 0; }
+  .ch-head .cta-row { margin-top: 30px; }
+  .ch-center .ch-head { margin-inline: auto; text-align: center; }
+  .ch-center .ch-head .lead { margin-inline: auto; }
+  .cta-row.center { justify-content: center; }
+  .inline-link { display: inline-flex; align-items: center; gap: 8px; color: var(--accent-hi); font-family: var(--display);
+    font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; font-size: 15px; }
+  .inline-link .arw { transition: transform var(--dur-1) var(--ease); }
+  .inline-link:hover .arw { transform: translateX(4px); }
+  .inline-link.lower { font-family: inherit; font-weight: inherit; text-transform: none; letter-spacing: 0; font-size: inherit;
+    text-decoration: underline; text-underline-offset: 3px; }
+  .fact { color: var(--text-2); font-size: clamp(16px, 1.3vw, 18px); line-height: 1.6; margin-bottom: 26px; max-width: 46ch; }
+  .fact b { color: var(--accent-hi); font-weight: 600; font-variant-numeric: tabular-nums; }
 
-  /* ═══ BENTO ═══ */
-  .bento { display: grid; gap: 14px; grid-auto-rows: minmax(260px, auto); }
-  .tile { --cut: 20px; padding: clamp(22px, 2.6vw, 30px); display: flex; flex-direction: column; min-height: 260px;
-    min-width: 0; transition: transform .25s ease; }
-  .tile:hover { transform: translateY(-3px); }
-  .tile h3 { font-size: clamp(21px, 2.2vw, 26px); margin-bottom: 10px; letter-spacing: -0.2px; }
-  .tile p { color: var(--text-2); font-size: 15px; line-height: 1.6; max-width: 40ch; }
-  .tile-tx { position: relative; z-index: 2; }
-  .tile-art { position: absolute; z-index: 1; pointer-events: none; }
+  /* 2. Karta meczu: duża, bez ramki, własny cień */
+  .matchcard { margin: 0 auto; max-width: 920px; }
+  .matchcard img { width: 100%; height: auto; filter: drop-shadow(0 30px 60px rgba(0,0,0,0.55)); }
+  .matchcard figcaption { margin-top: 30px; text-align: center; color: var(--text-2); font-size: clamp(16px, 1.3vw, 18px); }
+  .matchcard figcaption b { color: var(--accent-hi); font-weight: 600; font-variant-numeric: tabular-nums; }
 
-  .t-session { min-height: 540px; }
-  .art-session { right: -6%; bottom: -18%; width: min(62%, 300px); height: auto; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5)); }
-  .t-rank { min-height: 400px; }
-  .art-rank { left: 50%; top: 150px; width: 78%; transform: translateX(-50%); height: auto;
-    border: 1px solid var(--line-2); border-radius: 6px; }
-  .t-session::after, .t-rank::after { background: linear-gradient(180deg, var(--panel), var(--panel-2)); }
+  /* ═══ SCENY STICKY: obraz przyklejony, kroki tekstu przewijają się obok; aktywny krok = data-step ═══ */
+  .scene { display: grid; gap: clamp(28px, 4vw, 64px); align-items: start; }
+  .scene-visual { position: sticky; top: 12vh; height: 76vh; display: grid; place-items: center; }
+  .steps { list-style: none; padding: 0; margin: 0; }
+  .step { min-height: 70vh; display: flex; flex-direction: column; justify-content: center;
+    opacity: 0.3; transition: opacity var(--dur-2) var(--ease); }
+  .step.on { opacity: 1; }
+  .step h3 { font-size: clamp(28px, 3.4vw, 46px); margin-bottom: 14px; }
+  .step p { color: var(--text-2); font-size: clamp(17px, 1.5vw, 20px); max-width: 40ch; line-height: 1.6; }
+  @media (min-width: 900px) {
+    .scene { grid-template-columns: 1fr 1fr; }
+    .scene.flip .scene-visual { order: 2; }
+    .steps li:last-child { min-height: 60vh; }
+  }
+  @media (max-width: 899px) {
+    /* Obraz przyklejony pod paskiem nawigacji; krok wjeżdża od dołu i zostaje w pełni widoczny pod obrazem
+       (treść przy dolnej krawędzi kroku, linia aktywacji ok. 2/3 ekranu, patrz skrypt). */
+    .scene-visual { position: sticky; top: 68px; height: auto; z-index: 2; background: var(--bg); padding-block: 8px 12px; }
+    .scene-visual::after { content: ''; position: absolute; left: 0; right: 0; bottom: -28px; height: 28px;
+      background: linear-gradient(var(--bg), transparent); pointer-events: none; }
+    .step { min-height: 42vh; justify-content: flex-end; padding-bottom: 28px; text-align: center; align-items: center; opacity: 0.55; }
+    .step.on { opacity: 1; }
+    .steps li:last-child { min-height: 36vh; }
+    .step p { max-width: 34ch; }
+  }
 
-  /* Losowanie: 9 hexów, start w siatce, po losowaniu każda kolumna to drużyna (kolor + litera nad kolumną) */
-  .draw { --cell: 58px; --gap: 10px; margin: auto auto 0; padding-top: 24px; width: calc(var(--cell) * 3 + var(--gap) * 2); }
-  .draw-labels { display: grid; grid-template-columns: repeat(3, var(--cell)); gap: var(--gap); margin-bottom: 8px; }
-  .draw-labels span { text-align: center; font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 2px;
-    animation: lab 7s ease-in-out infinite; }
-  .ta { color: var(--accent-hi); } .tb { color: var(--green); } .tc { color: var(--orange-hi); }
+  /* 3. Telefon z zakładką Klub (HTML na wzór brand/session.webp, kolory z apki) */
+  .phone-crop { display: grid; place-items: center; }
+  .phone { width: 300px; height: 600px; padding: 10px; border-radius: 46px; background: #0B0F16;
+    border: 1px solid rgba(255,255,255,0.16); box-shadow: 0 40px 90px rgba(0,0,0,0.6); }
+  .screen { position: relative; height: 100%; border-radius: 37px; overflow: hidden; padding: 42px 16px 0;
+    background: radial-gradient(ellipse 120% 68% at 50% -10%, rgba(91,184,245,0.16) 0%, transparent 60%),
+      linear-gradient(170deg, #14243E 0%, #0B172A 52%, #060E1A 100%); }
+  .screen::before { content: ''; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 86px; height: 24px;
+    border-radius: 14px; background: #05080E; }
+  .ph-top { display: flex; align-items: center; gap: 7px; font-family: var(--display); font-weight: 700; font-size: 9px;
+    letter-spacing: 3px; text-transform: uppercase; color: #6F86A6; }
+  .ph-top::before { content: ''; width: 11px; height: 8px; background: linear-gradient(#F4F4F4 50%, #DC143C 50%); border-radius: 1px; }
+  .ph-title { font-family: var(--display); font-weight: 900; font-size: 28px; letter-spacing: 0.02em; text-transform: uppercase;
+    color: #F2F7FF; line-height: 1; margin: 6px 0 10px; }
+  .ph-title i { font-style: normal; }
+  .ph-tabs { display: grid; grid-template-columns: repeat(3, 1fr); padding: 3px; border-radius: 999px; background: rgba(8,16,30,0.7);
+    border: 1px solid rgba(150,200,255,0.12); }
+  .ph-tabs span { text-align: center; padding: 8px 0; border-radius: 999px; font-family: var(--display); font-weight: 700; font-size: 9.5px;
+    letter-spacing: 2px; text-transform: uppercase; color: #7D93B0; }
+  .ph-tabs .on { background: linear-gradient(135deg, #3B8FE8, #1E6BB0); color: #fff; }
+  .ph-label { margin: 12px 0 6px; font-family: var(--display); font-weight: 700; font-size: 9.5px; letter-spacing: 2.6px;
+    text-transform: uppercase; color: #6F86A6; }
+  .ph-card { position: relative; border: 1px solid rgba(91,184,245,0.5); border-radius: 14px; padding: 12px 12px 12px;
+    background: rgba(9,22,44,0.72); text-align: center; }
+  .ph-tags { display: flex; align-items: center; gap: 6px; }
+  .ph-tag { display: inline-flex; align-items: center; gap: 5px; font-family: var(--display); font-weight: 700; font-size: 8.5px;
+    letter-spacing: 1.6px; text-transform: uppercase; color: #8FD3FF; padding: 4px 8px; border: 1px solid rgba(91,184,245,0.35);
+    border-radius: 8px; background: rgba(91,184,245,0.08); }
+  .ph-you { color: #6FE3FF; border-color: rgba(111,227,255,0.4); }
+  .ph-you b { width: 5px; height: 5px; border-radius: 50%; background: #6FE3FF; }
+  .ph-dist { margin-left: auto; font-family: var(--display); font-weight: 700; font-size: 10px; letter-spacing: 0.5px; color: #8FD3FF; }
+  .ph-team { margin-top: 9px; font-family: var(--display); font-weight: 700; font-size: 10px; letter-spacing: 3px;
+    text-transform: uppercase; color: #8FD3FF; }
+  .ph-team.away { color: #D7E3F2; }
+  .ph-row { display: flex; justify-content: center; align-items: center; gap: 16px; margin: 8px 0; height: 42px; }
+  .ph-hex { position: relative; width: 40px; height: 40px; display: grid; place-items: center; }
+  .ph-hex::before { content: ''; position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    background: linear-gradient(135deg, #7BC8F8, #5BB8F5 40%, #1B3A6B); }
+  .ph-hex b { position: relative; z-index: 1; font-family: var(--display); font-weight: 800; font-size: 14px; color: #fff; }
+  .ph-hex.framed::after { content: ''; position: absolute; inset: -9px; background: url('/earlyaccess.png') center / contain no-repeat; }
+  .ph-vs { display: flex; align-items: center; gap: 10px; margin: 4px 0; font-family: var(--display); font-weight: 700; font-size: 9px;
+    letter-spacing: 2.5px; text-transform: uppercase; color: #6F86A6; }
+  .ph-vs::before, .ph-vs::after { content: ''; flex: 1; height: 1px; background: rgba(150,200,255,0.14); }
+  .ph-vs b { display: grid; font-weight: inherit; }
+  .ph-vs b > span { grid-area: 1 / 1; white-space: nowrap; }
+  .ph-vs .v2 { color: #37E29A; }
+  .ph-slot { position: relative; width: 40px; height: 40px; display: grid; place-items: center; }
+  .ph-dash { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .ph-dash polygon { fill: rgba(150,200,255,0.06); stroke: rgba(150,200,255,0.5); stroke-width: 1.2; stroke-dasharray: 3 3; }
+  .ph-plus { position: absolute; width: 10px; height: 10px; }
+  .ph-plus::before, .ph-plus::after { content: ''; position: absolute; background: rgba(150,200,255,0.7); }
+  .ph-plus::before { left: 4px; top: 0; width: 2px; height: 10px; }
+  .ph-plus::after { left: 0; top: 4px; width: 10px; height: 2px; }
+  .ph-me { position: absolute; inset: 0; }
+  .ph-when { margin-top: 8px; font-family: var(--display); font-weight: 600; font-size: 15px; color: #EAF2FF; letter-spacing: 0.3px; }
+  .ph-where { font-size: 11px; color: #8A9BB5; margin-top: 2px; }
+  .ph-next { margin-top: 10px; border-color: rgba(91,184,245,0.22); padding: 10px 12px; }
+  .ph-next .ph-when { margin-top: 8px; font-size: 13px; }
+  .ph-next .ph-where { display: inline; margin-left: 6px; font-family: var(--body); font-weight: 400; }
+  .ph-nav { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; align-items: center; gap: 20px;
+    padding: 7px 18px; border-radius: 999px; background: rgba(8,16,30,0.82); border: 1px solid rgba(150,200,255,0.1); }
+  .ph-nav span { width: 13px; height: 13px; border-radius: 3px; border: 1.5px solid #9A7556; }
+  .ph-nav span:nth-child(2) { border-radius: 50%; }
+  .ph-nav span:nth-child(4) { transform: rotate(45deg); width: 11px; height: 11px; }
+  .ph-nav .on { width: 38px; height: 38px; border: 0; border-radius: 50%; background: #2F7FE0; display: grid; place-items: center;
+    box-shadow: 0 0 18px rgba(47,127,224,0.55); transform: none; }
+  .ph-nav .on::before { content: ''; width: 16px; height: 16px; background: #fff; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+
+  /* Stany telefonu (tylko transform i opacity) */
+  .ph-you, .ph-me, .ph-next, .ph-dash, .ph-plus, .ph-vs b > span {
+    transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+  .ph-you { opacity: 0; transform: translateY(4px); }
+  .ph-me { opacity: 0; transform: scale(0.4); }
+  .ph-next { opacity: 0; transform: translateY(22px); }
+  .ph-vs .v2 { opacity: 0; transform: translateY(5px); }
+  .scene[data-scene="club"]:not([data-step="1"]) .ph-you { opacity: 1; transform: none; }
+  .scene[data-scene="club"]:not([data-step="1"]) .ph-me { opacity: 1; transform: none; }
+  .scene[data-scene="club"]:not([data-step="1"]) :is(.ph-dash, .ph-plus) { opacity: 0; }
+  .scene[data-scene="club"][data-step="3"] .ph-vs .v1 { opacity: 0; transform: translateY(-5px); }
+  .scene[data-scene="club"][data-step="3"] .ph-vs .v2 { opacity: 1; transform: none; }
+  .scene[data-scene="club"][data-step="3"] .ph-next { opacity: 1; transform: none; }
+  @media (max-width: 899px) {
+    /* Telefon przycięty do części z kartą sesji (góra ekranu chowa się pod paskiem nawigacji), mniejszy; dół wtapia się w tło */
+    .phone-crop { height: 300px; overflow: hidden; align-items: start;
+      -webkit-mask-image: linear-gradient(#000 84%, transparent); mask-image: linear-gradient(#000 84%, transparent); }
+    .phone { transform: translateY(-118px) scale(0.8); transform-origin: top center; }
+  }
+
+  /* 4. Losowanie trójek: 9 hexów, pole startowe 3x3, po losowaniu kolumna = drużyna (kolor z apki) */
+  .split { display: grid; gap: clamp(36px, 5vw, 80px); align-items: center; }
+  .split-copy h2 { margin-bottom: 18px; }
+  .split-copy .lead { margin-bottom: 22px; }
+  @media (min-width: 940px) { .split { grid-template-columns: 1fr 1fr; } }
+  .draw { --cell: 64px; --gap: 12px; display: grid; justify-items: center; gap: 26px; justify-self: center; }
+  .draw-labels { display: grid; grid-template-columns: repeat(3, var(--cell)); gap: var(--gap); }
+  .draw-labels span { text-align: center; font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 2.4px;
+    text-transform: uppercase; color: var(--team); opacity: 0; transform: translateY(6px);
+    transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+  .draw.drawn .draw-labels span { opacity: 1; transform: none; }
   .draw-grid { display: grid; grid-template-columns: repeat(3, var(--cell)); gap: var(--gap); }
-  .hx { --team: var(--line-3); width: var(--cell); aspect-ratio: 1; display: grid; place-items: center; background: var(--line-3);
-    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-    animation: draw 7s ease-in-out infinite, teamc 7s ease-in-out infinite; }
-  .hx i { width: calc(100% - 4px); aspect-ratio: 1; display: grid; place-items: center; background: var(--panel-2);
-    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-    font-style: normal; font-family: var(--display); font-weight: 700; font-size: 18px; color: var(--text); }
-  .hx.t-a { --team: var(--accent-hi); } .hx.t-b { --team: var(--green); } .hx.t-c { --team: var(--orange-hi); }
-  @keyframes draw {
-    0%, 28% { transform: translate(0, 0); }
-    42%, 86% { transform: translate(calc(var(--dx) * (var(--cell) + var(--gap))), calc(var(--dy) * (var(--cell) + var(--gap)))); }
-    100% { transform: translate(0, 0); }
-  }
-  @keyframes teamc { 0%, 32% { background: var(--line-3); } 46%, 86% { background: var(--team); } 100% { background: var(--line-3); } }
-  @keyframes lab { 0%, 34% { opacity: 0; transform: translateY(4px); } 48%, 86% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  .dr-hex { --team: var(--line-3); --dx: 0; --dy: 0; --d: 0ms; position: relative; width: var(--cell); aspect-ratio: 1; display: grid;
+    place-items: center; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: var(--team);
+    transform: translate(calc(var(--dx) * (var(--cell) + var(--gap))), calc(var(--dy) * (var(--cell) + var(--gap))));
+    transition: transform var(--dur-3) var(--ease) var(--d); }
+  .dr-hex::before { content: ''; position: absolute; inset: 0; background: var(--line-3); transition: opacity var(--dur-2) var(--ease) var(--d); }
+  .dr-hex.drawn::before { opacity: 0; }
+  .dr-hex i { position: relative; width: calc(100% - 4px); aspect-ratio: 1; display: grid; place-items: center; background: var(--panel-2);
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); font-style: normal; font-family: var(--display);
+    font-weight: 700; font-size: 20px; color: var(--text); }
+  .draw .btn { margin-top: 6px; }
+  @media (max-width: 599px) { .draw { --cell: 58px; --gap: 10px; } }
 
-  /* Karuzela aren: tor 2x (płynna pętla), maska po bokach, pauza na hover */
-  .t-arenas { padding-inline: 0; }
-  .t-arenas .tile-tx { padding-inline: clamp(22px, 2.6vw, 30px); }
-  .arenas { margin-top: auto; padding-top: 24px; overflow: hidden; width: 100%; min-width: 0;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
-  .arenas-track { display: flex; width: max-content; gap: 22px; padding-inline: 11px; animation: marquee 22s linear infinite; }
-  .arenas:hover .arenas-track { animation-play-state: paused; }
-  .arenas figure { display: grid; justify-items: center; gap: 8px; width: 92px; }
-  .arenas img { width: 72px; height: 72px; object-fit: contain; filter: drop-shadow(0 10px 18px rgba(0,0,0,0.55)); }
-  .arenas figcaption { display: grid; justify-items: center; gap: 2px; text-align: center; }
-  .arenas figcaption b { font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 0.6px;
+  /* 5. Karta gracza: sticky, obraca się z krokiem; nieaktywne elementy przygasają */
+  .pc-stage { --rx0: -4; --ry0: -18; }
+  .pc-stage :global(.pc3d-wrap) { --pcs: 1.04; }
+  .pc-stage :global(.pc3d-card) { transition: transform var(--dur-3) var(--ease); }
+  .pc-stage :global(:is(.pc3d-av, .pc3d-name, .pc3d-arena, .pc3d-prog, .pc3d-cap, .pc3d-stats)) {
+    transition: opacity var(--dur-2) var(--ease); }
+  .scene[data-scene="card"][data-step="1"] .pc-stage { --rx0: -4; --ry0: -18; }
+  .scene[data-scene="card"][data-step="2"] .pc-stage { --rx0: 2; --ry0: 14; }
+  .scene[data-scene="card"][data-step="3"] .pc-stage { --rx0: 9; --ry0: -10; }
+  .scene[data-scene="card"][data-step="4"] .pc-stage { --rx0: 12; --ry0: 12; }
+  .scene[data-scene="card"][data-step="1"] .pc-stage :global(:is(.pc3d-arena, .pc3d-prog, .pc3d-cap, .pc3d-stats)) { opacity: 0.28; }
+  .scene[data-scene="card"][data-step="2"] .pc-stage :global(:is(.pc3d-av, .pc3d-prog, .pc3d-cap, .pc3d-stats)) { opacity: 0.28; }
+  .scene[data-scene="card"][data-step="3"] .pc-stage :global(:is(.pc3d-av, .pc3d-name, .pc3d-arena, .pc3d-stats)) { opacity: 0.28; }
+  .scene[data-scene="card"][data-step="4"] .pc-stage :global(:is(.pc3d-av, .pc3d-name, .pc3d-arena, .pc3d-prog, .pc3d-cap)) { opacity: 0.28; }
+  @media (max-width: 899px) { .pc-stage :global(.pc3d-wrap) { --pcs: 0.62; } }
+
+  /* 6. Areny: jeden rząd, przesuwa się sam (pauza na hover), maska po bokach */
+  .arena-row { overflow: hidden; margin-top: clamp(8px, 2vw, 24px);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
+  .arena-track { display: flex; width: max-content; gap: clamp(28px, 4vw, 56px); padding: 24px clamp(14px, 2vw, 28px);
+    animation: marquee 52s linear infinite; }
+  .arena-row:hover .arena-track { animation-play-state: paused; }
+  .arena-track figure { display: grid; justify-items: center; gap: 16px; width: clamp(120px, 14vw, 172px); }
+  .arena-track img, .arena-hex { width: clamp(96px, 11vw, 140px); height: auto; aspect-ratio: 1; filter: drop-shadow(0 18px 30px rgba(0,0,0,0.55)); }
+  .arena-hex { display: block; width: clamp(78px, 9vw, 112px); margin-block: clamp(9px, 1vw, 14px);
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    background: linear-gradient(135deg, #AABBD8, #5566AA 55%, #0C0E22); filter: none; }
+  .arena-track figcaption { text-align: center; }
+  .arena-track figcaption b { display: block; font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 1px;
     text-transform: uppercase; color: var(--text); white-space: nowrap; }
-  .arenas figcaption span { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
-
-  .t-train { flex-direction: row; align-items: center; gap: clamp(22px, 4vw, 48px); flex-wrap: wrap; }
-  .t-train .checks { margin-top: 18px; }
-  .ring { position: relative; width: clamp(150px, 20vw, 190px); flex-shrink: 0; }
-  .ring svg { width: 100%; height: auto; transform: rotate(-90deg); }
-  .ring-bg { fill: none; stroke: var(--line-2); stroke-width: 7; }
-  .ring-fg { fill: none; stroke: var(--orange); stroke-width: 7; stroke-linecap: butt;
-    stroke-dasharray: 327; stroke-dashoffset: 327; transition: stroke-dashoffset 1.4s .2s cubic-bezier(.2,.7,.2,1); }
-  .tile.in .ring-fg { stroke-dashoffset: 124; }
-  .ring-tx { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
-  .ring-tx b { font-family: var(--display); font-weight: 700; font-size: clamp(40px, 5vw, 52px); line-height: 1; color: var(--text); }
-  .ring-tx span { font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
-    color: var(--orange-hi); margin-top: 6px; }
-
-  @media (min-width: 760px) {
-    .bento { grid-template-columns: repeat(2, 1fr); }
-    .t-session { grid-row: span 2; }
-    .t-train { grid-column: 1 / -1; }
-  }
-  @media (min-width: 1040px) {
-    .bento { grid-template-columns: repeat(4, 1fr); }
-    .t-session { grid-column: 1 / 3; grid-row: 1 / 3; }
-    .t-kotc { grid-column: 3 / 5; }
-    .t-rank { grid-column: 3; min-height: 300px; }
-    .t-arenas { grid-column: 4; }
-    .t-train { grid-column: 1 / -1; }
+  .arena-track figcaption span { display: block; margin-top: 3px; font-size: 13px; color: var(--accent-hi); font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) {
+    .arena-row { overflow-x: auto; -webkit-mask-image: none; mask-image: none; }
   }
 
-  /* ═══ SPLIT (KotC) ═══ */
-  .split { display: grid; gap: clamp(36px, 5vw, 72px); align-items: center; }
-  .split-copy .kicker { margin-bottom: 22px; }
-  .split-copy h2 { margin-bottom: 20px; }
-  .split-copy .lead { margin-bottom: 24px; }
-  .split-copy .checks { margin-bottom: 30px; }
-  .tilt-wrap { perspective: 1200px; }
-  .matchcard { --cut: 18px; --bd: rgba(111,195,255,0.35); --fill: var(--bg-2); padding: 1.5px;
-    transform: rotateY(calc(var(--ry, 0) * 7deg)) rotateX(calc(var(--rx, 0) * -7deg)); transition: transform .3s ease;
-    filter: drop-shadow(0 30px 60px rgba(0,0,0,0.55)); }
-  .matchcard img { display: block; width: 100%; height: auto; }
-  @media (min-width: 940px) { .split { grid-template-columns: 1fr 1.05fr; } }
-
-  /* ═══ RANKING: ramka przeglądarki ═══ */
-  .browser { --cut: 18px; --fill: var(--bg-2); padding: 1.5px; }
+  /* 7. Ranking: ramka przeglądarki na desktopie, zrzut z telefonu na telefonie */
+  .browser { --cut: 18px; --fill: var(--bg-2); padding: 1.5px; max-width: 1100px; margin-inline: auto; }
   .browser-bar { display: flex; align-items: center; height: 40px; padding: 0 16px; border-bottom: 1px solid var(--line); }
   .browser-bar .url { font-family: var(--display); font-weight: 600; letter-spacing: 1px; font-size: 13px; color: var(--text-3);
     padding: 5px 12px; border: 1px solid var(--line); background: var(--bg); }
   .browser img { display: block; width: 100%; height: auto; }
+  @media (max-width: 639px) {
+    .browser { max-width: 340px; }
+    .browser-bar { display: none; }
+    .browser picture { display: block; max-height: 560px; overflow: hidden;
+      -webkit-mask-image: linear-gradient(#000 72%, transparent); mask-image: linear-gradient(#000 72%, transparent); }
+  }
 
-  /* ═══ DLA TRENERÓW ═══ */
-  .coach { --cut: 22px; padding: clamp(28px, 4vw, 56px); display: grid; gap: clamp(28px, 4vw, 56px); }
-  .coach-head .kicker { margin-bottom: 20px; }
-  .coach-head h2 { margin-bottom: 26px; }
-  .coach-facts { display: grid; gap: 22px; }
-  .coach-facts > div { padding-top: 16px; border-top: 1px solid var(--line-2); }
-  .coach-facts h3 { margin-bottom: 8px; }
-  .coach-facts p { color: var(--text-2); font-size: 15px; line-height: 1.6; }
-  @media (min-width: 900px) { .coach { grid-template-columns: 1.1fr 1fr; } }
-  @media (min-width: 1100px) { .coach-facts { grid-template-columns: 1fr; } }
+  /* 8. Pierścień Draft Score: wypełnienie dwiema połówkami obracanymi w klipach (tylko transform) */
+  .ring-wrap { display: grid; place-items: center; }
+  .ring { position: relative; width: clamp(220px, 26vw, 320px); }
+  .ring svg { width: 100%; height: auto; overflow: visible; }
+  .ring-bg { fill: none; stroke: var(--line-2); stroke-width: 6; }
+  .arc { fill: none; stroke: var(--orange); stroke-width: 6; }
+  .arc-g { transform-box: view-box; transform-origin: 60px 60px; }
+  .arc-g.r { transform: rotate(-180deg); transition: transform 760ms linear 150ms; }
+  .arc-g.l { transform: rotate(0deg); transition: transform 185ms linear 910ms; }
+  .ring-wrap.in .arc-g.r { transform: rotate(0deg); }
+  .ring-wrap.in .arc-g.l { transform: rotate(43.2deg); }   /* 620 z 1000 = 62%: prawa połowa 50% + 12% lewej */
+  .ring-tx { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 4px; }
+  .ring-tx b { font-family: var(--display); font-weight: 700; font-size: clamp(58px, 7vw, 86px); line-height: 1; color: var(--text); }
+  .ring-tx span { font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 2.4px; text-transform: uppercase; color: var(--orange-hi); }
+  .ring-tx small { font-size: 12px; color: var(--text-3); }
+  @media (min-width: 940px) { #trening .ring-wrap { order: 2; } }
 
-  /* ═══ MANIFEST ═══ */
+  /* 9. Trenerzy: typograficzny, bez pudełka */
+  .coach { max-width: 780px; }
+  .coach h2 { margin-bottom: 18px; }
+  .coach .lead { margin-bottom: 30px; }
+  .coach-note { margin-top: 24px; font-size: 15px; color: var(--text-3); }
+
+  /* 10. Manifest + cytat ze źródłem */
   .manifest { max-width: 1000px; font-family: var(--display); font-weight: 700; text-transform: uppercase;
-    font-size: clamp(30px, 5.4vw, 72px); line-height: 1.0; letter-spacing: -0.5px; }
+    font-size: clamp(32px, 5.6vw, 76px); line-height: 1.0; letter-spacing: -0.5px; }
   .manifest p + p { margin-top: 0.35em; }
   .manifest em { font-style: normal; color: var(--text-3); }
   .manifest strong { font-weight: inherit; color: var(--accent-hi); }
+  .manifest-sig { margin-top: 1.1em !important; font-size: 0.4em; letter-spacing: 2.4px; color: var(--text-2); }
+  .press { max-width: 1000px; margin-top: clamp(56px, 7vw, 96px); }
+  .press blockquote { font-family: var(--display); font-weight: 500; font-size: clamp(20px, 2.4vw, 28px); line-height: 1.25;
+    color: var(--text-2); margin-bottom: 14px; }
+  .press-src { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--accent-hi); font-size: 14px; }
 
-  /* ═══ CYTAT ═══ */
-  .press { max-width: 900px; position: relative; padding-left: clamp(0px, 4vw, 56px); }
-  .press-mark { position: absolute; left: 0; top: -0.1em; font-family: var(--display); font-weight: 700;
-    font-size: clamp(64px, 9vw, 120px); line-height: 1; color: var(--accent); opacity: 0.55; display: none; }
-  .press blockquote { font-family: var(--display); font-weight: 700; text-transform: none; letter-spacing: -0.3px;
-    font-size: clamp(24px, 3.6vw, 40px); line-height: 1.18; margin: 22px 0 20px; }
-  .press-src { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
-    color: var(--accent-hi); font-size: 15px; }
-  @media (min-width: 760px) { .press-mark { display: block; } }
-
-  /* ═══ FAQ ═══ */
-  .faq-grid { display: grid; gap: clamp(28px, 4vw, 64px); align-items: start; }
-  .faq-grid .head { margin-bottom: 0; }
-  .faq-more { margin-top: 26px; }
-  .inline-link { color: var(--accent-hi); text-decoration: underline; text-underline-offset: 3px; }
-  .home-faq { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
-  .hf-item { border-bottom: 1px solid var(--line); }
-  .hf-item summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
-    gap: 20px; padding: 20px 4px; }
-  .hf-item summary:hover .q { color: var(--accent-hi); }
+  /* 11. Pytania: rozwijane, bez pudełek i linii */
+  .faq { display: grid; gap: clamp(20px, 4vw, 64px); align-items: start; }
+  .faq .ch-head { margin-bottom: 0; }
+  .home-faq { display: grid; gap: 4px; }
+  .hf-item summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; }
   .hf-item summary::-webkit-details-marker { display: none; }
-  .hf-item .q { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2vw, 21px);
-    letter-spacing: -0.2px; color: var(--text); line-height: 1.3; transition: color .15s; }
-  .hf-item[open] .q { color: var(--accent-hi); }
-  .hf-item .chev { flex-shrink: 0; width: 11px; height: 11px; border-right: 2px solid var(--text-2);
-    border-bottom: 2px solid var(--text-2); transform: rotate(45deg); transition: transform .2s ease; margin-top: -4px; }
+  .hf-item .q { font-family: var(--display); font-weight: 600; font-size: clamp(20px, 2.2vw, 26px); letter-spacing: -0.2px;
+    color: var(--text); line-height: 1.2; transition: color var(--dur-1) var(--ease); }
+  .hf-item summary:hover .q, .hf-item[open] .q { color: var(--accent-hi); }
+  .hf-item .chev { flex-shrink: 0; width: 11px; height: 11px; border-right: 2px solid var(--text-2); border-bottom: 2px solid var(--text-2);
+    transform: rotate(45deg); transition: transform var(--dur-1) var(--ease); margin-top: -4px; }
   .hf-item[open] .chev { transform: rotate(-135deg); margin-top: 4px; border-color: var(--accent-hi); }
-  .hf-item p { color: var(--text-2); font-size: 15.5px; line-height: 1.65; margin: 0 4px 22px; max-width: 68ch;
-    animation: faq-in .25s ease both; }
+  .hf-item p { color: var(--text-2); font-size: 16px; line-height: 1.65; margin: 0 0 22px; max-width: 62ch; animation: faq-in var(--dur-1) var(--ease) both; }
   @keyframes faq-in { from { opacity: 0; transform: translateY(-4px); } }
-  @media (min-width: 940px) { .faq-grid { grid-template-columns: 0.8fr 1.2fr; } }
+  @media (min-width: 940px) { .faq { grid-template-columns: 0.8fr 1.2fr; } }
 
-  /* ═══ CTA ═══ */
-  .final { --cut: 24px; --fill: linear-gradient(135deg, var(--panel-2), var(--panel)); display: grid; gap: 32px; align-items: center;
-    padding: clamp(32px, 5vw, 64px); }
-  .final::after { background: linear-gradient(135deg, #1D2230, var(--panel)); }
-  .final h2 { margin-bottom: 16px; }
-  .final .lead { margin-bottom: 28px; max-width: 46ch; }
+  /* 12. Zamknięcie: bez ramki, QR na desktopie */
+  .final { padding-bottom: clamp(96px, 12vw, 184px); }
+  .final-grid { display: grid; gap: 40px; align-items: center; }
+  .final h2 { margin-bottom: 18px; font-size: clamp(44px, 6.4vw, 96px); }
+  .final .lead { margin-bottom: 30px; max-width: 46ch; }
+  .final-sig { margin-top: 28px; font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 2.2px;
+    font-size: 14px; color: var(--text-3); }
   .final-qr { display: none; flex-direction: column; align-items: center; gap: 12px; justify-self: end; }
-  .qr-img { width: 180px; height: 180px; padding: 12px; background: #fff; }
+  .qr-img { width: 200px; height: 200px; padding: 14px; background: #fff; }
   .qr-img :global(svg) { display: block; width: 100%; height: 100%; }
   .final-qr span { font-family: var(--display); font-weight: 700; letter-spacing: 1.4px; font-size: 13px; color: var(--text-2); text-transform: uppercase; }
-  @media (min-width: 820px) { .final { grid-template-columns: 1fr auto; gap: 56px; } .final-qr { display: flex; } }
+  @media (min-width: 820px) { .final-grid { grid-template-columns: 1fr auto; gap: 72px; } .final-qr { display: flex; } }
 </style>
-
 <script>
   // Parallax na scenie hero i karcie meczu: tylko desktop z myszą, bez reduced-motion.
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches
@@ -819,5 +975,56 @@ const homeFaqSchema = {
     })
     cm.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('[data-cm-close]')) close() })
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !cm.hidden) close() })
+  }
+
+  // ── Sceny sticky (Klub, Karta gracza): krok, który przecina linię ok. 55% wysokości okna, steruje stanem
+  //    obrazu przez data-step na scenie. Bez scroll-jackingu, bez liczenia pozycji w pętli.
+  document.querySelectorAll<HTMLElement>('.scene[data-scene]').forEach((scene) => {
+    const steps = Array.from(scene.querySelectorAll<HTMLElement>('.step'))
+    if (!steps.length || !('IntersectionObserver' in window)) return
+    const io = new IntersectionObserver((entries) => {
+      for (const en of entries) {
+        if (!en.isIntersecting) continue
+        const el = en.target as HTMLElement
+        scene.dataset.step = el.dataset.i || '1'
+        steps.forEach((s) => s.classList.toggle('on', s === el))
+      }
+    }, { rootMargin: window.innerWidth < 900 ? '-66% 0px -29% 0px' : '-55% 0px -40% 0px', threshold: 0 })
+    steps.forEach((s) => io.observe(s))
+  })
+
+  // ── King of the Court: losowanie trójek. Raz samo, gdy rozdział wjedzie na ekran; potem przycisk losuje od nowa.
+  //    Każdy hex leci z pola startowego (siatka 3x3) na cel: kolumna = drużyna, wiersz = miejsce w trójce.
+  const draw = document.getElementById('draw')
+  const drawBtn = document.getElementById('drawAgain')
+  if (draw) {
+    const hexes = Array.from(draw.querySelectorAll<HTMLElement>('.dr-hex'))
+    const TEAMS = ['#3B82F6', '#22C55E', '#F43F5E']   // Blue / Green / Red, jak w apce
+    let busy = false
+    const shuffle = (a: number[]) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] } return a }
+    const run = () => {
+      const order = shuffle(hexes.map((_, i) => i))
+      order.forEach((src, k) => {
+        const team = k % 3, row = Math.floor(k / 3), c0 = src % 3, r0 = Math.floor(src / 3)
+        const h = hexes[src]
+        h.style.setProperty('--dx', String(team - c0)); h.style.setProperty('--dy', String(row - r0))
+        h.style.setProperty('--team', TEAMS[team]); h.style.setProperty('--d', `${k * 70}ms`)
+        h.classList.add('drawn')
+      })
+      draw.classList.add('drawn')
+    }
+    const reset = () => {
+      hexes.forEach((h, i) => { h.style.setProperty('--dx', '0'); h.style.setProperty('--dy', '0'); h.style.setProperty('--d', `${i * 30}ms`); h.classList.remove('drawn') })
+      draw.classList.remove('drawn')
+    }
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((en) => { if (en[0].isIntersecting) { io.disconnect(); setTimeout(run, 500) } }, { threshold: 0.5 })
+      io.observe(draw)
+    } else run()
+    drawBtn?.addEventListener('click', () => {
+      if (busy) return
+      busy = true; reset()
+      setTimeout(run, 950); setTimeout(() => { busy = false }, 2300)
+    })
   }
 </script>
