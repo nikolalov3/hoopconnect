@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro'
 import PlayerCard from '../components/PlayerCard.astro'
+import MatchCard from '../components/MatchCard.astro'
 import { APP_URL, RANK_URL, COACH_OFFER_URL, APP_SCHEMA } from '../consts'
 import QRCode from 'qrcode'
 
@@ -20,28 +21,31 @@ const TICKER = [
 // Elementy karty = te same, co w apce: hex z inicjałem, arena, pasek XP do następnej areny, wygrane.
 // toNext liczone z progów aren (500/1500/2700/3900/5500/7500) dla p% postępu.
 const CARDS = [
-  { pos: 'Rozgrywający', name: 'Kuba',     l: 'K', arena: 4, arenaName: 'Ankh Court',   next: 'Void Gem',     p: 62, toNext: 608,  w: 12, k: 3, id: '20251', frame: 'default', x: 41.4, y: 20.8,
+  { pos: 'Rozgrywający', name: 'Kuba',     l: 'K', arena: 4, arenaName: 'Ankh Court',   next: 'Void Gem',     p: 62, toNext: 608,  w: 12, k: 3, id: '20251', frame: 'default', x: 43.0, y: 20.8,
     desc: 'Prowadzi grę i rozdaje piłkę. Najwięcej sesji King of the Court w ekipie.' },
-  { pos: 'Rzucający', name: 'Michał',        l: 'M', arena: 1, arenaName: 'Street Court', next: 'City Run',     p: 35, toNext: 650,  w: 4,  k: 0, id: '20318', frame: 'none',    x: 58.6, y: 20.8,
+  { pos: 'Rzucający', name: 'Michał',        l: 'M', arena: 1, arenaName: 'Street Court', next: 'City Run',     p: 35, toNext: 650,  w: 4,  k: 0, id: '20318', frame: 'none',    x: 57.0, y: 20.8,
     desc: 'Dopiero zaczyna. Pierwsza arena odblokowana po czterech wygranych.' },
-  { pos: 'Skrzydłowy', name: 'Bartek',       l: 'B', arena: 2, arenaName: 'City Run',     next: 'Golden Reign', p: 48, toNext: 624,  w: 7,  k: 1, id: '20277', frame: 'default', x: 23.8, y: 56.3,
+  { pos: 'Skrzydłowy', name: 'Bartek',       l: 'B', arena: 2, arenaName: 'City Run',     next: 'Golden Reign', p: 48, toNext: 624,  w: 7,  k: 1, id: '20277', frame: 'default', x: 28.5, y: 56.3,
     desc: 'Gra regularnie w sobotnich sesjach. Pierwszy tytuł króla boiska za nim.' },
-  { pos: 'Silny skrzydłowy', name: 'Olek', l: 'O', arena: 3, arenaName: 'Golden Reign', next: 'Ankh Court',   p: 71, toNext: 348,  w: 9,  k: 2, id: '20194', frame: 'none',    x: 76.2, y: 56.3,
+  { pos: 'Silny skrzydłowy', name: 'Olek', l: 'O', arena: 3, arenaName: 'Golden Reign', next: 'Ankh Court',   p: 71, toNext: 348,  w: 9,  k: 2, id: '20194', frame: 'none',    x: 71.5, y: 56.3,
     desc: 'Walczy pod koszem. Blisko kolejnej areny, brakuje kilku meczów.' },
   { pos: 'Środkowy', name: 'Alex',         l: 'A', arena: 5, arenaName: 'Void Gem',     next: 'Seraphim',     p: 22, toNext: 1560, w: 15, k: 4, id: '20102', frame: 'default', live: true, x: 50.0, y: 84.7,
     desc: 'Najwyżej w ekipie. Cztery wygrane sesje KotC i najwięcej meczów na koncie.' },
 ]
 
-// Rozdział „Znajdź grę obok": telefon z zakładką Klub (odtworzony w HTML na podstawie brand/session.webp),
+// Rozdział „Znajdź grę obok": telefon z zakładką Klub (karta meczu = komponent z apki),
 // trzy kroki tekstu; aktywny krok zmienia stan ekranu klasą (data-step na scenie).
 const CLUB_STEPS = [
   { t: 'Widzisz, kto gra obok', d: 'Sesje z godziną, miejscem i składem. Dwa kilometry od Ciebie, sobota, 19:30.' },
-  { t: 'Dołączasz', d: 'Jeden ruch. Twój hex ląduje w składzie i ekipa widzi, że wchodzisz.' },
+  { t: 'Dołączasz', d: 'Jeden ruch. Twój hex ląduje w składzie, a pasek na dole to już Twój mecz.' },
   { t: 'Skład się zapełnia', d: 'Sześć miejsc, sześć hexów. Jest mecz. Reszta dzieje się na boisku.' },
 ]
-// Hexy na ekranie telefonu: skład z zrzutu (K, M, F vs A, B + wolne miejsce, które zajmujesz Ty).
-const PH_HOME = [{ l: 'K', f: true }, { l: 'M', f: false }, { l: 'F', f: true }]
-const PH_AWAY = [{ l: 'A', f: false }, { l: 'B', f: true }]
+// Karty meczu to prawdziwy komponent z apki (MatchCard.astro, port z ClubPage.jsx), nie obrazki.
+// Rozdział 2: zakończony mecz 21:16. Rozdział 3 (telefon): otwarta sesja, w której zajmujesz wolne miejsce.
+const MATCH_HOME = { name: 'HoopConnect', mine: true, players: [{ l: 'K', f: true }, { l: 'M' }, { l: 'F', f: true }] }
+const MATCH_AWAY = { name: 'Street Kings', players: [{ l: 'A' }, { l: 'B', f: true }, { l: 'S' }] }
+const CLUB_HOME = { name: 'HoopConnect', players: [{ l: 'K', f: true }, { l: 'M' }, { l: 'F', f: true }] }
+const CLUB_AWAY = { name: 'Rywale', players: [{ l: 'A' }, null, null] }
 
 // Losowanie w King of the Court: dziewięciu graczy solo, trzy trójki w kolorach z apki
 // (src/features/kotc/KotcSolo.jsx: Blue / Green / Red). Przebieg losowania robi skrypt na dole.
@@ -101,24 +105,14 @@ const homeFaqSchema = {
   <!-- ═══ HERO ═══ -->
   <section class="hero">
     <div class="hero-glow" aria-hidden="true"></div>
-    <div class="wrap hero-grid">
-      <div class="hero-copy">
+    <div class="wrap hero-head">
       <h1>Zostań królem<br /><span class="hl">swojego boiska</span></h1>
-      <p class="lead">Widzisz, kto gra obok, i dołączasz jednym ruchem. Grasz 3x3. Wynik zostaje na Twojej karcie.</p>
-      <div class="cta-row">
-        <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Zagraj dziś<span class="arw">→</span></a>
-      </div>
-      <ul class="hero-proof">
-        <li>Darmowa dla graczy</li>
-        <li>Bez instalacji, z przeglądarki</li>
-        <li>Ranking bez logowania</li>
-      </ul>
-      <p class="stage-hint"><span aria-hidden="true"></span>Dotknij podświetlonej karty.</p>
-      </div>
+    </div>
 
-      <!-- Boisko: na desktopie prawa kolumna, linia końcowa = dolna krawędź hero, pod nią pasek. Pięć kart na pozycjach. -->
+    <!-- Boisko wyśrodkowane, linia końcowa = dół sceny, tuż pod nią pasek tylko na szerokość boiska (fade w tło). Pięć kart na pozycjach. -->
+    <div class="court-wrap">
       <div class="court-stage" id="courtStage">
-      <svg class="court-bg" viewBox="-0.7800 0.6600 1.5600 0.8455" aria-hidden="true" preserveAspectRatio="none">
+      <svg class="court-bg" viewBox="-0.9500 0.6600 1.9000 0.8455" aria-hidden="true" preserveAspectRatio="none">
         <!-- Warstwa STATYCZNA (filtry, ziarno): maluje się raz. Boisko 3x3 15×11 m, linie FIBA, rzut perspektywiczny
              (kamera za linią końcową: d=10 m, h=15 m). Ta sama projekcja liczy pozycje kart (CARDS x/y). -->
         <defs>
@@ -169,9 +163,9 @@ const homeFaqSchema = {
           <path d="M0.1650 1.0101 L0.1717 1.0101" />
         </g>
         <path d="M-0.1139 0.9494 L-0.1145 0.9555 L-0.1147 0.9616 L-0.1145 0.9678 L-0.1140 0.9741 L-0.1130 0.9803 L-0.1117 0.9865 L-0.1100 0.9926 L-0.1080 0.9987 L-0.1055 1.0047 L-0.1027 1.0106 L-0.0995 1.0164 L-0.0959 1.0220 L-0.0919 1.0274 L-0.0876 1.0325 L-0.0830 1.0375 L-0.0780 1.0422 L-0.0727 1.0466 L-0.0671 1.0507 L-0.0612 1.0545 L-0.0551 1.0580 L-0.0487 1.0610 L-0.0422 1.0638 L-0.0354 1.0661 L-0.0285 1.0680 L-0.0215 1.0695 L-0.0144 1.0706 L-0.0072 1.0712 L-0.0000 1.0714 L0.0072 1.0712 L0.0144 1.0706 L0.0215 1.0695 L0.0285 1.0680 L0.0354 1.0661 L0.0422 1.0638 L0.0487 1.0610 L0.0551 1.0580 L0.0612 1.0545 L0.0671 1.0507 L0.0727 1.0466 L0.0780 1.0422 L0.0830 1.0375 L0.0876 1.0325 L0.0919 1.0274 L0.0959 1.0220 L0.0995 1.0164 L0.1027 1.0106 L0.1055 1.0047 L0.1080 0.9987 L0.1100 0.9926 L0.1117 0.9865 L0.1130 0.9803 L0.1140 0.9741 L0.1145 0.9678 L0.1147 0.9616 L0.1145 0.9555 L0.1139 0.9494" fill="none" stroke="#D6EDFF" stroke-opacity="0.55" stroke-width="0.0022" stroke-dasharray="0.014 0.01" />
-        <rect x="-0.7800" y="0.6600" width="1.5600" height="0.8455" filter="url(#cg-grain)" opacity="0.05" style="mix-blend-mode: screen" />
+        <rect x="-0.9500" y="0.6600" width="1.9000" height="0.8455" filter="url(#cg-grain)" opacity="0.05" style="mix-blend-mode: screen" />
       </svg>
-      <svg class="court-glint" viewBox="-0.7800 0.6600 1.5600 0.8455" aria-hidden="true" preserveAspectRatio="none">
+      <svg class="court-glint" viewBox="-0.9500 0.6600 1.9000 0.8455" aria-hidden="true" preserveAspectRatio="none">
         <!-- Warstwa ANIMOWANA: tylko błysk po liniach, bez filtrów, własna warstwa kompozycji (will-change) -->
         <g fill="none" stroke="#FFFFFF" stroke-opacity="0.9" stroke-width="0.0034" stroke-linecap="round">
           <path d="M-0.7500 1.5000 L0.7500 1.5000 L0.3571 0.7143 L-0.3571 0.7143 Z" pathLength="1" />
@@ -199,6 +193,25 @@ const homeFaqSchema = {
         ))}
       </ul>
       </div>
+      <div class="marquee under-court" aria-hidden="true">
+        <div class="marquee-track">
+          {TICKER.map((t) => <span>{t}</span>)}
+          {TICKER.map((t) => <span>{t}</span>)}
+        </div>
+      </div>
+    </div>
+
+    <div class="wrap hero-copy">
+      <p class="lead">Widzisz, kto gra obok, i dołączasz jednym ruchem. Grasz 3x3. Wynik zostaje na Twojej karcie.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Zagraj dziś<span class="arw">→</span></a>
+      </div>
+      <ul class="hero-proof">
+        <li>Darmowa dla graczy</li>
+        <li>Bez instalacji, z przeglądarki</li>
+        <li>Ranking bez logowania</li>
+      </ul>
+      <p class="stage-hint"><span aria-hidden="true"></span>Dotknij podświetlonej karty na boisku.</p>
     </div>
   </section>
 
@@ -223,14 +236,6 @@ const homeFaqSchema = {
   </div>
   <script type="application/json" id="cardsData" set:html={JSON.stringify(CARDS.map((c) => ({ name: c.name, pos: c.pos, desc: c.desc })))} />
 
-  <!-- ═══ TICKER ═══ -->
-  <div class="marquee under-court" aria-hidden="true">
-    <div class="marquee-track">
-      {TICKER.map((t) => <span>{t}</span>)}
-      {TICKER.map((t) => <span>{t}</span>)}
-    </div>
-  </div>
-
   <!-- ═══ 2. GRA, KTÓRA SIĘ LICZY ═══ -->
   <section class="ch ch-center" id="mecz">
     <div class="wrap">
@@ -239,7 +244,8 @@ const homeFaqSchema = {
         <p class="lead">Zapisany wynik, naliczone XP i wygrana na karcie, zanim zejdziecie z boiska. Koniec dyskusji, kto wygrał.</p>
       </div>
       <figure class="matchcard rv rv-d1">
-        <img src="/brand/match.webp" width="1600" height="1224" alt="Zakończony mecz 3x3 w HoopConnect: HoopConnect 21, Street Kings 16" loading="lazy" decoding="async" />
+        <MatchCard uid="m2" status="completed" playing={true} dist="2,0 km" home={MATCH_HOME} away={MATCH_AWAY} score={[21, 16]}
+          date="Śr, 26 sie · 19:50" address="Aleja 3 Maja, Stare Miasto" />
         <figcaption>Wygrana to <b>75 XP</b>. Przegrana <b>40 XP</b>. Oba zostają.</figcaption>
       </figure>
     </div>
@@ -261,32 +267,13 @@ const homeFaqSchema = {
                 <div class="ph-title">Hoop<i>Connect</i></div>
                 <div class="ph-tabs"><span class="on">Mecze</span><span>Skład</span><span>Statystyki</span></div>
                 <div class="ph-label">Spotkania w pobliżu</div>
-                <div class="ph-card">
-                  <div class="ph-tags">
-                    <span class="ph-tag">3v3</span>
-                    <span class="ph-tag ph-you"><b></b>Grasz</span>
-                    <span class="ph-dist">2,0 km</span>
-                  </div>
-                  <div class="ph-team">HoopConnect</div>
-                  <div class="ph-row">
-                    {PH_HOME.map((h) => <span class:list={['ph-hex', { framed: h.f }]}><b>{h.l}</b></span>)}
-                  </div>
-                  <div class="ph-vs"><b><span class="v1">vs</span><span class="v2">Skład 6/6</span></b></div>
-                  <div class="ph-row">
-                    {PH_AWAY.map((h) => <span class:list={['ph-hex', { framed: h.f }]}><b>{h.l}</b></span>)}
-                    <span class="ph-slot">
-                      <svg class="ph-dash" viewBox="0 0 40 40"><polygon points="20,4 34,12 34,28 20,36 6,28 6,12" /></svg>
-                      <i class="ph-plus"></i>
-                      <span class="ph-hex ph-me"><b>S</b></span>
-                    </span>
-                  </div>
-                  <div class="ph-team away">Rywale</div>
-                  <div class="ph-when">Sob, 29 sie · 19:30</div>
-                  <div class="ph-where">Aleja 3 Maja, Stare Miasto</div>
+                <div class="ph-match">
+                  <MatchCard uid="m3" status="open" dist="2,0 km" home={CLUB_HOME} away={CLUB_AWAY} you="S" fill="B"
+                    date="Sob, 29 sie · 19:30" address="Aleja 3 Maja, Stare Miasto" cta="Dołącz do meczu" ctaAlt="Szczegóły Twojego meczu" />
                 </div>
-                <div class="ph-card ph-next">
-                  <div class="ph-tags"><span class="ph-tag">3v3</span><span class="ph-dist">3,4 km</span></div>
-                  <div class="ph-when">Nd, 30 sie · 17:00 <span class="ph-where">Błonia, Kraków</span></div>
+                <div class="ph-next">
+                  <span class="ph-next-mode">3v3</span><span class="ph-next-dist">3,4 km</span>
+                  <b>Nd, 30 sie · 17:00</b><span class="ph-next-where">Błonia, Kraków</span>
                 </div>
                 <div class="ph-nav"><span></span><span></span><span class="on"></span><span></span><span></span></div>
               </div>
@@ -335,7 +322,7 @@ const homeFaqSchema = {
       </div>
       <div class="scene flip" data-scene="card" data-step="1">
         <div class="scene-visual">
-          <div class="pc-stage" aria-hidden="true">
+          <div class="pc-stage" data-tilt-card aria-hidden="true">
             <PlayerCard name="Kuba" letter="K" arena={4} arenaName="Ankh Court" nextArena="Void Gem" pct={62} toNext={608} wins={12} kotc={3} hcId="20251" frame="default" uid="sc" />
           </div>
         </div>
@@ -483,34 +470,35 @@ const homeFaqSchema = {
 </Base>
 
 <style>
-  /* ═══ HERO: tekst | boisko (desktop), tekst nad boiskiem (telefon). Pasek tuż pod linią końcową. ═══ */
-  .hero { position: relative; overflow: hidden; padding-block: clamp(40px, 6vw, 80px) 0; }
-  .hero-glow { position: absolute; inset: auto -10% -10% 30%; height: 80%; pointer-events: none; z-index: 0;
-    background: radial-gradient(ellipse 55% 70% at 60% 100%, rgba(47,145,214,0.14), transparent 70%); }
-  .hero-grid { position: relative; z-index: 1; display: grid; gap: clamp(28px, 4vw, 48px); }
-  .hero-copy { position: relative; z-index: 2; max-width: 760px; animation: rise .7s var(--ease) both; }
-  .hero h1 { margin-bottom: 26px; font-size: clamp(44px, 5vw, 86px); }   /* 2 linie także w węższej kolumnie */
+  /* ═══ HERO: nagłówek nad boiskiem, boisko wyśrodkowane, pasek tylko pod boiskiem, reszta pod spodem ═══ */
+  .hero { position: relative; overflow: hidden; padding-block: clamp(44px, 6vw, 88px) clamp(56px, 7vw, 100px); }
+  .hero-glow { position: absolute; inset: auto -10% 6% -10%; height: 70%; pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse 48% 60% at 50% 72%, rgba(47,145,214,0.16), transparent 70%); }
+  .hero-head { position: relative; z-index: 2; text-align: center; animation: rise .7s var(--ease) both; }
+  .hero h1 { margin: 0 auto; max-width: 16ch; font-size: clamp(50px, 7.6vw, 122px); line-height: 0.92; }
   .hl { color: var(--accent-hi); }
-  .hero .lead { margin-bottom: 34px; max-width: 50ch; }
-  .cta-row { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; }
-  .hero-proof { list-style: none; padding: 0; margin-top: 32px; display: flex; flex-wrap: wrap; gap: 10px 26px;
+  .court-wrap { position: relative; z-index: 1; width: min(100%, 1280px); margin: clamp(24px, 3.5vw, 44px) auto 0; }
+  .hero-copy { position: relative; z-index: 2; text-align: center; margin-top: clamp(26px, 4vw, 44px); animation: rise .7s .2s var(--ease) both; }
+  .hero .lead { margin: 0 auto 28px; max-width: 44ch; font-size: clamp(18px, 1.7vw, 22px); }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; justify-content: center; }
+  .hero-proof { list-style: none; padding: 0; margin-top: 28px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 26px;
     font-size: 13px; font-weight: 600; letter-spacing: 0.3px; color: var(--text-2); }
   .hero-proof li { display: inline-flex; align-items: center; gap: 9px; }
   .hero-proof li::before { content: ''; width: 6px; height: 6px; background: var(--accent); transform: rotate(45deg); }
-  .stage-hint { margin-top: 26px; display: inline-flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700;
+  .stage-hint { margin-top: 22px; display: inline-flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700;
     font-size: 11px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--text-3); }
   .stage-hint span { width: 7px; height: 7px; background: var(--accent); transform: rotate(45deg); animation: pulse 2.4s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1; transform: rotate(45deg) scale(1); } 50% { opacity: .45; transform: rotate(45deg) scale(1.5); } }
   @keyframes rise { from { opacity: 0; transform: translateY(16px); } }
-  @media (min-width: 940px) {
-    .hero-grid { max-width: 1400px; grid-template-columns: 0.85fr 1.15fr; column-gap: clamp(32px, 5vw, 72px); align-items: end; }
-    .hero-copy { align-self: center; padding-bottom: clamp(32px, 5vw, 72px); }
-  }
+  /* Pasek pod linią końcową: szerokość boiska (79% sceny), bez tła i linii, końce wtapiają się w tło */
+  .court-wrap :global(.marquee.under-court) { width: 79%; margin-inline: auto; background: transparent; border: 0; padding-block: 14px 8px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); }
 
-  /* ── Scena: proporcje = viewBox boiska (1.5600 : 0.8455), % pozycji z projekcji trafiają w punkty boiska.
+  /* ── Scena: proporcje = viewBox boiska (1.9000 : 0.8455), % pozycji z projekcji trafiają w punkty boiska.
      Dół sceny = linia końcowa. Karta stoi stopą w punkcie (translate -50%, -100%).
      Boisko wtapia się w tło strony eliptyczną maską (góra i boki znikają w tle). ── */
-  .court-stage { position: relative; z-index: 1; width: 100%; aspect-ratio: 1.5600 / 0.8455; margin-top: clamp(40px, 5vw, 56px);
+  .court-stage { position: relative; z-index: 1; width: 100%; aspect-ratio: 1.9000 / 0.8455; margin-top: 0;
     animation: rise .8s .12s var(--ease) both; touch-action: pan-y; }
   .court-bg, .court-glint { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
     -webkit-mask-image: radial-gradient(ellipse 100% 150% at 50% 100%, #000 55%, transparent 100%); mask-image: radial-gradient(ellipse 100% 150% at 50% 100%, #000 55%, transparent 100%); }
@@ -583,9 +571,10 @@ const homeFaqSchema = {
   .cm-legend b { color: var(--text); font-weight: 600; }
   @media (min-width: 720px) { .cm-card { grid-template-columns: auto 1fr; } }
 
-  /* Telefon: boisko pod tekstem na całą szerokość, karty mniejsze */
+  /* Telefon: scena szersza niż ekran (boisko na całą szerokość), pasek na całą szerokość, karty mniejsze */
   @media (max-width: 599px) {
-    .court-stage { margin-top: 52px; }
+    .court-stage { width: 128%; margin-left: -14%; }
+    .court-wrap :global(.marquee.under-court) { width: 100%; }
     .cards li:nth-child(1), .cards li:nth-child(2) { --pcsb: 0.18; }
     .cards li:nth-child(3), .cards li:nth-child(4) { --pcsb: 0.25; }
     .cards li:nth-child(5) { --pcsb: 0.34; }
@@ -609,9 +598,11 @@ const homeFaqSchema = {
   .fact { color: var(--text-2); font-size: clamp(16px, 1.3vw, 18px); line-height: 1.6; margin-bottom: 26px; max-width: 46ch; }
   .fact b { color: var(--accent-hi); font-weight: 600; font-variant-numeric: tabular-nums; }
 
-  /* 2. Karta meczu: duża, bez ramki, własny cień */
-  .matchcard { margin: 0 auto; max-width: 920px; }
-  .matchcard img { width: 100%; height: auto; filter: drop-shadow(0 30px 60px rgba(0,0,0,0.55)); }
+  /* 2. Karta meczu: komponent z apki, skalowany zmienną --mcs (1 = rozmiar w apce) */
+  .matchcard { margin: 0 auto; display: grid; justify-items: center; --mcs: 2.3; }
+  .matchcard :global(.mc) { box-shadow: 0 30px 70px rgba(0,0,0,0.55); }
+  @media (max-width: 1099px) { .matchcard { --mcs: 1.7; } }
+  @media (max-width: 699px) { .matchcard { --mcs: 1.05; } }
   .matchcard figcaption { margin-top: 30px; text-align: center; color: var(--text-2); font-size: clamp(16px, 1.3vw, 18px); }
   .matchcard figcaption b { color: var(--accent-hi); font-weight: 600; font-variant-numeric: tabular-nums; }
 
@@ -663,43 +654,16 @@ const homeFaqSchema = {
   .ph-tabs .on { background: linear-gradient(135deg, #3B8FE8, #1E6BB0); color: #fff; }
   .ph-label { margin: 12px 0 6px; font-family: var(--display); font-weight: 700; font-size: 9.5px; letter-spacing: 2.6px;
     text-transform: uppercase; color: #6F86A6; }
-  .ph-card { position: relative; border: 1px solid rgba(91,184,245,0.5); border-radius: 14px; padding: 12px 12px 12px;
-    background: rgba(9,22,44,0.72); text-align: center; }
-  .ph-tags { display: flex; align-items: center; gap: 6px; }
-  .ph-tag { display: inline-flex; align-items: center; gap: 5px; font-family: var(--display); font-weight: 700; font-size: 8.5px;
-    letter-spacing: 1.6px; text-transform: uppercase; color: #8FD3FF; padding: 4px 8px; border: 1px solid rgba(91,184,245,0.35);
-    border-radius: 8px; background: rgba(91,184,245,0.08); }
-  .ph-you { color: #6FE3FF; border-color: rgba(111,227,255,0.4); }
-  .ph-you b { width: 5px; height: 5px; border-radius: 50%; background: #6FE3FF; }
-  .ph-dist { margin-left: auto; font-family: var(--display); font-weight: 700; font-size: 10px; letter-spacing: 0.5px; color: #8FD3FF; }
-  .ph-team { margin-top: 9px; font-family: var(--display); font-weight: 700; font-size: 10px; letter-spacing: 3px;
-    text-transform: uppercase; color: #8FD3FF; }
-  .ph-team.away { color: #D7E3F2; }
-  .ph-row { display: flex; justify-content: center; align-items: center; gap: 16px; margin: 8px 0; height: 42px; }
-  .ph-hex { position: relative; width: 40px; height: 40px; display: grid; place-items: center; }
-  .ph-hex::before { content: ''; position: absolute; inset: 4px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-    background: linear-gradient(135deg, #7BC8F8, #5BB8F5 40%, #1B3A6B); }
-  .ph-hex b { position: relative; z-index: 1; font-family: var(--display); font-weight: 800; font-size: 14px; color: #fff; }
-  .ph-hex.framed::after { content: ''; position: absolute; inset: -9px; background: url('/earlyaccess.png') center / contain no-repeat; }
-  .ph-vs { display: flex; align-items: center; gap: 10px; margin: 4px 0; font-family: var(--display); font-weight: 700; font-size: 9px;
-    letter-spacing: 2.5px; text-transform: uppercase; color: #6F86A6; }
-  .ph-vs::before, .ph-vs::after { content: ''; flex: 1; height: 1px; background: rgba(150,200,255,0.14); }
-  .ph-vs b { display: grid; font-weight: inherit; }
-  .ph-vs b > span { grid-area: 1 / 1; white-space: nowrap; }
-  .ph-vs .v2 { color: #37E29A; }
-  .ph-slot { position: relative; width: 40px; height: 40px; display: grid; place-items: center; }
-  .ph-dash { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .ph-dash polygon { fill: rgba(150,200,255,0.06); stroke: rgba(150,200,255,0.5); stroke-width: 1.2; stroke-dasharray: 3 3; }
-  .ph-plus { position: absolute; width: 10px; height: 10px; }
-  .ph-plus::before, .ph-plus::after { content: ''; position: absolute; background: rgba(150,200,255,0.7); }
-  .ph-plus::before { left: 4px; top: 0; width: 2px; height: 10px; }
-  .ph-plus::after { left: 0; top: 4px; width: 10px; height: 2px; }
-  .ph-me { position: absolute; inset: 0; }
-  .ph-when { margin-top: 8px; font-family: var(--display); font-weight: 600; font-size: 15px; color: #EAF2FF; letter-spacing: 0.3px; }
-  .ph-where { font-size: 11px; color: #8A9BB5; margin-top: 2px; }
-  .ph-next { margin-top: 10px; border-color: rgba(91,184,245,0.22); padding: 10px 12px; }
-  .ph-next .ph-when { margin-top: 8px; font-size: 13px; }
-  .ph-next .ph-where { display: inline; margin-left: 6px; font-family: var(--body); font-weight: 400; }
+  .ph-match { --mcs: 0.78; }
+  .ph-match :global(.mc) { width: 100%; }
+  .ph-next { margin-top: 10px; display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; align-items: center; padding: 10px 12px;
+    border-radius: 14px; border: 1px solid rgba(160,200,255,0.14); background: rgba(9,22,44,0.5);
+    opacity: 0; transform: translateY(22px); transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+  .ph-next-mode { font-family: var(--display); font-weight: 800; font-size: 8px; letter-spacing: 1.4px; text-transform: uppercase; color: #00CCFF;
+    padding: 2px 7px; border-radius: 6px; background: rgba(0,204,255,0.11); justify-self: start; }
+  .ph-next-dist { font-size: 9px; font-weight: 700; color: #00CCFF; justify-self: end; }
+  .ph-next b { grid-column: 1 / -1; font-family: var(--display); font-weight: 800; font-size: 12px; color: #EAF2FF; margin-top: 4px; }
+  .ph-next-where { grid-column: 1 / -1; font-size: 9.5px; color: rgba(224,238,255,0.62); }
   .ph-nav { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; align-items: center; gap: 20px;
     padding: 7px 18px; border-radius: 999px; background: rgba(8,16,30,0.82); border: 1px solid rgba(150,200,255,0.1); }
   .ph-nav span { width: 13px; height: 13px; border-radius: 3px; border: 1.5px solid #9A7556; }
@@ -709,18 +673,7 @@ const homeFaqSchema = {
     box-shadow: 0 0 18px rgba(47,127,224,0.55); transform: none; }
   .ph-nav .on::before { content: ''; width: 16px; height: 16px; background: #fff; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
 
-  /* Stany telefonu (tylko transform i opacity) */
-  .ph-you, .ph-me, .ph-next, .ph-dash, .ph-plus, .ph-vs b > span {
-    transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
-  .ph-you { opacity: 0; transform: translateY(4px); }
-  .ph-me { opacity: 0; transform: scale(0.4); }
-  .ph-next { opacity: 0; transform: translateY(22px); }
-  .ph-vs .v2 { opacity: 0; transform: translateY(5px); }
-  .scene[data-scene="club"]:not([data-step="1"]) .ph-you { opacity: 1; transform: none; }
-  .scene[data-scene="club"]:not([data-step="1"]) .ph-me { opacity: 1; transform: none; }
-  .scene[data-scene="club"]:not([data-step="1"]) :is(.ph-dash, .ph-plus) { opacity: 0; }
-  .scene[data-scene="club"][data-step="3"] .ph-vs .v1 { opacity: 0; transform: translateY(-5px); }
-  .scene[data-scene="club"][data-step="3"] .ph-vs .v2 { opacity: 1; transform: none; }
+  /* Stany telefonu: karta meczu przełącza się klasami .mc-step-N (patrz MatchCard.astro), następna sesja wjeżdża w kroku 3 */
   .scene[data-scene="club"][data-step="3"] .ph-next { opacity: 1; transform: none; }
   @media (max-width: 899px) {
     /* Telefon przycięty do części z kartą sesji (góra ekranu chowa się pod paskiem nawigacji), mniejszy; dół wtapia się w tło */
@@ -753,16 +706,13 @@ const homeFaqSchema = {
   .draw .btn { margin-top: 6px; }
   @media (max-width: 599px) { .draw { --cell: 58px; --gap: 10px; } }
 
-  /* 5. Karta gracza: sticky, obraca się z krokiem; nieaktywne elementy przygasają */
-  .pc-stage { --rx0: -4; --ry0: -18; }
+  /* 5. Karta gracza: stoi nieruchomo; obraca ją tylko mysz w pobliżu albo przytrzymany palec (jak w apce). Krok podświetla element. */
+  .pc-stage { --rx0: -6; --ry0: -14; touch-action: none; cursor: grab; }
+  .pc-stage:active { cursor: grabbing; }
   .pc-stage :global(.pc3d-wrap) { --pcs: 1.04; }
-  .pc-stage :global(.pc3d-card) { transition: transform var(--dur-3) var(--ease); }
+  .pc-stage :global(.pc3d-card) { transition: none; }
   .pc-stage :global(:is(.pc3d-av, .pc3d-name, .pc3d-arena, .pc3d-prog, .pc3d-cap, .pc3d-stats)) {
     transition: opacity var(--dur-2) var(--ease); }
-  .scene[data-scene="card"][data-step="1"] .pc-stage { --rx0: -4; --ry0: -18; }
-  .scene[data-scene="card"][data-step="2"] .pc-stage { --rx0: 2; --ry0: 14; }
-  .scene[data-scene="card"][data-step="3"] .pc-stage { --rx0: 9; --ry0: -10; }
-  .scene[data-scene="card"][data-step="4"] .pc-stage { --rx0: 12; --ry0: 12; }
   .scene[data-scene="card"][data-step="1"] .pc-stage :global(:is(.pc3d-arena, .pc3d-prog, .pc3d-cap, .pc3d-stats)) { opacity: 0.28; }
   .scene[data-scene="card"][data-step="2"] .pc-stage :global(:is(.pc3d-av, .pc3d-prog, .pc3d-cap, .pc3d-stats)) { opacity: 0.28; }
   .scene[data-scene="card"][data-step="3"] .pc-stage :global(:is(.pc3d-av, .pc3d-name, .pc3d-arena, .pc3d-stats)) { opacity: 0.28; }
@@ -886,62 +836,70 @@ const homeFaqSchema = {
     document.querySelectorAll<HTMLElement>('[data-tilt]').forEach((el) => bind(el.parentElement ?? el, el))
   }
 
-  // ── Karty na boisku: lekki tilt w promieniu kursora, przeciąganie palcem/myszą obraca kartę
-  //    (jak w apce), a dopiero tap (bez ruchu) otwiera podgląd. Jedna pętla rAF, lerp do celu.
-  // Spoczynek per karta: lewa strona boiska patrzy w prawo, prawa w lewo, środkowy na wprost (karty „do siebie")
-  const REST = [{ x: -5, y: 10 }, { x: -5, y: -10 }, { x: -6, y: 18 }, { x: -6, y: -18 }, { x: -7, y: 0 }]
-  const RADIUS = 190
+  // ── Tilt kart (Alex na boisku, karta w rozdziale „Karta gracza"): lekki obrót w stronę kursora w promieniu,
+  //    przeciąganie myszą albo palcem obraca kartę jak w apce, puszczenie wraca do spoczynku. Tap na Alexie = podgląd.
+  type Tilt = { el: HTMLElement; zone: HTMLElement; rest: { x: number; y: number }; rx: number; ry: number; tx: number; ty: number }
   const btns = Array.from(document.querySelectorAll<HTMLButtonElement>('.pcbtn[data-i]'))
-  const rest = (i: number) => REST[Number(btns[i]?.dataset.i ?? i)] ?? { x: -6, y: 0 }
-  const st = btns.map((_, i) => ({ rx: rest(i).x, ry: rest(i).y, tx: rest(i).x, ty: rest(i).y }))
-  let drag: { i: number; sx: number; sy: number; brx: number; bry: number; moved: boolean; t0: number } | null = null
+  const tilts: Tilt[] = []
+  const addTilt = (el: HTMLElement, zone: HTMLElement, rest: { x: number; y: number }) =>
+    tilts.push({ el, zone, rest, rx: rest.x, ry: rest.y, tx: rest.x, ty: rest.y })
+  const courtStage = document.getElementById('courtStage')
+  btns.forEach((b) => addTilt(b, courtStage ?? b, { x: -7, y: 0 }))
+  document.querySelectorAll<HTMLElement>('[data-tilt-card]').forEach((el) => addTilt(el, el.parentElement ?? el, { x: -6, y: -14 }))
+  let drag: { t: Tilt; sx: number; sy: number; brx: number; bry: number; moved: boolean } | null = null
   let raf = 0, running = false
   const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v))
   const loop = () => {
     let busy = false
-    st.forEach((c, i) => {
+    for (const c of tilts) {
       c.rx += (c.tx - c.rx) * 0.12; c.ry += (c.ty - c.ry) * 0.12
       if (Math.abs(c.tx - c.rx) > 0.03 || Math.abs(c.ty - c.ry) > 0.03) busy = true
-      btns[i].style.setProperty('--rx0', c.rx.toFixed(2)); btns[i].style.setProperty('--ry0', c.ry.toFixed(2))
-    })
+      c.el.style.setProperty('--rx0', c.rx.toFixed(2)); c.el.style.setProperty('--ry0', c.ry.toFixed(2))
+    }
     if (busy || drag) raf = requestAnimationFrame(loop); else running = false
   }
   const kick = () => { if (!running) { running = true; raf = requestAnimationFrame(loop) } }
 
-  // Bliskość kursora (desktop): karta obraca się w stronę myszy, poza promieniem wraca do spoczynku
-  const stage = document.getElementById('courtStage')
-  if (stage && fine && !reduce) {
-    stage.addEventListener('pointermove', (e) => {
-      if (drag) return
-      btns.forEach((b, i) => {
-        const r = b.getBoundingClientRect()
-        const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2)
-        const d = Math.hypot(dx, dy)
-        if (d < RADIUS) { const k = 1 - d / RADIUS; st[i].ty = rest(i).y + (dx / RADIUS) * 22 * k; st[i].tx = rest(i).x - (dy / RADIUS) * 16 * k }
-        else { st[i].tx = rest(i).x; st[i].ty = rest(i).y }
+  // Bliskość kursora (desktop): w promieniu zależnym od wielkości karty obraca się w stronę myszy
+  if (fine && !reduce) {
+    const zones = new Set(tilts.map((t) => t.zone))
+    zones.forEach((zone) => {
+      zone.addEventListener('pointermove', (e) => {
+        if (drag) return
+        for (const t of tilts) {
+          if (t.zone !== zone) continue
+          const r = t.el.getBoundingClientRect()
+          const R = Math.max(190, r.width * 1.1)
+          const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2)
+          const d = Math.hypot(dx, dy)
+          if (d < R) { const k = 1 - d / R; t.ty = t.rest.y + (dx / R) * 22 * k; t.tx = t.rest.x - (dy / R) * 16 * k }
+          else { t.tx = t.rest.x; t.ty = t.rest.y }
+        }
+        kick()
       })
-      kick()
+      zone.addEventListener('pointerleave', () => { for (const t of tilts) if (t.zone === zone) { t.tx = t.rest.x; t.ty = t.rest.y } kick() })
     })
-    stage.addEventListener('pointerleave', () => { st.forEach((c, i) => { c.tx = rest(i).x; c.ty = rest(i).y }); kick() })
   }
 
-  // Przeciąganie = obrót karty (mysz i dotyk). Tap = podgląd. Kliknięcie po przeciągnięciu jest ignorowane.
-  btns.forEach((b, i) => {
+  // Przeciąganie = obrót (mysz i dotyk). Kliknięcie po przeciągnięciu jest ignorowane (podgląd tylko po tapie).
+  for (const t of tilts) {
+    const b = t.el
     b.addEventListener('pointerdown', (e) => {
-      drag = { i, sx: e.clientX, sy: e.clientY, brx: st[i].rx, bry: st[i].ry, moved: false, t0: performance.now() }
+      drag = { t, sx: e.clientX, sy: e.clientY, brx: t.rx, bry: t.ry, moved: false }
       try { b.setPointerCapture(e.pointerId) } catch {}
       kick()
     })
     b.addEventListener('pointermove', (e) => {
-      if (!drag || drag.i !== i) return
+      if (!drag || drag.t !== t) return
       const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy
       if (Math.hypot(dx, dy) > 6) drag.moved = true
-      st[i].ty = clamp(drag.bry + dx * 0.38, -46, 46); st[i].tx = clamp(drag.brx - dy * 0.34, -34, 34)
+      t.ty = clamp(drag.bry + dx * 0.38, -46, 46); t.tx = clamp(drag.brx - dy * 0.34, -34, 34)
     })
-    const end = () => { if (!drag || drag.i !== i) return; st[i].tx = rest(i).x; st[i].ty = rest(i).y; const m = drag.moved; drag = null; kick(); if (m) b.dataset.swallow = '1' }
+    const end = () => { if (!drag || drag.t !== t) return; t.tx = t.rest.x; t.ty = t.rest.y; const m = drag.moved; drag = null; kick(); if (m) b.dataset.swallow = '1' }
     b.addEventListener('pointerup', end); b.addEventListener('pointercancel', end)
     b.addEventListener('click', (e) => { if (b.dataset.swallow) { delete b.dataset.swallow; e.preventDefault(); e.stopImmediatePropagation() } }, true)
-  })
+  }
+  const stage = courtStage
 
   // Błysk po liniach tylko, gdy boisko jest na ekranie (oszczędza GPU przy przewijaniu dalej).
   if (stage && 'IntersectionObserver' in window) {
@@ -986,7 +944,9 @@ const homeFaqSchema = {
       for (const en of entries) {
         if (!en.isIntersecting) continue
         const el = en.target as HTMLElement
-        scene.dataset.step = el.dataset.i || '1'
+        const step = el.dataset.i || '1'
+        scene.dataset.step = step
+        scene.classList.remove('mc-step-1', 'mc-step-2', 'mc-step-3', 'mc-step-4'); scene.classList.add(`mc-step-${step}`)
         steps.forEach((s) => s.classList.toggle('on', s === el))
       }
     }, { rootMargin: window.innerWidth < 900 ? '-66% 0px -29% 0px' : '-55% 0px -40% 0px', threshold: 0 })
