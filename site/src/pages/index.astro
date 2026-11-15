@@ -1,7 +1,11 @@
 ---
 import Base from '../layouts/Base.astro'
+import HeroCourt from '../components/HeroCourt.astro'
 import PlayerCard from '../components/PlayerCard.astro'
 import MatchCard from '../components/MatchCard.astro'
+import RankBoard from '../components/RankBoard.astro'
+import DraftRing from '../components/DraftRing.astro'
+import court from '../data/court.json'
 import { APP_URL, RANK_URL, COACH_OFFER_URL, APP_SCHEMA } from '../consts'
 import QRCode from 'qrcode'
 
@@ -11,41 +15,45 @@ const qrSvg = await QRCode.toString(APP_URL, {
   color: { dark: '#0E0F12', light: '#FFFFFF' },
 })
 
-// Ticker pod linią końcową boiska: same fakty o produkcie, żadnych wymyślonych liczb.
+// Pasek pod linią końcową boiska: same fakty o produkcie, żadnych wymyślonych liczb.
 const TICKER = [
   'King of the Court', 'Ranking XP na żywo', 'Siedem aren', 'Karta gracza', 'Asystent treningu',
   'Draft Score', 'Darmowa dla graczy', 'Kraków i cała Polska', 'Phone down, game up.',
 ]
 
-// Pięć kart gracza na boisku (hero). Pozycje w % kontenera boiska. Dane poglądowe, bez nazwisk.
-// Elementy karty = te same, co w apce: hex z inicjałem, arena, pasek XP do następnej areny, wygrane.
-// toNext liczone z progów aren (500/1500/2700/3900/5500/7500) dla p% postępu.
-const CARDS = [
-  { pos: 'Rozgrywający', name: 'Kuba',     l: 'K', arena: 4, arenaName: 'Ankh Court',   next: 'Void Gem',     p: 62, toNext: 608,  w: 12, k: 3, id: '20251', frame: 'default', x: 43.0, y: 20.8,
+// Pięć kart gracza na boisku (hero). Pozycje w % sceny liczy scripts/gen-court.py (src/data/court.json),
+// tą samą projekcją co linie boiska, osobno dla desktopu i telefonu. Dane poglądowe, bez nazwisk.
+// toNext wynika z progów aren (500 / 1500 / 2700 / 3900 / 5500 / 7500 XP) dla p% postępu.
+type Spot = keyof typeof court.desk.spots
+const CARDS: {
+  spot: Spot; pos: string; name: string; l: string; arena: number; arenaName: string; next: string
+  p: number; toNext: number; w: number; k: number; id: string; frame: 'default' | 'none'; live?: boolean; desc: string
+}[] = [
+  { spot: 'pg', pos: 'Rozgrywający', name: 'Kuba', l: 'K', arena: 4, arenaName: 'Ankh Court', next: 'Void Gem', p: 62, toNext: 608, w: 12, k: 3, id: '20251', frame: 'default',
     desc: 'Prowadzi grę i rozdaje piłkę. Najwięcej sesji King of the Court w ekipie.' },
-  { pos: 'Rzucający', name: 'Michał',        l: 'M', arena: 1, arenaName: 'Street Court', next: 'City Run',     p: 35, toNext: 650,  w: 4,  k: 0, id: '20318', frame: 'none',    x: 57.0, y: 20.8,
+  { spot: 'sg', pos: 'Rzucający', name: 'Michał', l: 'M', arena: 1, arenaName: 'Street Court', next: 'City Run', p: 35, toNext: 650, w: 4, k: 0, id: '20318', frame: 'none',
     desc: 'Dopiero zaczyna. Pierwsza arena odblokowana po czterech wygranych.' },
-  { pos: 'Skrzydłowy', name: 'Bartek',       l: 'B', arena: 2, arenaName: 'City Run',     next: 'Golden Reign', p: 48, toNext: 624,  w: 7,  k: 1, id: '20277', frame: 'default', x: 28.5, y: 56.3,
+  { spot: 'sf', pos: 'Skrzydłowy', name: 'Bartek', l: 'B', arena: 2, arenaName: 'City Run', next: 'Golden Reign', p: 48, toNext: 624, w: 7, k: 1, id: '20277', frame: 'default',
     desc: 'Gra regularnie w sobotnich sesjach. Pierwszy tytuł króla boiska za nim.' },
-  { pos: 'Silny skrzydłowy', name: 'Olek', l: 'O', arena: 3, arenaName: 'Golden Reign', next: 'Ankh Court',   p: 71, toNext: 348,  w: 9,  k: 2, id: '20194', frame: 'none',    x: 71.5, y: 56.3,
+  { spot: 'pf', pos: 'Silny skrzydłowy', name: 'Olek', l: 'O', arena: 3, arenaName: 'Golden Reign', next: 'Ankh Court', p: 71, toNext: 348, w: 9, k: 2, id: '20194', frame: 'none',
     desc: 'Walczy pod koszem. Blisko kolejnej areny, brakuje kilku meczów.' },
-  { pos: 'Środkowy', name: 'Alex',         l: 'A', arena: 5, arenaName: 'Void Gem',     next: 'Seraphim',     p: 22, toNext: 1560, w: 15, k: 4, id: '20102', frame: 'default', live: true, x: 50.0, y: 84.7,
-    desc: 'Najwyżej w ekipie. Cztery wygrane sesje KotC i najwięcej meczów na koncie.' },
+  { spot: 'c', pos: 'Środkowy', name: 'Alex', l: 'A', arena: 5, arenaName: 'Void Gem', next: 'Seraphim', p: 22, toNext: 1560, w: 15, k: 4, id: '20102', frame: 'default', live: true,
+    desc: 'Najwyżej w ekipie. Cztery wygrane sesje King of the Court i najwięcej meczów na koncie.' },
 ]
 
-// Rozdział „Znajdź grę obok": telefon z zakładką Klub (karta meczu = komponent z apki),
-// trzy kroki tekstu; aktywny krok zmienia stan ekranu klasą (data-step na scenie).
-const CLUB_STEPS = [
-  { t: 'Widzisz, kto gra obok', d: 'Sesje z godziną, miejscem i składem. Dwa kilometry od Ciebie, sobota, 19:30.' },
-  { t: 'Dołączasz', d: 'Jeden ruch. Twój hex ląduje w składzie, a pasek na dole to już Twój mecz.' },
-  { t: 'Skład się zapełnia', d: 'Sześć miejsc, sześć hexów. Jest mecz. Reszta dzieje się na boisku.' },
-]
-// Karty meczu to prawdziwy komponent z apki (MatchCard.astro, port z ClubPage.jsx), nie obrazki.
-// Rozdział 2: zakończony mecz 21:16. Rozdział 3 (telefon): otwarta sesja, w której zajmujesz wolne miejsce.
+// Karty meczu to komponent przeniesiony z apki (MatchCard.astro, port z ClubPage.jsx), nie obrazki.
+// Rozdział 2: zakończony mecz 21:16. Rozdział 3 (telefon): otwarty mecz, w którym zajmujesz wolne miejsce.
 const MATCH_HOME = { name: 'HoopConnect', mine: true, players: [{ l: 'K', f: true }, { l: 'M' }, { l: 'F', f: true }] }
 const MATCH_AWAY = { name: 'Street Kings', players: [{ l: 'A' }, { l: 'B', f: true }, { l: 'S' }] }
 const CLUB_HOME = { name: 'HoopConnect', players: [{ l: 'K', f: true }, { l: 'M' }, { l: 'F', f: true }] }
 const CLUB_AWAY = { name: 'Rywale', players: [{ l: 'A' }, null, null] }
+
+// Rozdział „Znajdź grę obok": trzy kroki tekstu; aktywny krok zmienia stan karty meczu (klasa na scenie).
+const CLUB_STEPS = [
+  { t: 'Widzisz, kto gra obok', d: 'Mecze z godziną, miejscem i składem. Od razu wiesz, ile to kilometrów i ile miejsc zostało.' },
+  { t: 'Dołączasz jednym ruchem', d: 'Twój hex wskakuje do składu. Ekipa widzi, że wchodzisz, bez pisania na grupie.' },
+  { t: 'Skład się zapełnia', d: 'Sześć miejsc, sześć hexów. Jest mecz. Nie ma gry w okolicy? Zakładasz własną i czekasz na skład.' },
+]
 
 // Losowanie w King of the Court: dziewięciu graczy solo, trzy trójki w kolorach z apki
 // (src/features/kotc/KotcSolo.jsx: Blue / Green / Red). Przebieg losowania robi skrypt na dole.
@@ -53,20 +61,38 @@ const DRAW_PLAYERS = ['K', 'M', 'F', 'A', 'B', 'S', 'J', 'O', 'W']
 const DRAW_TEAMS = [
   { name: 'Blue', color: '#3B82F6' }, { name: 'Green', color: '#22C55E' }, { name: 'Red', color: '#F43F5E' },
 ]
+// Zasady z apki: „Pickup 3v3 · wchodzisz solo · wygrany zostaje", min. 9 graczy, wynik potwierdza czekająca drużyna.
+const KOTC_FACTS = [
+  { t: 'Wchodzisz solo', d: 'Kodem sesji albo jednym tapnięciem z listy aktywnych sesji.' },
+  { t: 'Trójki z losowania', d: 'Od dziewięciu graczy apka dzieli Was na drużyny. Nikt nie wybiera kumpli.' },
+  { t: 'Wygrany zostaje', d: 'Przegrani schodzą, wchodzi następna trójka. Wynik potwierdza drużyna, która czeka.' },
+]
 
-// Rozdział „Karta gracza": cztery kroki, każdy obraca kartę i podświetla jeden jej element.
+// Rozdział „Karta gracza": cztery kroki, każdy podświetla jeden element karty.
 const CARD_STEPS = [
-  { t: 'Hex z inicjałem', d: 'Twój znak w składzie, w rankingu i na karcie. Ten sam wszędzie.' },
+  { t: 'Hex z inicjałem', d: 'Twój znak w składzie, w rankingu i na karcie. Z ramką, jeśli ją zdobyłeś.' },
   { t: 'Arena', d: 'Siedem poziomów, od Rozgrzewki po Seraphim. Nazwa na karcie mówi, jak daleko zaszedłeś.' },
   { t: 'Pasek XP', d: 'Ile brakuje do następnej areny. Każdy mecz przesuwa go w prawo. Nigdy w lewo.' },
   { t: 'Wygrane mecze i KotC', d: 'Dwie liczby, których nie da się wyklikać. Tylko to, co zagrałeś.' },
 ]
 
-// Siedem aren z apki (src/lib/arenas.js): Rozgrzewka bez ramki, potem sześć z grafiką z public/arenas.
+// Siedem aren z apki (src/lib/arenas.js): Rozgrzewka bez ramki, potem sześć z grafiką.
 const ARENAS = [
   { n: 0, name: 'Rozgrzewka', xp: 0 },
   { n: 1, name: 'Street Court', xp: 500 }, { n: 2, name: 'City Run', xp: 1500 }, { n: 3, name: 'Golden Reign', xp: 2700 },
   { n: 4, name: 'Ankh Court', xp: 3900 }, { n: 5, name: 'Void Gem', xp: 5500 }, { n: 6, name: 'Seraphim', xp: 7500 },
+]
+
+const TRAIN_FACTS = [
+  { t: 'Plan pod Ciebie', d: 'Gotowy zestaw na każdy dzień treningowy. Liczbę dni zmieniasz, kiedy chcesz.' },
+  { t: 'Regeneracja', d: 'W dni odpoczynku dostajesz podpowiedzi: rozciąganie, mobilność, sen.' },
+  { t: 'Draft Score', d: 'Forma tygodnia, tylko dla Ciebie. Na koniec tygodnia 10% zamienia się w stałe XP.' },
+]
+
+const COACH_FACTS = [
+  { t: 'Frekwencja', d: 'Obecność na treningu odhaczasz w kilka sekund. Także zawodników bez konta.' },
+  { t: 'Składki', d: 'Widzisz, kto zapłacił, a kto zalega. Miesiąc po miesiącu.' },
+  { t: 'Zgody rodziców', d: 'Gotowy wzór do druku i podpisu.' },
 ]
 
 // Teaser FAQ na stronie głównej: cytowalne odpowiedzi + FAQPage schema (rich results).
@@ -102,96 +128,39 @@ const homeFaqSchema = {
 }
 ---
 <Base schema={[APP_SCHEMA, homeFaqSchema]}>
-  <!-- ═══ HERO ═══ -->
+  <!-- ═══ 1. OTWARCIE: nagłówek nad boiskiem, boisko na środku, pasek pod linią końcową, reszta pod spodem ═══ -->
   <section class="hero">
-    <div class="hero-glow" aria-hidden="true"></div>
     <div class="wrap hero-head">
-      <h1>Zostań królem<br /><span class="hl">swojego boiska</span></h1>
+      <h1>
+        <span class="ln"><span class="w">Boisko zna</span></span>
+        <span class="ln"><span class="hl">Twoje imię</span></span>
+      </h1>
     </div>
 
-    <!-- Boisko wyśrodkowane, linia końcowa = dół sceny, tuż pod nią pasek tylko na szerokość boiska (fade w tło). Pięć kart na pozycjach. -->
-    <div class="court-wrap">
-      <div class="court-stage" id="courtStage">
-      <svg class="court-bg" viewBox="-0.9500 0.6600 1.9000 0.8455" aria-hidden="true" preserveAspectRatio="none">
-        <!-- Warstwa STATYCZNA (filtry, ziarno): maluje się raz. Boisko 3x3 15×11 m, linie FIBA, rzut perspektywiczny
-             (kamera za linią końcową: d=10 m, h=15 m). Ta sama projekcja liczy pozycje kart (CARDS x/y). -->
-        <defs>
-          <linearGradient id="cg-ground" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#0E0F12" stop-opacity="0" />
-            <stop offset="0.45" stop-color="#111A2B" stop-opacity="0.85" />
-            <stop offset="1" stop-color="#16233D" />
-          </linearGradient>
-          <radialGradient id="cg-spot" cx="0.5" cy="0.5" r="0.5">
-            <stop offset="0" stop-color="#6FC3FF" stop-opacity="0.26" />
-            <stop offset="0.5" stop-color="#2F91D6" stop-opacity="0.10" />
-            <stop offset="1" stop-color="#2F91D6" stop-opacity="0" />
-          </radialGradient>
-          <radialGradient id="cg-hoop" cx="0.5" cy="0.5" r="0.5">
-            <stop offset="0" stop-color="#BFE3FF" stop-opacity="0.6" />
-            <stop offset="1" stop-color="#6FC3FF" stop-opacity="0" />
-          </radialGradient>
-          <filter id="cg-glow" x="-10%" y="-10%" width="120%" height="120%">
-            <feGaussianBlur stdDeviation="0.005" result="b" />
-            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-          <filter id="cg-grain" x="0" y="0" width="100%" height="100%">
-            <feTurbulence type="fractalNoise" baseFrequency="200" numOctaves="2" stitchTiles="stitch" />
-            <feColorMatrix type="saturate" values="0" />
-            <feComponentTransfer><feFuncA type="table" tableValues="0 0.5" /></feComponentTransfer>
-          </filter>
-        </defs>
-        <path d="M-2.5000 1.5625 L2.5000 1.5625 L1.1009 0.6881 L-1.1009 0.6881 Z" fill="url(#cg-ground)" />
-        <ellipse cx="0.0000" cy="1.1364" rx="0.7" ry="0.34" fill="url(#cg-spot)" />
-        <path d="M-0.7500 1.5000 L0.7500 1.5000 L0.3571 0.7143 L-0.3571 0.7143 Z" fill="#2F91D6" fill-opacity="0.07" />
-        <path d="M-0.6600 1.5000 L-0.5081 1.1547 L-0.5081 1.1547 L-0.4902 1.1271 L-0.4721 1.1011 L-0.4539 1.0766 L-0.4357 1.0536 L-0.4174 1.0320 L-0.3990 1.0117 L-0.3806 0.9928 L-0.3622 0.9750 L-0.3438 0.9584 L-0.3254 0.9430 L-0.3071 0.9286 L-0.2888 0.9153 L-0.2705 0.9029 L-0.2522 0.8916 L-0.2340 0.8811 L-0.2158 0.8715 L-0.1977 0.8628 L-0.1796 0.8550 L-0.1615 0.8479 L-0.1435 0.8417 L-0.1254 0.8362 L-0.1075 0.8315 L-0.0895 0.8275 L-0.0716 0.8243 L-0.0537 0.8218 L-0.0358 0.8200 L-0.0179 0.8189 L0.0000 0.8186 L0.0179 0.8189 L0.0358 0.8200 L0.0537 0.8218 L0.0716 0.8243 L0.0895 0.8275 L0.1075 0.8315 L0.1254 0.8362 L0.1435 0.8417 L0.1615 0.8479 L0.1796 0.8550 L0.1977 0.8628 L0.2158 0.8715 L0.2340 0.8811 L0.2522 0.8916 L0.2705 0.9029 L0.2888 0.9153 L0.3071 0.9286 L0.3254 0.9430 L0.3438 0.9584 L0.3622 0.9750 L0.3806 0.9928 L0.3990 1.0117 L0.4174 1.0320 L0.4357 1.0536 L0.4539 1.0766 L0.4721 1.1011 L0.4902 1.1271 L0.5081 1.1547 L0.5081 1.1547 L0.6600 1.5000 Z" fill="#2F91D6" fill-opacity="0.05" />
-        <path d="M-0.2450 1.5000 L0.2450 1.5000 L0.1551 0.9494 L-0.1551 0.9494 Z" fill="#2F91D6" fill-opacity="0.17" />
-        <path d="M-0.2085 1.2766 L-0.2170 1.2766 L-0.2099 1.2346 L-0.2016 1.2346 Z" fill="#D6EDFF" fill-opacity="0.85" /> <path d="M0.2085 1.2766 L0.2170 1.2766 L0.2099 1.2346 L0.2016 1.2346 Z" fill="#D6EDFF" fill-opacity="0.85" />
-        <ellipse cx="0.0000" cy="1.2959" rx="0.2" ry="0.09" fill="url(#cg-hoop)" />
-        <g fill="none" stroke="#D6EDFF" stroke-opacity="0.9" stroke-width="0.0026" stroke-linejoin="round" filter="url(#cg-glow)">
-          <path d="M-0.7500 1.5000 L0.7500 1.5000 L0.3571 0.7143 L-0.3571 0.7143 Z" />
-          <path d="M-0.2450 1.5000 L-0.1551 0.9494 L0.1551 0.9494 L0.2450 1.5000" />
-          <path d="M0.1139 0.9494 L0.1130 0.9433 L0.1118 0.9374 L0.1102 0.9316 L0.1083 0.9259 L0.1061 0.9203 L0.1036 0.9149 L0.1009 0.9097 L0.0978 0.9047 L0.0945 0.8998 L0.0909 0.8951 L0.0872 0.8907 L0.0832 0.8864 L0.0790 0.8824 L0.0746 0.8786 L0.0700 0.8750 L0.0652 0.8717 L0.0603 0.8687 L0.0553 0.8658 L0.0501 0.8633 L0.0448 0.8610 L0.0394 0.8590 L0.0340 0.8572 L0.0284 0.8557 L0.0228 0.8545 L0.0172 0.8535 L0.0115 0.8528 L0.0057 0.8524 L0.0000 0.8523 L-0.0057 0.8524 L-0.0115 0.8528 L-0.0172 0.8535 L-0.0228 0.8545 L-0.0284 0.8557 L-0.0340 0.8572 L-0.0394 0.8590 L-0.0448 0.8610 L-0.0501 0.8633 L-0.0553 0.8658 L-0.0603 0.8687 L-0.0652 0.8717 L-0.0700 0.8750 L-0.0746 0.8786 L-0.0790 0.8824 L-0.0832 0.8864 L-0.0872 0.8907 L-0.0909 0.8951 L-0.0945 0.8998 L-0.0978 0.9047 L-0.1009 0.9097 L-0.1036 0.9149 L-0.1061 0.9203 L-0.1083 0.9259 L-0.1102 0.9316 L-0.1118 0.9374 L-0.1130 0.9433 L-0.1139 0.9494" />
-          <path d="M-0.6600 1.5000 L-0.5081 1.1547 L-0.5081 1.1547 L-0.4902 1.1271 L-0.4721 1.1011 L-0.4539 1.0766 L-0.4357 1.0536 L-0.4174 1.0320 L-0.3990 1.0117 L-0.3806 0.9928 L-0.3622 0.9750 L-0.3438 0.9584 L-0.3254 0.9430 L-0.3071 0.9286 L-0.2888 0.9153 L-0.2705 0.9029 L-0.2522 0.8916 L-0.2340 0.8811 L-0.2158 0.8715 L-0.1977 0.8628 L-0.1796 0.8550 L-0.1615 0.8479 L-0.1435 0.8417 L-0.1254 0.8362 L-0.1075 0.8315 L-0.0895 0.8275 L-0.0716 0.8243 L-0.0537 0.8218 L-0.0358 0.8200 L-0.0179 0.8189 L0.0000 0.8186 L0.0179 0.8189 L0.0358 0.8200 L0.0537 0.8218 L0.0716 0.8243 L0.0895 0.8275 L0.1075 0.8315 L0.1254 0.8362 L0.1435 0.8417 L0.1615 0.8479 L0.1796 0.8550 L0.1977 0.8628 L0.2158 0.8715 L0.2340 0.8811 L0.2522 0.8916 L0.2705 0.9029 L0.2888 0.9153 L0.3071 0.9286 L0.3254 0.9430 L0.3438 0.9584 L0.3622 0.9750 L0.3806 0.9928 L0.3990 1.0117 L0.4174 1.0320 L0.4357 1.0536 L0.4539 1.0766 L0.4721 1.1011 L0.4902 1.1271 L0.5081 1.1547 L0.5081 1.1547 L0.6600 1.5000" />
-          <path d="M-0.1116 1.3393 L-0.1080 1.2959 L0.1080 1.2959 L0.1072 1.2881 L0.1060 1.2804 L0.1046 1.2729 L0.1028 1.2655 L0.1008 1.2583 L0.0984 1.2513 L0.0958 1.2445 L0.0929 1.2379 L0.0898 1.2316 L0.0865 1.2255 L0.0829 1.2197 L0.0791 1.2141 L0.0751 1.2089 L0.0709 1.2040 L0.0666 1.1993 L0.0621 1.1950 L0.0574 1.1910 L0.0526 1.1873 L0.0477 1.1840 L0.0427 1.1810 L0.0376 1.1783 L0.0324 1.1760 L0.0271 1.1741 L0.0217 1.1725 L0.0163 1.1712 L0.0109 1.1703 L0.0055 1.1698 L0.0000 1.1696 L-0.0055 1.1698 L-0.0109 1.1703 L-0.0163 1.1712 L-0.0217 1.1725 L-0.0271 1.1741 L-0.0324 1.1760 L-0.0376 1.1783 L-0.0427 1.1810 L-0.0477 1.1840 L-0.0526 1.1873 L-0.0574 1.1910 L-0.0621 1.1950 L-0.0666 1.1993 L-0.0709 1.2040 L-0.0751 1.2089 L-0.0791 1.2141 L-0.0829 1.2197 L-0.0865 1.2255 L-0.0898 1.2316 L-0.0929 1.2379 L-0.0958 1.2445 L-0.0984 1.2513 L-0.1008 1.2583 L-0.1028 1.2655 L-0.1046 1.2729 L-0.1060 1.2804 L-0.1072 1.2881 L-0.1080 1.2959 L0.1080 1.2959 L0.1116 1.3393" />
-          <path d="M0.0194 1.2959 L0.0193 1.2931 L0.0189 1.2903 L0.0182 1.2876 L0.0174 1.2851 L0.0163 1.2826 L0.0150 1.2804 L0.0136 1.2783 L0.0119 1.2765 L0.0102 1.2749 L0.0083 1.2736 L0.0063 1.2725 L0.0042 1.2718 L0.0021 1.2713 L0.0000 1.2712 L-0.0021 1.2713 L-0.0042 1.2718 L-0.0063 1.2725 L-0.0083 1.2736 L-0.0102 1.2749 L-0.0119 1.2765 L-0.0136 1.2783 L-0.0150 1.2804 L-0.0163 1.2826 L-0.0174 1.2851 L-0.0182 1.2876 L-0.0189 1.2903 L-0.0193 1.2931 L-0.0194 1.2959 L-0.0194 1.2987 L-0.0190 1.3015 L-0.0185 1.3043 L-0.0177 1.3069 L-0.0166 1.3094 L-0.0154 1.3118 L-0.0139 1.3140 L-0.0123 1.3159 L-0.0105 1.3176 L-0.0086 1.3190 L-0.0065 1.3201 L-0.0044 1.3209 L-0.0022 1.3214 L-0.0000 1.3216 L0.0022 1.3214 L0.0044 1.3209 L0.0065 1.3201 L0.0086 1.3190 L0.0105 1.3176 L0.0123 1.3159 L0.0139 1.3140 L0.0154 1.3118 L0.0166 1.3094 L0.0177 1.3069 L0.0185 1.3043 L0.0190 1.3015 L0.0194 1.2987 L0.0194 1.2959 Z" />
-          <path d="M-0.0804 1.3393 L0.0804 1.3393" />
-          <path d="M-0.1877 1.1494 L-0.1954 1.1494" />
-          <path d="M-0.1756 1.0753 L-0.1828 1.0753" />
-          <path d="M-0.1650 1.0101 L-0.1717 1.0101" />
-          <path d="M0.1877 1.1494 L0.1954 1.1494" />
-          <path d="M0.1756 1.0753 L0.1828 1.0753" />
-          <path d="M0.1650 1.0101 L0.1717 1.0101" />
-        </g>
-        <path d="M-0.1139 0.9494 L-0.1145 0.9555 L-0.1147 0.9616 L-0.1145 0.9678 L-0.1140 0.9741 L-0.1130 0.9803 L-0.1117 0.9865 L-0.1100 0.9926 L-0.1080 0.9987 L-0.1055 1.0047 L-0.1027 1.0106 L-0.0995 1.0164 L-0.0959 1.0220 L-0.0919 1.0274 L-0.0876 1.0325 L-0.0830 1.0375 L-0.0780 1.0422 L-0.0727 1.0466 L-0.0671 1.0507 L-0.0612 1.0545 L-0.0551 1.0580 L-0.0487 1.0610 L-0.0422 1.0638 L-0.0354 1.0661 L-0.0285 1.0680 L-0.0215 1.0695 L-0.0144 1.0706 L-0.0072 1.0712 L-0.0000 1.0714 L0.0072 1.0712 L0.0144 1.0706 L0.0215 1.0695 L0.0285 1.0680 L0.0354 1.0661 L0.0422 1.0638 L0.0487 1.0610 L0.0551 1.0580 L0.0612 1.0545 L0.0671 1.0507 L0.0727 1.0466 L0.0780 1.0422 L0.0830 1.0375 L0.0876 1.0325 L0.0919 1.0274 L0.0959 1.0220 L0.0995 1.0164 L0.1027 1.0106 L0.1055 1.0047 L0.1080 0.9987 L0.1100 0.9926 L0.1117 0.9865 L0.1130 0.9803 L0.1140 0.9741 L0.1145 0.9678 L0.1147 0.9616 L0.1145 0.9555 L0.1139 0.9494" fill="none" stroke="#D6EDFF" stroke-opacity="0.55" stroke-width="0.0022" stroke-dasharray="0.014 0.01" />
-        <rect x="-0.9500" y="0.6600" width="1.9000" height="0.8455" filter="url(#cg-grain)" opacity="0.05" style="mix-blend-mode: screen" />
-      </svg>
-      <svg class="court-glint" viewBox="-0.9500 0.6600 1.9000 0.8455" aria-hidden="true" preserveAspectRatio="none">
-        <!-- Warstwa ANIMOWANA: tylko błysk po liniach, bez filtrów, własna warstwa kompozycji (will-change) -->
-        <g fill="none" stroke="#FFFFFF" stroke-opacity="0.9" stroke-width="0.0034" stroke-linecap="round">
-          <path d="M-0.7500 1.5000 L0.7500 1.5000 L0.3571 0.7143 L-0.3571 0.7143 Z" pathLength="1" />
-          <path d="M-0.2450 1.5000 L-0.1551 0.9494 L0.1551 0.9494 L0.2450 1.5000" pathLength="1" />
-          <path d="M-0.6600 1.5000 L-0.5081 1.1547 L-0.5081 1.1547 L-0.4902 1.1271 L-0.4721 1.1011 L-0.4539 1.0766 L-0.4357 1.0536 L-0.4174 1.0320 L-0.3990 1.0117 L-0.3806 0.9928 L-0.3622 0.9750 L-0.3438 0.9584 L-0.3254 0.9430 L-0.3071 0.9286 L-0.2888 0.9153 L-0.2705 0.9029 L-0.2522 0.8916 L-0.2340 0.8811 L-0.2158 0.8715 L-0.1977 0.8628 L-0.1796 0.8550 L-0.1615 0.8479 L-0.1435 0.8417 L-0.1254 0.8362 L-0.1075 0.8315 L-0.0895 0.8275 L-0.0716 0.8243 L-0.0537 0.8218 L-0.0358 0.8200 L-0.0179 0.8189 L0.0000 0.8186 L0.0179 0.8189 L0.0358 0.8200 L0.0537 0.8218 L0.0716 0.8243 L0.0895 0.8275 L0.1075 0.8315 L0.1254 0.8362 L0.1435 0.8417 L0.1615 0.8479 L0.1796 0.8550 L0.1977 0.8628 L0.2158 0.8715 L0.2340 0.8811 L0.2522 0.8916 L0.2705 0.9029 L0.2888 0.9153 L0.3071 0.9286 L0.3254 0.9430 L0.3438 0.9584 L0.3622 0.9750 L0.3806 0.9928 L0.3990 1.0117 L0.4174 1.0320 L0.4357 1.0536 L0.4539 1.0766 L0.4721 1.1011 L0.4902 1.1271 L0.5081 1.1547 L0.5081 1.1547 L0.6600 1.5000" pathLength="1" />
-          <path d="M0.1139 0.9494 L0.1130 0.9433 L0.1118 0.9374 L0.1102 0.9316 L0.1083 0.9259 L0.1061 0.9203 L0.1036 0.9149 L0.1009 0.9097 L0.0978 0.9047 L0.0945 0.8998 L0.0909 0.8951 L0.0872 0.8907 L0.0832 0.8864 L0.0790 0.8824 L0.0746 0.8786 L0.0700 0.8750 L0.0652 0.8717 L0.0603 0.8687 L0.0553 0.8658 L0.0501 0.8633 L0.0448 0.8610 L0.0394 0.8590 L0.0340 0.8572 L0.0284 0.8557 L0.0228 0.8545 L0.0172 0.8535 L0.0115 0.8528 L0.0057 0.8524 L0.0000 0.8523 L-0.0057 0.8524 L-0.0115 0.8528 L-0.0172 0.8535 L-0.0228 0.8545 L-0.0284 0.8557 L-0.0340 0.8572 L-0.0394 0.8590 L-0.0448 0.8610 L-0.0501 0.8633 L-0.0553 0.8658 L-0.0603 0.8687 L-0.0652 0.8717 L-0.0700 0.8750 L-0.0746 0.8786 L-0.0790 0.8824 L-0.0832 0.8864 L-0.0872 0.8907 L-0.0909 0.8951 L-0.0945 0.8998 L-0.0978 0.9047 L-0.1009 0.9097 L-0.1036 0.9149 L-0.1061 0.9203 L-0.1083 0.9259 L-0.1102 0.9316 L-0.1118 0.9374 L-0.1130 0.9433 L-0.1139 0.9494" pathLength="1" />
-          <path d="M-0.1116 1.3393 L-0.1080 1.2959 L0.1080 1.2959 L0.1072 1.2881 L0.1060 1.2804 L0.1046 1.2729 L0.1028 1.2655 L0.1008 1.2583 L0.0984 1.2513 L0.0958 1.2445 L0.0929 1.2379 L0.0898 1.2316 L0.0865 1.2255 L0.0829 1.2197 L0.0791 1.2141 L0.0751 1.2089 L0.0709 1.2040 L0.0666 1.1993 L0.0621 1.1950 L0.0574 1.1910 L0.0526 1.1873 L0.0477 1.1840 L0.0427 1.1810 L0.0376 1.1783 L0.0324 1.1760 L0.0271 1.1741 L0.0217 1.1725 L0.0163 1.1712 L0.0109 1.1703 L0.0055 1.1698 L0.0000 1.1696 L-0.0055 1.1698 L-0.0109 1.1703 L-0.0163 1.1712 L-0.0217 1.1725 L-0.0271 1.1741 L-0.0324 1.1760 L-0.0376 1.1783 L-0.0427 1.1810 L-0.0477 1.1840 L-0.0526 1.1873 L-0.0574 1.1910 L-0.0621 1.1950 L-0.0666 1.1993 L-0.0709 1.2040 L-0.0751 1.2089 L-0.0791 1.2141 L-0.0829 1.2197 L-0.0865 1.2255 L-0.0898 1.2316 L-0.0929 1.2379 L-0.0958 1.2445 L-0.0984 1.2513 L-0.1008 1.2583 L-0.1028 1.2655 L-0.1046 1.2729 L-0.1060 1.2804 L-0.1072 1.2881 L-0.1080 1.2959 L0.1080 1.2959 L0.1116 1.3393" pathLength="1" />
-        </g>
-      </svg>
-      <ul class="cards" aria-label="Przykładowe karty graczy na pozycjach">
-        {CARDS.map((c, i) => (
-          <li class:list={[{ live: c.live }]} style={`--x:${c.x}%; --y:${c.y}%`}>
-            {c.live ? (
-              <button class="pcbtn" type="button" data-i={i} aria-label={`Karta gracza: ${c.name}, ${c.pos}. Pokaż podgląd`}>
-                <PlayerCard name={c.name} letter={c.l} arena={c.arena} arenaName={c.arenaName} nextArena={c.next}
-                  pct={c.p} toNext={c.toNext} wins={c.w} kotc={c.k} hcId={c.id} frame={c.frame as 'default' | 'none'} uid={`h${i}`} />
-              </button>
-            ) : (
-              <div class="pcbtn static" aria-hidden="true">
-                <PlayerCard name={c.name} letter={c.l} arena={c.arena} arenaName={c.arenaName} nextArena={c.next}
-                  pct={c.p} toNext={c.toNext} wins={c.w} kotc={c.k} hcId={c.id} frame={c.frame as 'default' | 'none'} uid={`h${i}`} />
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
+    <div class="court-wrap" style={`--cw:${court.desk.courtWidth}%`}>
+      <div class="court-stage" id="courtStage" style={`--ar-desk:${court.desk.ar}; --ar-mob:${court.mob.ar}`}>
+        <HeroCourt />
+        <ul class="cards" aria-label="Przykładowe karty graczy na boisku">
+          {CARDS.map((c, i) => {
+            const d = court.desk.spots[c.spot]
+            const m = court.mob.spots[c.spot]
+            return (
+              <li class:list={[{ live: c.live }]} style={`--x:${d[0]}%; --y:${d[1]}%; --mx:${m[0]}%; --my:${m[1]}%`}>
+                {c.live ? (
+                  <button class="pcbtn" type="button" data-i={i} aria-label={`Karta gracza: ${c.name}, ${c.pos}. Pokaż podgląd`}>
+                    <PlayerCard name={c.name} letter={c.l} arena={c.arena} arenaName={c.arenaName} nextArena={c.next}
+                      pct={c.p} toNext={c.toNext} wins={c.w} kotc={c.k} hcId={c.id} frame={c.frame} uid={`h${i}`} />
+                  </button>
+                ) : (
+                  <div class="pcbtn static" aria-hidden="true">
+                    <PlayerCard name={c.name} letter={c.l} arena={c.arena} arenaName={c.arenaName} nextArena={c.next}
+                      pct={c.p} toNext={c.toNext} wins={c.w} kotc={c.k} hcId={c.id} frame={c.frame} uid={`h${i}`} />
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
       </div>
       <div class="marquee under-court" aria-hidden="true">
         <div class="marquee-track">
@@ -202,7 +171,7 @@ const homeFaqSchema = {
     </div>
 
     <div class="wrap hero-copy">
-      <p class="lead">Widzisz, kto gra obok, i dołączasz jednym ruchem. Grasz 3x3. Wynik zostaje na Twojej karcie.</p>
+      <p class="lead">HoopConnect to aplikacja do koszykówki 3x3. Widzisz, kto gra obok, dołączasz jednym ruchem, a wynik, XP i wygrane zostają na Twojej karcie gracza.</p>
       <div class="cta-row">
         <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Zagraj dziś<span class="arw">→</span></a>
       </div>
@@ -215,14 +184,14 @@ const homeFaqSchema = {
     </div>
   </section>
 
-  <!-- Podgląd karty (modal). Treść wstawia skrypt z CARDS_JSON. -->
+  <!-- Podgląd karty (panel od dołu). Treść wstawia skrypt z cardsData. -->
   <div class="cm" id="cardModal" hidden>
     <div class="cm-backdrop" data-cm-close></div>
     <div class="cm-card cutbox" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
       <button class="cm-x" data-cm-close aria-label="Zamknij">×</button>
       <div class="cm-big" id="cmBig"></div>
       <div class="cm-tx">
-        <h2 id="cmTitle">Kuba</h2>
+        <h2 id="cmTitle">Alex</h2>
         <p class="cm-pos" id="cmKicker">Karta gracza</p>
         <p class="cm-desc" id="cmDesc"></p>
         <ul class="cm-legend">
@@ -236,47 +205,50 @@ const homeFaqSchema = {
   </div>
   <script type="application/json" id="cardsData" set:html={JSON.stringify(CARDS.map((c) => ({ name: c.name, pos: c.pos, desc: c.desc })))} />
 
-  <!-- ═══ 2. GRA, KTÓRA SIĘ LICZY ═══ -->
+  <!-- ═══ 2. KAŻDY MECZ SIĘ LICZY: karta meczu z apki „rozgrywa się" przy wejściu na ekran ═══ -->
   <section class="ch ch-center" id="mecz">
     <div class="wrap">
-      <div class="ch-head rv">
-        <h2>Wynik zostaje.<br />Król boiska ma imię.</h2>
-        <p class="lead">Zapisany wynik, naliczone XP i wygrana na karcie, zanim zejdziecie z boiska. Koniec dyskusji, kto wygrał.</p>
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Każdy mecz</span></span> <span class="ln"><span>się liczy</span></span></h2>
+        <p class="lead">Po meczu wpisujecie wynik, a kapitan rywali go potwierdza. XP wpada na konto, wygrana zostaje na Twojej karcie. Na stałe.</p>
       </div>
-      <figure class="matchcard rv rv-d1">
-        <MatchCard uid="m2" status="completed" playing={true} dist="2,0 km" home={MATCH_HOME} away={MATCH_AWAY} score={[21, 16]}
+      <figure class="matchcard rv">
+        <MatchCard uid="m2" live status="completed" playing={true} dist="2,0 km" home={MATCH_HOME} away={MATCH_AWAY} score={[21, 16]}
           date="Śr, 26 sie · 19:50" address="Aleja 3 Maja, Stare Miasto" />
-        <figcaption>Wygrana to <b>75 XP</b>. Przegrana <b>40 XP</b>. Oba zostają.</figcaption>
+        <figcaption class="xp-receipts">
+          <span class="xp-item"><b>+<span data-xp="75">75</span> XP</b><small>za wygraną</small></span>
+          <span class="xp-item"><b>+<span data-xp="40">40</span> XP</b><small>za rozegrany mecz</small></span>
+        </figcaption>
       </figure>
     </div>
   </section>
 
-  <!-- ═══ 3. ZNAJDŹ GRĘ OBOK: sticky telefon, trzy kroki ═══ -->
+  <!-- ═══ 3. ZNAJDŹ GRĘ OBOK: przyklejony telefon z Klubem, trzy kroki ═══ -->
   <section class="ch" id="klub">
     <div class="wrap">
-      <div class="ch-head rv">
-        <h2>Znajdź grę obok</h2>
-        <p class="lead">Zakładka Klub pokazuje sesje na boiskach w Twojej okolicy. Reszta to trzy ruchy.</p>
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Znajdź grę obok</span></span></h2>
+        <p class="lead">Zakładka Klub pokazuje mecze na boiskach w Twojej okolicy: kto gra, gdzie i o której. Reszta to trzy ruchy.</p>
       </div>
       <div class="scene" data-scene="club" data-step="1">
         <div class="scene-visual">
-          <div class="phone-crop">
-            <div class="phone" aria-hidden="true">
-              <div class="screen">
+          <div class="phone" aria-hidden="true">
+            <div class="screen">
+              <div class="ph-chrome">
                 <div class="ph-top">Polska</div>
-                <div class="ph-title">Hoop<i>Connect</i></div>
+                <div class="ph-title">HoopConnect</div>
                 <div class="ph-tabs"><span class="on">Mecze</span><span>Skład</span><span>Statystyki</span></div>
                 <div class="ph-label">Spotkania w pobliżu</div>
-                <div class="ph-match">
-                  <MatchCard uid="m3" status="open" dist="2,0 km" home={CLUB_HOME} away={CLUB_AWAY} you="S" fill="B"
-                    date="Sob, 29 sie · 19:30" address="Aleja 3 Maja, Stare Miasto" cta="Dołącz do meczu" ctaAlt="Szczegóły Twojego meczu" />
-                </div>
-                <div class="ph-next">
-                  <span class="ph-next-mode">3v3</span><span class="ph-next-dist">3,4 km</span>
-                  <b>Nd, 30 sie · 17:00</b><span class="ph-next-where">Błonia, Kraków</span>
-                </div>
-                <div class="ph-nav"><span></span><span></span><span class="on"></span><span></span><span></span></div>
               </div>
+              <div class="ph-match">
+                <MatchCard uid="m3" status="open" dist="2,0 km" home={CLUB_HOME} away={CLUB_AWAY} you="S" fill="B"
+                  date="Sob, 29 sie · 19:30" address="Aleja 3 Maja, Stare Miasto" cta="Dołącz do meczu" ctaAlt="Twój mecz · szczegóły" />
+              </div>
+              <div class="ph-next">
+                <span class="ph-next-mode">3v3</span><span class="ph-next-dist">3,4 km</span>
+                <b>Nd, 30 sie · 17:00</b><span class="ph-next-where">Błonia, Kraków</span>
+              </div>
+              <div class="ph-nav"><span></span><span></span><span class="on"></span><span></span><span></span></div>
             </div>
           </div>
         </div>
@@ -295,9 +267,12 @@ const homeFaqSchema = {
   <!-- ═══ 4. KING OF THE COURT: losowanie trójek ═══ -->
   <section class="ch" id="kotc">
     <div class="wrap split">
-      <div class="split-copy rv">
-        <h2>Składy losuje apka.<br />Ty grasz.</h2>
-        <p class="lead">Dziewięciu graczy wchodzi solo, apka losuje trzy trójki. Wygrany zostaje na boisku, a po sesji wiadomo, kto jest królem.</p>
+      <div class="split-copy rv rv-seq">
+        <h2><span class="ln"><span>Składy losuje apka.</span></span> <span class="ln"><span>Ty grasz.</span></span></h2>
+        <p class="lead">King of the Court to sesja pickupu 3x3 dla całej ekipy. Wchodzisz solo, apka losuje trójki, a po sesji wiadomo, kto jest królem boiska.</p>
+        <dl class="facts">
+          {KOTC_FACTS.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+        </dl>
         <p class="fact">Król boiska zgarnia <b>275 XP</b>, drugie miejsce <b>195</b>, trzecie <b>145</b>.</p>
         <a class="inline-link" href="/klub">Więcej o King of the Court<span class="arw">→</span></a>
       </div>
@@ -313,17 +288,17 @@ const homeFaqSchema = {
     </div>
   </section>
 
-  <!-- ═══ 5. KARTA GRACZA: sticky karta obracana krokami ═══ -->
+  <!-- ═══ 5. KARTA GRACZA: przyklejona karta, krok podświetla jej element; obraca ją tylko mysz albo palec ═══ -->
   <section class="ch" id="karta">
     <div class="wrap">
-      <div class="ch-head rv">
-        <h2>Karta rośnie z każdym meczem</h2>
-        <p class="lead">Hex, arena, pasek XP i wygrane. Wszystko z meczów, które naprawdę zagrałeś.</p>
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Karta rośnie z każdym meczem</span></span></h2>
+        <p class="lead">Karta gracza zbiera wszystko, co zagrałeś: arenę, XP i wygrane. Złap ją i obróć.</p>
       </div>
       <div class="scene flip" data-scene="card" data-step="1">
         <div class="scene-visual">
           <div class="pc-stage" data-tilt-card aria-hidden="true">
-            <PlayerCard name="Kuba" letter="K" arena={4} arenaName="Ankh Court" nextArena="Void Gem" pct={62} toNext={608} wins={12} kotc={3} hcId="20251" frame="default" uid="sc" />
+            <PlayerCard name="Kuba" letter="K" arena={4} arenaName="Ankh Court" nextArena="Void Gem" pct={62} toNext={608} wins={12} kotc={3} hcId="20251" frame="default" uid="sc" lazy />
           </div>
         </div>
         <ol class="steps">
@@ -341,18 +316,18 @@ const homeFaqSchema = {
   <!-- ═══ 6. ARENY: siedem w rzędzie, przesuwają się same ═══ -->
   <section class="ch ch-center" id="areny">
     <div class="wrap">
-      <div class="ch-head rv">
-        <h2>Każda wygrana zostaje</h2>
-        <p class="lead">Wygrana to XP. XP to arena. Arena zostaje. Siedem aren od Rozgrzewki po Seraphim, a raz zdobyte XP nie znika.</p>
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Siedem aren.</span></span> <span class="ln"><span>Jedna droga.</span></span></h2>
+        <p class="lead">Wygrana to XP. XP to arena. Arena zostaje. Zaczynasz od Rozgrzewki i idziesz po Seraphim, a raz zdobyte XP nie znika.</p>
       </div>
     </div>
-    <div class="arena-row rv rv-d1" aria-label="Siedem aren HoopConnect">
+    <div class="arena-row rv" aria-label="Siedem aren HoopConnect">
       <div class="arena-track">
         {[...ARENAS, ...ARENAS].map((a) => (
           <figure>
             {a.n === 0
               ? <span class="arena-hex"></span>
-              : <img src={`/arenas/arena-${a.n}.png`} width="500" height="500" alt="" loading="lazy" decoding="async" />}
+              : <img src={`/arenas/web/arena-${a.n}.webp`} width="360" height="360" alt="" loading="lazy" decoding="async" />}
             <figcaption><b>{a.name}</b><span>{a.xp} XP</span></figcaption>
           </figure>
         ))}
@@ -360,23 +335,20 @@ const homeFaqSchema = {
     </div>
   </section>
 
-  <!-- ═══ 7. RANKING ═══ -->
+  <!-- ═══ 7. RANKING: tablica z apki w HTML; „Ty" wygrywa mecz i wyprzedza gracza nad sobą ═══ -->
   <section class="ch ch-center" id="ranking">
     <div class="wrap">
-      <div class="ch-head rv">
-        <h2>Widać, kto naprawdę gra</h2>
-        <p class="lead">Trzy tablice: XP, mecze i King of the Court. Filtr po mieście, bez logowania. Link podsyłasz ekipie.</p>
-        <div class="cta-row center">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Widać, kto naprawdę gra</span></span></h2>
+        <p class="lead">Publiczny ranking ma trzy tablice: XP, mecze i King of the Court. Filtrujesz po mieście, otwierasz bez logowania i podsyłasz link ekipie.</p>
+        <div class="cta-row">
           <a class="btn btn-primary" href={RANK_URL} target="_blank" rel="noopener">Otwórz ranking<span class="arw">→</span></a>
           <a class="inline-link" href="/ranking">Za co jest XP<span class="arw">→</span></a>
         </div>
       </div>
-      <div class="browser cutbox clip rv rv-d1">
-        <div class="browser-bar"><span class="url">app.hoopconnect.pl/rank</span></div>
-        <picture>
-          <source media="(max-width: 639px)" srcset="/brand/rank-mobile.webp" width="780" height="1688" />
-          <img src="/brand/rank-desktop.webp" width="1600" height="1000" alt="Publiczny ranking HoopConnect: tablica XP z filtrem po mieście" loading="lazy" decoding="async" />
-        </picture>
+      <div class="rank-show rv">
+        <RankBoard uid="hb" story />
+        <p class="rank-cap">Wygrany mecz to <b>75 XP</b>. Czasem tyle wystarczy, żeby wskoczyć na podium.</p>
       </div>
     </div>
   </section>
@@ -384,23 +356,13 @@ const homeFaqSchema = {
   <!-- ═══ 8. ASYSTENT TRENINGU: pierścień Draft Score ═══ -->
   <section class="ch" id="trening">
     <div class="wrap split">
-      <div class="ring-wrap rv">
-        <div class="ring" aria-hidden="true">
-          <svg viewBox="0 0 120 120">
-            <defs>
-              <clipPath id="ring-r"><rect x="60" y="0" width="60" height="120" /></clipPath>
-              <clipPath id="ring-l"><rect x="0" y="0" width="60" height="120" /></clipPath>
-            </defs>
-            <circle class="ring-bg" cx="60" cy="60" r="52" />
-            <g clip-path="url(#ring-r)"><g class="arc-g r"><path class="arc" d="M60 8 A52 52 0 0 1 60 112" /></g></g>
-            <g clip-path="url(#ring-l)"><g class="arc-g l"><path class="arc" d="M60 8 A52 52 0 0 1 60 112" /></g></g>
-          </svg>
-          <div class="ring-tx"><b>620</b><span>Draft Score</span><small>z 1000 · ten tydzień</small></div>
-        </div>
-      </div>
-      <div class="split-copy rv rv-d1">
-        <h2>Nie ma meczu?<br />Jest plan.</h2>
-        <p class="lead">Codzienne ćwiczenia pod Twoje dni treningowe, regeneracja w wolne. Draft Score tygodnia jest prywatny, a 10% z niego idzie w XP.</p>
+      <DraftRing uid="home" score={620} />
+      <div class="split-copy rv rv-seq">
+        <h2><span class="ln"><span>Nie ma meczu?</span></span> <span class="ln"><span>Jest plan.</span></span></h2>
+        <p class="lead">Asystent treningu układa Ci tydzień. Ty wybierasz, ile dni trenujesz, a apka codziennie daje gotowy zestaw ćwiczeń.</p>
+        <dl class="facts">
+          {TRAIN_FACTS.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+        </dl>
         <p class="fact">Z treningu wpada do <b>100 XP</b> tygodniowo. Draft Score nigdy nie trafia do rankingu.</p>
         <a class="inline-link" href="/asystent-treningu">Jak działa asystent treningu<span class="arw">→</span></a>
       </div>
@@ -409,24 +371,29 @@ const homeFaqSchema = {
 
   <!-- ═══ 9. TRENERZY: jeden rozdział, spokojny głos ═══ -->
   <section class="ch" id="trenerzy">
-    <div class="wrap">
-      <div class="coach rv">
-        <h2>Prowadzisz drużynę?<br />Masz osobny panel.</h2>
-        <p class="lead">Frekwencja na treningu, składki, zawodnicy bez konta i wzór zgody rodzica. Spokojnie, bez arkusza.</p>
-        <a class="btn btn-ghost" href={COACH_OFFER_URL} target="_blank" rel="noopener">Zobacz ofertę<span class="arw">→</span></a>
+    <div class="wrap coach">
+      <div class="coach-copy rv rv-seq">
+        <h2><span class="ln"><span>Prowadzisz drużynę?</span></span> <span class="ln"><span>Masz osobny panel.</span></span></h2>
+        <p class="lead">Panel trenera porządkuje to, co zwykle żyje w zeszycie i w arkuszu. Spokojnie, w jednym miejscu.</p>
+        <div class="cta-row">
+          <a class="btn btn-ghost" href={COACH_OFFER_URL} target="_blank" rel="noopener">Zobacz ofertę<span class="arw">→</span></a>
+        </div>
         <p class="coach-note">Panel jest płatny, dla trenerów i klubów. Gracze nie płacą nic.</p>
       </div>
+      <dl class="facts rv rv-d1">
+        {COACH_FACTS.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+      </dl>
     </div>
   </section>
 
   <!-- ═══ 10. MANIFEST ═══ -->
   <section class="ch" id="manifest">
-    <div class="wrap manifest rv">
-      <p>Najlepsza statystyka nie brzmi <em>„spędziłem godzinę w aplikacji"</em>.</p>
-      <p>Brzmi <strong>„zagrałem jeszcze jeden mecz"</strong>.</p>
-      <p class="manifest-sig">Boisko, które pamięta.</p>
+    <div class="wrap manifest">
+      <p class="rv">Najlepsza statystyka nie brzmi <em>„spędziłem godzinę w aplikacji"</em>.</p>
+      <p class="rv rv-d2">Brzmi <strong>„zagrałem jeszcze jeden mecz"</strong>.</p>
+      <p class="manifest-sig rv rv-d3">Boisko, które pamięta.</p>
     </div>
-    <div class="wrap press rv rv-d1">
+    <div class="wrap press rv">
       <blockquote>„HoopConnect powstał, aby uporządkować koszykówkę uliczną i pozwolić graczom skupić się na grze."</blockquote>
       <a class="press-src" href="https://3x3basket.pl" target="_blank" rel="noopener">3x3basket.pl<span class="arw">→</span></a>
     </div>
@@ -435,8 +402,8 @@ const homeFaqSchema = {
   <!-- ═══ 11. PYTANIA ═══ -->
   <section class="ch" id="pytania">
     <div class="wrap faq">
-      <div class="ch-head rv">
-        <h2>Częste pytania</h2>
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Częste pytania</span></span></h2>
         <p class="lead">Krótko o tym, jak działa HoopConnect. Więcej w pełnym <a class="inline-link lower" href="/faq">FAQ</a>.</p>
       </div>
       <div class="home-faq rv rv-d1">
@@ -453,9 +420,9 @@ const homeFaqSchema = {
   <!-- ═══ 12. ZAMKNIĘCIE ═══ -->
   <section class="ch final" id="zagraj">
     <div class="wrap final-grid">
-      <div class="final-copy rv">
-        <h2>Następny mecz<br />jest Twój</h2>
-        <p class="lead">Apka działa w przeglądarce telefonu, bez sklepu i bez instalacji. Zeskanuj, załóż kartę gracza i wyjdź na boisko.</p>
+      <div class="final-copy rv rv-seq">
+        <h2><span class="ln"><span>Następny mecz</span></span> <span class="ln"><span>jest Twój</span></span></h2>
+        <p class="lead">Apka działa w przeglądarce telefonu, bez sklepu i bez instalacji. Zeskanuj kod, załóż kartę gracza i wyjdź na boisko.</p>
         <div class="cta-row">
           <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Załóż kartę gracza<span class="arw">→</span></a>
         </div>
@@ -470,17 +437,91 @@ const homeFaqSchema = {
 </Base>
 
 <style>
-  /* ═══ HERO: nagłówek nad boiskiem, boisko wyśrodkowane, pasek tylko pod boiskiem, reszta pod spodem ═══ */
-  .hero { position: relative; overflow: hidden; padding-block: clamp(44px, 6vw, 88px) clamp(56px, 7vw, 100px); }
-  .hero-glow { position: absolute; inset: auto -10% 6% -10%; height: 70%; pointer-events: none; z-index: 0;
-    background: radial-gradient(ellipse 48% 60% at 50% 72%, rgba(47,145,214,0.16), transparent 70%); }
-  .hero-head { position: relative; z-index: 2; text-align: center; animation: rise .7s var(--ease) both; }
-  .hero h1 { margin: 0 auto; max-width: 16ch; font-size: clamp(50px, 7.6vw, 122px); line-height: 0.92; }
-  .hl { color: var(--accent-hi); }
-  .court-wrap { position: relative; z-index: 1; width: min(100%, 1280px); margin: clamp(24px, 3.5vw, 44px) auto 0; }
-  .hero-copy { position: relative; z-index: 2; text-align: center; margin-top: clamp(26px, 4vw, 44px); animation: rise .7s .2s var(--ease) both; }
-  .hero .lead { margin: 0 auto 28px; max-width: 44ch; font-size: clamp(18px, 1.7vw, 22px); }
-  .cta-row { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; justify-content: center; }
+  /* ═══ 1. HERO ═══ */
+  .hero { position: relative; isolation: isolate; overflow: hidden; padding-block: clamp(24px, 3.4vw, 48px) clamp(56px, 7vw, 104px); }
+  /* Światło z góry, za nagłówkiem: napis wychodzi z tła zamiast leżeć na czarnym */
+  .hero::before { content: ''; position: absolute; z-index: -2; inset: 0 0 auto 0; height: min(76vh, 720px); pointer-events: none;
+    background: radial-gradient(ellipse 58% 66% at 50% 0%, rgba(111,195,255,0.12) 0%, rgba(47,145,214,0.045) 46%, transparent 74%); }
+  .hero-head { position: relative; z-index: 3; text-align: center; }
+  .hero h1 { margin: 0 auto; line-height: 0.92; letter-spacing: -0.01em; filter: drop-shadow(0 16px 40px rgba(47,145,214,0.30)); }
+  .hero h1 { font-size: clamp(50px, min(7.8vw, 13.4svh), 124px); }
+  .hero h1 .w { background: linear-gradient(180deg, #FFFFFF 36%, #C3D3EA 100%); -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent; }
+  .hero h1 .hl { color: var(--accent-hi); text-shadow: 0 0 44px rgba(111,195,255,0.36); }
+  /* Wejście nagłówka: linie wysuwają się z maski (raz, przy ładowaniu) */
+  .hero .ln > span { transform: none; animation: line-up var(--dur-3) var(--ease) both; animation-delay: calc(60ms + var(--li, 0) * 120ms); }
+
+  /* Boisko: szerokość ogranicza też wysokość okna, żeby cały kort z paskiem mieścił się na pierwszym ekranie */
+  .court-wrap { position: relative; z-index: 1; width: min(100%, 1280px); margin: clamp(10px, 1.6vw, 22px) auto 0; }
+  @supports (height: 100svh) {
+    .court-wrap { width: min(100%, 1400px, max(700px, calc((100svh - 430px) * 2.25))); }
+  }
+  /* Parkiet: plama światła na całą szerokość okna, która z każdej strony rozpływa się w tło strony (bez krawędzi) */
+  .court-wrap::before { content: ''; position: absolute; z-index: -1; left: 50%; top: -26%; bottom: -32%; width: 100vw;
+    transform: translateX(-50%); pointer-events: none;
+    background:
+      radial-gradient(ellipse 32% 48% at 50% 64%, rgba(111,195,255,0.13) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 62% at 50% 58%, #18284A 0%, rgba(21,33,58,0.74) 36%, rgba(14,15,18,0) 74%); }
+  /* Scena: proporcje = kadr boiska z generatora, więc % pozycji trafiają w punkty parkietu. Dół sceny = linia końcowa. */
+  .court-stage { position: relative; width: 100%; aspect-ratio: var(--ar-desk); container-type: inline-size; touch-action: pan-y;
+    animation: rise var(--dur-3) .12s var(--ease) both; }
+  .court-wrap .marquee.under-court { width: var(--cw); margin-inline: auto; animation: rise var(--dur-2) 1.1s var(--ease) both; }
+
+  /* Karty: skala rośnie razem ze sceną. --k = szerokość sceny / szerokość wzorcowa (iloraz długości przez tan(atan2())). */
+  @property --stage-w { syntax: '<length>'; inherits: true; initial-value: 1280px; }
+  .cards { --stage-w: 100cqw; --ref: 1280px; --k: 1; list-style: none; padding: 0; margin: 0; position: absolute; inset: 0; }
+  @supports (width: calc(1px * tan(atan2(1px, 1px)))) {
+    .cards { --k: tan(atan2(var(--stage-w), var(--ref))); }
+  }
+  @supports not (width: calc(1px * tan(atan2(1px, 1px)))) {
+    @media (max-width: 1180px) { .cards { --k: 0.86; } }
+    @media (max-width: 980px) { .cards { --k: 0.7; } }
+    @media (max-width: 800px) { .cards { --k: 0.56; } }
+    @media (max-width: 640px) { .cards { --k: 1; } }
+  }
+  /* Karta stoi stopą w punkcie boiska (translate -50%, -100%). Wejście: tylny rząd, skrzydła, Alex. */
+  .cards li { position: absolute; left: var(--x); top: var(--y); z-index: var(--z, 1); transform: translate(-50%, -100%);
+    animation: card-in var(--dur-3) var(--ease) both; animation-delay: calc(.5s + var(--i, 0) * 90ms); }
+  @keyframes card-in { from { opacity: 0; transform: translate(-50%, calc(-100% + 30px)); } }
+  /* Cień na parkiecie pod stopą karty */
+  .cards li::after { content: ''; position: absolute; z-index: -1; left: 50%; bottom: 0; width: 150%; aspect-ratio: 5 / 1;
+    transform: translate(-50%, 56%); background: radial-gradient(ellipse, rgba(0,0,0,0.62), rgba(0,0,0,0.26) 42%, transparent 70%); }
+  /* Skala bazowa (dla sceny wzorcowej), głębia (dalsze karty mniejsze i ciemniejsze), kolejność wejścia */
+  .cards li:nth-child(1) { --pcsb: 0.30; --z: 1; --i: 0; --dim: 0.74; }
+  .cards li:nth-child(2) { --pcsb: 0.30; --z: 1; --i: 1; --dim: 0.74; }
+  .cards li:nth-child(3) { --pcsb: 0.42; --z: 2; --i: 2; --dim: 0.87; }
+  .cards li:nth-child(4) { --pcsb: 0.42; --z: 2; --i: 3; --dim: 0.87; }
+  .cards li:nth-child(5) { --pcsb: 0.66; --z: 4; --i: 4; --dim: 1; }
+  /* :global, bo .pc3d-wrap renderuje komponent (nie ma atrybutu zakresu tej strony) */
+  .cards :global(.pc3d-wrap) { --pcs: calc(var(--pcsb) * var(--k)); }
+  /* Jasna krawędź (drop-shadow idzie po wciętym kształcie karty) odcina kartę od parkietu także w małej skali */
+  .pcbtn { --rx0: -6; --ry0: 0; display: block; background: transparent; border: 0; padding: 0; cursor: pointer; touch-action: pan-y;
+    filter: brightness(var(--dim, 1)) drop-shadow(0 0 1px rgba(190,224,255,0.62)); }
+  .pcbtn.static { cursor: default; pointer-events: none; }
+  .pcbtn :global(.pc3d-card) { transition: none; }
+  .pcbtn:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 6px; }
+  .cards li:nth-child(1) .pcbtn { --ry0: 10; }
+  .cards li:nth-child(2) .pcbtn { --ry0: -10; }
+  .cards li:nth-child(3) .pcbtn { --ry0: 18; }
+  .cards li:nth-child(4) .pcbtn { --ry0: -18; }
+  /* Alex: plama światła pod stopą i pierścień rozchodzący się po parkiecie (sygnał „dotknij"), tylko transform i opacity */
+  .cards li.live::after { width: 210%; aspect-ratio: 3.6 / 1;
+    background: radial-gradient(ellipse, rgba(111,195,255,0.55), rgba(47,145,214,0.2) 42%, transparent 70%);
+    animation: live-pool 3.2s var(--ease-io) infinite; }
+  .cards li.live::before { content: ''; position: absolute; z-index: -1; left: 50%; bottom: 0; width: 170%; aspect-ratio: 3.6 / 1;
+    border: 1.5px solid rgba(140,208,255,0.85); border-radius: 50%; opacity: 0; transform: translate(-50%, 50%) scale(0.5);
+    animation: live-ping 3.2s cubic-bezier(.2,.6,.3,1) 1.8s infinite; }
+  .court-stage.paused .cards li::before, .court-stage.paused .cards li::after { animation-play-state: paused; }
+  @keyframes live-pool { 0%, 100% { opacity: 0.72; } 50% { opacity: 1; } }
+  @keyframes live-ping {
+    0% { opacity: 0; transform: translate(-50%, 50%) scale(0.5); }
+    14% { opacity: 0.9; }
+    72%, 100% { opacity: 0; transform: translate(-50%, 50%) scale(1.45); }
+  }
+
+  .hero-copy { position: relative; z-index: 2; text-align: center; margin-top: clamp(22px, 3.4vw, 40px); animation: rise var(--dur-2) 1.2s var(--ease) both; }
+  .hero-copy .lead { margin: 0 auto 28px; max-width: 52ch; font-size: clamp(18px, 1.6vw, 21px); }
+  .hero-copy .cta-row { justify-content: center; }
   .hero-proof { list-style: none; padding: 0; margin-top: 28px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 26px;
     font-size: 13px; font-weight: 600; letter-spacing: 0.3px; color: var(--text-2); }
   .hero-proof li { display: inline-flex; align-items: center; gap: 9px; }
@@ -489,60 +530,18 @@ const homeFaqSchema = {
     font-size: 11px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--text-3); }
   .stage-hint span { width: 7px; height: 7px; background: var(--accent); transform: rotate(45deg); animation: pulse 2.4s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1; transform: rotate(45deg) scale(1); } 50% { opacity: .45; transform: rotate(45deg) scale(1.5); } }
-  @keyframes rise { from { opacity: 0; transform: translateY(16px); } }
-  /* Pasek pod linią końcową: szerokość boiska (79% sceny), bez tła i linii, końce wtapiają się w tło */
-  .court-wrap :global(.marquee.under-court) { width: 79%; margin-inline: auto; background: transparent; border: 0; padding-block: 14px 8px;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); }
 
-  /* ── Scena: proporcje = viewBox boiska (1.9000 : 0.8455), % pozycji z projekcji trafiają w punkty boiska.
-     Dół sceny = linia końcowa. Karta stoi stopą w punkcie (translate -50%, -100%).
-     Boisko wtapia się w tło strony eliptyczną maską (góra i boki znikają w tle). ── */
-  .court-stage { position: relative; z-index: 1; width: 100%; aspect-ratio: 1.9000 / 0.8455; margin-top: 0;
-    animation: rise .8s .12s var(--ease) both; touch-action: pan-y; }
-  .court-bg, .court-glint { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
-    -webkit-mask-image: radial-gradient(ellipse 100% 150% at 50% 100%, #000 55%, transparent 100%); mask-image: radial-gradient(ellipse 100% 150% at 50% 100%, #000 55%, transparent 100%); }
-  /* Błysk: osobna warstwa kompozycji (statyczne filtry nie przeliczają się co klatkę); pauza poza ekranem */
-  .court-glint { will-change: transform; transform: translateZ(0); }
-  .court-glint :global(path) { stroke-dasharray: 0.05 1; stroke-dashoffset: 1.05; animation: glint 7s linear infinite; }
-  .court-glint :global(path:nth-child(2)) { animation-delay: -1.4s; }
-  .court-glint :global(path:nth-child(3)) { animation-delay: -2.9s; }
-  .court-glint :global(path:nth-child(4)) { animation-delay: -4.2s; }
-  .court-glint :global(path:nth-child(5)) { animation-delay: -5.6s; }
-  @keyframes glint { to { stroke-dashoffset: 0; } }
-  .court-stage.paused .court-glint :global(path) { animation-play-state: paused; }
-  @media (prefers-reduced-motion: reduce) { .court-glint { display: none; } }
-  /* Bez preserve-3d (karta ma clip-path; zagnieżdżone 3D psuje przycinanie na WebKit — patrz PlayerCard3D w apce) */
-  .cards { list-style: none; padding: 0; position: absolute; inset: 0; }
-  /* Karty wchodzą po boisku: tylny rząd, środek, Alex (transform + opacity, raz, przy ładowaniu) */
-  .cards li { position: absolute; left: var(--x); top: var(--y); z-index: var(--z, 1); transform: translate(-50%, -100%);
-    animation: card-in var(--dur-2) var(--ease) both; animation-delay: calc(.45s + var(--i, 0) * var(--stagger)); }
-  @keyframes card-in { from { opacity: 0; transform: translate(-50%, calc(-100% + 24px)); } }
-  .cards li::after { content: ''; position: absolute; left: 50%; bottom: -3%; width: 150%; height: 14%;
-    transform: translateX(-50%); background: radial-gradient(ellipse, rgba(0,0,0,0.6), rgba(0,0,0,0.25) 40%, transparent 68%); z-index: -1; }
-
-  /* Skala bazowa per pozycja (lekkie karty, środkowy najbliżej), kolejność i kolejność wejścia */
-  .cards li:nth-child(1) { --pcsb: 0.26; --z: 1; --i: 0; }
-  .cards li:nth-child(2) { --pcsb: 0.26; --z: 1; --i: 1; }
-  .cards li:nth-child(3) { --pcsb: 0.36; --z: 2; --i: 2; }
-  .cards li:nth-child(4) { --pcsb: 0.36; --z: 2; --i: 3; }
-  .cards li:nth-child(5) { --pcsb: 0.50; --z: 4; --i: 4; }
-  /* Karta interaktywna (Alex): poświata pod stopą, reszta statyczna */
-  .cards li.live::after { width: 190%; height: 22%; bottom: -8%;
-    background: radial-gradient(ellipse, rgba(111,195,255,0.5), rgba(47,145,214,0.18) 42%, transparent 70%);
-    animation: livepulse 2.6s ease-in-out infinite; }
-  @keyframes livepulse { 0%, 100% { opacity: 0.75; transform: translateX(-50%) scale(1); } 50% { opacity: 1; transform: translateX(-50%) scale(1.12); } }
-  .pcbtn.static { cursor: default; }
-  /* :global, bo .pc3d-wrap renderuje komponent (nie ma atrybutu scope tej strony) */
-  .cards :global(.pc3d-wrap) { --pcs: var(--pcsb); }
-  /* Tilt bierze się z --rx0/--ry0 ustawianych skryptem na przycisku (bliskość kursora / przeciąganie) */
-  .pcbtn { --rx0: -6; --ry0: 0; display: block; background: transparent; border: none; padding: 0; cursor: pointer; touch-action: none; }
-  .pcbtn :global(.pc3d-card) { transition: none; }
-  .pcbtn:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 4px; }
-  .cards li:nth-child(1) .pcbtn { --ry0: 10; }  .cards li:nth-child(2) .pcbtn { --ry0: -10; }
-  .cards li:nth-child(3) .pcbtn { --ry0: 18; }  .cards li:nth-child(4) .pcbtn { --ry0: -18; }
-  .cards li:nth-child(5) .pcbtn { --ry0: 0; }
-  .cards li:has(.pcbtn:hover), .cards li:has(.pcbtn:focus-visible) { z-index: 5; }
+  /* Telefon: osobny kadr boiska (kamera wyżej), scena odrobinę szersza niż ekran, pasek na całą szerokość */
+  @media (max-width: 640px) {
+    .court-wrap { margin-top: 16px; }
+    .court-stage { width: 104%; margin-left: -2%; aspect-ratio: var(--ar-mob); }
+    .court-wrap .marquee.under-court { width: 100%; }
+    .cards { --ref: 390px; }
+    .cards li { left: var(--mx); top: var(--my); }
+    .cards li:nth-child(1), .cards li:nth-child(2) { --pcsb: 0.21; }
+    .cards li:nth-child(3), .cards li:nth-child(4) { --pcsb: 0.27; }
+    .cards li:nth-child(5) { --pcsb: 0.38; }
+  }
 
   /* Podgląd karty: panel wysuwany od dołu (tap na kartę), duża karta + opis */
   .cm { position: fixed; inset: 0; z-index: 300; display: flex; align-items: flex-end; justify-content: center; }
@@ -552,13 +551,11 @@ const homeFaqSchema = {
     padding: clamp(22px, 4vw, 40px) clamp(20px, 4vw, 44px) calc(clamp(22px, 4vw, 36px) + env(safe-area-inset-bottom));
     display: grid; gap: clamp(20px, 4vw, 44px); align-items: center;
     animation: cm-up .3s cubic-bezier(.2,.8,.3,1) both; max-height: calc(100vh - 24px); overflow: auto; }
-  .cm-card::before, .cm-card::after { clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
   @keyframes cm-up { from { opacity: 0; transform: translateY(40px); } }
   .cm-x { position: absolute; top: 10px; right: 14px; z-index: 2; background: transparent; border: none; color: var(--text-3);
     font-size: 26px; line-height: 1; cursor: pointer; padding: 4px; }
   .cm-x:hover { color: var(--text); }
-  .cm-big { display: flex; justify-content: center; }
-  .cm-big { --rx0: -6; --ry0: -12; }
+  .cm-big { --rx0: -6; --ry0: -12; display: flex; justify-content: center; }
   .cm-big :global(.pc3d-wrap) { --pcs: 0.9; }
   @media (max-width: 719px) { .cm-big :global(.pc3d-wrap) { --pcs: 0.78; } }
   .cm-tx h2 { font-size: clamp(28px, 3.6vw, 40px); margin-bottom: 6px; }
@@ -571,69 +568,24 @@ const homeFaqSchema = {
   .cm-legend b { color: var(--text); font-weight: 600; }
   @media (min-width: 720px) { .cm-card { grid-template-columns: auto 1fr; } }
 
-  /* Telefon: scena szersza niż ekran (boisko na całą szerokość), pasek na całą szerokość, karty mniejsze */
-  @media (max-width: 599px) {
-    .court-stage { width: 128%; margin-left: -14%; }
-    .court-wrap :global(.marquee.under-court) { width: 100%; }
-    .cards li:nth-child(1), .cards li:nth-child(2) { --pcsb: 0.18; }
-    .cards li:nth-child(3), .cards li:nth-child(4) { --pcsb: 0.25; }
-    .cards li:nth-child(5) { --pcsb: 0.34; }
-  }
-
-  /* ═══ ROZDZIAŁY: jedna myśl na ekran, przestrzeń zamiast ramek ═══ */
-  .ch { padding-top: clamp(96px, 12vw, 184px); }
-  .ch-head { max-width: 800px; margin-bottom: clamp(40px, 6vw, 72px); }
-  .ch-head h2 { margin-bottom: 20px; font-size: clamp(38px, 5.6vw, 84px); }
-  .ch-head .lead { margin-bottom: 0; }
-  .ch-head .cta-row { margin-top: 30px; }
-  .ch-center .ch-head { margin-inline: auto; text-align: center; }
-  .ch-center .ch-head .lead { margin-inline: auto; }
-  .cta-row.center { justify-content: center; }
-  .inline-link { display: inline-flex; align-items: center; gap: 8px; color: var(--accent-hi); font-family: var(--display);
-    font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; font-size: 15px; }
-  .inline-link .arw { transition: transform var(--dur-1) var(--ease); }
-  .inline-link:hover .arw { transform: translateX(4px); }
-  .inline-link.lower { font-family: inherit; font-weight: inherit; text-transform: none; letter-spacing: 0; font-size: inherit;
-    text-decoration: underline; text-underline-offset: 3px; }
-  .fact { color: var(--text-2); font-size: clamp(16px, 1.3vw, 18px); line-height: 1.6; margin-bottom: 26px; max-width: 46ch; }
-  .fact b { color: var(--accent-hi); font-weight: 600; font-variant-numeric: tabular-nums; }
+  /* ═══ ROZDZIAŁY: wspólny system (.ch, .ch-head, .facts, .scene, .split…) jest w global.css; tu tylko to, co własne strony ═══ */
 
   /* 2. Karta meczu: komponent z apki, skalowany zmienną --mcs (1 = rozmiar w apce) */
-  .matchcard { margin: 0 auto; display: grid; justify-items: center; --mcs: 2.3; }
+  .matchcard { margin: 0 auto; display: grid; justify-items: center; --mcs: 2.2; }
   .matchcard :global(.mc) { box-shadow: 0 30px 70px rgba(0,0,0,0.55); }
+  @media (max-height: 940px) { .matchcard { --mcs: 1.9; } }      /* laptop: karta i XP pod nią mieszczą się na jednym ekranie */
   @media (max-width: 1099px) { .matchcard { --mcs: 1.7; } }
-  @media (max-width: 699px) { .matchcard { --mcs: 1.05; } }
-  .matchcard figcaption { margin-top: 30px; text-align: center; color: var(--text-2); font-size: clamp(16px, 1.3vw, 18px); }
-  .matchcard figcaption b { color: var(--accent-hi); font-weight: 600; font-variant-numeric: tabular-nums; }
+  @media (max-width: 699px) { .matchcard { --mcs: 1.02; } }
+  .xp-receipts { margin-top: clamp(28px, 4vw, 44px); display: flex; justify-content: center; gap: clamp(36px, 8vw, 96px); text-align: center; }
+  .xp-item { display: grid; gap: 4px; transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+  .xp-item:nth-child(2) { transition-delay: 140ms; }
+  .xp-item b { font-family: var(--display); font-weight: 700; font-size: clamp(34px, 4.4vw, 60px); line-height: 1; color: var(--accent-hi);
+    font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .xp-item:nth-child(2) b { color: var(--text); }
+  .xp-item small { font-size: 14px; color: var(--text-2); }
+  .matchcard.xp-pre .xp-item { opacity: 0; transform: translateY(14px); }
 
-  /* ═══ SCENY STICKY: obraz przyklejony, kroki tekstu przewijają się obok; aktywny krok = data-step ═══ */
-  .scene { display: grid; gap: clamp(28px, 4vw, 64px); align-items: start; }
-  .scene-visual { position: sticky; top: 12vh; height: 76vh; display: grid; place-items: center; }
-  .steps { list-style: none; padding: 0; margin: 0; }
-  .step { min-height: 70vh; display: flex; flex-direction: column; justify-content: center;
-    opacity: 0.3; transition: opacity var(--dur-2) var(--ease); }
-  .step.on { opacity: 1; }
-  .step h3 { font-size: clamp(28px, 3.4vw, 46px); margin-bottom: 14px; }
-  .step p { color: var(--text-2); font-size: clamp(17px, 1.5vw, 20px); max-width: 40ch; line-height: 1.6; }
-  @media (min-width: 900px) {
-    .scene { grid-template-columns: 1fr 1fr; }
-    .scene.flip .scene-visual { order: 2; }
-    .steps li:last-child { min-height: 60vh; }
-  }
-  @media (max-width: 899px) {
-    /* Obraz przyklejony pod paskiem nawigacji; krok wjeżdża od dołu i zostaje w pełni widoczny pod obrazem
-       (treść przy dolnej krawędzi kroku, linia aktywacji ok. 2/3 ekranu, patrz skrypt). */
-    .scene-visual { position: sticky; top: 68px; height: auto; z-index: 2; background: var(--bg); padding-block: 8px 12px; }
-    .scene-visual::after { content: ''; position: absolute; left: 0; right: 0; bottom: -28px; height: 28px;
-      background: linear-gradient(var(--bg), transparent); pointer-events: none; }
-    .step { min-height: 42vh; justify-content: flex-end; padding-bottom: 28px; text-align: center; align-items: center; opacity: 0.55; }
-    .step.on { opacity: 1; }
-    .steps li:last-child { min-height: 36vh; }
-    .step p { max-width: 34ch; }
-  }
-
-  /* 3. Telefon z zakładką Klub (HTML na wzór brand/session.webp, kolory z apki) */
-  .phone-crop { display: grid; place-items: center; }
+  /* 3. Telefon z zakładką Klub: obudowa i nagłówek ekranu w HTML, karta meczu to komponent z apki */
   .phone { width: 300px; height: 600px; padding: 10px; border-radius: 46px; background: #0B0F16;
     border: 1px solid rgba(255,255,255,0.16); box-shadow: 0 40px 90px rgba(0,0,0,0.6); }
   .screen { position: relative; height: 100%; border-radius: 37px; overflow: hidden; padding: 42px 16px 0;
@@ -646,7 +598,6 @@ const homeFaqSchema = {
   .ph-top::before { content: ''; width: 11px; height: 8px; background: linear-gradient(#F4F4F4 50%, #DC143C 50%); border-radius: 1px; }
   .ph-title { font-family: var(--display); font-weight: 900; font-size: 28px; letter-spacing: 0.02em; text-transform: uppercase;
     color: #F2F7FF; line-height: 1; margin: 6px 0 10px; }
-  .ph-title i { font-style: normal; }
   .ph-tabs { display: grid; grid-template-columns: repeat(3, 1fr); padding: 3px; border-radius: 999px; background: rgba(8,16,30,0.7);
     border: 1px solid rgba(150,200,255,0.12); }
   .ph-tabs span { text-align: center; padding: 8px 0; border-radius: 999px; font-family: var(--display); font-weight: 700; font-size: 9.5px;
@@ -672,24 +623,21 @@ const homeFaqSchema = {
   .ph-nav .on { width: 38px; height: 38px; border: 0; border-radius: 50%; background: #2F7FE0; display: grid; place-items: center;
     box-shadow: 0 0 18px rgba(47,127,224,0.55); transform: none; }
   .ph-nav .on::before { content: ''; width: 16px; height: 16px; background: #fff; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
-
-  /* Stany telefonu: karta meczu przełącza się klasami .mc-step-N (patrz MatchCard.astro), następna sesja wjeżdża w kroku 3 */
+  /* Karta meczu przełącza się klasami .mc-step-N na scenie (patrz MatchCard.astro); następny mecz wjeżdża w kroku 3 */
   .scene[data-scene="club"][data-step="3"] .ph-next { opacity: 1; transform: none; }
   @media (max-width: 899px) {
-    /* Telefon przycięty do części z kartą sesji (góra ekranu chowa się pod paskiem nawigacji), mniejszy; dół wtapia się w tło */
-    .phone-crop { height: 300px; overflow: hidden; align-items: start;
-      -webkit-mask-image: linear-gradient(#000 84%, transparent); mask-image: linear-gradient(#000 84%, transparent); }
-    .phone { transform: translateY(-118px) scale(0.8); transform-origin: top center; }
+    /* Na telefonie telefon w telefonie nie ma sensu: zostaje sama karta meczu, większa */
+    .phone { width: auto; height: auto; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+    .screen { height: auto; padding: 0; border-radius: 0; overflow: visible; background: none; }
+    .screen::before, .ph-chrome, .ph-next, .ph-nav { display: none; }
+    .ph-match { --mcs: 0.92; display: grid; justify-items: center; }
+    .ph-match :global(.mc) { width: 34.3em; }
   }
 
   /* 4. Losowanie trójek: 9 hexów, pole startowe 3x3, po losowaniu kolumna = drużyna (kolor z apki) */
-  .split { display: grid; gap: clamp(36px, 5vw, 80px); align-items: center; }
-  .split-copy h2 { margin-bottom: 18px; }
-  .split-copy .lead { margin-bottom: 22px; }
-  @media (min-width: 940px) { .split { grid-template-columns: 1fr 1fr; } }
-  .draw { --cell: 64px; --gap: 12px; display: grid; justify-items: center; gap: 26px; justify-self: center; }
+  .draw { --cell: 78px; --gap: 14px; display: grid; justify-items: center; gap: 28px; justify-self: center; }
   .draw-labels { display: grid; grid-template-columns: repeat(3, var(--cell)); gap: var(--gap); }
-  .draw-labels span { text-align: center; font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 2.4px;
+  .draw-labels span { text-align: center; font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: 2.4px;
     text-transform: uppercase; color: var(--team); opacity: 0; transform: translateY(6px);
     transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
   .draw.drawn .draw-labels span { opacity: 1; transform: none; }
@@ -702,12 +650,12 @@ const homeFaqSchema = {
   .dr-hex.drawn::before { opacity: 0; }
   .dr-hex i { position: relative; width: calc(100% - 4px); aspect-ratio: 1; display: grid; place-items: center; background: var(--panel-2);
     clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); font-style: normal; font-family: var(--display);
-    font-weight: 700; font-size: 20px; color: var(--text); }
+    font-weight: 700; font-size: 24px; color: var(--text); }
   .draw .btn { margin-top: 6px; }
-  @media (max-width: 599px) { .draw { --cell: 58px; --gap: 10px; } }
+  @media (max-width: 599px) { .draw { --cell: 62px; --gap: 10px; } .dr-hex i { font-size: 20px; } }
 
-  /* 5. Karta gracza: stoi nieruchomo; obraca ją tylko mysz w pobliżu albo przytrzymany palec (jak w apce). Krok podświetla element. */
-  .pc-stage { --rx0: -6; --ry0: -14; touch-action: none; cursor: grab; }
+  /* 5. Karta gracza: stoi nieruchomo; obraca ją tylko mysz w pobliżu albo przeciągnięcie palcem (jak w apce). Krok podświetla element. */
+  .pc-stage { --rx0: -6; --ry0: -14; touch-action: pan-y; cursor: grab; }
   .pc-stage:active { cursor: grabbing; }
   .pc-stage :global(.pc3d-wrap) { --pcs: 1.04; }
   .pc-stage :global(.pc3d-card) { transition: none; }
@@ -727,10 +675,10 @@ const homeFaqSchema = {
     animation: marquee 52s linear infinite; }
   .arena-row:hover .arena-track { animation-play-state: paused; }
   .arena-track figure { display: grid; justify-items: center; gap: 16px; width: clamp(120px, 14vw, 172px); }
-  .arena-track img, .arena-hex { width: clamp(96px, 11vw, 140px); height: auto; aspect-ratio: 1; filter: drop-shadow(0 18px 30px rgba(0,0,0,0.55)); }
+  .arena-track img, .arena-hex { width: clamp(96px, 11vw, 140px); height: auto; aspect-ratio: 1; }
   .arena-hex { display: block; width: clamp(78px, 9vw, 112px); margin-block: clamp(9px, 1vw, 14px);
     clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-    background: linear-gradient(135deg, #AABBD8, #5566AA 55%, #0C0E22); filter: none; }
+    background: linear-gradient(135deg, #AABBD8, #5566AA 55%, #0C0E22); }
   .arena-track figcaption { text-align: center; }
   .arena-track figcaption b { display: block; font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 1px;
     text-transform: uppercase; color: var(--text); white-space: nowrap; }
@@ -739,41 +687,22 @@ const homeFaqSchema = {
     .arena-row { overflow-x: auto; -webkit-mask-image: none; mask-image: none; }
   }
 
-  /* 7. Ranking: ramka przeglądarki na desktopie, zrzut z telefonu na telefonie */
-  .browser { --cut: 18px; --fill: var(--bg-2); padding: 1.5px; max-width: 1100px; margin-inline: auto; }
-  .browser-bar { display: flex; align-items: center; height: 40px; padding: 0 16px; border-bottom: 1px solid var(--line); }
-  .browser-bar .url { font-family: var(--display); font-weight: 600; letter-spacing: 1px; font-size: 13px; color: var(--text-3);
-    padding: 5px 12px; border: 1px solid var(--line); background: var(--bg); }
-  .browser img { display: block; width: 100%; height: auto; }
-  @media (max-width: 639px) {
-    .browser { max-width: 340px; }
-    .browser-bar { display: none; }
-    .browser picture { display: block; max-height: 560px; overflow: hidden;
-      -webkit-mask-image: linear-gradient(#000 72%, transparent); mask-image: linear-gradient(#000 72%, transparent); }
-  }
+  /* 7. Ranking: tablica z apki (RankBoard), skalowana zmienną --rbs */
+  .rank-show { --rbs: 1.05; }
+  .rank-cap { margin: clamp(24px, 3vw, 36px) auto 0; text-align: center; color: var(--text-2); font-size: clamp(16px, 1.3vw, 18px); max-width: 48ch; }
+  .rank-cap b { color: var(--accent-hi); font-weight: 600; }
+  @media (max-width: 699px) { .rank-show { --rbs: 0.92; } }
 
-  /* 8. Pierścień Draft Score: wypełnienie dwiema połówkami obracanymi w klipach (tylko transform) */
-  .ring-wrap { display: grid; place-items: center; }
-  .ring { position: relative; width: clamp(220px, 26vw, 320px); }
-  .ring svg { width: 100%; height: auto; overflow: visible; }
-  .ring-bg { fill: none; stroke: var(--line-2); stroke-width: 6; }
-  .arc { fill: none; stroke: var(--orange); stroke-width: 6; }
-  .arc-g { transform-box: view-box; transform-origin: 60px 60px; }
-  .arc-g.r { transform: rotate(-180deg); transition: transform 760ms linear 150ms; }
-  .arc-g.l { transform: rotate(0deg); transition: transform 185ms linear 910ms; }
-  .ring-wrap.in .arc-g.r { transform: rotate(0deg); }
-  .ring-wrap.in .arc-g.l { transform: rotate(43.2deg); }   /* 620 z 1000 = 62%: prawa połowa 50% + 12% lewej */
-  .ring-tx { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 4px; }
-  .ring-tx b { font-family: var(--display); font-weight: 700; font-size: clamp(58px, 7vw, 86px); line-height: 1; color: var(--text); }
-  .ring-tx span { font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 2.4px; text-transform: uppercase; color: var(--orange-hi); }
-  .ring-tx small { font-size: 12px; color: var(--text-3); }
-  @media (min-width: 940px) { #trening .ring-wrap { order: 2; } }
+  /* 8. Pierścień Draft Score to komponent (DraftRing); na desktopie stoi po prawej */
+  @media (min-width: 940px) { #trening :global(.ring-wrap) { order: 2; } }
 
-  /* 9. Trenerzy: typograficzny, bez pudełka */
-  .coach { max-width: 780px; }
-  .coach h2 { margin-bottom: 18px; }
-  .coach .lead { margin-bottom: 30px; }
-  .coach-note { margin-top: 24px; font-size: 15px; color: var(--text-3); }
+  /* 9. Trenerzy: typograficzny, bez pudełka; fakty w drugiej kolumnie */
+  .coach { display: grid; gap: clamp(32px, 5vw, 80px); align-items: center; }
+  .coach-copy h2 { margin-bottom: 18px; font-size: clamp(34px, 4.6vw, 68px); }
+  .coach-copy .lead { margin-bottom: 30px; }
+  .coach-note { margin-top: 22px; font-size: 15px; color: var(--text-3); }
+  .coach .facts { margin-bottom: 0; }
+  @media (min-width: 940px) { .coach { grid-template-columns: 1.1fr 0.9fr; } }
 
   /* 10. Manifest + cytat ze źródłem */
   .manifest { max-width: 1000px; font-family: var(--display); font-weight: 700; text-transform: uppercase;
@@ -781,7 +710,7 @@ const homeFaqSchema = {
   .manifest p + p { margin-top: 0.35em; }
   .manifest em { font-style: normal; color: var(--text-3); }
   .manifest strong { font-weight: inherit; color: var(--accent-hi); }
-  .manifest-sig { margin-top: 1.1em !important; font-size: 0.4em; letter-spacing: 2.4px; color: var(--text-2); }
+  .manifest .manifest-sig { margin-top: 1.1em; font-size: 0.4em; letter-spacing: 2.4px; color: var(--text-2); }
   .press { max-width: 1000px; margin-top: clamp(56px, 7vw, 96px); }
   .press blockquote { font-family: var(--display); font-weight: 500; font-size: clamp(20px, 2.4vw, 28px); line-height: 1.25;
     color: var(--text-2); margin-bottom: 14px; }
@@ -817,37 +746,26 @@ const homeFaqSchema = {
   .final-qr span { font-family: var(--display); font-weight: 700; letter-spacing: 1.4px; font-size: 13px; color: var(--text-2); text-transform: uppercase; }
   @media (min-width: 820px) { .final-grid { grid-template-columns: 1fr auto; gap: 72px; } .final-qr { display: flex; } }
 </style>
+
 <script>
-  // Parallax na scenie hero i karcie meczu: tylko desktop z myszą, bez reduced-motion.
+  import { countUp, initCounters, initScenes, onceVisible, prefersReducedMotion, hasIO, wait } from '../scripts/motion'
+
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (fine && !reduce) {
-    const bind = (zone: Element, target: HTMLElement) => {
-      zone.addEventListener('pointermove', (e) => {
-        const r = zone.getBoundingClientRect()
-        const ev = e as PointerEvent
-        const ry = ((ev.clientX - r.left) / r.width - 0.5) * 2
-        const rx = ((ev.clientY - r.top) / r.height - 0.5) * 2
-        target.style.setProperty('--ry', ry.toFixed(3))
-        target.style.setProperty('--rx', rx.toFixed(3))
-      })
-      zone.addEventListener('pointerleave', () => { target.style.setProperty('--ry', '0'); target.style.setProperty('--rx', '0') })
-    }
-    document.querySelectorAll<HTMLElement>('[data-tilt]').forEach((el) => bind(el.parentElement ?? el, el))
-  }
+  const reduce = prefersReducedMotion()
 
   // ── Tilt kart (Alex na boisku, karta w rozdziale „Karta gracza"): lekki obrót w stronę kursora w promieniu,
   //    przeciąganie myszą albo palcem obraca kartę jak w apce, puszczenie wraca do spoczynku. Tap na Alexie = podgląd.
+  //    Jedna pętla rAF, która działa tylko w trakcie ruchu.
   type Tilt = { el: HTMLElement; zone: HTMLElement; rest: { x: number; y: number }; rx: number; ry: number; tx: number; ty: number }
   const btns = Array.from(document.querySelectorAll<HTMLButtonElement>('.pcbtn[data-i]'))
   const tilts: Tilt[] = []
   const addTilt = (el: HTMLElement, zone: HTMLElement, rest: { x: number; y: number }) =>
     tilts.push({ el, zone, rest, rx: rest.x, ry: rest.y, tx: rest.x, ty: rest.y })
-  const courtStage = document.getElementById('courtStage')
-  btns.forEach((b) => addTilt(b, courtStage ?? b, { x: -7, y: 0 }))
+  const stage = document.getElementById('courtStage')
+  btns.forEach((b) => addTilt(b, stage ?? b, { x: -6, y: 0 }))
   document.querySelectorAll<HTMLElement>('[data-tilt-card]').forEach((el) => addTilt(el, el.parentElement ?? el, { x: -6, y: -14 }))
   let drag: { t: Tilt; sx: number; sy: number; brx: number; bry: number; moved: boolean } | null = null
-  let raf = 0, running = false
+  let running = false
   const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v))
   const loop = () => {
     let busy = false
@@ -856,14 +774,13 @@ const homeFaqSchema = {
       if (Math.abs(c.tx - c.rx) > 0.03 || Math.abs(c.ty - c.ry) > 0.03) busy = true
       c.el.style.setProperty('--rx0', c.rx.toFixed(2)); c.el.style.setProperty('--ry0', c.ry.toFixed(2))
     }
-    if (busy || drag) raf = requestAnimationFrame(loop); else running = false
+    if (busy || drag) requestAnimationFrame(loop); else running = false
   }
-  const kick = () => { if (!running) { running = true; raf = requestAnimationFrame(loop) } }
+  const kick = () => { if (!running) { running = true; requestAnimationFrame(loop) } }
 
   // Bliskość kursora (desktop): w promieniu zależnym od wielkości karty obraca się w stronę myszy
   if (fine && !reduce) {
-    const zones = new Set(tilts.map((t) => t.zone))
-    zones.forEach((zone) => {
+    new Set(tilts.map((t) => t.zone)).forEach((zone) => {
       zone.addEventListener('pointermove', (e) => {
         if (drag) return
         for (const t of tilts) {
@@ -881,7 +798,7 @@ const homeFaqSchema = {
     })
   }
 
-  // Przeciąganie = obrót (mysz i dotyk). Kliknięcie po przeciągnięciu jest ignorowane (podgląd tylko po tapie).
+  // Przeciąganie = obrót (mysz i dotyk; pionowy ruch palca nadal przewija stronę). Klik po przeciągnięciu jest ignorowany.
   for (const t of tilts) {
     const b = t.el
     b.addEventListener('pointerdown', (e) => {
@@ -895,21 +812,27 @@ const homeFaqSchema = {
       if (Math.hypot(dx, dy) > 6) drag.moved = true
       t.ty = clamp(drag.bry + dx * 0.38, -46, 46); t.tx = clamp(drag.brx - dy * 0.34, -34, 34)
     })
-    const end = () => { if (!drag || drag.t !== t) return; t.tx = t.rest.x; t.ty = t.rest.y; const m = drag.moved; drag = null; kick(); if (m) b.dataset.swallow = '1' }
+    const end = () => {
+      if (!drag || drag.t !== t) return
+      t.tx = t.rest.x; t.ty = t.rest.y
+      const moved = drag.moved
+      drag = null; kick()
+      if (moved) b.dataset.swallow = '1'
+    }
     b.addEventListener('pointerup', end); b.addEventListener('pointercancel', end)
     b.addEventListener('click', (e) => { if (b.dataset.swallow) { delete b.dataset.swallow; e.preventDefault(); e.stopImmediatePropagation() } }, true)
   }
-  const stage = courtStage
 
-  // Błysk po liniach tylko, gdy boisko jest na ekranie (oszczędza GPU przy przewijaniu dalej).
-  if (stage && 'IntersectionObserver' in window) {
+  // Błysk po liniach i pulsy Alexa tylko, gdy boisko jest na ekranie
+  if (stage && hasIO()) {
     new IntersectionObserver((en) => stage.classList.toggle('paused', !en[0].isIntersecting), { threshold: 0 }).observe(stage)
   }
 
-  // Podgląd karty: tap kopiuje kartę (powiększoną) do panelu od dołu i dokłada opis.
+  // ── Podgląd karty: tap kopiuje kartę (powiększoną) do panelu od dołu i dokłada opis.
   const cm = document.getElementById('cardModal')
   const cmBig = document.getElementById('cmBig')
   const cmTitle = document.getElementById('cmTitle')
+  const cmPos = document.getElementById('cmKicker')
   const cmDesc = document.getElementById('cmDesc')
   const data: { name: string; pos: string; desc: string }[] = JSON.parse(document.getElementById('cardsData')?.textContent || '[]')
   if (cm && cmBig && cmTitle && cmDesc) {
@@ -920,10 +843,9 @@ const homeFaqSchema = {
         const i = Number(btn.dataset.i)
         const wrap = btn.querySelector('.pc3d-wrap')
         if (!wrap) return
-        const clone = wrap.cloneNode(true) as HTMLElement
-        cmBig.replaceChildren(clone)
+        cmBig.replaceChildren(wrap.cloneNode(true))
         cmTitle.textContent = data[i]?.name ?? ''
-        const kick = document.getElementById('cmKicker'); if (kick) kick.textContent = `Karta gracza · ${data[i]?.pos ?? ''}`
+        if (cmPos) cmPos.textContent = `Karta gracza · ${data[i]?.pos ?? ''}`
         cmDesc.textContent = data[i]?.desc ?? ''
         last = btn
         cm.hidden = false
@@ -935,22 +857,34 @@ const homeFaqSchema = {
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !cm.hidden) close() })
   }
 
-  // ── Sceny sticky (Klub, Karta gracza): krok, który przecina linię ok. 55% wysokości okna, steruje stanem
-  //    obrazu przez data-step na scenie. Bez scroll-jackingu, bez liczenia pozycji w pętli.
-  document.querySelectorAll<HTMLElement>('.scene[data-scene]').forEach((scene) => {
-    const steps = Array.from(scene.querySelectorAll<HTMLElement>('.step'))
-    if (!steps.length || !('IntersectionObserver' in window)) return
-    const io = new IntersectionObserver((entries) => {
-      for (const en of entries) {
-        if (!en.isIntersecting) continue
-        const el = en.target as HTMLElement
-        const step = el.dataset.i || '1'
-        scene.dataset.step = step
-        scene.classList.remove('mc-step-1', 'mc-step-2', 'mc-step-3', 'mc-step-4'); scene.classList.add(`mc-step-${step}`)
-        steps.forEach((s) => s.classList.toggle('on', s === el))
-      }
-    }, { rootMargin: window.innerWidth < 900 ? '-66% 0px -29% 0px' : '-55% 0px -40% 0px', threshold: 0 })
-    steps.forEach((s) => io.observe(s))
+  // ── Karta meczu „na żywo": hexy wchodzą, wynik nabija się od zera, potem zieleń zwycięzcy, „Zakończony" i XP.
+  //    Bez JS albo przy ograniczonym ruchu widać od razu stan końcowy (taki jest w HTML).
+  document.querySelectorAll<HTMLElement>('.mc[data-live]').forEach((mc) => {
+    const nums = Array.from(mc.querySelectorAll<HTMLElement>('.mc-score b'))
+    if (nums.length !== 2 || reduce || !hasIO()) return
+    const to = nums.map((n) => Number(n.dataset.to))
+    const fig = mc.closest('figure')
+    const xp = fig ? Array.from(fig.querySelectorAll<HTMLElement>('[data-xp]')) : []
+    nums.forEach((n) => { n.textContent = '0' })
+    xp.forEach((x) => { x.textContent = '0' })
+    mc.classList.add('mc-pre'); fig?.classList.add('xp-pre')
+    onceVisible(mc, async () => {
+      mc.classList.add('mc-on')
+      await wait(700)
+      await Promise.all(nums.map((n, i) => countUp(n, to[i], 1500)))
+      mc.classList.remove('mc-pre')
+      await wait(350)
+      fig?.classList.remove('xp-pre')
+      xp.forEach((x, i) => { setTimeout(() => countUp(x, Number(x.dataset.xp), 900), i * 140) })
+    }, 0.45)
+  })
+
+  // ── Liczniki pojedyncze (Draft Score w pierścieniu) i sceny sticky (Klub, Karta gracza) ze wspólnego modułu.
+  //    Karta meczu w scenie Klub przełącza stan klasą .mc-step-N na scenie (patrz MatchCard.astro).
+  initCounters()
+  initScenes((scene, step) => {
+    scene.classList.remove('mc-step-1', 'mc-step-2', 'mc-step-3', 'mc-step-4')
+    scene.classList.add(`mc-step-${step}`)
   })
 
   // ── King of the Court: losowanie trójek. Raz samo, gdy rozdział wjedzie na ekran; potem przycisk losuje od nowa.
@@ -963,8 +897,7 @@ const homeFaqSchema = {
     let busy = false
     const shuffle = (a: number[]) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] } return a }
     const run = () => {
-      const order = shuffle(hexes.map((_, i) => i))
-      order.forEach((src, k) => {
+      shuffle(hexes.map((_, i) => i)).forEach((src, k) => {
         const team = k % 3, row = Math.floor(k / 3), c0 = src % 3, r0 = Math.floor(src / 3)
         const h = hexes[src]
         h.style.setProperty('--dx', String(team - c0)); h.style.setProperty('--dy', String(row - r0))
@@ -977,10 +910,7 @@ const homeFaqSchema = {
       hexes.forEach((h, i) => { h.style.setProperty('--dx', '0'); h.style.setProperty('--dy', '0'); h.style.setProperty('--d', `${i * 30}ms`); h.classList.remove('drawn') })
       draw.classList.remove('drawn')
     }
-    if ('IntersectionObserver' in window) {
-      const io = new IntersectionObserver((en) => { if (en[0].isIntersecting) { io.disconnect(); setTimeout(run, 500) } }, { threshold: 0.5 })
-      io.observe(draw)
-    } else run()
+    onceVisible(draw, () => { setTimeout(run, 500) }, 0.5)
     drawBtn?.addEventListener('click', () => {
       if (busy) return
       busy = true; reset()

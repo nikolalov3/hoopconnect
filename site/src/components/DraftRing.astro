@@ -1,0 +1,48 @@
+---
+/**
+ * Pierścień Draft Score (pomarańcz, jak w apce: pełne zamknięcie przy 1000 pkt).
+ * Wypełnia się dwiema połówkami obracanymi w klipach, czyli wyłącznie transformem.
+ * Rodzic z klasą .rv dostaje .in od obserwatora w Base.astro i to uruchamia wypełnienie;
+ * liczbę nabija initCounters() (data-count). Bez JS widać stan końcowy.
+ */
+interface Props { score?: number; uid: string }
+const { score = 620, uid } = Astro.props
+const pct = Math.max(0, Math.min(1, score / 1000))
+// Prawa połowa obsługuje pierwsze 50%, lewa resztę; czasy proporcjonalne, żeby ruch był jednostajny.
+const right = Math.min(pct, 0.5) / 0.5            // 0..1
+const left = Math.max(pct - 0.5, 0) / 0.5         // 0..1
+const total = 950
+const tR = Math.round(total * (Math.min(pct, 0.5) / pct || 0))
+const tL = total - tR
+---
+<div class="ring-wrap rv" style={`--rr:${-180 + right * 180}deg; --rl:${left * 180}deg; --tr:${tR}ms; --tl:${tL}ms`}>
+  <div class="ring" aria-hidden="true">
+    <svg viewBox="0 0 120 120">
+      <defs>
+        <clipPath id={`ring-r-${uid}`}><rect x="60" y="0" width="60" height="120" /></clipPath>
+        <clipPath id={`ring-l-${uid}`}><rect x="0" y="0" width="60" height="120" /></clipPath>
+      </defs>
+      <circle class="ring-bg" cx="60" cy="60" r="52" />
+      <g clip-path={`url(#ring-r-${uid})`}><g class="arc-g r"><path class="arc" d="M60 8 A52 52 0 0 1 60 112" /></g></g>
+      <g clip-path={`url(#ring-l-${uid})`}><g class="arc-g l"><path class="arc" d="M60 8 A52 52 0 0 1 60 112" /></g></g>
+    </svg>
+    <div class="ring-tx"><b data-count={score}>{score}</b><span>Draft Score</span><small>z 1000 · ten tydzień</small></div>
+  </div>
+</div>
+
+<style>
+  .ring-wrap { display: grid; place-items: center; }
+  .ring { position: relative; width: clamp(220px, 26vw, 320px); }
+  .ring svg { width: 100%; height: auto; overflow: visible; }
+  .ring-bg { fill: none; stroke: var(--line-2); stroke-width: 6; }
+  .arc { fill: none; stroke: var(--orange); stroke-width: 6; }
+  .arc-g { transform-box: view-box; transform-origin: 60px 60px; }
+  .arc-g.r { transform: rotate(-180deg); transition: transform var(--tr) linear 150ms; }
+  .arc-g.l { transform: rotate(0deg); transition: transform var(--tl) linear calc(150ms + var(--tr)); }
+  .ring-wrap.in .arc-g.r { transform: rotate(var(--rr)); }
+  .ring-wrap.in .arc-g.l { transform: rotate(var(--rl)); }
+  .ring-tx { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 4px; }
+  .ring-tx b { font-family: var(--display); font-weight: 700; font-size: clamp(58px, 7vw, 86px); line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
+  .ring-tx span { font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 2.4px; text-transform: uppercase; color: var(--orange-hi); }
+  .ring-tx small { font-size: 12px; color: var(--text-3); }
+</style>

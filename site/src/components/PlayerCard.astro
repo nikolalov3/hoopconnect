@@ -4,11 +4,13 @@
  * Płaska plakietka keycard (clip-path na .pc3d-face), tilt przez --rx/--ry na .pc3d-card,
  * holograficzny połysk liczony z tiltu. Wymiar bazowy 300x452, skalowanie przez --pcs na wrapperze.
  * Style są globalne (is:global), bo kartę klonujemy do modalu podglądu.
+ * Ikonki aren to miniatury WebP 128 px (public/arenas/thumb, robi je scripts/optimize-assets.mjs):
+ * na karcie mają 32 px, więc oryginały PNG 500 px (po ~230 kB) byłyby czystym balastem.
  */
 interface Props {
   name: string          // tu: nazwa pozycji (karty poglądowe bez nazwisk)
   letter: string        // inicjał w hexie
-  arena: number         // 1..6 (indeks grafiki /arenas/arena-N.png)
+  arena: number         // 1..6 (indeks grafiki areny)
   arenaName: string
   nextArena?: string
   pct: number           // % paska XP do następnej areny
@@ -18,9 +20,11 @@ interface Props {
   hcId: string
   frame?: 'default' | 'none'
   uid: string           // unikalne id gradientu SVG
+  lazy?: boolean        // karta poniżej pierwszego ekranu: grafiki doładowują się przy scrollu
 }
 // Tilt spoczynkowy bierze się z --rx0/--ry0 ustawianych przez rodzica (np. hover prostuje kartę).
-const { name, letter, arena, arenaName, nextArena, pct, toNext, wins, kotc, hcId, frame = 'default', uid } = Astro.props
+const { name, letter, arena, arenaName, nextArena, pct, toNext, wins, kotc, hcId, frame = 'default', uid, lazy = false } = Astro.props
+const load = lazy ? 'lazy' : undefined
 const p = Math.max(6, Math.min(100, pct))
 ---
 <div class="pc3d-wrap">
@@ -52,7 +56,7 @@ const p = Math.max(6, Math.min(100, pct))
             <polygon points="82,32 82,58 45,48 45,42" fill="rgba(0,0,0,0.22)" />
             <polygon points="45,6 82,32 82,58 45,84 8,58 8,32" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="1.5" stroke-linejoin="round" />
             <text x="45" y="49" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="30" font-weight="800" font-family="'Barlow Condensed', Barlow, sans-serif">{letter}</text>
-            {frame !== 'none' && <image href="/earlyaccess.png" x="-16" y="-16" width="122" height="122" preserveAspectRatio="xMidYMid meet" />}
+            {frame !== 'none' && <image href="/frames/earlyaccess.webp" x="-16" y="-16" width="122" height="122" preserveAspectRatio="xMidYMid meet" />}
           </svg>
         </div>
 
@@ -60,12 +64,12 @@ const p = Math.max(6, Math.min(100, pct))
         <div class="pc3d-arena">{arenaName} · Arena {arena}</div>
 
         <div class="pc3d-prog">
-          <img class="pc3d-ah" src={`/arenas/arena-${arena}.png`} alt="" />
+          <img class="pc3d-ah" src={`/arenas/thumb/arena-${arena}.webp`} alt="" width="32" height="32" loading={load} decoding="async" />
           <div class="pc3d-track">
             <div class="pc3d-fill" style={`width:${p}%`}></div>
             <div class="pc3d-node" style={`left:${p}%`}></div>
           </div>
-          {nextArena && arena < 6 && <img class="pc3d-ah next" src={`/arenas/arena-${arena + 1}.png`} alt="" />}
+          {nextArena && arena < 6 && <img class="pc3d-ah next" src={`/arenas/thumb/arena-${arena + 1}.webp`} alt="" width="32" height="32" loading={load} decoding="async" />}
         </div>
         <div class="pc3d-cap">
           {nextArena ? <>Jeszcze <b>{toNext} XP</b> do areny {nextArena}</> : <>Szczyt osiągnięty, <b>{arenaName}</b></>}
@@ -87,9 +91,12 @@ const p = Math.max(6, Math.min(100, pct))
 <style is:global>
   /* Wrapper rezerwuje przeskalowany footprint (transform nie zmienia boxu layoutu). */
   .pc3d-wrap { --pcs: 1; width: calc(300px * var(--pcs)); height: calc(452px * var(--pcs)); position: relative; }
-  .pc3d-wrap > .pc3d-card { transform-origin: top left; }
+  /* Skala od lewego górnego rogu (footprint wrappera), ale OBRÓT wokół środka karty, jak w apce:
+     translate do środka (150, 226) → perspektywa i obrót → translate z powrotem. */
   .pc3d-card { --rx: var(--rx0, -8); --ry: var(--ry0, -14); position: absolute; top: 0; left: 0; width: 300px; height: 452px;
-    transform: scale(var(--pcs)) perspective(1150px) rotateX(calc(var(--rx)*1deg)) rotateY(calc(var(--ry)*1deg));
+    transform-origin: 0 0;
+    transform: scale(var(--pcs)) translate(150px, 226px) perspective(1150px)
+      rotateX(calc(var(--rx)*1deg)) rotateY(calc(var(--ry)*1deg)) translate(-150px, -226px);
     transition: transform .35s cubic-bezier(.2,.7,.2,1);
     will-change: transform; filter: drop-shadow(0 9px 18px rgba(0,0,0,0.34)); user-select: none; -webkit-user-select: none; }
   .pc3d-sil { clip-path: path('M22,0 L278,0 Q300,0 300,22 L300,400 Q300,414 286,414 L210,414 Q196,414 192,428 L182,440 Q178,452 164,452 L22,452 Q0,452 0,430 L0,22 Q0,0 22,0 Z'); }

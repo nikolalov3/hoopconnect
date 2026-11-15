@@ -1,5 +1,9 @@
 {
   "title": "Ranking",
+  "live": "Live · beta",
+  "lead": "What counts is what you actually played: XP, matches and King of the Court sessions.",
+  "how": "How XP works",
+  "backToApp": "Back to the app",
   "tabs": {
     "xp": "XP",
     "matches": "Matches",
@@ -11,15 +15,20 @@
     "30d": "30 days"
   },
   "you": "You",
-  "games": "games",
-  "sessions": "sessions",
+  "yourPlace": "Your place: {{n}}",
+  "top": "Top {{count}}",
+  "games_one": "game",
+  "games_other": "games",
+  "sessions_one": "session",
+  "sessions_other": "sessions",
   "wins": "W",
   "loading": "Loading ranking…",
   "empty": "No results for this filter.",
   "unavailable": "Ranking temporarily unavailable.",
   "periodLabel": "Period",
   "cityLabel": "City",
-  "players": "players ranked",
+  "players_one": "{{count}} player ranked",
+  "players_other": "{{count}} players ranked",
   "colPlayer": "Player",
   "colArena": "Arena",
   "colXp": "XP",
@@ -28,7 +37,7 @@
   "colPct": "Win %",
   "colKotcWins": "Session wins",
   "colSessions": "Sessions",
-  "cta": "Play ball? Join HoopConnect",
-  "ctaSub": "Earn XP for real matches and get on the board.",
+  "cta": "Your spot is waiting",
+  "ctaSub": "Create your player card, play a match and see your name on the board.",
   "ctaBtn": "Open the app"
 }

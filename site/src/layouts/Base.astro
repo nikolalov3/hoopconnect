@@ -1,5 +1,22 @@
 ---
 import '../styles/global.css'
+// Fonty serwowane z naszej domeny (Fontsource): bez dwóch połączeń do Google i bez blokującego CSS z zewnątrz.
+// Każda waga ma podzbiory latin / latin-ext z unicode-range, więc przeglądarka pobiera tylko używane pliki.
+import '@fontsource/barlow-condensed/500.css'
+import '@fontsource/barlow-condensed/600.css'
+import '@fontsource/barlow-condensed/700.css'
+import '@fontsource/barlow-condensed/800.css'
+import '@fontsource/barlow-condensed/900.css'
+import '@fontsource/barlow/400.css'
+import '@fontsource/barlow/500.css'
+import '@fontsource/barlow/600.css'
+import '@fontsource/barlow/700.css'
+// Pliki potrzebne do pierwszego ekranu ładujemy z wyprzedzeniem, żeby nagłówek nie „przeskakiwał" po podmianie fontu.
+import fBc700 from '@fontsource/barlow-condensed/files/barlow-condensed-latin-700-normal.woff2?url'
+import fBc700e from '@fontsource/barlow-condensed/files/barlow-condensed-latin-ext-700-normal.woff2?url'
+import fB400 from '@fontsource/barlow/files/barlow-latin-400-normal.woff2?url'
+import fB400e from '@fontsource/barlow/files/barlow-latin-ext-400-normal.woff2?url'
+import fB600 from '@fontsource/barlow/files/barlow-latin-600-normal.woff2?url'
 import Nav from '../components/Nav.astro'
 import Footer from '../components/Footer.astro'
 import { SITE, BRAND, SOCIALS, APP_URL } from '../consts'
@@ -101,17 +118,16 @@ const jsonLd = [...baseSchema, webPage, ...(breadcrumb ? [breadcrumb] : []), ...
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={new URL(ogImage, SITE).href} />
-    <meta property="og:image:alt" content={`${BRAND.name} — ${description}`} />
+    <meta property="og:image:alt" content={`${BRAND.name} · ${description}`} />
     <meta property="og:locale" content="pl_PL" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#060F1E" />
+    <meta name="theme-color" content="#0E0F12" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap"
-    />
+    {[fBc700, fBc700e, fB400, fB400e, fB600].map((href) => (
+      <link rel="preload" as="font" type="font/woff2" href={href} crossorigin />
+    ))}
+    {/* Bez JS treść ma być widoczna od razu (reveal włącza skrypt) */}
+    <noscript><style is:inline>.rv, .rv-seq > *, .ln > span { opacity: 1 !important; transform: none !important; }</style></noscript>
 
     {jsonLd.map((entry) => (
       <script type="application/ld+json" set:html={JSON.stringify(entry)} />

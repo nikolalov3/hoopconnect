@@ -37,6 +37,7 @@
 
   /* Tokeny ruchu (BRAND.md §10). Animujemy tylko transform i opacity. */
   --ease:      cubic-bezier(.2,.7,.2,1);
+  --ease-io:   cubic-bezier(.45,0,.25,1);   /* ruch tam i z powrotem (błysk, pulsy) */
   --dur-1:     420ms;   /* mikro: hover, przełączniki */
   --dur-2:     640ms;   /* wejście elementu */
   --dur-3:     900ms;   /* zmiana stanu sceny */
@@ -175,7 +176,9 @@ strong { color: var(--text); font-weight: 500; }
   font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 1.8px;
   font-size: 14px; color: var(--text-2); white-space: nowrap; }
 .marquee-track span::after { content: ''; width: 6px; height: 6px; background: var(--accent); transform: rotate(45deg); }
-.marquee.under-court { border-top: 0; background: var(--bg-2); }   /* pod boiskiem: linia końcowa jest górną krawędzią */
+.marquee.under-court { border: 0; background: transparent; padding-block: 14px 8px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); }
 .marquee:hover .marquee-track { animation-play-state: paused; }
 @keyframes marquee { to { transform: translateX(-50%); } }
 
@@ -193,7 +196,26 @@ strong { color: var(--text); font-weight: 500; }
 .rv-d1 { transition-delay: var(--stagger); }
 .rv-d2 { transition-delay: calc(var(--stagger) * 2); }
 .rv-d3 { transition-delay: calc(var(--stagger) * 3); }
-html.no-js .rv { opacity: 1; transform: none; }
+
+/* Sekwencja: nagłówek wjeżdża liniami, reszta bloku dochodzi po kolei (zamiast jednego fade całości) */
+.rv.rv-seq { opacity: 1; transform: none; transition: none; }
+.rv-seq > :not(h1, h2) { opacity: 0; transform: translateY(14px);
+  transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease);
+  transition-delay: calc(160ms + var(--si, 0) * var(--stagger)); }
+.rv-seq > :nth-child(3) { --si: 1; }
+.rv-seq > :nth-child(4) { --si: 2; }
+.rv-seq > :nth-child(5) { --si: 3; }
+.rv-seq > :nth-child(6) { --si: 4; }
+.rv-seq.in > :not(h1, h2) { opacity: 1; transform: none; }
+
+/* Nagłówek liniami: każda linia siedzi w masce, tekst wysuwa się od dołu (tylko transform).
+   Dopełnienie z ujemnym marginesem zostawia miejsce na polskie znaki (Ż, Ó, Ę) przy ciasnej interlinii. */
+.ln { display: block; overflow: hidden; padding-block: 0.16em 0.2em; margin-block: -0.16em -0.2em; }
+.ln > span { display: block; transform: translateY(112%);
+  transition: transform var(--dur-3) var(--ease); transition-delay: calc(var(--li, 0) * 90ms); }
+.ln:nth-child(2) > span { --li: 1; }
+.ln:nth-child(3) > span { --li: 2; }
+.rv.in .ln > span { transform: none; }
 
 /* Skip link (a11y) */
 .skip { position: absolute; left: -999px; top: 10px; z-index: 1000; padding: 10px 14px; background: var(--accent);
@@ -207,7 +229,103 @@ html.no-js .rv { opacity: 1; transform: none; }
   border-top: 1px solid var(--line-2); transform: translateY(110%); transition: transform .3s ease; }
 .mcta.show { transform: none; }
 .mcta .btn { width: 100%; justify-content: center; }
+.mcta .btn::before { -webkit-backdrop-filter: none; backdrop-filter: none; }   /* pasek już rozmywa tło; drugi blur byłby tylko kosztem */
 @media (max-width: 767px) { .mcta { display: flex; } }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SYSTEM ROZDZIAŁÓW (strona główna i podstrony). Jedna myśl na ekran, przestrzeń
+   zamiast ramek, produkt jako bohater. Markup:
+     <section class="ch [ch-center]"> <div class="wrap">
+       <div class="ch-head rv rv-seq"> <h2><span class="ln"><span>…</span></span></h2> <p class="lead">…</p> </div>
+       … obiekt produktu …
+   Ruch: .rv / .rv-seq / .ln (wyżej) + src/scripts/motion.ts (liczniki, sceny sticky).
+   ══════════════════════════════════════════════════════════════════════════ */
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } }
+@keyframes line-up { from { transform: translateY(112%); } }
+
+/* Otwarcie podstrony: nagłówek liniami i to samo światło z góry, co w hero strony głównej */
+.page-hero { position: relative; isolation: isolate; overflow: hidden; padding-top: clamp(40px, 6vw, 88px); text-align: center; }
+.page-hero::before { content: ''; position: absolute; z-index: -1; inset: 0 0 auto 0; height: min(76vh, 720px); pointer-events: none;
+  background: radial-gradient(ellipse 58% 66% at 50% 0%, rgba(111,195,255,0.12) 0%, rgba(47,145,214,0.045) 46%, transparent 74%); }
+.page-hero h1 { margin: 0 auto 24px; max-width: 16ch; font-size: clamp(46px, 7.2vw, 112px); line-height: 0.92; letter-spacing: -0.01em; }
+.page-hero h1 .hl { color: var(--accent-hi); }
+.page-hero .lead { margin: 0 auto 30px; max-width: 56ch; font-size: clamp(18px, 1.6vw, 21px); }
+.page-hero .cta-row { justify-content: center; }
+.page-hero .ln > span { transform: none; animation: line-up var(--dur-3) var(--ease) both; animation-delay: calc(60ms + var(--li, 0) * 120ms); }
+.page-hero .hero-after { animation: rise var(--dur-2) .35s var(--ease) both; }   /* to, co pod nagłówkiem: lead, przyciski, obiekt */
+
+.ch { padding-top: clamp(96px, 12vw, 184px); }
+.ch-last { padding-bottom: clamp(96px, 12vw, 184px); }
+.ch-head { max-width: 820px; margin-bottom: clamp(40px, 6vw, 72px); }
+.ch-head h2 { margin-bottom: 20px; font-size: clamp(38px, 5.6vw, 84px); }
+.ch-head .lead { margin-bottom: 0; }
+.ch-head .cta-row { margin-top: 30px; }
+.ch-center .ch-head { margin-inline: auto; text-align: center; }
+.ch-center .ch-head .lead { margin-inline: auto; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; }
+.ch-center .cta-row { justify-content: center; }
+
+.inline-link { display: inline-flex; align-items: center; gap: 8px; color: var(--accent-hi); font-family: var(--display);
+  font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; font-size: 15px; }
+.inline-link .arw { transition: transform var(--dur-1) var(--ease); }
+.inline-link:hover .arw { transform: translateX(4px); }
+.inline-link.lower { font-family: inherit; font-weight: inherit; text-transform: none; letter-spacing: 0; font-size: inherit;
+  text-decoration: underline; text-underline-offset: 3px; }
+/* Zdanie z liczbą (XP na niebiesko) */
+.fact { color: var(--text-2); font-size: clamp(16px, 1.3vw, 18px); line-height: 1.6; margin-bottom: 26px; max-width: 46ch; }
+.fact b { color: var(--accent-hi); font-weight: 600; font-variant-numeric: tabular-nums; }
+/* Fakty o produkcie: hasło + jedno zdanie, dwie kolumny tekstu, bez pudełek i numerów */
+.facts { display: grid; gap: 16px; margin: 0 0 28px; max-width: 560px; }
+.facts > div { display: grid; grid-template-columns: minmax(160px, 0.5fr) 1fr; gap: 4px 22px; align-items: baseline; }
+.facts dt { font-family: var(--display); font-weight: 700; font-size: 19px; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text); line-height: 1.15; }
+.facts dd { margin: 0; color: var(--text-2); font-size: 15.5px; line-height: 1.55; }
+@media (max-width: 520px) { .facts > div { grid-template-columns: 1fr; } }
+
+/* Dwie kolumny: tekst + obiekt */
+.ch .split { display: grid; gap: clamp(36px, 5vw, 80px); align-items: center; }
+.ch .split-copy h2 { margin-bottom: 18px; font-size: clamp(34px, 4.6vw, 68px); }
+.ch .split-copy .lead { margin-bottom: 26px; }
+@media (min-width: 940px) { .ch .split { grid-template-columns: 1fr 1fr; } }
+
+/* Sceny sticky: obraz przyklejony, kroki tekstu przewijają się obok; aktywny krok = data-step na .scene (motion.ts) */
+.scene { display: grid; gap: clamp(28px, 4vw, 64px); align-items: start; }
+.scene-visual { position: sticky; top: 12vh; height: 76vh; display: grid; place-items: center; }
+.steps { list-style: none; padding: 0; margin: 0; }
+.step { min-height: 70vh; display: flex; flex-direction: column; justify-content: center;
+  opacity: 0.3; transition: opacity var(--dur-2) var(--ease); }
+.step.on { opacity: 1; }
+.step h3 { font-size: clamp(28px, 3.4vw, 46px); margin-bottom: 14px; }
+.step p { color: var(--text-2); font-size: clamp(17px, 1.5vw, 20px); max-width: 40ch; line-height: 1.6; }
+@media (min-width: 900px) {
+  .scene { grid-template-columns: 1fr 1fr; }
+  .scene.flip .scene-visual { order: 2; }
+  .steps li:last-child { min-height: 60vh; }
+}
+@media (max-width: 899px) {
+  /* Obraz przyklejony pod paskiem nawigacji; krok wjeżdża od dołu i zostaje w pełni widoczny pod obrazem */
+  .scene-visual { top: 68px; height: auto; z-index: 2; background: var(--bg); padding-block: 10px 14px; }
+  .scene-visual::after { content: ''; position: absolute; left: 0; right: 0; bottom: -28px; height: 28px;
+    background: linear-gradient(var(--bg), transparent); pointer-events: none; }
+  .step { min-height: 42vh; justify-content: flex-end; padding-bottom: 28px; text-align: center; align-items: center; opacity: 0.55; }
+  .steps li:last-child { min-height: 36vh; }
+  .step p { max-width: 34ch; }
+}
+
+/* Pytania i odpowiedzi: rozwijane, bez pudełek i linii. Treść zgodna co do słowa z danymi FAQPage. */
+.ch .faq-grid { display: grid; gap: clamp(20px, 4vw, 64px); align-items: start; }
+.ch .faq-grid .ch-head { margin-bottom: 0; }
+@media (min-width: 940px) { .ch .faq-grid { grid-template-columns: 0.8fr 1.2fr; } }
+.qa { display: grid; gap: 4px; }
+.qa-item summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; }
+.qa-item summary::-webkit-details-marker { display: none; }
+.qa-item .q { font-family: var(--display); font-weight: 600; font-size: clamp(20px, 2.2vw, 26px); letter-spacing: -0.2px;
+  color: var(--text); line-height: 1.2; transition: color var(--dur-1) var(--ease); }
+.qa-item summary:hover .q, .qa-item[open] .q { color: var(--accent-hi); }
+.qa-item .chev { flex-shrink: 0; width: 11px; height: 11px; border-right: 2px solid var(--text-2); border-bottom: 2px solid var(--text-2);
+  transform: rotate(45deg); transition: transform var(--dur-1) var(--ease); margin-top: -4px; }
+.qa-item[open] .chev { transform: rotate(-135deg); margin-top: 4px; border-color: var(--accent-hi); }
+.qa-item p { color: var(--text-2); font-size: 16px; line-height: 1.65; margin: 0 0 22px; max-width: 62ch; animation: qa-in var(--dur-1) var(--ease) both; }
+@keyframes qa-in { from { opacity: 0; transform: translateY(-4px); } }
 
 :focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 3px; }
 
@@ -215,5 +333,5 @@ html.no-js .rv { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
   html { scroll-behavior: auto; }
-  .rv { opacity: 1; transform: none; }
+  .rv, .rv-seq > *, .ln > span { opacity: 1; transform: none; }
 }

@@ -4,6 +4,10 @@
  * Wszystkie rozmiary w em (1em = 10px przy --mcs: 1), więc kartę skaluje jedna zmienna --mcs na rodzicu.
  * Stany sceny „Znajdź grę obok" (Twój hex zajmuje wolne miejsce, pasek zmienia tekst, ostatnie miejsce
  * się zapełnia) włącza rodzic klasą .mc-step-2 / .mc-step-3 na przodku. Style globalne (is:global).
+ * `live`: karta „rozgrywa" mecz przy wejściu na ekran (hexy wchodzą, wynik nabija się od zera, na końcu
+ * zwycięzca dostaje zieleń i pojawia się „Zakończony"). Steruje tym skrypt strony klasami .mc-pre / .mc-on;
+ * bez JS widać od razu stan końcowy.
+ * W apce karta ma backdrop-filter; tu leży na płaskim tle, więc rozmycie nic nie daje i zostało pominięte.
  */
 import HexAvatar from './HexAvatar.astro'
 type P = { l: string; f?: boolean } | null
@@ -22,8 +26,9 @@ interface Props {
   ctaAlt?: string         // tekst paska po dołączeniu (scena Klub)
   you?: string            // litera Twojego hexa: zajmuje pierwsze wolne miejsce gości (scena Klub, krok 2)
   fill?: string           // litera gracza, który zajmuje drugie wolne miejsce (scena Klub, krok 3)
+  live?: boolean          // animowany przebieg meczu (patrz opis wyżej)
 }
-const { uid, mode = '3v3', status, playing = false, dist, home, away, score, date, address, cta, ctaAlt, you, fill } = Astro.props
+const { uid, mode = '3v3', status, playing = false, dist, home, away, score, date, address, cta, ctaAlt, you, fill, live = false } = Astro.props
 const MODE: Record<string, string> = { '2v2': '#9050FF', '3v3': '#00CCFF', '5v5': '#FFA820' }
 const color = MODE[mode] ?? '#00CCFF'
 const homeWon = !!score && score[0] > score[1]
@@ -31,7 +36,7 @@ const awayWon = !!score && score[1] > score[0]
 let n = 0
 const awaySlots = away.players.map((p) => (p ? { p, n: 0 } : { p: null, n: ++n }))
 ---
-<div class:list={['mc', { 'mc-mine': playing || !!you }]} style={`--mc-color:${color}`}>
+<div class:list={['mc', { 'mc-mine': playing || !!you }]} style={`--mc-color:${color}`} data-live={live ? '' : undefined}>
   <div class="mc-bloom" aria-hidden="true"></div>
   <div class="mc-in">
     <div class="mc-top">
@@ -53,7 +58,7 @@ const awaySlots = away.players.map((p) => (p ? { p, n: 0 } : { p: null, n: ++n }
       <div class="mc-mid">
         <i></i>
         {score
-          ? <span class="mc-score"><b class:list={{ win: homeWon }}>{score[0]}</b><span>:</span><b class:list={{ win: awayWon }}>{score[1]}</b></span>
+          ? <span class="mc-score"><b class:list={{ win: homeWon }} data-to={score[0]}>{score[0]}</b><span>:</span><b class:list={{ win: awayWon }} data-to={score[1]}>{score[1]}</b></span>
           : <span class="mc-vs">VS</span>}
         <i></i>
       </div>
@@ -85,7 +90,7 @@ const awaySlots = away.players.map((p) => (p ? { p, n: 0 } : { p: null, n: ++n }
   .mc { --c: var(--mc-color, #00CCFF); font-size: calc(10px * var(--mcs, 1)); position: relative; width: 34.3em; max-width: 100%;
     border-radius: 2em; overflow: hidden; isolation: isolate; color: #E0EEFF; font-family: var(--body);
     background: linear-gradient(165deg, rgba(28,48,78,0.50) 0%, rgba(6,14,26,0.72) 100%);
-    border: 1px solid rgba(160,200,255,0.18); -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); }
+    border: 1px solid rgba(160,200,255,0.18); }
   .mc-mine { border-color: rgba(0,204,255,0.55); box-shadow: 0 0 0 1px rgba(0,204,255,0.16), 0 0 2.4em rgba(0,204,255,0.16); }
   .mc-bloom { position: absolute; inset: 0; z-index: 0; pointer-events: none;
     background: radial-gradient(ellipse 70% 50% at 18% -8%, color-mix(in srgb, var(--c) 15%, transparent), transparent 60%); }
@@ -129,6 +134,22 @@ const awaySlots = away.players.map((p) => (p ? { p, n: 0 } : { p: null, n: ++n }
   .mc-cta-tx { font-family: var(--display); font-weight: 800; font-size: 1.05em; letter-spacing: .17em; text-transform: uppercase; display: grid; }
   .mc-cta-tx > span { grid-area: 1 / 1; white-space: nowrap; }
   .mc-cta > svg { width: .7em; height: 1.2em; flex-shrink: 0; }
+
+  /* Przebieg meczu (`live`): hexy wchodzą po kolei, wynik nabija skrypt, zieleń i „Zakończony" na końcu */
+  .mc[data-live] .mc-score b { min-width: 1.06em; font-variant-numeric: tabular-nums; transition: color .5s ease, text-shadow .5s ease; }
+  .mc[data-live] .mc-score b:first-child { text-align: right; }
+  .mc[data-live] .mc-score b:last-child { text-align: left; }
+  .mc[data-live] .mc-done { transition: opacity .5s var(--ease, ease), transform .5s var(--ease, ease); }
+  .mc[data-live] .mc-row > .hexav { transition: opacity .5s var(--ease, ease), transform .6s var(--ease, ease);
+    transition-delay: calc(var(--hi, 0) * 70ms); }
+  .mc-row > .hexav:nth-child(2) { --hi: 1; }
+  .mc-row > .hexav:nth-child(3) { --hi: 2; }
+  .mc-mid ~ .mc-row > .hexav:nth-child(1) { --hi: 3; }
+  .mc-mid ~ .mc-row > .hexav:nth-child(2) { --hi: 4; }
+  .mc-mid ~ .mc-row > .hexav:nth-child(3) { --hi: 5; }
+  .mc-pre .mc-score b.win { color: #E0EEFF; text-shadow: none; }
+  .mc-pre .mc-done { opacity: 0; transform: translateY(.4em); }
+  .mc-pre:not(.mc-on) .mc-row > .hexav { opacity: 0; transform: scale(.72); }
 
   /* Stany sceny Klub (tylko opacity/transform). Domyślnie: wolne miejsca, pasek „Dołącz". */
   .mc-you.dyn, .mc-me, .mc-fillhex, .mc-cta-tx .c2 { opacity: 0;
