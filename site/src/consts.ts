@@ -25,6 +25,9 @@ export const ACCOUNT = {
   supabaseUrl: SB_URL,
   supabaseKey: SB_KEY,
   path: '/konto/',
+  // Przycisk „Zaloguj przez Google" pokazujemy dopiero po dopisaniu adresów w Supabase (Redirect URLs, patrz wyżej)
+  // i ustawieniu PUBLIC_ACCOUNT_GOOGLE=1. Bez tego logowanie e-mailem i hasłem działa od razu.
+  google: import.meta.env.PUBLIC_ACCOUNT_GOOGLE === '1',
 }
 
 // Newsletter (zapis przez Resend). Front jest gotowy, zaplecze jeszcze nie: dopóki nie ma endpointu,

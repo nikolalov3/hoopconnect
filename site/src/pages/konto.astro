@@ -44,8 +44,12 @@ const lead = ACCOUNT.enabled
             <p class="acc-msg" data-login-msg role="alert"></p>
             <button class="btn btn-primary btn-lg acc-wide" type="submit" data-login-btn>Zaloguj się<span class="arw">→</span></button>
           </form>
-          <p class="acc-or"><span>albo</span></p>
-          <button class="btn btn-ghost btn-lg acc-wide" type="button" data-google>Zaloguj przez Google</button>
+          {ACCOUNT.google && (
+            <>
+              <p class="acc-or"><span>albo</span></p>
+              <button class="btn btn-ghost btn-lg acc-wide" type="button" data-google>Zaloguj przez Google</button>
+            </>
+          )}
           <p class="acc-help">
             Nie masz konta? <a class="inline-link lower" href={APP_URL} target="_blank" rel="noopener">Załóż je w aplikacji</a>.
             Nie pamiętasz hasła? Nowe ustawisz w aplikacji, na ekranie logowania.
