@@ -1,33 +1,34 @@
 ---
 /**
- * RankBoard: tablica rankingu przeniesiona z apki (src/pages/RankPage.jsx): zakładki XP / Mecze /
- * King of the Court, wiersze z hexem, top 3 w kolorze medalu, wiersz „Ty" na niebiesko.
- * To element produktu w HTML, nie zrzut ekranu. Dane są POGLĄDOWE (ci sami gracze, co na kartach
- * z boiska na stronie głównej); prawdziwy ranking jest pod app.hoopconnect.pl/rank.
+ * RankBoard: tablica rankingu przeniesiona z apki (src/pages/RankPage.jsx, app.hoopconnect.pl/rank):
+ * zakładki tekstowe z przesuwaną kreską, filtr miasta na ściętych przyciskach, wiersze na liniach,
+ * znak areny, top 3 w kolorze medalu, wiersz „Ty" na niebiesko, wartość zawsze w ostatniej kolumnie.
+ * To element produktu w HTML, nie zrzut ekranu. Zmieniasz wygląd tablicy w apce → popraw też tutaj.
+ * Dane są POGLĄDOWE (ci sami gracze, co na kartach z boiska na stronie głównej).
  *
  * Rozmiary w em (1em = 10px przy --rbs: 1), więc tablicę skaluje jedna zmienna --rbs na rodzicu.
  * Zakładki działają (klik przełącza tablicę). `story`: przy wejściu na ekran wartości nabijają się
  * od zera, potem „Ty" dostaje +75 XP za wygrany mecz i wyprzedza gracza nad sobą (zamiana miejsc
  * transformem). Bez JS i przy ograniczonym ruchu widać statyczną tablicę.
- * W apce powierzchnie mają backdrop-filter; tu leżą na płaskim tle, więc rozmycie pominięte.
  */
 import HexAvatar from './HexAvatar.astro'
 interface Props {
   uid: string
   story?: boolean
-  cities?: boolean      // pokaż chipy filtra miasta (ilustracja filtra, nieklikalne)
+  cities?: boolean      // pokaż filtr miasta (ilustracja filtra, nieklikalna)
 }
 const { uid, story = false, cities = true } = Astro.props
 
-type Pl = { id: string; name: string; l: string; f?: boolean; me?: boolean; arena: string; xp: number; w: number; g: number; kw: number; ks: number }
+// lvl = poziom areny (0 = Rozgrzewka bez grafiki, 1..6 = public/arenas/thumb/arena-N.webp)
+type Pl = { id: string; name: string; l: string; f?: boolean; me?: boolean; arena: string; lvl: number; xp: number; w: number; g: number; kw: number; ks: number }
 const P: Pl[] = [
-  { id: 'alex', name: 'Alex', l: 'A', f: true, arena: 'Void Gem', xp: 5940, w: 15, g: 22, kw: 4, ks: 9 },
-  { id: 'kuba', name: 'Kuba', l: 'K', f: true, arena: 'Ankh Court', xp: 4892, w: 12, g: 19, kw: 3, ks: 8 },
-  { id: 'olek', name: 'Olek', l: 'O', arena: 'Golden Reign', xp: 3552, w: 9, g: 16, kw: 2, ks: 6 },
-  { id: 'me', name: 'Szymon', l: 'S', f: true, me: true, arena: 'Golden Reign', xp: 3480, w: 10, g: 15, kw: 2, ks: 5 },
-  { id: 'bartek', name: 'Bartek', l: 'B', f: true, arena: 'City Run', xp: 2076, w: 7, g: 13, kw: 1, ks: 5 },
-  { id: 'michal', name: 'Michał', l: 'M', arena: 'Street Court', xp: 850, w: 4, g: 9, kw: 0, ks: 3 },
-  { id: 'filip', name: 'Filip', l: 'F', arena: 'Rozgrzewka', xp: 420, w: 2, g: 6, kw: 0, ks: 2 },
+  { id: 'alex', name: 'Alex', l: 'A', f: true, arena: 'Void Gem', lvl: 5, xp: 5940, w: 15, g: 22, kw: 4, ks: 9 },
+  { id: 'kuba', name: 'Kuba', l: 'K', f: true, arena: 'Ankh Court', lvl: 4, xp: 4892, w: 12, g: 19, kw: 3, ks: 8 },
+  { id: 'olek', name: 'Olek', l: 'O', arena: 'Golden Reign', lvl: 3, xp: 3552, w: 9, g: 16, kw: 2, ks: 6 },
+  { id: 'me', name: 'Szymon', l: 'S', f: true, me: true, arena: 'Golden Reign', lvl: 3, xp: 3480, w: 10, g: 15, kw: 2, ks: 5 },
+  { id: 'bartek', name: 'Bartek', l: 'B', f: true, arena: 'City Run', lvl: 2, xp: 2076, w: 7, g: 13, kw: 1, ks: 5 },
+  { id: 'michal', name: 'Michał', l: 'M', arena: 'Street Court', lvl: 1, xp: 850, w: 4, g: 9, kw: 0, ks: 3 },
+  { id: 'filip', name: 'Filip', l: 'F', arena: 'Rozgrzewka', lvl: 0, xp: 420, w: 2, g: 6, kw: 0, ks: 2 },
 ]
 const MEDAL = ['#FFC940', '#C9D4E3', '#D9925B']
 const byXp = [...P].sort((a, b) => b.xp - a.xp)
@@ -43,21 +44,24 @@ const TABS = [
   { key: 'xp', label: 'XP' }, { key: 'matches', label: 'Mecze' }, { key: 'kotc', label: 'King of the Court' },
 ]
 const rowStyle = (i: number) => `--i:${i};${i < 3 ? `--medal:${MEDAL[i]}` : ''}`
+const HEX = 'M12 2.6 20.1 7.3v9.4L12 21.4 3.9 16.7V7.3z'
 ---
 <div class="rb" data-rb data-tab="xp" data-story={story ? '' : undefined}>
-  <div class="rb-head">
+  <div class="rb-strip">
     <div class="rb-tabs" role="tablist" aria-label="Tablice rankingu">
       {TABS.map((t, i) => (
         <button class:list={['rb-tab', { on: i === 0 }]} type="button" role="tab" aria-selected={i === 0 ? 'true' : 'false'} data-tab={t.key}>{t.label}</button>
       ))}
     </div>
-    {cities && (
-      <div class="rb-cities" aria-hidden="true">
-        <span class="rb-chip on">Wszystkie miasta</span>
-        <span class="rb-chip">Kraków <small>20</small></span>
-      </div>
-    )}
   </div>
+  {cities && (
+    <div class="rb-filters" aria-hidden="true">
+      <span class="rb-fl">Miasto</span>
+      <span class="rb-chip on">Wszystkie miasta</span>
+      <span class="rb-chip">Kraków <small>20</small></span>
+      <span class="rb-note">Dane przykładowe</span>
+    </div>
+  )}
 
   <div class="rb-board">
     <!-- XP -->
@@ -68,9 +72,22 @@ const rowStyle = (i: number) => `--i:${i};${i < 3 ? `--medal:${MEDAL[i]}` : ''}`
           <span class="rb-n">{i + 1}</span>
           <span class="rb-player">
             <HexAvatar letter={p.l} frame={!!p.f} uid={`${uid}x${p.id}`} />
-            <span class="rb-id"><span class="rb-name">{p.name}{p.me && <i class="you"> · Ty</i>}</span><span class="rb-sub">{p.arena}</span></span>
+            <span class="rb-id">
+              <span class="rb-name"><span>{p.name}</span>{p.me && <i class="rb-you">Ty</i>}</span>
+              <span class="rb-sub">
+                {p.lvl
+                  ? <img class="rb-am" src={`/arenas/thumb/arena-${p.lvl}.webp`} width="16" height="16" alt="" loading="lazy" decoding="async" />
+                  : <svg class="rb-am" viewBox="0 0 24 24" aria-hidden="true"><path d={HEX} fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>}
+                {p.arena}
+              </span>
+            </span>
           </span>
-          <span class="rb-ex">{p.arena}</span>
+          <span class="rb-ex rb-arena">
+            {p.lvl
+              ? <img class="rb-am" src={`/arenas/thumb/arena-${p.lvl}.webp`} width="28" height="28" alt="" loading="lazy" decoding="async" />
+              : <svg class="rb-am" viewBox="0 0 24 24" aria-hidden="true"><path d={HEX} fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>}
+            <span>{p.arena}</span>
+          </span>
           <span class="rb-val num" data-v={p.xp}>{p.xp}</span>
           {p.me && story && <span class="rb-gain" aria-hidden="true">+75 XP</span>}
         </li>
@@ -78,105 +95,121 @@ const rowStyle = (i: number) => `--i:${i};${i < 3 ? `--medal:${MEDAL[i]}` : ''}`
     </ol>
 
     <!-- Mecze -->
-    <div class="rb-cols" data-for="matches" hidden><span>#</span><span>Gracz</span><span class="num">Wygrane</span><span class="num x">Mecze</span><span class="num x">% wygranych</span></div>
+    <div class="rb-cols" data-for="matches" hidden><span>#</span><span>Gracz</span><span class="num x">Mecze</span><span class="num x">% wygranych</span><span class="num">Wygrane</span></div>
     <ol class="rb-list" data-for="matches" hidden>
       {byWins.map((p, i) => (
         <li class:list={['rb-row', { top: i < 3, me: p.me }]} style={rowStyle(i)}>
           <span class="rb-n">{i + 1}</span>
           <span class="rb-player">
             <HexAvatar letter={p.l} frame={!!p.f} uid={`${uid}m${p.id}`} />
-            <span class="rb-id"><span class="rb-name">{p.name}{p.me && <i class="you"> · Ty</i>}</span><span class="rb-sub">{pl(p.g, 'gra', 'gry', 'gier')} · {pct(p)}%</span></span>
+            <span class="rb-id">
+              <span class="rb-name"><span>{p.name}</span>{p.me && <i class="rb-you">Ty</i>}</span>
+              <span class="rb-sub">{pl(p.g, 'gra', 'gry', 'gier')} · {pct(p)}%</span>
+            </span>
           </span>
-          <span class="rb-val num">{p.w}</span>
           <span class="rb-ex num">{p.g}</span>
           <span class="rb-ex num">{pct(p)}%</span>
+          <span class="rb-val num">{p.w}</span>
         </li>
       ))}
     </ol>
 
     <!-- King of the Court -->
-    <div class="rb-cols" data-for="kotc" hidden><span>#</span><span>Gracz</span><span class="num">Wygrane sesje</span><span class="num x">Sesje</span></div>
+    <div class="rb-cols" data-for="kotc" hidden><span>#</span><span>Gracz</span><span class="num x">Sesje</span><span class="num">Wygrane sesje</span></div>
     <ol class="rb-list" data-for="kotc" hidden>
       {byKotc.map((p, i) => (
         <li class:list={['rb-row', { top: i < 3, me: p.me }]} style={rowStyle(i)}>
           <span class="rb-n">{i + 1}</span>
           <span class="rb-player">
             <HexAvatar letter={p.l} frame={!!p.f} uid={`${uid}k${p.id}`} />
-            <span class="rb-id"><span class="rb-name">{p.name}{p.me && <i class="you"> · Ty</i>}</span><span class="rb-sub">{pl(p.ks, 'sesja', 'sesje', 'sesji')}</span></span>
+            <span class="rb-id">
+              <span class="rb-name"><span>{p.name}</span>{p.me && <i class="rb-you">Ty</i>}</span>
+              <span class="rb-sub">{pl(p.ks, 'sesja', 'sesje', 'sesji')}</span>
+            </span>
           </span>
-          <span class="rb-val num">{p.kw}</span>
           <span class="rb-ex num">{p.ks}</span>
+          <span class="rb-val num">{p.kw}</span>
         </li>
       ))}
     </ol>
   </div>
-  <p class="rb-note">Dane przykładowe</p>
+  {!cities && <p class="rb-note below">Dane przykładowe</p>}
 </div>
 
 <style>
-  .rb { --blue: #5BB8F5; --muted: rgba(238,244,255,.62); --dim: rgba(238,244,255,.36);
-    font-size: calc(10px * var(--rbs, 1)); width: 100%; max-width: 78em; margin-inline: auto; color: #EEF4FF;
+  .rb { font-size: calc(10px * var(--rbs, 1)); width: 100%; max-width: 91.2em; margin-inline: auto; color: var(--text);
     font-family: var(--body); container-type: inline-size; text-align: left; }
-  .rb-head { display: flex; align-items: center; justify-content: space-between; gap: 1.2em 2em; flex-wrap: wrap; margin-bottom: 1.4em; }
 
-  .rb-tabs { display: flex; gap: .4em; padding: .5em; border-radius: 999px; border: 1px solid rgba(255,255,255,.12);
-    background: linear-gradient(135deg, rgba(255,255,255,.11), rgba(255,255,255,.045) 45%, rgba(255,255,255,.07)); }
-  .rb-tab { padding: .82em 1.5em; border-radius: 999px; border: 0; background: transparent; color: var(--muted); font: inherit;
-    font-size: 1.35em; font-weight: 800; letter-spacing: .02em; white-space: nowrap; cursor: pointer; transition: color .25s, background .25s; }
-  .rb-tab:hover { color: #EEF4FF; }
-  .rb-tab.on { color: #fff; background: linear-gradient(135deg, rgba(91,184,245,.58), rgba(46,144,212,.34));
-    box-shadow: 0 .75em 1.9em -.75em rgba(91,184,245,.85), inset 0 1px 0 rgba(255,255,255,.48), inset 0 -1px 0 rgba(0,0,0,.18); }
-  .rb-cities { display: flex; gap: .6em; }
-  .rb-chip { display: inline-flex; align-items: center; gap: .6em; padding: .6em 1em; border-radius: 999px; border: 1px solid transparent;
-    background: rgba(255,255,255,.04); color: var(--muted); font-size: 1.25em; font-weight: 700; white-space: nowrap; }
-  .rb-chip.on { background: linear-gradient(135deg, rgba(91,184,245,.30), rgba(91,184,245,.10)); border-color: rgba(91,184,245,.45); color: #fff; }
-  .rb-chip small { font-size: .85em; font-weight: 700; padding: .1em .55em; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--dim); }
+  /* Zakładki: tekst + jedna kreska, którą skrypt przesuwa transformem pod aktywną zakładkę */
+  .rb-strip { border-bottom: 1px solid var(--line-2); }
+  .rb-tabs { position: relative; display: flex; gap: 3.4em; }
+  .rb-tab { appearance: none; border: 0; background: none; margin: 0; padding: .73em 0 .68em; cursor: pointer; white-space: nowrap; color: var(--text-3);
+    font-family: var(--display); font-weight: 700; font-size: 2.2em; line-height: 1; letter-spacing: .027em; text-transform: uppercase; transition: color .25s; }
+  .rb-tab:hover { color: var(--text-2); }
+  .rb-tab.on { color: var(--text); }
+  .rb-tab:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 3px; }
+  .rb-tabs::after { content: ''; position: absolute; left: 0; bottom: -1px; width: 100px; height: 2px; background: var(--accent-hi); transform-origin: 0 50%;
+    transform: translateX(calc(var(--tx, 0) * 1px)) scaleX(calc(var(--tw, 0) / 100)); transition: transform .5s var(--ease); }
 
-  .rb-board { position: relative; padding: .8em; border-radius: 2.2em; border: 1px solid rgba(255,255,255,.12);
-    background: linear-gradient(135deg, rgba(255,255,255,.085), rgba(255,255,255,.035) 45%, rgba(255,255,255,.055));
-    box-shadow: 0 2.4em 6em -2.8em rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.22); }
-  .rb-cols, .rb-row { display: grid; align-items: center; }
+  /* Filtr miasta: małe matowe przyciski ze ściętym rogiem (::after = obrys, ::before = wypełnienie) */
+  .rb-filters { display: flex; align-items: center; gap: .7em; padding: 1.6em 0 .6em; }
+  .rb-fl { margin-right: .36em; font-size: 1.1em; font-weight: 600; letter-spacing: .145em; text-transform: uppercase; color: var(--text-3); }
+  .rb-chip { --bd: var(--line-2); --fill: #131419; --cut: .62em; position: relative; isolation: isolate; z-index: 0; display: inline-flex; align-items: center; gap: .6em;
+    padding: .62em 1em; font-size: 1.3em; font-weight: 600; line-height: 1.25; letter-spacing: .015em; color: var(--text-2); white-space: nowrap; }
+  .rb-chip::after { content: ''; position: absolute; inset: 0; z-index: -2; background: var(--bd);
+    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+  .rb-chip::before { content: ''; position: absolute; inset: 1px; z-index: -1; background: var(--fill);
+    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+  .rb-chip.on { --bd: rgba(96,168,224,.6); --fill: #163D65; color: #EAF3FF; }
+  .rb-chip small { font-size: .85em; font-weight: 600; color: var(--text-3); }
+  .rb-chip.on small { color: var(--accent-hi); }
+  .rb-note { margin: 0 0 0 auto; font-size: 1.25em; color: var(--text-3); white-space: nowrap; }
+  .rb-note.below { margin: .9em .2em 0; text-align: right; }
+
+  /* Tablica: siatka, linie tylko między wierszami */
+  .rb-board { margin-top: .8em; }
+  .rb-cols, .rb-row { display: grid; grid-template-columns: var(--rb-cols); column-gap: 1.4em; align-items: center; padding: 0 1.6em 0 .4em; }
   .rb-cols[hidden], .rb-list[hidden] { display: none; }
-  [data-for="xp"] { --rb-cols: 5.4em minmax(0, 1fr) minmax(9em, 14em) 8em; }
-  [data-for="matches"] { --rb-cols: 5.4em minmax(0, 1fr) 9em 7.5em 11em; }
-  [data-for="kotc"] { --rb-cols: 5.4em minmax(0, 1fr) 12em 7.5em; }
-  .rb-cols { grid-template-columns: var(--rb-cols); padding-right: 1.4em; }
-  .rb-list :global(.rb-row), .rb-row { grid-template-columns: var(--rb-cols); }
-  .rb-cols span { font-size: 1.1em; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); padding: .9em 1.27em .55em; }
-  .rb-cols span:first-child { text-align: center; padding-inline: 0; }
+  [data-for="xp"] { --rb-cols: 5.2em minmax(0, 1fr) minmax(15em, 23.6em) 9.6em; }
+  [data-for="matches"] { --rb-cols: 5.2em minmax(0, 1fr) 7.8em 12.6em 10em; }
+  [data-for="kotc"] { --rb-cols: 5.2em minmax(0, 1fr) 7.8em 14.8em; }
+  .rb-cols { padding-block: 1.2em 1em; border-bottom: 1px solid var(--line); }
+  .rb-cols span { font-size: 1.1em; font-weight: 600; letter-spacing: .145em; text-transform: uppercase; color: var(--text-3); white-space: nowrap; }
+  .rb-cols span:first-child { text-align: center; }
   .num { text-align: right; font-variant-numeric: tabular-nums; }
 
-  .rb-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .4em; }
-  .rb-row { position: relative; min-height: 5.8em; padding-right: 1.4em; border-radius: 1.4em; background: rgba(255,255,255,.035);
-    transition: transform .7s var(--ease), background .4s ease; }
-  .rb-row > span { padding-inline: 1.4em; }
-  .rb-n { padding-inline: 0 !important; text-align: center; font-family: var(--display); font-weight: 900; font-size: 1.8em; color: var(--dim); }
-  .rb-player { display: flex; align-items: center; gap: 1.2em; min-width: 0; }
+  .rb-list { list-style: none; margin: 0; padding: 0; }
+  .rb-row { position: relative; min-height: 6.4em; border-bottom: 1px solid var(--line); transition: transform .7s var(--ease), background .4s ease; }
+  .rb-n { text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.9em; line-height: 1; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .rb-player { display: flex; align-items: center; gap: 1.3em; min-width: 0; padding-block: .9em; }
   .rb-player :global(.hexav) { width: 3.8em; height: 3.8em; flex: none; }
   .rb-id { min-width: 0; display: grid; }
-  .rb-name { font-size: 1.5em; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .you { font-style: normal; color: var(--blue); }
-  .rb-sub { display: none; font-size: 1.15em; color: var(--muted); margin-top: .15em; }
-  .rb-ex { color: var(--muted); font-size: 1.4em; white-space: nowrap; }
-  .rb-val { font-family: var(--display); font-weight: 900; font-size: 2em; white-space: nowrap; }
-  /* top 3: zwykłe wiersze, tylko numer i wartość w kolorze medalu + delikatny tint (jak w apce) */
-  .rb-row.top { background: linear-gradient(90deg, color-mix(in srgb, var(--medal) 13%, transparent), rgba(255,255,255,.035) 45%); }
-  .rb-row.top .rb-n { color: var(--medal); font-size: 2.1em; text-shadow: 0 0 .76em color-mix(in srgb, var(--medal) 60%, transparent); }
+  .rb-name { display: flex; align-items: center; gap: .56em; min-width: 0; font-size: 1.6em; font-weight: 600; line-height: 1.25; }
+  .rb-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rb-you { flex: none; padding: .2em .6em; border: 1px solid rgba(111,195,255,.45); border-radius: 2px; font-style: normal; font-size: .625em; font-weight: 600;
+    line-height: 1.2; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-hi); }
+  .rb-sub { display: none; }
+  .rb-ex { color: var(--text-2); font-size: 1.45em; white-space: nowrap; }
+  .rb-arena { display: flex; align-items: center; gap: .69em; min-width: 0; }
+  .rb-arena > span { overflow: hidden; text-overflow: ellipsis; }
+  .rb-am { flex: none; width: 1.93em; height: 1.93em; object-fit: contain; color: var(--text-3); }
+  .rb-val { font-family: var(--display); font-weight: 800; font-size: 2.6em; line-height: 1; white-space: nowrap; }
+  /* top 3: zwykłe wiersze, numer i wartość w kolorze medalu + delikatna smuga od lewej (jak w apce) */
+  .rb-row.top { background: linear-gradient(90deg, color-mix(in srgb, var(--medal) 11%, transparent), transparent 46%); }
+  .rb-row.top .rb-n { color: var(--medal); font-size: 2.7em; text-shadow: 0 0 .67em color-mix(in srgb, var(--medal) 55%, transparent); }
   .rb-row.top .rb-val { color: var(--medal); }
-  .rb-row.me { background: linear-gradient(90deg, rgba(91,184,245,.22), rgba(91,184,245,.08)); box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
-
-  .rb-note { margin: .9em .4em 0; text-align: right; font-size: 1.15em; color: var(--dim); letter-spacing: .04em; }
+  .rb-row.me { background: linear-gradient(90deg, rgba(47,145,214,.24), rgba(47,145,214,.06)); }
 
   /* Wejście wierszy (przy pierwszym pokazaniu i po zmianie zakładki): tylko opacity i transform */
   .rb-list.enter .rb-row { animation: rb-in .5s var(--ease) both; animation-delay: calc(var(--i, 0) * 40ms); }
   @keyframes rb-in { from { opacity: 0; transform: translateY(.8em); } }
   .rb.rb-wait .rb-row { opacity: 0; }
 
-  /* Historia: +75 XP za wygrany mecz i zamiana miejsc (wiersze mają tę samą wysokość, przesuw = 100% + odstęp) */
-  .rb-row.up { transform: translateY(calc(-100% - .4em)); z-index: 2; }
-  .rb-row.down { transform: translateY(calc(100% + .4em)); }
+  /* Historia: +75 XP za wygrany mecz i zamiana miejsc (wiersze mają tę samą wysokość, przesuw = 100%) */
+  .rb-row.up { transform: translateY(-100%); z-index: 2; }
+  .rb-row.down { transform: translateY(100%); }
   /* plakietka siada na górnej krawędzi wiersza, nad wartością XP: nie zasłania areny ani liczby */
-  .rb-gain { position: absolute; z-index: 3; right: 1.1em; top: 0; padding: .3em .75em !important; border-radius: .7em; white-space: nowrap;
+  .rb-gain { position: absolute; z-index: 3; right: 1.1em; top: 0; padding: .3em .75em; border-radius: 2px; white-space: nowrap;
     font-family: var(--display); font-weight: 800; font-size: 1.3em; line-height: 1.2; letter-spacing: .04em; color: #06121F; background: #6FC3FF;
     box-shadow: 0 0 1.4em rgba(111,195,255,.55); opacity: 0; transform: translateY(10%) scale(.92);
     transition: opacity .4s var(--ease), transform .4s var(--ease); pointer-events: none; }
@@ -184,19 +217,25 @@ const rowStyle = (i: number) => `--i:${i};${i < 3 ? `--medal:${MEDAL[i]}` : ''}`
 
   /* Wąska tablica (telefon): jak w apce, kolumny dodatkowe zwijają się do podtytułu wiersza */
   @container (max-width: 560px) {
-    .rb-head { justify-content: center; }
-    .rb-tabs { width: 100%; }
-    .rb-tab { flex: 1; padding: .8em .4em; font-size: 1.25em; }
-    .rb-cities { display: none; }
-    .rb-cols, .rb-list :global(.rb-row), .rb-row { grid-template-columns: 4.4em minmax(0, 1fr) auto; }
-    .rb-cols .x { display: none; }
-    .rb-cols span { padding: .7em 1em .5em; }
-    .rb-ex { display: none; }
-    .rb-sub { display: block; }
-    .rb-row > span { padding-inline: 1em; }
-    .rb-gain { right: .9em; }
+    .rb-tabs { gap: 2.2em; }
+    .rb-tab { font-size: 1.9em; }
+    .rb-filters { display: none; }
+    .rb-cols, .rb-row { grid-template-columns: 3.8em minmax(0, 1fr) auto; column-gap: 1em; padding: 0 .6em 0 0; }
+    .rb-cols .x, .rb-ex { display: none; }
+    .rb-row { min-height: 6em; }
+    .rb-n { font-size: 1.7em; }
+    .rb-row.top .rb-n { font-size: 2.3em; }
+    .rb-player { gap: 1.1em; }
+    .rb-name { font-size: 1.5em; }
+    .rb-sub { display: flex; align-items: center; gap: .5em; margin-top: .17em; font-size: 1.2em; line-height: 1.3; color: var(--text-3); }
+    .rb-sub .rb-am { width: 1.33em; height: 1.33em; }
+    .rb-val { font-size: 2.3em; }
+    .rb-gain { right: .5em; }
   }
-  @media (prefers-reduced-motion: reduce) { .rb.rb-wait .rb-row { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .rb.rb-wait .rb-row { opacity: 1; }
+    .rb-tabs::after { transition: none; }
+  }
 </style>
 
 <script>
@@ -207,11 +246,22 @@ const rowStyle = (i: number) => `--i:${i};${i < 3 ? `--medal:${MEDAL[i]}` : ''}`
     const lists = Array.from(rb.querySelectorAll<HTMLElement>('.rb-list'))
     const cols = Array.from(rb.querySelectorAll<HTMLElement>('.rb-cols'))
     const tabs = Array.from(rb.querySelectorAll<HTMLButtonElement>('.rb-tab'))
+    const tabsBox = rb.querySelector<HTMLElement>('.rb-tabs')
     const listFor = (tab: string) => lists.find((l) => l.dataset.for === tab)
     const enter = (l?: HTMLElement) => {
       if (!l || reduce) return
       l.classList.remove('enter'); void l.offsetWidth; l.classList.add('enter')
     }
+
+    // Kreska pod aktywną zakładką: pozycja i szerokość idą do zmiennych CSS (ruch samym transformem).
+    const place = () => {
+      const el = tabs.find((t) => t.classList.contains('on'))
+      if (!el || !tabsBox) return
+      tabsBox.style.setProperty('--tx', String(el.offsetLeft))
+      tabsBox.style.setProperty('--tw', String(el.offsetWidth))
+    }
+    place()
+    if ('ResizeObserver' in window) { const ro = new ResizeObserver(place); tabs.forEach((t) => ro.observe(t)) }
 
     // Zakładki: klik przełącza tablicę (zestaw kolumn i wierszy), wiersze wchodzą od nowa.
     const show = (tab: string) => {
@@ -220,6 +270,7 @@ const rowStyle = (i: number) => `--i:${i};${i < 3 ? `--medal:${MEDAL[i]}` : ''}`
       tabs.forEach((t) => { const on = t.dataset.tab === tab; t.classList.toggle('on', on); t.setAttribute('aria-selected', String(on)) })
       lists.forEach((l) => { l.hidden = l.dataset.for !== tab })
       cols.forEach((c) => { c.hidden = c.dataset.for !== tab })
+      place()
       if (!rb.classList.contains('rb-wait')) enter(listFor(tab))
     }
     tabs.forEach((t) => t.addEventListener('click', () => show(t.dataset.tab || 'xp')))

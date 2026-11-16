@@ -688,10 +688,10 @@ const homeFaqSchema = {
   }
 
   /* 7. Ranking: tablica z apki (RankBoard), skalowana zmienną --rbs */
-  .rank-show { --rbs: 1.05; }
+  .rank-show { --rbs: 1; }
   .rank-cap { margin: clamp(24px, 3vw, 36px) auto 0; text-align: center; color: var(--text-2); font-size: clamp(16px, 1.3vw, 18px); max-width: 48ch; }
   .rank-cap b { color: var(--accent-hi); font-weight: 600; }
-  @media (max-width: 699px) { .rank-show { --rbs: 0.92; } }
+  @media (max-width: 699px) { .rank-show { --rbs: 0.98; } }
 
   /* 8. Pierścień Draft Score to komponent (DraftRing); na desktopie stoi po prawej */
   @media (min-width: 940px) { #trening :global(.ring-wrap) { order: 2; } }

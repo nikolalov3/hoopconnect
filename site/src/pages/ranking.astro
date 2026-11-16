@@ -178,11 +178,13 @@ const faqSchema = {
         <p class="lead">Ranking zawężasz do swojego miasta jednym kliknięciem. Miasto pojawia się w filtrze, gdy ma co najmniej dziesięciu graczy, żeby było z kim się porównać.</p>
         <p class="fact">Brakuje Twojego miasta? Zbierz ekipę. Dziesięć kont i macie własną tablicę.</p>
       </div>
-      <div class="city-panel rv rv-d1" aria-hidden="true">
+      <div class="city-mock rv rv-d1" aria-hidden="true">
         <p>Miasto</p>
-        <span class="opt on">Wszystkie miasta</span>
-        <span class="opt">Kraków <small>20</small></span>
-        <span class="opt next">Twoje miasto <small>od 10 graczy</small></span>
+        <div>
+          <span class="opt on">Wszystkie miasta</span>
+          <span class="opt">Kraków <small>20</small></span>
+          <span class="opt next">Twoje miasto <small>od 10 graczy</small></span>
+        </div>
       </div>
     </div>
   </section>
@@ -238,11 +240,11 @@ const faqSchema = {
 <style>
   /* 1. Otwarcie */
   .page-hero .tag { margin-bottom: 26px; }
-  .hero-board { --rbs: 1.1; position: relative; max-width: 880px; margin: clamp(40px, 5vw, 64px) auto 0; }
+  .hero-board { --rbs: 1; position: relative; max-width: 912px; margin: clamp(40px, 5vw, 64px) auto 0; }
   /* plama światła pod tablicą, rozpływa się w tło strony */
   .hero-board::before { content: ''; position: absolute; z-index: -1; inset: -12% -22% -22%; pointer-events: none;
     background: radial-gradient(ellipse 60% 56% at 50% 46%, rgba(24,40,74,0.95) 0%, rgba(21,33,58,0.6) 42%, rgba(14,15,18,0) 74%); }
-  @media (max-width: 699px) { .hero-board { --rbs: 0.92; } }
+  @media (max-width: 699px) { .hero-board { --rbs: 0.98; } }
 
   /* 2. W skrócie: cztery fakty w dwóch kolumnach, bez pudełek */
   .brief { padding-top: clamp(72px, 9vw, 128px); }
@@ -251,9 +253,9 @@ const faqSchema = {
   @media (min-width: 860px) { .brief .facts { grid-template-columns: 1fr 1fr; } }
 
   /* 3. Trzy tablice: tablica przyklejona, kroki obok */
-  .scene-board { --rbs: 0.94; width: 100%; max-width: 620px; }
+  .scene-board { --rbs: 1; width: 100%; max-width: 540px; }
   @media (max-width: 899px) {
-    .scene-board { --rbs: 0.84; max-width: 360px; margin-inline: auto; }
+    .scene-board { --rbs: 0.9; max-width: 360px; margin-inline: auto; }
     /* na telefonie w przyklejonym polu mieszczą się cztery pierwsze miejsca */
     .scene-board :global(.rb-row:nth-child(n+5)), .scene-board :global(.rb-note) { display: none; }
   }
@@ -277,17 +279,20 @@ const faqSchema = {
   .xp-note { margin: clamp(28px, 4vw, 44px) auto 0; text-align: center; color: var(--text-2); font-size: clamp(16px, 1.3vw, 18px); max-width: 52ch; }
   @media (max-width: 560px) { .xpt .c-ds { width: 30%; } .xpt .c-xp { width: 26%; } }
 
-  /* 5. Filtr miasta: panel jak w apce (lista opcji), trzecia pozycja pokazuje próg 10 graczy */
-  .city-panel { justify-self: center; width: min(100%, 340px); padding: 18px; border-radius: 22px; border: 1px solid rgba(255,255,255,.12);
-    background: linear-gradient(135deg, rgba(255,255,255,.085), rgba(255,255,255,.035) 45%, rgba(255,255,255,.055));
-    box-shadow: 0 24px 60px -28px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.22); display: grid; gap: 7px; }
-  .city-panel p { font-size: 11px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(238,244,255,.62); margin: 0 0 6px 4px; }
-  .city-panel .opt { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 13px;
-    border: 1px solid transparent; background: rgba(255,255,255,.04); color: rgba(238,244,255,.62); font-size: 14.5px; font-weight: 700; }
-  .city-panel .opt.on { background: linear-gradient(135deg, rgba(91,184,245,.30), rgba(91,184,245,.10)); border-color: rgba(91,184,245,.45); color: #fff; }
-  .city-panel .opt small { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.06); color: rgba(238,244,255,.5); }
-  .city-panel .opt.next { background: transparent; border: 1px dashed rgba(111,195,255,.5); color: var(--accent-hi); }
-  .city-panel .opt.next small { background: rgba(111,195,255,.14); color: var(--accent-hi); }
+  /* 5. Filtr miasta: te same ścięte przyciski, co w apce; trzeci pokazuje próg 10 graczy */
+  .city-mock { justify-self: center; width: min(100%, 420px); }
+  .city-mock p { margin: 0 0 14px; font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: var(--text-3); }
+  .city-mock div { display: flex; flex-wrap: wrap; gap: 10px; }
+  .city-mock .opt { --bd: var(--line-2); --fill: #131419; --cut: 10px; position: relative; isolation: isolate; z-index: 0; display: inline-flex; align-items: center; gap: 10px;
+    padding: 12px 18px; font-size: 16px; font-weight: 600; line-height: 1.25; color: var(--text-2); white-space: nowrap; }
+  .city-mock .opt::after { content: ''; position: absolute; inset: 0; z-index: -2; background: var(--bd);
+    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+  .city-mock .opt::before { content: ''; position: absolute; inset: 1px; z-index: -1; background: var(--fill);
+    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
+  .city-mock .opt.on { --bd: rgba(96,168,224,.6); --fill: #163D65; color: #EAF3FF; }
+  .city-mock .opt small { font-size: 13px; font-weight: 600; color: var(--text-3); }
+  .city-mock .opt.next { --bd: rgba(111,195,255,.42); --fill: #0F1823; color: var(--accent-hi); }
+  .city-mock .opt.next small { color: rgba(111,195,255,.7); }
 
   /* 6. Pierścień po lewej na desktopie zostaje pierwszy w kodzie i w układzie */
   #draft-score :global(.ring-wrap) { justify-self: center; }
