@@ -1,0 +1,90 @@
+---
+/**
+ * TrainStats: port zakładki „Statystyki" (src/pages/StatsPage.jsx): filtr okresu, karta „Ogólnie",
+ * kafelki „Seria" i „Sesje", trzy karty stref (Trójki / Mid-Range / Wolne). To element produktu
+ * w HTML. Dane poglądowe: skuteczność liczona z tablicy SHOTS tak, jak liczy ją apka.
+ *
+ * Scena na stronie może przygasić grupy: data-step="1" na przodku zostawia jasną skuteczność (.st-a),
+ * data-step="2" serię i sesje (.st-b). Zmienia się tylko opacity. Rozmiary w em (1em = 10px przy
+ * --trs: 1). W apce karty mają rozmycie tła; tu pominięte. Kolory progów jak w apce: od 50% zieleń,
+ * od 35% błękit, niżej czerwień.
+ */
+interface Props { streak?: number }
+const { streak = 10 } = Astro.props
+const SHOTS = [
+  { key: '3pt', label: 'Trójki', made: 58, att: 150, sessions: 1 },
+  { key: '2pt', label: 'Mid-Range', made: 61, att: 100, sessions: 1 },
+  { key: 'ft', label: 'Wolne', made: 157, att: 200, sessions: 2 },
+]
+const pct = (m: number, a: number) => (a ? Math.round((m / a) * 100) : 0)
+const tone = (p: number) => (p >= 50 ? '#00E676' : p >= 35 ? '#5BB8F5' : '#FF5060')
+const made = SHOTS.reduce((s, x) => s + x.made, 0)
+const att = SHOTS.reduce((s, x) => s + x.att, 0)
+const sessions = SHOTS.reduce((s, x) => s + x.sessions, 0)
+const all = pct(made, att)
+const plural = (n: number) => (n === 1 ? 'sesja' : n < 5 ? 'sesje' : 'sesji')
+---
+<div class="st">
+  <div class="st-top">
+    <p><span>Twoje wyniki</span><b>Statystyki</b></p>
+  </div>
+  <div class="st-filter"><span class="on">7 dni</span><span>30 dni</span><span>Wszystko</span></div>
+
+  <div class="st-a">
+    <div class="st-card st-hero" style={`--c:${tone(all)}`}>
+      <div class="st-row"><p><b>Ogólnie</b><span>ostatnie 7 dni</span></p><strong>{all}%</strong></div>
+      <div class="st-bar"><i style={`--p:${all / 100}`}></i></div>
+      <div class="st-row st-foot"><span>{made} / {att} rzutów</span><span>{sessions} {plural(sessions)}</span></div>
+    </div>
+    <div class="st-zones">
+      {SHOTS.map((s) => (
+        <div class="st-card" style={`--c:${tone(pct(s.made, s.att))}`}>
+          <b>{s.label}</b>
+          <strong>{pct(s.made, s.att)}%</strong>
+          <span>{s.made} / {s.att}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <div class="st-b">
+    <div class="st-card st-tile"><strong>{streak}</strong><b>Seria</b><span>dni z rzędu</span></div>
+    <div class="st-card st-tile dim"><strong>{sessions}</strong><b>Sesje</b><span>ostatnie 7 dni</span></div>
+  </div>
+</div>
+
+<style is:global>
+  .st { font-size: calc(10px * var(--trs, 1)); width: 36em; max-width: 100%; display: grid; gap: 1.2em; padding: 2.4em 2em 2.2em; border-radius: 2.8em; text-align: left;
+    color: #EEF4FF; font-family: var(--body); border: 1px solid rgba(150,200,255,0.12);
+    background: radial-gradient(ellipse 80% 45% at 50% -5%, rgba(91,184,245,0.16) 0%, rgba(91,184,245,0) 62%), linear-gradient(170deg, #0C1F38 0%, #091828 42%, #060F1E 100%);
+    box-shadow: 0 3em 7em rgba(0,0,0,0.55); }
+  .st-top span { display: block; font-size: 1.05em; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: #6F86A6; line-height: 1.3; }
+  .st-top b { display: block; font-family: var(--display); font-weight: 900; font-size: 3.4em; line-height: 1; text-transform: uppercase; }
+  .st-filter { display: grid; grid-template-columns: repeat(3, 1fr); padding: 0.3em; border-radius: 99em; background: rgba(30,42,68,0.5); border: 1px solid rgba(150,200,255,0.10); }
+  .st-filter span { padding: 1em 0; border-radius: 99em; text-align: center; font-size: 0.95em; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1; color: #5C6F88; }
+  .st-filter .on { font-weight: 700; color: #F2F7FF; background: linear-gradient(145deg, rgba(40,130,220,0.65), rgba(16,90,180,0.7)); }
+  .st-a, .st-b { display: grid; gap: 1em; transition: opacity var(--dur-2, .64s) var(--ease, ease); }
+  .st-b { grid-template-columns: 1fr 1fr; }
+  .st-card { --c: #5BB8F5; min-width: 0; padding: 1.6em; border-radius: 1.4em; background: linear-gradient(180deg, rgba(40,55,85,0.40) 0%, rgba(22,32,52,0.34) 100%);
+    box-shadow: inset 0 1px 0 rgba(200,225,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.18); }
+  .st-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1em; }
+  .st-row b { display: block; font-family: var(--display); font-weight: 800; font-size: 1.5em; letter-spacing: 0.07em; text-transform: uppercase; line-height: 1.2; }
+  .st-row p span { display: block; margin-top: 0.2em; font-size: 1.2em; color: rgba(180,195,220,0.62); line-height: 1.2; }
+  .st-card strong { display: block; font-family: var(--display); font-weight: 800; line-height: 1; letter-spacing: -0.02em; color: var(--c); font-variant-numeric: tabular-nums; }
+  .st-hero strong { font-size: 5.4em; }
+  .st-bar { margin: 1.4em 0 1em; height: 0.3em; border-radius: 0.3em; background: rgba(255,255,255,0.05); overflow: hidden; }
+  .st-bar i { display: block; height: 100%; border-radius: inherit; background: var(--c); transform-origin: 0 50%; transform: scaleX(var(--p, 0)); }
+  .st-foot { font-size: 1.2em; color: rgba(180,195,220,0.62); }
+  .st-zones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1em; }
+  .st-zones .st-card { padding: 1.3em 1.2em 1.2em; }
+  .st-zones b { display: block; font-family: var(--display); font-weight: 800; font-size: 1.2em; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2; }
+  .st-zones strong { margin: 0.25em 0 0.2em; font-size: 3.4em; }
+  .st-zones span { font-size: 1.1em; color: rgba(180,195,220,0.62); }
+  .st-tile { text-align: center; padding: 1.8em 1.4em; }
+  .st-tile strong { font-size: 3.8em; color: #5BB8F5; }
+  .st-tile.dim strong { color: #9FB0C8; }
+  .st-tile b { display: block; margin-top: 0.7em; font-size: 1.1em; font-weight: 600; letter-spacing: 0.04em; color: #9FB0C8; }
+  .st-tile span { display: block; margin-top: 0.2em; font-size: 1.2em; color: rgba(180,195,220,0.55); }
+
+  [data-step="1"] .st .st-b, [data-step="2"] .st .st-a { opacity: 0.34; }
+</style>

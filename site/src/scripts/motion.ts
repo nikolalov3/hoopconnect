@@ -59,3 +59,17 @@ export function initScenes(onStep?: (scene: HTMLElement, step: string) => void) 
     steps.forEach((s) => io.observe(s))
   })
 }
+
+/**
+ * Animacje w pętli (pasek, karuzela aren, błysk po liniach) stoją, gdy ich kontener jest poza ekranem.
+ * Przeglądarka nie oddaje wtedy takiej animacji karcie graficznej, tylko liczy ją w głównym wątku
+ * w każdej klatce (pomiar: ok. 20% rdzenia w bezczynności w połowie strony). Kontener oznaczamy
+ * atrybutem data-loop, pauzę robi klasa .loop-off z global.css.
+ */
+export function pauseOffscreen(root: ParentNode = document) {
+  if (!hasIO()) return
+  const io = new IntersectionObserver((entries) => {
+    for (const en of entries) en.target.classList.toggle('loop-off', !en.isIntersecting)
+  }, { rootMargin: '120px 0px' })
+  root.querySelectorAll('[data-loop]').forEach((el) => io.observe(el))
+}

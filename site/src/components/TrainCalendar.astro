@@ -1,0 +1,64 @@
+---
+/**
+ * TrainCalendar: port kalendarza aktywności (src/pages/CalendarPage.jsx): miesiąc z hexów,
+ * pełny hex = wszystko zrobione, błękitny = część, szary = nic, obwódka = dzień z treningiem
+ * drużynowym od trenera, obrys = dziś. Pod spodem podsumowanie miesiąca. To element produktu w HTML.
+ * Dane poglądowe (wrzesień 2026: pierwszy dzień to wtorek, 30 dni). Statyczny, bez pętli:
+ * w apce pełne hexy pulsują, na stronie stoją (animacje w pętli tylko tam, gdzie coś wnoszą).
+ * Rozmiary w em (1em = 10px przy --trs: 1), skalę ustawia rodzic.
+ */
+const MONTH = 'Wrzesień 2026'
+const FIRST_DOW = 1                 // 0 = poniedziałek; 1 września 2026 to wtorek
+const TODAY = 30
+// Poziom dnia jak w apce: 2 = wszystko, 1 = częściowo, 0 = brak.
+const LEVELS = [2, 0, 2, 1, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 2, 2, 1, 0, 2, 2, 2, 1, 2, 2, 2, 2, 2, 1]
+const PRACTICE = new Set([15, 24])  // dni z treningiem drużynowym (obwódka)
+const DAYS = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd']
+const cells: ({ d: number; lv: number } | null)[] = [
+  ...Array.from({ length: FIRST_DOW }, () => null),
+  ...LEVELS.map((lv, i) => ({ d: i + 1, lv })),
+]
+while (cells.length % 7 !== 0) cells.push(null)
+const full = LEVELS.filter((l) => l === 2).length
+const partial = LEVELS.filter((l) => l === 1).length
+---
+<div class="tk">
+  <p class="tk-top"><span>Historia aktywności</span><b>Kalendarz</b></p>
+  <p class="tk-month">{MONTH}</p>
+  <div class="tk-grid">
+    {DAYS.map((d) => <span class="tk-dow">{d}</span>)}
+    {cells.map((c) => c
+      ? <span class:list={['tk-day', `l${c.lv}`, { today: c.d === TODAY, team: PRACTICE.has(c.d) && c.lv !== 2 }]}><i>{c.d}</i></span>
+      : <span class="tk-day empty"></span>)}
+  </div>
+  <p class="tk-sum"><span><b>{full}</b> pełnych</span><span><b>{partial}</b> częściowych</span><span><b>{full + partial}</b> aktywnych</span></p>
+</div>
+
+<style is:global>
+  .tk { font-size: calc(10px * var(--trs, 1)); width: 36em; max-width: 100%; display: grid; gap: 1.2em; padding: 2.4em 2em 2.2em; border-radius: 2.8em; text-align: left;
+    color: #EEF4FF; font-family: var(--body); border: 1px solid rgba(150,200,255,0.12);
+    background: radial-gradient(ellipse 80% 45% at 50% -5%, rgba(91,184,245,0.16) 0%, rgba(91,184,245,0) 62%), linear-gradient(170deg, #0C1F38 0%, #091828 42%, #060F1E 100%);
+    box-shadow: 0 3em 7em rgba(0,0,0,0.55); }
+  .tk-top span { display: block; font-size: 1.05em; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: #6F86A6; line-height: 1.3; }
+  .tk-top b { display: block; font-family: var(--display); font-weight: 900; font-size: 3.4em; line-height: 1; text-transform: uppercase; }
+  .tk-month { text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.6em; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2; color: #9FB0C8; }
+  .tk-grid { display: grid; grid-template-columns: repeat(7, 4em); justify-content: space-between; row-gap: 0.7em; }
+  .tk-dow { text-align: center; font-size: 1em; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.6; color: #5C6F88; }
+  .tk-day { position: relative; width: 4em; height: 4.6em; display: grid; place-items: center; }
+  .tk-day::before { content: ''; position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: rgba(255,255,255,0.07); }
+  .tk-day i { position: relative; font-style: normal; font-family: var(--display); font-weight: 600; font-size: 1.3em; line-height: 1; color: rgba(255,255,255,0.34); }
+  .tk-day.empty::before { display: none; }
+  .tk-day.l1::before { background: rgba(91,184,245,0.30); }
+  .tk-day.l1 i { color: #7ECBFF; }
+  .tk-day.l2::before { background: linear-gradient(135deg, #4a5a6f 0%, #9ab4c8 38%, #daeeff 52%, #a8c2d6 64%, #4e6070 100%); }
+  .tk-day.l2 i { font-weight: 800; color: #0B1626; }
+  /* obwódka: trening drużynowy (pełna błękitna) albo dziś (jaśniejsza), rysowana pod hexem jako większy hex */
+  .tk-day.team::after, .tk-day.today::after { content: ''; position: absolute; z-index: -1; inset: -0.2em; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    background: rgba(91,184,245,0.85); }
+  .tk-day.today::after { background: #5BB8F5; }
+  .tk-day.team::before, .tk-day.today::before { background-color: #14233A; }
+  .tk-day.team.l1::before, .tk-day.today.l1::before { background: linear-gradient(rgba(91,184,245,0.30), rgba(91,184,245,0.30)), #14233A; }
+  .tk-grid { isolation: isolate; }
+  .tk-sum { display: flex; justify-content: center; gap: 1.8em; font-size: 1.2em; color: #6F86A6; }
+  .tk-sum b { margin-right: 0.3em; font-family: var(--display); font-weight: 800; font-size: 1.3em; color: #EEF4FF; }
+</style>

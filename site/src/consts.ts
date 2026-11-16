@@ -12,6 +12,18 @@ export const SOCIALS = {
 }
 export const RANK_URL = `${APP_URL}/rank`
 
+// Newsletter (zapis przez Resend). Front jest gotowy, zaplecze jeszcze nie: dopóki nie ma endpointu,
+// formularz i wysuwany panel są widoczne tylko lokalnie (astro dev). Na produkcji włącza je zmienna
+// środowiskowa PUBLIC_NEWSLETTER=1 (Vercel → Environment Variables), ustawiana po podpięciu Resend.
+// Kontrakt endpointu: POST JSON { email, consent: true, source: 'page' | 'popup', hp: '' }
+//   → 200 { ok: true } albo 4xx/5xx { ok: false, error: 'invalid' | 'exists' | 'server' }.
+// Pole hp to pułapka na boty: prawdziwy formularz wysyła je puste.
+export const NEWSLETTER = {
+  enabled: import.meta.env.PUBLIC_NEWSLETTER === '1' || import.meta.env.DEV,
+  endpoint: '/api/newsletter',
+  privacyUrl: '/privacy',
+}
+
 export const BRAND = {
   name: 'HoopConnect',
   tagline: 'Phone down, game up',

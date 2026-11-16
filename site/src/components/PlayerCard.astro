@@ -3,7 +3,16 @@
  * PlayerCard — 1:1 port karty zawodnika z aplikacji (src/components/ui/PlayerCard3D.jsx + HexAvatar.jsx).
  * Płaska plakietka keycard (clip-path na .pc3d-face), tilt przez --rx/--ry na .pc3d-card,
  * holograficzny połysk liczony z tiltu. Wymiar bazowy 300x452, skalowanie przez --pcs na wrapperze.
- * Style są globalne (is:global), bo kartę klonujemy do modalu podglądu.
+ * Style są globalne (is:global), bo karty stylują też strony (skala, przyciemnienie, tryb podglądu).
+ *
+ * Wydajność (wygląd bez zmian względem apki):
+ * - Cień karty nie jest filtrem na obracanej warstwie, tylko osobnym, nieruchomym elementem .pc3d-sh
+ *   w środku karty. Przeglądarka maluje go raz razem z kartą, zamiast liczyć rozmycie przy każdej
+ *   klatce, w której coś się rusza w pobliżu (błysk po liniach, obrót karty).
+ * - Połysk (.pc3d-holo, .pc3d-spec) to gotowy gradient na warstwie, którą tilt obraca i przesuwa
+ *   transformem. Matematycznie daje to ten sam obraz, co gradient z kątem i środkiem liczonym z tiltu,
+ *   ale ruch karty nie wymusza przemalowania. Stare przeglądarki (bez sin() w CSS) zostają przy gradiencie.
+ * - Zmienna --pc-edge (opcjonalna, ustawia strona) dokłada do cienia jasną krawędź karty.
  * Ikonki aren to miniatury WebP 128 px (public/arenas/thumb, robi je scripts/optimize-assets.mjs):
  * na karcie mają 32 px, więc oryginały PNG 500 px (po ~230 kB) byłyby czystym balastem.
  */
@@ -29,6 +38,7 @@ const p = Math.max(6, Math.min(100, pct))
 ---
 <div class="pc3d-wrap">
   <div class="pc3d-card">
+    <div class="pc3d-sh" aria-hidden="true"><i class="pc3d-sil"></i></div>
     <div class="pc3d-face pc3d-sil">
       <div class="pc3d-holo"></div>
       <div class="pc3d-spec"></div>
@@ -98,7 +108,10 @@ const p = Math.max(6, Math.min(100, pct))
     transform: scale(var(--pcs)) translate(150px, 226px) perspective(1150px)
       rotateX(calc(var(--rx)*1deg)) rotateY(calc(var(--ry)*1deg)) translate(-150px, -226px);
     transition: transform .35s cubic-bezier(.2,.7,.2,1);
-    will-change: transform; filter: drop-shadow(0 9px 18px rgba(0,0,0,0.34)); user-select: none; -webkit-user-select: none; }
+    user-select: none; -webkit-user-select: none; }
+  /* Cień (i opcjonalna jasna krawędź) sylwetki: malowany raz, razem z warstwą karty */
+  .pc3d-sh { position: absolute; inset: 0; pointer-events: none; filter: drop-shadow(0 9px 18px rgba(0,0,0,0.34)) var(--pc-edge,); }
+  .pc3d-sh i { position: absolute; inset: 0; background: #0d1f38; }
   .pc3d-sil { clip-path: path('M22,0 L278,0 Q300,0 300,22 L300,400 Q300,414 286,414 L210,414 Q196,414 192,428 L182,440 Q178,452 164,452 L22,452 Q0,452 0,430 L0,22 Q0,0 22,0 Z'); }
   .pc3d-face { position: absolute; inset: 0; padding: 18px 20px 14px; display: flex; flex-direction: column;
     background: linear-gradient(157deg, #16304f 0%, #0d1f38 46%, #0a1830 100%); border: 1px solid rgba(150,200,255,.28); }
@@ -136,4 +149,25 @@ const p = Math.max(6, Math.min(100, pct))
   .pc3d-foot { margin-top: auto; padding-top: 12px; border-top: 1px solid rgba(150,200,255,.12); }
   .pc3d-foot .id { font-family: var(--display); font-weight: 700; font-size: 9px; letter-spacing: .1em; color: #6f8dab; line-height: 1.5; }
   .pc3d-foot .id b { color: #a9c6e4; }
+
+  /* Połysk bez przemalowywania: gradient stoi na warstwie, tilt ją obraca (holo) i przesuwa (spec).
+     holo: linear-gradient(0deg) na kwadracie 560 px, obrót o kąt gradientu i skala wzdłuż osi tak,
+     żeby długość linii gradientu była taka, jak dla prostokąta 300x452 pod tym kątem (|sin|*300 + |cos|*452).
+     spec: elipsa 360 x 361.6 px (czyli 120% x 80% karty) na polu 434 px, przesuwana o tyle, o ile
+     przesuwał się środek gradientu (1.5% szerokości i 1.4% wysokości na stopień). */
+  @supports (width: calc(1px * sin(1deg))) {
+    .pc3d-holo { inset: auto; left: 50%; top: 50%; width: 560px; height: 560px; margin: -280px 0 0 -280px;
+      --ha: calc(118deg + var(--ry) * 1.6deg);
+      background: linear-gradient(0deg,
+        rgba(0,240,220,0) 8%, rgba(120,200,255,.42) 30%, rgba(190,130,255,.42) 46%,
+        rgba(255,150,210,.30) 56%, rgba(120,255,220,.34) 72%, rgba(0,240,220,0) 92%);
+      transform: rotate(var(--ha)) scaleY(calc((max(sin(var(--ha)), -1 * sin(var(--ha))) * 300 + max(cos(var(--ha)), -1 * cos(var(--ha))) * 452) / 560)); }
+    .pc3d-spec { inset: auto; left: -67px; top: -45.24px; width: 434px; height: 434px;
+      background: radial-gradient(360px 361.6px at 50% 50%, rgba(255,255,255,.4), rgba(255,255,255,.05) 40%, transparent 60%);
+      transform: translate(calc(var(--ry) * 4.5px), calc(var(--rx) * -6.328px)); }
+  }
+  /* Karta sterowana skryptem (.pc-live): transformy idą wprost z JS na trzy elementy, a połysk ma własne warstwy,
+     więc ruch to samo składanie warstw na karcie graficznej, bez stylu całego poddrzewa i bez malowania. */
+  .pc-live .pc3d-card { transition: none; will-change: transform; }
+  .pc-live .pc3d-holo, .pc-live .pc3d-spec { will-change: transform; }
 </style>

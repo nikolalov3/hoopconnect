@@ -1,0 +1,71 @@
+---
+/**
+ * NewsletterPop: panel newslettera wysuwany od dołu na stronie głównej. Pojawia się, gdy czytelnik
+ * zjedzie do znacznika #nlMark (wstawia go strona), nie blokuje strony i nie zabiera fokusu.
+ * Zamknięcie zapamiętujemy na 30 dni, zapis na stałe (localStorage hc_nl). Ruch to sam transform.
+ * Na telefonie panel zajmuje całą szerokość, a dolny pasek z przyciskiem chowa się na ten czas.
+ */
+import NewsletterForm from './NewsletterForm.astro'
+---
+<aside class="nlp" id="nlPop" role="dialog" aria-modal="false" aria-labelledby="nlpTitle" hidden>
+  <div class="nlp-in cutbox">
+    <button class="nlp-x" type="button" aria-label="Zamknij zapis na newsletter">×</button>
+    <h2 id="nlpTitle">Wieści z boiska</h2>
+    <p class="nlp-lead">Nowe funkcje i ogłoszenia HoopConnect na Twojego maila. Raz na jakiś czas, bez spamu.</p>
+    <NewsletterForm source="popup" uid="pop" compact />
+  </div>
+</aside>
+
+<style>
+  .nlp { position: fixed; z-index: 95; right: 24px; bottom: 24px; width: min(420px, calc(100vw - 32px));
+    transform: translateY(calc(100% + 40px)); transition: transform var(--dur-2) var(--ease); }
+  .nlp[hidden] { display: none; }
+  .nlp.on { transform: none; }
+  .nlp-in { --cut: 22px; --fill: #14161B; --bd: rgba(111,195,255,0.34); padding: 24px 24px 20px; box-shadow: 0 30px 80px -20px rgba(0,0,0,0.85); }
+  .nlp h2 { font-size: 28px; margin: 0 28px 8px 0; }
+  .nlp-lead { margin: 0 0 16px; font-size: 15px; line-height: 1.55; color: var(--text-2); }
+  .nlp-x { position: absolute; top: 12px; right: 30px; width: 32px; height: 32px; display: grid; place-content: center; background: transparent; border: 0;
+    color: var(--text-3); font-size: 24px; line-height: 1; cursor: pointer; }
+  .nlp-x:hover { color: var(--text); }
+  .nlp-x:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+  @media (max-width: 767px) {
+    .nlp { left: 0; right: 0; bottom: 0; width: auto; }
+    .nlp-in { --cut: 18px; padding: 20px 16px calc(16px + env(safe-area-inset-bottom)); }
+    .nlp h2 { font-size: 24px; }
+    /* dolny pasek z przyciskiem ustępuje panelowi */
+    :global(body.nl-open .mcta) { visibility: hidden; }
+  }
+  @media (prefers-reduced-motion: reduce) { .nlp { transition: none; } }
+</style>
+
+<script>
+  const pop = document.getElementById('nlPop')
+  const mark = document.getElementById('nlMark')
+  if (pop && mark && 'IntersectionObserver' in window) {
+    const DAY = 864e5
+    let saved = ''
+    try { saved = localStorage.getItem('hc_nl') || '' } catch {}
+    const quiet = saved === 'ok' || (saved.startsWith('x:') && Date.now() - Number(saved.slice(2)) < 30 * DAY)
+    const open = () => {
+      pop.hidden = false
+      // dwie klatki: najpierw stan wyjściowy (pod ekranem), potem wjazd
+      requestAnimationFrame(() => requestAnimationFrame(() => { pop.classList.add('on'); document.body.classList.add('nl-open') }))
+    }
+    const close = (remember: boolean) => {
+      pop.classList.remove('on'); document.body.classList.remove('nl-open')
+      if (remember) { try { localStorage.setItem('hc_nl', `x:${Date.now()}`) } catch {} }
+      setTimeout(() => { pop.hidden = true }, 700)
+    }
+    if (!quiet) {
+      // znacznik w treści: gdy wjedzie na ekran (albo zostanie już nad nim), panel się wysuwa. Raz na wizytę.
+      const io = new IntersectionObserver(([en]) => {
+        if (!en.isIntersecting && en.boundingClientRect.top > 0) return
+        io.disconnect(); open()
+      })
+      io.observe(mark)
+    }
+    pop.querySelector('.nlp-x')?.addEventListener('click', () => close(true))
+    pop.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(true) })
+    pop.addEventListener('nl:ok', () => { setTimeout(() => close(false), 2600) })
+  }
+</script>

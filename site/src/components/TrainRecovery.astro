@@ -1,0 +1,86 @@
+---
+/**
+ * TrainRecovery: port zakładki „Regeneracja" (src/pages/RecoveryPage.jsx): recovery score, lista
+ * dwunastu aktywności do odhaczenia i plakietka po pięciu. Zakładka w apce jest jasna, więc port
+ * też jest jasny (jedyny jasny ekran apki). Kafelki działają: skrypt strony przelicza wynik
+ * (odhaczone / 5, jak w apce). Bez JS widać stan startowy. To element produktu w HTML.
+ *
+ * Nazwy i czasy 1:1 z pl/recovery.json i QUICK_META. W apce kafelki mają emoji, a plakietka serce;
+ * na stronie zostaje sam tekst. Rozmiary w em (1em = 10px przy --trs: 1), skalę ustawia rodzic.
+ * Pasek to scaleX, plakietka wjeżdża raz (opacity i transform). W apce powierzchnie mają rozmycie tła; tu pominięte.
+ */
+const ACTS = [
+  { id: 'sleep', label: 'Sen 9h+', time: '9h', color: '#7C5CBF', on: true },
+  { id: 'foam', label: 'Foam rolling', time: '20 min', color: '#2980B9' },
+  { id: 'stretch', label: 'Stretching', time: '15 min', color: '#27AE60', on: true },
+  { id: 'meditate', label: 'Medytacja', time: '10 min', color: '#E67E22' },
+  { id: 'read', label: 'Czytanie', time: '30 min', color: '#B8960C' },
+  { id: 'video', label: 'Analiza video', time: '30 min', color: '#C0392B' },
+  { id: 'cold', label: 'Zimny prysznic', time: '5 min', color: '#148F77' },
+  { id: 'meal', label: 'Meal prep', time: '45 min', color: '#1E8449' },
+  { id: 'journal', label: 'Dziennik', time: '15 min', color: '#2471A3' },
+  { id: 'walk', label: 'Spacer', time: '30 min', color: '#5D6D7E', on: true },
+  { id: 'ice', label: 'Okłady lodowe', time: '15 min', color: '#1A5276' },
+  { id: 'nap', label: 'Drzemka 20min', time: '20 min', color: '#6C3483' },
+]
+const done = ACTS.filter((a) => a.on).length
+const score = Math.round((done / 5) * 100)
+const level = score >= 80 ? 'hi' : score >= 50 ? 'mid' : 'lo'
+---
+<div class="tr" data-level={level}>
+  <div class="tr-top">
+    <p class="tr-today">Dzisiaj</p>
+    <b class="tr-title">Regeneracja</b>
+    <p class="tr-sub">Jutrzejszy trening zaczyna się teraz. Bez regeneracji nie ma progresu.</p>
+  </div>
+  <div class="tr-score">
+    <span>Recovery score</span>
+    <b><i data-tr="score">{score}</i><small>%</small></b>
+    <div class="tr-bar"><i data-tr="bar" style={`--p:${Math.min(score, 100) / 100}`}></i></div>
+  </div>
+  <p class="tr-check" id="trCheck">Zaznacz co dziś zrobiłeś</p>
+  <div class="tr-grid" role="group" aria-labelledby="trCheck">
+    {ACTS.map((a) => (
+      <button class="tr-tile" type="button" aria-pressed={a.on ? 'true' : 'false'} style={`--c:${a.color}`}><b>{a.label}</b><span>{a.time}</span></button>
+    ))}
+  </div>
+  <p class="tr-elite" data-tr="elite" hidden={done < 5}><b>Elite recovery</b>Twoje ciało jutro będzie silniejsze. Tak pracują zawodowcy.</p>
+</div>
+
+<style is:global>
+  .tr { --sc: #5D9CEC; font-size: calc(10px * var(--trs, 1)); width: 36em; max-width: 100%; display: grid; gap: 1.4em; padding: 2.6em 2.2em 2.2em; border-radius: 2.8em;
+    text-align: left; color: #1A3D5C; font-family: var(--body); background: linear-gradient(175deg, #C8E8FA 0%, #D9EEFA 35%, #BFD9F0 100%);
+    box-shadow: 0 3em 7em rgba(0,0,0,0.55); }
+  .tr[data-level="mid"] { --sc: #D4800A; }
+  .tr[data-level="hi"] { --sc: #1E8449; }
+  .tr-today { font-size: 1.3em; font-weight: 500; color: #6A96B8; line-height: 1.3; }
+  .tr-title { display: block; font-family: var(--display); font-weight: 800; font-size: 3.8em; line-height: 0.95; text-transform: uppercase; color: #1A3D5C; }
+  .tr-sub { margin-top: 0.6em; font-size: 1.3em; line-height: 1.45; color: #5A8AAA; }
+  .tr-score { padding: 2em 2.2em; border-radius: 1.8em; background: rgba(255,255,255,0.5); box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), 0 1px 6px rgba(80,150,200,0.10); }
+  .tr-score > span { display: block; font-size: 1.1em; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #6A96B8; line-height: 1.3; }
+  .tr-score > b { display: block; margin: 0.08em 0 0.24em; font-family: var(--display); font-weight: 900; font-size: 5.6em; line-height: 1; color: var(--sc); font-variant-numeric: tabular-nums; }
+  .tr-score i { font-style: normal; }
+  .tr-score small { font-size: 0.4em; }
+  .tr-bar { height: 0.5em; border-radius: 0.4em; background: rgba(150,200,235,0.3); overflow: hidden; }
+  .tr-bar i { display: block; height: 100%; border-radius: inherit; background: var(--sc); transform-origin: 0 50%; transform: scaleX(var(--p, 0));
+    transition: transform var(--dur-2, .64s) var(--ease, ease); }
+  .tr-check { margin-top: 0.4em; font-size: 1.3em; font-weight: 500; color: #6A96B8; line-height: 1.3; }
+  .tr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1em; }
+  .tr-tile { position: relative; min-width: 0; padding: 1.5em 0.6em 1.3em; border: 0; border-radius: 1.4em; cursor: pointer; font: inherit; text-align: center;
+    background: rgba(255,255,255,0.58); box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), inset 0 0 0 1px rgba(180,210,240,0.3); }
+  .tr-tile b { display: block; font-family: var(--display); font-weight: 700; font-size: 1.3em; line-height: 1.2; letter-spacing: 0.01em; color: #4A6880; }
+  .tr-tile span { display: block; margin-top: 0.4em; font-size: 1em; color: #8AAEC4; line-height: 1.2; }
+  .tr-tile[aria-pressed="true"] { background: color-mix(in srgb, var(--c) 12%, rgba(255,255,255,0.6)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 34%, transparent); }
+  .tr-tile[aria-pressed="true"] b { color: var(--c); }
+  /* znaczek odhaczenia w rogu kafelka: kółko w kolorze aktywności z ptaszkiem */
+  .tr-tile::before { content: ''; position: absolute; top: 0.6em; right: 0.6em; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--c); opacity: 0;
+    transition: opacity var(--dur-1, .42s) var(--ease, ease); }
+  .tr-tile::after { content: ''; position: absolute; top: 1.06em; right: 0.98em; width: 0.8em; height: 0.42em; border-left: 0.2em solid #fff; border-bottom: 0.2em solid #fff;
+    transform: rotate(-45deg); opacity: 0; transition: opacity var(--dur-1, .42s) var(--ease, ease); }
+  .tr-tile[aria-pressed="true"]::before, .tr-tile[aria-pressed="true"]::after { opacity: 1; }
+  .tr-elite { padding: 1.4em 1.6em; border-radius: 1.6em; text-align: center; font-size: 1.3em; line-height: 1.4; color: #2E7D52; background: rgba(39,174,96,0.12);
+    box-shadow: inset 0 0 0 1px rgba(39,174,96,0.2); animation: tr-in var(--dur-2, .64s) var(--ease, ease) both; }
+  .tr-elite[hidden] { display: none; }
+  @keyframes tr-in { from { opacity: 0; transform: translateY(0.6em); } }
+  .tr-elite b { display: block; margin-bottom: 0.2em; font-family: var(--display); font-weight: 800; font-size: 1.5em; letter-spacing: 0.06em; text-transform: uppercase; color: #1E8449; }
+</style>

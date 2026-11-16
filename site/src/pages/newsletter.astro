@@ -1,0 +1,110 @@
+---
+import Base from '../layouts/Base.astro'
+import NewsletterForm from '../components/NewsletterForm.astro'
+import { NEWSLETTER, APP_URL } from '../consts'
+
+const title = 'Newsletter: nowości z aplikacji'
+const description =
+  'Newsletter HoopConnect: nowe funkcje aplikacji do koszykówki ulicznej, zmiany w rankingu i ogłoszenia dla graczy. ' +
+  'Bez spamu, wypisujesz się jednym kliknięciem.'
+
+// Co przychodzi mailem. Tylko to, co naprawdę jest albo jest zapowiedziane na stronie (turnieje: wkrótce).
+const GET = [
+  { t: 'Nowe funkcje', d: 'Co doszło w aplikacji i jak z tego skorzystać na boisku.' },
+  { t: 'Ranking i XP', d: 'Zmiany w tablicach, arenach i zasadach liczenia XP.' },
+  { t: 'Ogłoszenia', d: 'Ważne zapowiedzi, w tym turnieje, gdy ruszą.' },
+]
+
+const FAQ = [
+  {
+    q: 'Jak często przychodzi newsletter HoopConnect?',
+    a: 'Wtedy, gdy jest o czym pisać: przy nowych funkcjach, zmianach w rankingu i ważnych ogłoszeniach. Nie wysyłamy maili dla samej wysyłki.',
+  },
+  {
+    q: 'Jak wypisać się z newslettera?',
+    a: 'Każdy mail ma na dole link do wypisania. Klikasz raz i znikasz z listy, bez logowania i bez pytań.',
+  },
+  {
+    q: 'Do czego używacie mojego adresu e-mail?',
+    a: 'Tylko do wysyłki newslettera HoopConnect. Zasady przetwarzania danych opisuje polityka prywatności.',
+  },
+  {
+    q: 'Czy muszę mieć konto w aplikacji, żeby się zapisać?',
+    a: 'Nie. Newsletter jest osobny: wystarczy adres e-mail. Konto w aplikacji zakładasz wtedy, gdy chcesz grać i zbierać XP.',
+  },
+]
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ.map((it) => ({ '@type': 'Question', name: it.q, acceptedAnswer: { '@type': 'Answer', text: it.a } })),
+}
+---
+<Base title={title} description={description} schema={faqSchema} noindex={!NEWSLETTER.enabled}>
+  <!-- ═══ 1. OTWARCIE: nagłówek i od razu zapis ═══ -->
+  <section class="page-hero nl-hero">
+    <div class="wrap">
+      <h1>
+        <span class="ln"><span>Wieści</span></span>
+        <span class="ln"><span class="hl">z boiska</span></span>
+      </h1>
+      <div class="hero-after">
+        <p class="lead">Newsletter HoopConnect to krótkie maile o tym, co nowego w aplikacji do koszykówki ulicznej: funkcje, ranking i ogłoszenia. Bez spamu.</p>
+        <div class="nl-box">
+          {NEWSLETTER.enabled
+            ? <NewsletterForm source="page" uid="page" />
+            : <p class="fact">Zapisy ruszają wkrótce.</p>}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 2. CO DOSTAJESZ ═══ -->
+  <section class="ch">
+    <div class="wrap">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Co przychodzi</span></span> <span class="ln"><span>na maila</span></span></h2>
+      </div>
+      <dl class="facts rv">
+        {GET.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+      </dl>
+    </div>
+  </section>
+
+  <!-- ═══ 3. PYTANIA ═══ -->
+  <section class="ch" id="pytania">
+    <div class="wrap faq-grid">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Pytania o newsletter</span></span></h2>
+        <p class="lead">Krótko o wysyłce i danych. Reszta jest w <a class="inline-link lower" href={NEWSLETTER.privacyUrl}>polityce prywatności</a>.</p>
+      </div>
+      <div class="qa rv rv-d1">
+        {FAQ.map((it) => (
+          <details class="qa-item">
+            <summary><span class="q">{it.q}</span><span class="chev" aria-hidden="true"></span></summary>
+            <p>{it.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 4. ZAMKNIĘCIE ═══ -->
+  <section class="ch ch-last ch-center">
+    <div class="wrap">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Mail poczeka.</span></span> <span class="ln"><span>Boisko nie.</span></span></h2>
+        <p class="lead">Najwięcej dzieje się w aplikacji: mecze w okolicy, King of the Court i ranking na żywo.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+          <a class="btn btn-ghost btn-lg" href="/klub">Jak działa Klub</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .nl-hero { padding-bottom: clamp(24px, 4vw, 48px); }
+  .nl-box { max-width: 560px; margin: clamp(8px, 2vw, 20px) auto 0; }
+  .nl-box .fact { text-align: center; }
+</style>

@@ -104,7 +104,6 @@ strong { color: var(--text); font-weight: 500; }
 .btn::after { content: ''; position: absolute; inset: 0; z-index: -2; background: var(--bd);
   clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
 .btn::before { content: ''; position: absolute; inset: 1px; z-index: -1; background: var(--fill);
-  -webkit-backdrop-filter: blur(18px) saturate(1.05); backdrop-filter: blur(18px) saturate(1.05);
   clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
   transition: background .18s ease; }
 .btn:active { transform: translateY(1px); }
@@ -112,7 +111,8 @@ strong { color: var(--text); font-weight: 500; }
 .btn:hover .arw { transform: translateX(4px); }
 /* Primary: matowy „baby blue" glass — miękki, jasny błękit, nie neon */
 /* Primary: matowy, CIEMNIEJSZY błękit (jak logo) — płaskie translucentne wypełnienie, bez
-   refleksów i poświaty. Szkło daje samo backdrop-blur z .btn::before. Kształt/obrys bez zmian. */
+   refleksów i poświaty. Bez backdrop-filter: na ciemnym, płaskim tle rozmycie nic nie zmienia,
+   a kosztowało osobne przejście GPU na każdy przycisk. Kształt/obrys bez zmian. */
 .btn-primary { color: #EAF3FF; --bd: rgba(96,168,224,0.5); }
 .btn-primary::before { background: rgba(30,104,178,0.52); }
 .btn-primary:hover { --bd: rgba(120,190,238,0.62); }
@@ -120,6 +120,13 @@ strong { color: var(--text); font-weight: 500; }
 .btn-ghost { color: var(--text); --bd: var(--line-2); --fill: rgba(255,255,255,0.045); }
 .btn-ghost:hover { --bd: var(--line-3); --fill: rgba(255,255,255,0.085); }
 .btn-lg { --pad-y: 17px; --pad-x: 32px; font-size: 16px; }
+/* Przyciski w otwarciu strony (.hero-copy, .page-hero .hero-after). Dawniej miały backdrop-filter, który w kontenerze
+   z animacją wejścia powielał warstwę obrysu i rozjaśniał wypełnienie. Rozmycie zniknęło (koszt GPU), a kolor
+   zostaje co do piksela ten sam: wypełnienie i powielony obrys złożone w jeden kolor. */
+.hero-copy .btn-primary::before, .page-hero .hero-after .btn-primary::before { background: rgba(50,125,193,0.76); }
+.hero-copy .btn-primary:hover::before, .page-hero .hero-after .btn-primary:hover::before { background: rgba(57,138,211,0.863); }
+.hero-copy .btn-ghost, .page-hero .hero-after .btn-ghost { --fill: rgba(255,255,255,0.1787); }
+.hero-copy .btn-ghost:hover, .page-hero .hero-after .btn-ghost:hover { --fill: rgba(255,255,255,0.286); }
 
 /* ── Panel (ostry, hairline, opcjonalny ścięty róg) ── */
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); }
@@ -172,6 +179,8 @@ strong { color: var(--text); font-weight: 500; }
 /* ── Marquee: pasek haseł jak ticker na tablicy wyników ── */
 .marquee { overflow: hidden; border-block: 1px solid var(--line); padding-block: 15px; }
 .marquee-track { display: flex; width: max-content; animation: marquee 46s linear infinite; }
+/* Pętle stoją, gdy ich kontener ([data-loop]) jest poza ekranem; klasę przełącza pauseOffscreen() z motion.ts */
+.loop-off, .loop-off *, .loop-off *::before, .loop-off *::after { animation-play-state: paused !important; }
 .marquee-track span { display: inline-flex; align-items: center; gap: 26px; padding-inline: 26px 0;
   font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 1.8px;
   font-size: 14px; color: var(--text-2); white-space: nowrap; }
@@ -229,7 +238,6 @@ strong { color: var(--text); font-weight: 500; }
   border-top: 1px solid var(--line-2); transform: translateY(110%); transition: transform .3s ease; }
 .mcta.show { transform: none; }
 .mcta .btn { width: 100%; justify-content: center; }
-.mcta .btn::before { -webkit-backdrop-filter: none; backdrop-filter: none; }   /* pasek już rozmywa tło; drugi blur byłby tylko kosztem */
 @media (max-width: 767px) { .mcta { display: flex; } }
 
 /* ══════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,89 @@
+---
+/**
+ * TrainCard: port karty ćwiczenia z planu dnia (src/components/training/TrainingCard.jsx).
+ * Kółko zaliczenia, tytuł, oznaczenie punktów (np. 2PKT ×30), pięć kropek trudności; po rozwinięciu
+ * opis, kroki, przycisk i link zamiany ćwiczenia. To element produktu w HTML. Dane poglądowe.
+ *
+ * Rozmiary w em (1em = 10px przy --trs: 1), skalę ustawia rodzic zmienną --trs.
+ * Stan „zaliczone" steruje zmienna --d (0 albo 1): klasa .done na karcie albo reguła rodzica
+ * (TrainDay ustawia ją krokiem sceny). Animuje się tylko opacity (zielone kółko i zielona poświata);
+ * kolor tytułu przełącza się od razu. Zmienna --o przygasza kartę, gdy scena skupia się na innej.
+ * W apce karta ma rozmycie tła; tu leży na płaskim tle, więc rozmycie pominięte.
+ * W apce link zamiany ma w środku myślnik; na stronie jest przecinek („Nie mam sprzętu, zmień ćwiczenie").
+ */
+interface Props {
+  title: string
+  pts: 1 | 2
+  mult: number
+  diff: number
+  done?: boolean
+  open?: boolean
+  n?: number            // numer karty w planie dnia (klasa .nN dla stanów sceny)
+  desc?: string
+  steps?: string[]
+  cta?: string
+  swap?: string
+}
+const { title, pts, mult, diff, done = false, open = false, n, desc, steps = [], cta = 'Ukończ ćwiczenie', swap } = Astro.props
+---
+<div class:list={['tc', n ? `n${n}` : null, { done, open }]}>
+  <div class="tc-head">
+    <span class="tc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg></span>
+    <b class="tc-title">{title}</b>
+    <svg class="tc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={open ? 'M18 15l-6-6-6 6' : 'M6 9l6 6 6-6'} /></svg>
+  </div>
+  <div class="tc-meta">
+    <span class:list={['tc-badge', { one: pts === 1 }]}>{pts}PKT</span>
+    <span class="tc-mult">×{mult}</span>
+    <span class="tc-dots">{[1, 2, 3, 4, 5].map((i) => <i class:list={{ on: i <= diff }}></i>)}</span>
+  </div>
+  {open && (
+    <div class="tc-body">
+      {desc && <p>{desc}</p>}
+      {steps.length > 0 && <ol>{steps.map((s) => <li>{s}</li>)}</ol>}
+      <span class="tc-cta">{cta}</span>
+      {swap && <span class="tc-swap">{swap}</span>}
+    </div>
+  )}
+</div>
+
+<style is:global>
+  .tc { --d: 0; --o: 1; font-size: calc(10px * var(--trs, 1)); position: relative; overflow: hidden; border-radius: 1.4em; text-align: left;
+    color: #EEF4FF; font-family: var(--body); opacity: var(--o);
+    background: linear-gradient(180deg, rgba(36,52,82,0.62) 0%, rgba(22,34,58,0.58) 100%);
+    border: 1px solid rgba(150,200,255,0.14); border-top-color: rgba(180,215,255,0.22); box-shadow: 0 0.4em 2em rgba(0,0,0,0.25);
+    transition: opacity var(--dur-2, .64s) var(--ease, ease); }
+  .tc.done { --d: 1; }
+  /* zielona poświata zaliczonej karty: osobna warstwa, pokazywana przez opacity */
+  .tc::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: var(--d);
+    background: linear-gradient(180deg, rgba(0,230,118,0.13) 0%, rgba(0,140,80,0.07) 100%); box-shadow: inset 0 0 0 1px rgba(0,230,118,0.24);
+    border-radius: inherit; transition: opacity var(--dur-2, .64s) var(--ease, ease); }
+  .tc-head { position: relative; display: flex; align-items: center; gap: 1.4em; padding: 1.6em 1.8em 0; }
+  .tc-check { position: relative; flex: none; width: 3em; height: 3em; border-radius: 50%; display: grid; place-items: center;
+    background: linear-gradient(145deg, rgba(70,82,100,0.55) 0%, rgba(30,38,52,0.55) 100%); border: 1px solid rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.32); }
+  .tc-check::before { content: ''; position: absolute; inset: -1px; border-radius: 50%; background: linear-gradient(135deg, #00E676, #00A854);
+    opacity: var(--d); transition: opacity var(--dur-1, .42s) var(--ease, ease); }
+  .tc-check svg { position: relative; width: 1.4em; height: 1.4em; }
+  .tc-check svg path { stroke: color-mix(in srgb, #fff calc(var(--d) * 100%), rgba(255,255,255,0.32)); }
+  .tc-title { flex: 1; min-width: 0; font-family: var(--display); font-weight: 700; font-size: 1.9em; line-height: 1.2; letter-spacing: 0.02em;
+    text-transform: uppercase; color: color-mix(in srgb, #5C6F88 calc(var(--d) * 100%), #F2F7FF);
+    text-decoration: line-through; text-decoration-color: rgba(255,255,255, calc(var(--d) * 0.22)); }
+  .tc-chev { flex: none; width: 2.2em; height: 2.2em; color: #5C6F88; }
+  .tc-meta { position: relative; display: flex; align-items: center; gap: 1em; padding: 1em 1.8em 1.6em 6.2em; }
+  .tc-badge { padding: 0.36em 0.8em; border-radius: 0.6em; font-family: var(--display); font-weight: 700; font-size: 1.1em; letter-spacing: 0.1em; line-height: 1;
+    color: #00E676; background: rgba(0,230,118,0.10); box-shadow: inset 0 0 0 1px rgba(0,230,118,0.26); }
+  .tc-badge.one { color: #9FB0C8; background: rgba(255,255,255,0.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); }
+  .tc-mult { font-size: 1.1em; font-weight: 600; letter-spacing: 0.1em; color: #5C6F88; }
+  .tc-dots { margin-left: auto; display: flex; gap: 0.4em; }
+  .tc-dots i { width: 0.5em; height: 0.5em; border-radius: 50%; background: rgba(255,255,255,0.10); }
+  .tc-dots i.on { background: #5BB8F5; }
+  .tc-body { position: relative; padding: 0 1.8em 1.8em; border-top: 1px solid rgba(255,255,255,0.07); }
+  .tc-body p { margin: 1.4em 0; font-size: 1.4em; line-height: 1.65; color: #9FB0C8; }
+  .tc-body ol { margin: 0 0 1.6em; padding-left: 2em; }
+  .tc-body li { margin-bottom: 0.5em; font-size: 1.3em; line-height: 1.65; color: #9FB0C8; }
+  .tc-cta { display: block; padding: 0.87em; border-radius: 0.93em; text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.5em;
+    letter-spacing: 0.1em; text-transform: uppercase; line-height: 1.2; color: #fff; background: linear-gradient(135deg, #5BB8F5 0%, #2E90D4 100%); }
+  .tc-swap { display: block; margin-top: 1em; text-align: center; font-size: 1.2em; font-weight: 500; color: rgba(180,195,220,0.62);
+    text-decoration: underline; text-underline-offset: 3px; }
+</style>

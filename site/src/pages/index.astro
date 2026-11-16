@@ -5,8 +5,9 @@ import PlayerCard from '../components/PlayerCard.astro'
 import MatchCard from '../components/MatchCard.astro'
 import RankBoard from '../components/RankBoard.astro'
 import DraftRing from '../components/DraftRing.astro'
+import NewsletterPop from '../components/NewsletterPop.astro'
 import court from '../data/court.json'
-import { APP_URL, RANK_URL, COACH_OFFER_URL, APP_SCHEMA } from '../consts'
+import { APP_URL, RANK_URL, COACH_OFFER_URL, APP_SCHEMA, NEWSLETTER } from '../consts'
 import QRCode from 'qrcode'
 
 // QR w zamknięciu: ktoś czyta na laptopie, gra z telefonu. Generowany w buildzie.
@@ -27,18 +28,13 @@ const TICKER = [
 type Spot = keyof typeof court.desk.spots
 const CARDS: {
   spot: Spot; pos: string; name: string; l: string; arena: number; arenaName: string; next: string
-  p: number; toNext: number; w: number; k: number; id: string; frame: 'default' | 'none'; live?: boolean; desc: string
+  p: number; toNext: number; w: number; k: number; id: string; frame: 'default' | 'none'; live?: boolean
 }[] = [
-  { spot: 'pg', pos: 'Rozgrywający', name: 'Kuba', l: 'K', arena: 4, arenaName: 'Ankh Court', next: 'Void Gem', p: 62, toNext: 608, w: 12, k: 3, id: '20251', frame: 'default',
-    desc: 'Prowadzi grę i rozdaje piłkę. Najwięcej sesji King of the Court w ekipie.' },
-  { spot: 'sg', pos: 'Rzucający', name: 'Michał', l: 'M', arena: 1, arenaName: 'Street Court', next: 'City Run', p: 35, toNext: 650, w: 4, k: 0, id: '20318', frame: 'none',
-    desc: 'Dopiero zaczyna. Pierwsza arena odblokowana po czterech wygranych.' },
-  { spot: 'sf', pos: 'Skrzydłowy', name: 'Bartek', l: 'B', arena: 2, arenaName: 'City Run', next: 'Golden Reign', p: 48, toNext: 624, w: 7, k: 1, id: '20277', frame: 'default',
-    desc: 'Gra regularnie w sobotnich sesjach. Pierwszy tytuł króla boiska za nim.' },
-  { spot: 'pf', pos: 'Silny skrzydłowy', name: 'Olek', l: 'O', arena: 3, arenaName: 'Golden Reign', next: 'Ankh Court', p: 71, toNext: 348, w: 9, k: 2, id: '20194', frame: 'none',
-    desc: 'Walczy pod koszem. Blisko kolejnej areny, brakuje kilku meczów.' },
-  { spot: 'c', pos: 'Środkowy', name: 'Alex', l: 'A', arena: 5, arenaName: 'Void Gem', next: 'Seraphim', p: 22, toNext: 1560, w: 15, k: 4, id: '20102', frame: 'default', live: true,
-    desc: 'Najwyżej w ekipie. Cztery wygrane sesje King of the Court i najwięcej meczów na koncie.' },
+  { spot: 'pg', pos: 'Rozgrywający', name: 'Kuba', l: 'K', arena: 4, arenaName: 'Ankh Court', next: 'Void Gem', p: 62, toNext: 608, w: 12, k: 3, id: '20251', frame: 'default' },
+  { spot: 'sg', pos: 'Rzucający', name: 'Michał', l: 'M', arena: 1, arenaName: 'Street Court', next: 'City Run', p: 35, toNext: 650, w: 4, k: 0, id: '20318', frame: 'none' },
+  { spot: 'sf', pos: 'Skrzydłowy', name: 'Bartek', l: 'B', arena: 2, arenaName: 'City Run', next: 'Golden Reign', p: 48, toNext: 624, w: 7, k: 1, id: '20277', frame: 'default' },
+  { spot: 'pf', pos: 'Silny skrzydłowy', name: 'Olek', l: 'O', arena: 3, arenaName: 'Golden Reign', next: 'Ankh Court', p: 71, toNext: 348, w: 9, k: 2, id: '20194', frame: 'none' },
+  { spot: 'c', pos: 'Środkowy', name: 'Alex', l: 'A', arena: 5, arenaName: 'Void Gem', next: 'Seraphim', p: 22, toNext: 1560, w: 15, k: 4, id: '20102', frame: 'default', live: true },
 ]
 
 // Karty meczu to komponent przeniesiony z apki (MatchCard.astro, port z ClubPage.jsx), nie obrazki.
@@ -137,7 +133,7 @@ const homeFaqSchema = {
       </h1>
     </div>
 
-    <div class="court-wrap" style={`--cw:${court.desk.courtWidth}%`}>
+    <div class="court-wrap" data-loop style={`--cw:${court.desk.courtWidth}%`}>
       <div class="court-stage" id="courtStage" style={`--ar-desk:${court.desk.ar}; --ar-mob:${court.mob.ar}`}>
         <HeroCourt />
         <ul class="cards" aria-label="Przykładowe karty graczy na boisku">
@@ -147,7 +143,7 @@ const homeFaqSchema = {
             return (
               <li class:list={[{ live: c.live }]} style={`--x:${d[0]}%; --y:${d[1]}%; --mx:${m[0]}%; --my:${m[1]}%`}>
                 {c.live ? (
-                  <button class="pcbtn" type="button" data-i={i} aria-label={`Karta gracza: ${c.name}, ${c.pos}. Pokaż podgląd`}>
+                  <button class="pcbtn" type="button" data-i={i} aria-pressed="false" aria-label={`Karta gracza: ${c.name}. Naciśnij, żeby ją podnieść i obrócić`}>
                     <PlayerCard name={c.name} letter={c.l} arena={c.arena} arenaName={c.arenaName} nextArena={c.next}
                       pct={c.p} toNext={c.toNext} wins={c.w} kotc={c.k} hcId={c.id} frame={c.frame} uid={`h${i}`} />
                   </button>
@@ -161,6 +157,9 @@ const homeFaqSchema = {
             )
           })}
         </ul>
+        <!-- Tryb podglądu karty Alexa: reszta sceny ciemnieje, pod kartą pojawia się podpis z wyjściem -->
+        <div class="stage-dim" aria-hidden="true"></div>
+        <p class="focus-cap"><span>Przeciągnij, żeby obrócić kartę</span><button class="focus-x" type="button" tabindex="-1">Odłóż</button></p>
       </div>
       <div class="marquee under-court" aria-hidden="true">
         <div class="marquee-track">
@@ -180,30 +179,9 @@ const homeFaqSchema = {
         <li>Bez instalacji, z przeglądarki</li>
         <li>Ranking bez logowania</li>
       </ul>
-      <p class="stage-hint"><span aria-hidden="true"></span>Dotknij podświetlonej karty na boisku.</p>
+      <p class="stage-hint" data-loop><span aria-hidden="true"></span>Dotknij podświetlonej karty i obróć ją.</p>
     </div>
   </section>
-
-  <!-- Podgląd karty (panel od dołu). Treść wstawia skrypt z cardsData. -->
-  <div class="cm" id="cardModal" hidden>
-    <div class="cm-backdrop" data-cm-close></div>
-    <div class="cm-card cutbox" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
-      <button class="cm-x" data-cm-close aria-label="Zamknij">×</button>
-      <div class="cm-big" id="cmBig"></div>
-      <div class="cm-tx">
-        <h2 id="cmTitle">Alex</h2>
-        <p class="cm-pos" id="cmKicker">Karta gracza</p>
-        <p class="cm-desc" id="cmDesc"></p>
-        <ul class="cm-legend">
-          <li><b>Hex z inicjałem</b> to Twój znak. Ten sam w składzie, w rankingu i na karcie.</li>
-          <li><b>Arena</b> pokazuje poziom. Pasek pod nią to XP do następnej.</li>
-          <li><b>Mecze i KotC</b> liczą tylko to, co naprawdę zagrałeś.</li>
-        </ul>
-        <a class="btn btn-primary" href={APP_URL} target="_blank" rel="noopener">Stwórz swoją kartę<span class="arw">→</span></a>
-      </div>
-    </div>
-  </div>
-  <script type="application/json" id="cardsData" set:html={JSON.stringify(CARDS.map((c) => ({ name: c.name, pos: c.pos, desc: c.desc })))} />
 
   <!-- ═══ 2. KAŻDY MECZ SIĘ LICZY: karta meczu z apki „rozgrywa się" przy wejściu na ekran ═══ -->
   <section class="ch ch-center" id="mecz">
@@ -265,6 +243,8 @@ const homeFaqSchema = {
   </section>
 
   <!-- ═══ 4. KING OF THE COURT: losowanie trójek ═══ -->
+  <!-- znacznik: gdy czytelnik tu dojedzie (ok. 1/3 strony), od dołu wysuwa się zapis na newsletter -->
+  {NEWSLETTER.enabled && <div id="nlMark" aria-hidden="true"></div>}
   <section class="ch" id="kotc">
     <div class="wrap split">
       <div class="split-copy rv rv-seq">
@@ -321,7 +301,7 @@ const homeFaqSchema = {
         <p class="lead">Wygrana to XP. XP to arena. Arena zostaje. Zaczynasz od Rozgrzewki i idziesz po Seraphim, a raz zdobyte XP nie znika.</p>
       </div>
     </div>
-    <div class="arena-row rv" aria-label="Siedem aren HoopConnect">
+    <div data-loop class="arena-row rv" aria-label="Siedem aren HoopConnect">
       <div class="arena-track">
         {[...ARENAS, ...ARENAS].map((a) => (
           <figure>
@@ -434,6 +414,7 @@ const homeFaqSchema = {
       </div>
     </div>
   </section>
+  {NEWSLETTER.enabled && <NewsletterPop />}
 </Base>
 
 <style>
@@ -492,32 +473,58 @@ const homeFaqSchema = {
   .cards li:nth-child(3) { --pcsb: 0.42; --z: 2; --i: 2; --dim: 0.87; }
   .cards li:nth-child(4) { --pcsb: 0.42; --z: 2; --i: 3; --dim: 0.87; }
   .cards li:nth-child(5) { --pcsb: 0.66; --z: 4; --i: 4; --dim: 1; }
-  /* :global, bo .pc3d-wrap renderuje komponent (nie ma atrybutu zakresu tej strony) */
-  .cards :global(.pc3d-wrap) { --pcs: calc(var(--pcsb) * var(--k)); }
-  /* Jasna krawędź (drop-shadow idzie po wciętym kształcie karty) odcina kartę od parkietu także w małej skali */
-  .pcbtn { --rx0: -6; --ry0: 0; display: block; background: transparent; border: 0; padding: 0; cursor: pointer; touch-action: pan-y;
-    filter: brightness(var(--dim, 1)) drop-shadow(0 0 1px rgba(190,224,255,0.62)); }
+  /* :global, bo .pc3d-wrap renderuje komponent (nie ma atrybutu zakresu tej strony).
+     --pc-edge: jasna krawędź, która odcina kartę od parkietu także w małej skali (1 px na ekranie,
+     stąd dzielenie przez skalę). Maluje się razem z cieniem karty, nie jako filtr liczony co klatkę. */
+  .cards :global(.pc3d-wrap) { --pcs: calc(var(--pcsb) * var(--k)); --pc-edge: drop-shadow(0 0 calc(1px / var(--pcs)) rgba(190,224,255,0.62)); }
+  .pcbtn { --rx0: -6; --ry0: 0; display: block; background: transparent; border: 0; padding: 0; cursor: pointer; touch-action: pan-y; }
   .pcbtn.static { cursor: default; pointer-events: none; }
+  /* Głębia: dalsze karty ciemniejsze. Filtr siedzi na samej plakietce, więc liczy się raz, przy malowaniu karty. */
+  .pcbtn.static :global(.pc3d-face) { filter: brightness(var(--dim, 1)); }
   .pcbtn :global(.pc3d-card) { transition: none; }
   .pcbtn:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 6px; }
   .cards li:nth-child(1) .pcbtn { --ry0: 10; }
   .cards li:nth-child(2) .pcbtn { --ry0: -10; }
   .cards li:nth-child(3) .pcbtn { --ry0: 18; }
   .cards li:nth-child(4) .pcbtn { --ry0: -18; }
-  /* Alex: plama światła pod stopą i pierścień rozchodzący się po parkiecie (sygnał „dotknij"), tylko transform i opacity */
-  .cards li.live::after { width: 210%; aspect-ratio: 3.6 / 1;
+
+  /* Tryb podglądu karty Alexa (klik albo tap): karta rośnie od stopy, reszta sceny ciemnieje,
+     a kartę obraca mysz albo palec, jak w apce. Skala i przyciemnienie to tylko transform i opacity. */
+  .cards li.live .pcbtn { transform-origin: 50% 100%; transition: transform var(--dur-2) var(--ease); }
+  .cards li.focus .pcbtn { transform: translateY(-3%) scale(var(--fz, 1.3)); touch-action: none; cursor: grab; }
+  .cards li.focus .pcbtn:active { cursor: grabbing; }
+  .stage-dim { position: absolute; z-index: 3; inset: -8% -10% -4%; pointer-events: none; opacity: 0;
+    background: radial-gradient(ellipse 60% 72% at 50% 56%, rgba(7,8,12,0.74) 0%, rgba(7,8,12,0.56) 52%, rgba(7,8,12,0) 100%);
+    transition: opacity var(--dur-2) var(--ease); }
+  .court-stage.focus .stage-dim { opacity: 1; pointer-events: auto; }
+  .focus-cap { position: absolute; z-index: 7; left: 50%; bottom: 1.5%; margin: 0; display: flex; align-items: center; gap: 14px;
+    white-space: nowrap; font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 1.8px; text-transform: uppercase;
+    color: var(--text-2); opacity: 0; pointer-events: none; transform: translate(-50%, 8px);
+    transition: opacity var(--dur-1) var(--ease), transform var(--dur-1) var(--ease); }
+  .court-stage.focus .focus-cap { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+  .focus-x { appearance: none; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--bg-2); color: var(--text); cursor: pointer;
+    padding: 6px 10px; font: inherit; letter-spacing: 1.4px; }
+  .focus-x:hover { border-color: var(--line-3); }
+  .focus-x:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { .cards li.live .pcbtn, .stage-dim, .focus-cap { transition: none; } }
+  /* Alex: plama światła pod stopą stoi w miejscu. Dawniej pulsowała w pętli razem z pierścieniem i sam ten puls
+     zajmował ok. 85% pracy karty graficznej na pierwszym ekranie (pomiar), bo każda klatka składała od nowa całą scenę.
+     Pierścień rozchodzi się po parkiecie tylko dwa razy po wejściu (sygnał „dotknij"). W podglądzie poświata rośnie. */
+  .cards li.live::after { width: 210%; aspect-ratio: 3.6 / 1; opacity: 0.86;
     background: radial-gradient(ellipse, rgba(111,195,255,0.55), rgba(47,145,214,0.2) 42%, transparent 70%);
-    animation: live-pool 3.2s var(--ease-io) infinite; }
+    transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+  .cards li.focus::after { opacity: 1; transform: translate(-50%, 56%) scale(1.2); }
   .cards li.live::before { content: ''; position: absolute; z-index: -1; left: 50%; bottom: 0; width: 170%; aspect-ratio: 3.6 / 1;
     border: 1.5px solid rgba(140,208,255,0.85); border-radius: 50%; opacity: 0; transform: translate(-50%, 50%) scale(0.5);
-    animation: live-ping 3.2s cubic-bezier(.2,.6,.3,1) 1.8s infinite; }
-  .court-stage.paused .cards li::before, .court-stage.paused .cards li::after { animation-play-state: paused; }
-  @keyframes live-pool { 0%, 100% { opacity: 0.72; } 50% { opacity: 1; } }
+    animation: live-ping 3.2s cubic-bezier(.2,.6,.3,1) 1.8s 2; }
   @keyframes live-ping {
     0% { opacity: 0; transform: translate(-50%, 50%) scale(0.5); }
     14% { opacity: 0.9; }
     72%, 100% { opacity: 0; transform: translate(-50%, 50%) scale(1.45); }
   }
+  /* Po wejściu zdejmujemy animacje wejścia: element z dokończoną animacją (fill: both) trzyma własną powierzchnię
+     kompozycji i każda klatka w obrębie sceny składa się przez to drożej. Stan końcowy jest równy stylowi bazowemu. */
+  .hero.entered :is(.court-stage, .cards li, .hero-copy, .marquee.under-court, .ln > span) { animation: none; }
 
   .hero-copy { position: relative; z-index: 2; text-align: center; margin-top: clamp(22px, 3.4vw, 40px); animation: rise var(--dur-2) 1.2s var(--ease) both; }
   .hero-copy .lead { margin: 0 auto 28px; max-width: 52ch; font-size: clamp(18px, 1.6vw, 21px); }
@@ -541,32 +548,9 @@ const homeFaqSchema = {
     .cards li:nth-child(1), .cards li:nth-child(2) { --pcsb: 0.21; }
     .cards li:nth-child(3), .cards li:nth-child(4) { --pcsb: 0.27; }
     .cards li:nth-child(5) { --pcsb: 0.38; }
+    .cards li.focus .pcbtn { --fz: 1.5; }
+    .focus-cap { font-size: 10.5px; letter-spacing: 1.4px; gap: 10px; bottom: 0.5%; }
   }
-
-  /* Podgląd karty: panel wysuwany od dołu (tap na kartę), duża karta + opis */
-  .cm { position: fixed; inset: 0; z-index: 300; display: flex; align-items: flex-end; justify-content: center; }
-  .cm[hidden] { display: none; }
-  .cm-backdrop { position: absolute; inset: 0; background: rgba(6,8,12,0.66); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-  .cm-card { --cut: 24px; --fill: var(--panel); --bd: var(--accent); position: relative; z-index: 1; width: 100%; max-width: 820px;
-    padding: clamp(22px, 4vw, 40px) clamp(20px, 4vw, 44px) calc(clamp(22px, 4vw, 36px) + env(safe-area-inset-bottom));
-    display: grid; gap: clamp(20px, 4vw, 44px); align-items: center;
-    animation: cm-up .3s cubic-bezier(.2,.8,.3,1) both; max-height: calc(100vh - 24px); overflow: auto; }
-  @keyframes cm-up { from { opacity: 0; transform: translateY(40px); } }
-  .cm-x { position: absolute; top: 10px; right: 14px; z-index: 2; background: transparent; border: none; color: var(--text-3);
-    font-size: 26px; line-height: 1; cursor: pointer; padding: 4px; }
-  .cm-x:hover { color: var(--text); }
-  .cm-big { --rx0: -6; --ry0: -12; display: flex; justify-content: center; }
-  .cm-big :global(.pc3d-wrap) { --pcs: 0.9; }
-  @media (max-width: 719px) { .cm-big :global(.pc3d-wrap) { --pcs: 0.78; } }
-  .cm-tx h2 { font-size: clamp(28px, 3.6vw, 40px); margin-bottom: 6px; }
-  .cm-pos { font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
-    color: var(--accent-hi); margin-bottom: 14px; }
-  .cm-desc { color: var(--text-2); font-size: 16px; line-height: 1.55; margin-bottom: 18px; }
-  .cm-legend { list-style: none; padding: 0; display: grid; gap: 10px; margin-bottom: 24px; }
-  .cm-legend li { position: relative; padding-left: 18px; font-size: 14px; line-height: 1.5; color: var(--text-2); }
-  .cm-legend li::before { content: ''; position: absolute; left: 0; top: 0.55em; width: 6px; height: 6px; background: var(--accent); transform: rotate(45deg); }
-  .cm-legend b { color: var(--text); font-weight: 600; }
-  @media (min-width: 720px) { .cm-card { grid-template-columns: auto 1fr; } }
 
   /* ═══ ROZDZIAŁY: wspólny system (.ch, .ch-head, .facts, .scene, .split…) jest w global.css; tu tylko to, co własne strony ═══ */
 
@@ -754,31 +738,66 @@ const homeFaqSchema = {
   const reduce = prefersReducedMotion()
 
   // ── Tilt kart (Alex na boisku, karta w rozdziale „Karta gracza"): lekki obrót w stronę kursora w promieniu,
-  //    przeciąganie myszą albo palcem obraca kartę jak w apce, puszczenie wraca do spoczynku. Tap na Alexie = podgląd.
-  //    Jedna pętla rAF, która działa tylko w trakcie ruchu.
-  type Tilt = { el: HTMLElement; zone: HTMLElement; rest: { x: number; y: number }; rx: number; ry: number; tx: number; ty: number }
+  //    przeciąganie myszą albo palcem obraca kartę jak w apce, puszczenie wraca do spoczynku.
+  //    Klik albo tap na Alexie włącza podgląd: karta lekko rośnie, a obrót ma pełny zakres (setFocus niżej).
+  //    Jedna pętla rAF, która działa tylko w trakcie ruchu. Ruch niczego nie maluje: skrypt ustawia transform
+  //    na trzech elementach (karta i dwie warstwy połysku), resztę składa karta graficzna. W przeglądarkach
+  //    bez sin() w CSS zostaje droga przez zmienne --rx0/--ry0 (wtedy połysk to zwykły gradient).
+  const TRIG = typeof CSS !== 'undefined' && CSS.supports('width', 'calc(1px * sin(1deg))')
+  type Tilt = {
+    el: HTMLElement; zone: HTMLElement; rest: { x: number; y: number }; rx: number; ry: number; tx: number; ty: number
+    card: HTMLElement | null; holo: HTMLElement | null; spec: HTMLElement | null; px: number; py: number; focus: boolean; t0: number
+  }
   const btns = Array.from(document.querySelectorAll<HTMLButtonElement>('.pcbtn[data-i]'))
   const tilts: Tilt[] = []
-  const addTilt = (el: HTMLElement, zone: HTMLElement, rest: { x: number; y: number }) =>
-    tilts.push({ el, zone, rest, rx: rest.x, ry: rest.y, tx: rest.x, ty: rest.y })
+  const addTilt = (el: HTMLElement, zone: HTMLElement, rest: { x: number; y: number }) => {
+    el.classList.add('pc-live')            // połysk dostaje własne warstwy (PlayerCard.astro)
+    tilts.push({
+      el, zone, rest, rx: rest.x, ry: rest.y, tx: rest.x, ty: rest.y,
+      card: el.querySelector('.pc3d-card'), holo: el.querySelector('.pc3d-holo'), spec: el.querySelector('.pc3d-spec'),
+      px: NaN, py: NaN, focus: false, t0: 0,
+    })
+  }
   const stage = document.getElementById('courtStage')
   btns.forEach((b) => addTilt(b, stage ?? b, { x: -6, y: 0 }))
   document.querySelectorAll<HTMLElement>('[data-tilt-card]').forEach((el) => addTilt(el, el.parentElement ?? el, { x: -6, y: -14 }))
+  // Te same wzory, co w CSS karty: obrót plakietki, kąt i długość linii połysku, przesunięcie odblasku.
+  const paint = (c: Tilt) => {
+    if (c.px === c.rx && c.py === c.ry) return
+    c.px = c.rx; c.py = c.ry
+    if (TRIG && c.card) {
+      const a = 118 + c.ry * 1.6, r = (a * Math.PI) / 180
+      const len = Math.abs(Math.sin(r)) * 300 + Math.abs(Math.cos(r)) * 452
+      c.card.style.transform = `scale(var(--pcs)) translate(150px, 226px) perspective(1150px) rotateX(${c.rx.toFixed(2)}deg) rotateY(${c.ry.toFixed(2)}deg) translate(-150px, -226px)`
+      if (c.holo) c.holo.style.transform = `rotate(${a.toFixed(2)}deg) scaleY(${(len / 560).toFixed(4)})`
+      if (c.spec) c.spec.style.transform = `translate(${(c.ry * 4.5).toFixed(1)}px, ${(c.rx * -6.328).toFixed(1)}px)`
+    } else {
+      c.el.style.setProperty('--rx0', c.rx.toFixed(2)); c.el.style.setProperty('--ry0', c.ry.toFixed(2))
+    }
+  }
   let drag: { t: Tilt; sx: number; sy: number; brx: number; bry: number; moved: boolean } | null = null
   let running = false
   const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v))
-  const loop = () => {
+  const loop = (now: number) => {
     let busy = false
     for (const c of tilts) {
-      c.rx += (c.tx - c.rx) * 0.12; c.ry += (c.ty - c.ry) * 0.12
-      if (Math.abs(c.tx - c.rx) > 0.03 || Math.abs(c.ty - c.ry) > 0.03) busy = true
-      c.el.style.setProperty('--rx0', c.rx.toFixed(2)); c.el.style.setProperty('--ry0', c.ry.toFixed(2))
+      let gx = c.tx, gy = c.ty
+      if (c.focus && !reduce && (!drag || drag.t !== c)) {
+        // podgląd: karta delikatnie się buja (jak w apce), dopóki nikt jej nie trzyma
+        const s = (now - c.t0) / 1000
+        gx += Math.sin(s * 0.9) * 2.2; gy += Math.sin(s * 0.62) * 5
+        busy = true
+      }
+      c.rx += (gx - c.rx) * 0.12; c.ry += (gy - c.ry) * 0.12
+      if (Math.abs(gx - c.rx) > 0.03 || Math.abs(gy - c.ry) > 0.03) busy = true
+      paint(c)
     }
     if (busy || drag) requestAnimationFrame(loop); else running = false
   }
   const kick = () => { if (!running) { running = true; requestAnimationFrame(loop) } }
 
-  // Bliskość kursora (desktop): w promieniu zależnym od wielkości karty obraca się w stronę myszy
+  // Kursor (desktop): w promieniu zależnym od wielkości karty obraca się ona w stronę myszy;
+  // w podglądzie karta patrzy za kursorem na całej scenie.
   if (fine && !reduce) {
     new Set(tilts.map((t) => t.zone)).forEach((zone) => {
       zone.addEventListener('pointermove', (e) => {
@@ -786,9 +805,13 @@ const homeFaqSchema = {
         for (const t of tilts) {
           if (t.zone !== zone) continue
           const r = t.el.getBoundingClientRect()
-          const R = Math.max(190, r.width * 1.1)
           const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2)
-          const d = Math.hypot(dx, dy)
+          if (t.focus) {
+            const z = zone.getBoundingClientRect()
+            t.ty = clamp((dx / (z.width / 2)) * 28, -20, 20); t.tx = t.rest.x - clamp((dy / (z.height / 2)) * 18, -12, 12)
+            continue
+          }
+          const R = Math.max(190, r.width * 1.1), d = Math.hypot(dx, dy)
           if (d < R) { const k = 1 - d / R; t.ty = t.rest.y + (dx / R) * 22 * k; t.tx = t.rest.x - (dy / R) * 16 * k }
           else { t.tx = t.rest.x; t.ty = t.rest.y }
         }
@@ -798,7 +821,8 @@ const homeFaqSchema = {
     })
   }
 
-  // Przeciąganie = obrót (mysz i dotyk; pionowy ruch palca nadal przewija stronę). Klik po przeciągnięciu jest ignorowany.
+  // Przeciąganie = obrót (mysz i dotyk; poza podglądem pionowy ruch palca nadal przewija stronę).
+  // Klik po przeciągnięciu jest ignorowany.
   for (const t of tilts) {
     const b = t.el
     b.addEventListener('pointerdown', (e) => {
@@ -823,39 +847,32 @@ const homeFaqSchema = {
     b.addEventListener('click', (e) => { if (b.dataset.swallow) { delete b.dataset.swallow; e.preventDefault(); e.stopImmediatePropagation() } }, true)
   }
 
-  // Błysk po liniach i pulsy Alexa tylko, gdy boisko jest na ekranie
-  if (stage && hasIO()) {
-    new IntersectionObserver((en) => stage.classList.toggle('paused', !en[0].isIntersecting), { threshold: 0 }).observe(stage)
-  }
+  // Po wejściu hero zdejmujemy dokończone animacje wejścia (patrz .hero.entered w stylach)
+  setTimeout(() => document.querySelector('.hero')?.classList.add('entered'), 2600)
 
-  // ── Podgląd karty: tap kopiuje kartę (powiększoną) do panelu od dołu i dokłada opis.
-  const cm = document.getElementById('cardModal')
-  const cmBig = document.getElementById('cmBig')
-  const cmTitle = document.getElementById('cmTitle')
-  const cmPos = document.getElementById('cmKicker')
-  const cmDesc = document.getElementById('cmDesc')
-  const data: { name: string; pos: string; desc: string }[] = JSON.parse(document.getElementById('cardsData')?.textContent || '[]')
-  if (cm && cmBig && cmTitle && cmDesc) {
-    let last: HTMLElement | null = null
-    const close = () => { cm.hidden = true; document.body.style.overflow = ''; last?.focus() }
-    btns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const i = Number(btn.dataset.i)
-        const wrap = btn.querySelector('.pc3d-wrap')
-        if (!wrap) return
-        cmBig.replaceChildren(wrap.cloneNode(true))
-        cmTitle.textContent = data[i]?.name ?? ''
-        if (cmPos) cmPos.textContent = `Karta gracza · ${data[i]?.pos ?? ''}`
-        cmDesc.textContent = data[i]?.desc ?? ''
-        last = btn
-        cm.hidden = false
-        document.body.style.overflow = 'hidden'
-        ;(cm.querySelector('.cm-x') as HTMLElement | null)?.focus()
-      })
-    })
-    cm.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('[data-cm-close]')) close() })
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !cm.hidden) close() })
+  // ── Podgląd karty Alexa: klik albo tap podnosi kartę (lekko rośnie, scena ciemnieje) i daje pełny obrót.
+  //    Wyjście: klik obok, przycisk „Odłóż", Esc, ponowny klik w kartę albo zjechanie poza boisko.
+  const alexBtn = btns[0]
+  const alex = tilts.find((t) => t.el === alexBtn)
+  const alexLi = alexBtn?.closest('li')
+  const focusX = document.querySelector<HTMLButtonElement>('.focus-x')
+  const setFocus = (on: boolean) => {
+    if (!alex || !alexBtn || !alexLi || !stage || alex.focus === on) return
+    alex.focus = on; alex.t0 = performance.now()
+    alex.tx = alex.rest.x; alex.ty = alex.rest.y
+    stage.classList.toggle('focus', on); alexLi.classList.toggle('focus', on)
+    alexBtn.setAttribute('aria-pressed', String(on))
+    alexBtn.setAttribute('aria-label', on
+      ? 'Karta gracza: Alex, podniesiona. Przeciągnij, żeby obrócić. Naciśnij ponownie, żeby odłożyć'
+      : 'Karta gracza: Alex. Naciśnij, żeby ją podnieść i obrócić')
+    if (focusX) focusX.tabIndex = on ? 0 : -1
+    kick()
   }
+  alexBtn?.addEventListener('click', () => setFocus(!alex?.focus))
+  focusX?.addEventListener('click', () => { setFocus(false); alexBtn?.focus() })
+  document.addEventListener('click', (e) => { if (alex?.focus && !(e.target as HTMLElement).closest('.pcbtn, .focus-cap')) setFocus(false) })
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && alex?.focus) setFocus(false) })
+  if (stage && hasIO()) new IntersectionObserver((en) => { if (!en[0].isIntersecting) setFocus(false) }, { threshold: 0 }).observe(stage)
 
   // ── Karta meczu „na żywo": hexy wchodzą, wynik nabija się od zera, potem zieleń zwycięzcy, „Zakończony" i XP.
   //    Bez JS albo przy ograniczonym ruchu widać od razu stan końcowy (taki jest w HTML).

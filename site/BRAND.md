@@ -162,6 +162,22 @@ Scroll-reveal przez IntersectionObserver (próg 0.18, raz). Sekcje sticky: obraz
 top: 12vh`, kroki tekstu po 70vh, aktywny krok steruje stanem obrazu klasą. Płynne, bez
 scroll-jackingu.
 
+### Ruch a wydajność (zmierzone 2026-11-16, obowiązuje na każdej stronie)
+
+Właściciel chce strony lekkiej, ale bez żadnej zmiany wyglądu. Te zasady wynikają z pomiaru, nie z gustu:
+
+1. **Żadnych pętli (`infinite`) nad sceną boiska.** Pulsująca poświata pod kartą Alexa zajmowała ok. 85% pracy
+   karty graficznej na pierwszym ekranie. Sygnał „dotknij" to animacja skończona (2 powtórzenia), nie pętla.
+2. **Pętla tylko w kontenerze z `data-loop`.** `pauseOffscreen()` z `motion.ts` zatrzymuje ją poza ekranem;
+   bez tego przeglądarka liczy niewidoczną animację w głównym wątku w każdej klatce.
+3. **Żadnego CSS `filter` na warstwie, która się rusza albo ma `will-change`.** Cień i poświata to osobny,
+   nieruchomy element w środku (patrz `.pc3d-sh` w `PlayerCard.astro`), a zmienny połysk to gotowy gradient
+   obracany transformem.
+4. **Żadnych nasłuchów `scroll`.** Stan zależny od przewinięcia robi `IntersectionObserver` i element-wartownik.
+5. **`backdrop-filter` tylko w pasku nawigacji i dolnym pasku na telefonie.** Przyciski go nie mają.
+6. **Zmianę sprawdzamy porównaniem pikseli przed i po** (zrzuty ekran po ekranie) oraz śladem wydajności,
+   nie na oko.
+
 ## 11. Struktura strony głównej (rozdziały, nie kafelki)
 
 1. **Otwarcie.** „Zostań królem swojego boiska." Boisko 3x3 z kartami graczy. Jedno zdanie, jeden

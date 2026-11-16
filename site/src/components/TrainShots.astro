@@ -1,0 +1,90 @@
+---
+/**
+ * TrainShots: port trackera rzutów (src/pages/ShootingPage.jsx): licznik „rzuty / cel", skuteczność
+ * na żywo, trzy liczby (Trafione / Pudła / Zostało), dwa duże przyciski i kropki ostatnich rzutów.
+ * Przyciski działają: skrypt strony dopisuje rzut do historii i przelicza liczby (jak w apce).
+ * Cel 150 to domyślna sesja trójek z apki (TYPE_CONFIG). Bez JS widać stan startowy.
+ * To element produktu w HTML. Dane poglądowe.
+ *
+ * Rozmiary w em (1em = 10px przy --trs: 1), skalę ustawia rodzic. Pasek postępu to scaleX,
+ * błysk po kliknięciu to opacity. W apce przyciski mają rozmycie tła; tu pominięte.
+ * W apce jest też „Wpisz ręcznie"; na stronie go nie ma, bo nic by nie robił.
+ */
+interface Props { title?: string; kind?: string; target?: number; history?: string }
+const { title = 'Trójki z narożnika', kind = 'Trójki', target = 150, history = '110111010110111011010111001101101110' } = Astro.props
+const shots = history.split('').map((c) => c === '1')
+const made = shots.filter(Boolean).length
+const att = shots.length
+const pct = att ? Math.round((made / att) * 100) : 0
+const recent = shots.slice(-12)
+---
+<div class="ts" data-target={target} data-history={history}>
+  <div class="ts-head"><span>{kind}</span><b>{title}</b></div>
+  <div class="ts-prog">
+    <p class="ts-line"><span><b data-ts="att">{att}</b> / {target}</span><span class="ts-pct"><b><i data-ts="pct">{pct}</i>%</b> skuteczność</span></p>
+    <div class="ts-bar"><i data-ts="bar" style={`--p:${Math.min(att / target, 1).toFixed(3)}`}></i></div>
+  </div>
+  <div class="ts-stats">
+    <div class="made"><b data-ts="made">{made}</b><span>Trafione</span></div>
+    <div class="miss"><b data-ts="miss">{att - made}</b><span>Pudła</span></div>
+    <div><b data-ts="left">{target - att}</b><span>Zostało</span></div>
+  </div>
+  <div class="ts-btns">
+    <button class="ts-btn made" type="button" data-shot="1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+      <span>Trafione</span>
+    </button>
+    <button class="ts-btn miss" type="button" data-shot="0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" /></svg>
+      <span>Pudło</span>
+    </button>
+  </div>
+  <div class="ts-recent" aria-hidden="true">
+    <p>Ostatnie rzuty</p>
+    <div class="ts-dots" data-ts="dots">
+      {recent.map((m, i) => <span class={m ? 'm' : 'x'} style={`opacity:${(0.35 + (i / recent.length) * 0.65).toFixed(2)}`}></span>)}
+    </div>
+  </div>
+  <button class="ts-undo" type="button" data-ts="undo">Cofnij ostatni</button>
+</div>
+
+<style is:global>
+  .ts { font-size: calc(10px * var(--trs, 1)); width: 36em; max-width: 100%; display: grid; gap: 1.4em; padding: 2.4em 2em 1.6em; border-radius: 2.8em; text-align: left;
+    color: #EEF4FF; font-family: var(--body); border: 1px solid rgba(150,200,255,0.12);
+    background: radial-gradient(ellipse 80% 45% at 50% -5%, rgba(91,184,245,0.16) 0%, rgba(91,184,245,0) 62%), linear-gradient(170deg, #0C1F38 0%, #091828 42%, #060F1E 100%);
+    box-shadow: 0 3em 7em rgba(0,0,0,0.55); }
+  .ts-head span { display: block; font-size: 1.2em; font-weight: 500; color: rgba(180,195,220,0.65); line-height: 1.3; }
+  .ts-head b { display: block; font-family: var(--display); font-weight: 700; font-size: 1.8em; line-height: 1.2; }
+  .ts-line { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.6em; font-size: 1.3em; font-weight: 500; color: rgba(180,195,220,0.62); }
+  .ts-line b { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .ts-pct { font-size: 0.92em; }
+  .ts-pct b { margin-right: 0.3em; font-family: var(--display); font-weight: 700; font-size: 2em; line-height: 1; color: #5BB8F5; }
+  .ts-pct i { font-style: normal; }
+  .ts-bar { height: 0.3em; border-radius: 0.3em; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .ts-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #5BB8F5, #7ECBFF); transform-origin: 0 50%;
+    transform: scaleX(var(--p, 0)); transition: transform var(--dur-1, .42s) var(--ease, ease); }
+  .ts-stats { display: flex; gap: 0.8em; }
+  .ts-stats > div { flex: 1; min-width: 0; padding: 1.2em 0.6em; border-radius: 1.4em; text-align: center;
+    background: linear-gradient(180deg, rgba(40,55,85,0.40) 0%, rgba(22,32,52,0.34) 100%); box-shadow: inset 0 1px 0 rgba(200,225,255,0.10); }
+  .ts-stats b { display: block; font-family: var(--display); font-weight: 700; font-size: 2.6em; line-height: 1; color: rgba(180,195,220,0.6); font-variant-numeric: tabular-nums; }
+  .ts-stats .made b { color: #34D399; }
+  .ts-stats .miss b { color: #FB7185; }
+  .ts-stats span { display: block; margin-top: 0.45em; font-size: 1.1em; font-weight: 500; color: rgba(180,195,220,0.55); line-height: 1.2; }
+  .ts-btns { display: flex; gap: 1em; }
+  .ts-btn { --c: 52,211,153; position: relative; overflow: hidden; flex: 1; min-width: 0; height: 11.4em; border: 0; border-radius: 1.4em; cursor: pointer; font: inherit;
+    display: grid; place-content: center; justify-items: center; gap: 0.9em; color: rgb(var(--c));
+    background: linear-gradient(180deg, rgba(var(--c), 0.16) 0%, rgba(var(--c), 0.05) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), inset 0 0 0 1px rgba(var(--c), 0.2); }
+  .ts-btn.miss { --c: 251,113,133; }
+  .ts-btn svg { width: 3.2em; height: 3.2em; }
+  .ts-btn span { font-family: var(--display); font-weight: 600; font-size: 1.7em; line-height: 1; }
+  .ts-btn::after { content: ''; position: absolute; inset: 0; background: rgba(var(--c), 0.3); opacity: 0; pointer-events: none; }
+  .ts-btn.hit::after { animation: ts-flash 320ms ease-out; }
+  @keyframes ts-flash { from { opacity: 0.55; } to { opacity: 0; } }
+  .ts-btn:active { transform: scale(0.98); }
+  .ts-recent p { margin-bottom: 0.7em; font-size: 1.1em; font-weight: 500; color: rgba(180,195,220,0.5); }
+  .ts-dots { display: flex; gap: 0.6em; min-height: 1em; }
+  .ts-dots span { width: 1em; height: 1em; border-radius: 50%; background: #34D399; }
+  .ts-dots span.x { background: #FB7185; }
+  .ts-undo { justify-self: center; padding: 0.7em 1em; border: 0; background: none; cursor: pointer; font: inherit; font-size: 1.3em; font-weight: 500; color: rgba(180,195,220,0.62); }
+  .ts-undo:disabled { color: rgba(180,195,220,0.25); cursor: default; }
+</style>

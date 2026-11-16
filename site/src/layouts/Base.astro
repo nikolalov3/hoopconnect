@@ -199,6 +199,11 @@ const jsonLd = [...baseSchema, webPage, ...(breadcrumb ? [breadcrumb] : []), ...
 </style>
 
 <script>
+  import { pauseOffscreen } from '../scripts/motion'
+
+  // Animacje w pętli stoją poza ekranem (kontenery z data-loop)
+  pauseOffscreen()
+
   const APP = 'https://app.hoopconnect.pl'
   const modal = document.getElementById('appModal')
   if (modal) {
@@ -236,13 +241,19 @@ const jsonLd = [...baseSchema, webPage, ...(breadcrumb ? [breadcrumb] : []), ...
   // Mobilny pasek CTA — pokazuj dopiero po zjechaniu poniżej pierwszego ekranu.
   const mcta = document.getElementById('mcta')
   if (mcta) {
-    const upd = () => {
-      const show = window.scrollY > window.innerHeight * 0.7
+    const set = (show: boolean) => {
       mcta.classList.toggle('show', show)
       mcta.setAttribute('aria-hidden', show ? 'false' : 'true')
       mcta.querySelector('a')?.setAttribute('tabindex', show ? '0' : '-1')
     }
-    upd()
-    document.addEventListener('scroll', upd, { passive: true })
+    set(false)
+    if ('IntersectionObserver' in window) {
+      // wartownik na pierwsze 70% ekranu: gdy wyjedzie w górę, pasek się pokazuje (bez nasłuchu scrolla)
+      const first = document.createElement('div')
+      first.setAttribute('aria-hidden', 'true')
+      first.style.cssText = 'position:absolute;top:0;left:0;width:1px;height:70vh;pointer-events:none'
+      document.body.prepend(first)
+      new IntersectionObserver(([en]) => set(!en.isIntersecting)).observe(first)
+    }
   }
 </script>

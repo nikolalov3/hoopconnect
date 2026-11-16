@@ -1,546 +1,654 @@
 ---
 import Base from '../layouts/Base.astro'
-import { APP_URL } from '../consts'
+import DraftRing from '../components/DraftRing.astro'
+import TrainDay from '../components/TrainDay.astro'
+import TrainCard from '../components/TrainCard.astro'
+import TrainWeek from '../components/TrainWeek.astro'
+import TrainShots from '../components/TrainShots.astro'
+import TrainRecovery from '../components/TrainRecovery.astro'
+import TrainStats from '../components/TrainStats.astro'
+import TrainCalendar from '../components/TrainCalendar.astro'
+import { APP_URL, SITE, BRAND } from '../consts'
+
+// Narracja strony: czytelnik ma poczuć, że między meczami ktoś układa mu tydzień i liczy jego robotę,
+// i otworzyć apkę, żeby zrobić dzisiejszy trening.
+const title = 'Asystent treningu: plan treningowy koszykarza'
 const description =
-  'Asystent treningu w HoopConnect: codzienne ćwiczenia, siedem aren i Draft Score, czyli tygodniowy ' +
-  'wskaźnik formy, który zamienia się w stałe XP. Zobacz, jak działa progresja i za co dostajesz XP.'
+  'Asystent treningu w HoopConnect układa indywidualny trening koszykarski: plan na 3 do 6 dni w tygodniu, ' +
+  'tracker rzutów, regeneracja, statystyki i Draft Score.'
+const canonical = new URL(Astro.url.pathname, SITE).href
 
-// Areny z aplikacji (src/lib/arenas.js). Grafiki: /arenas/arena-N.png (1..6 = odznaki).
-const ARENAS = [
-  { n: '00', name: 'Rozgrzewka', xp: 0,    img: null,   note: 'Start. Zbierasz pierwsze XP i odblokowujesz pierwszą arenę HC.' },
-  { n: '01', name: 'Street Court', xp: 500,  img: '/arenas/arena-1.png', note: 'Pierwsze boisko, pierwszy realny progres.' },
-  { n: '02', name: 'City Run',    xp: 1500, img: '/arenas/arena-2.png', note: 'Miasto w ruchu, coraz więcej graczy i większa rywalizacja.' },
-  { n: '03', name: 'Golden Reign', xp: 2700, img: '/arenas/arena-3.png', note: 'Wysoka arena dla tych, którzy nie zwalniają tempa.' },
-  { n: '04', name: 'Ankh Court',  xp: 3900, img: '/arenas/arena-4.png', note: 'Zostaw po sobie ślad. Droga, która trwa dalej.' },
-  { n: '05', name: 'Void Gem',    xp: 5500, img: '/arenas/arena-5.png', note: 'Inny poziom gry. Docierają tu tylko najbardziej aktywni.' },
-  { n: '06', name: 'Seraphim',    xp: 7500, img: '/arenas/arena-6.png', note: 'Szczyt świata HC. Dla graczy, którzy przeszli całą drogę.' },
+// „W skrócie": fakty tuż pod otwarciem. Źródła: src/pages/HomePage.jsx (plan dnia, Draft Score),
+// ShootingPage.jsx (tracker), RecoveryPage.jsx, migracja 20260902_xp_rebalance.sql (10% i sufit 100 XP).
+const BRIEF = [
+  { t: 'Plan', d: 'Od 3 do 6 dni treningowych w tygodniu. Liczbę dni zmieniasz, kiedy chcesz.' },
+  { t: 'Dzień', d: 'Sesja poranna i sesja główna: trzy albo cztery ćwiczenia z opisem krok po kroku.' },
+  { t: 'Rzuty', d: 'Tracker liczy każdy rzut: trójki, dwójki i wolne, ze skutecznością na żywo.' },
+  { t: 'Regeneracja', d: 'Dzień regeneracji ma własne ćwiczenia, a odpoczynek podtrzymuje serię.' },
+  { t: 'Draft Score i XP', d: 'Draft Score to prywatna forma tygodnia. 10% punktów z treningu zamienia się w stałe XP, do 100 XP tygodniowo.' },
+  { t: 'Cena', d: 'Dla graczy za darmo. Aplikacja działa w przeglądarce telefonu, bez instalacji.' },
+]
+const TOC = [
+  { href: '#plan', label: 'Plan tygodnia' },
+  { href: '#dzien', label: 'Dzień treningowy' },
+  { href: '#karta', label: 'Karta ćwiczenia' },
+  { href: '#rzut', label: 'Trening rzutu' },
+  { href: '#regeneracja', label: 'Regeneracja' },
+  { href: '#draft-score', label: 'Draft Score' },
+  { href: '#xp', label: 'XP' },
+  { href: '#statystyki', label: 'Statystyki' },
+  { href: '#pytania', label: 'Pytania' },
 ]
 
-// Aktywności na dzień odpoczynku (z zakładki Regeneracja w apce).
-const REST = [
-  { name: 'Sen', min: '8 h' },
-  { name: 'Rozciąganie', min: '15 min' },
-  { name: 'Foam rolling', min: '20 min' },
-  { name: 'Joga', min: '20 min' },
-  { name: 'Medytacja', min: '10 min' },
-  { name: 'Spacer', min: '30 min' },
-  { name: 'Zimny prysznic', min: '5 min' },
-  { name: 'Mobilność', min: '10 min' },
-  { name: 'Zdrowy posiłek', min: '45 min' },
-  { name: 'Drzemka', min: '20 min' },
+// Plan: te same kroki idą do HowTo („jak ułożyć tydzień treningu").
+const PLAN_STEPS = [
+  { t: 'Podajesz wiek', d: 'Przy tworzeniu konta wpisujesz datę urodzenia. Od wieku zależy, jakie ćwiczenia trafią do planu.' },
+  { t: 'Wybierasz liczbę dni', d: 'Trzy, cztery, pięć albo sześć dni treningowych w tygodniu. Na start aplikacja poleca cztery.' },
+  { t: 'Dostajesz rozkład tygodnia', d: 'Aplikacja sama ustawia dni treningu, regeneracji i wolne. Liczbę dni zmienisz później w ustawieniach.' },
+  { t: 'Codziennie odhaczasz zestaw', d: 'Każdego dnia czeka gotowy zestaw ćwiczeń. Odhaczasz je po kolei, a punkty trafiają do Draft Score.' },
 ]
+// Rozkłady z apki (SCHEDULES w HomePage.jsx), opisane słowami.
+const SCHEDULES = [
+  { t: '3 dni', d: 'Trening w poniedziałek, środę i piątek. Sobota to regeneracja, reszta jest wolna.' },
+  { t: '4 dni', d: 'Trening w poniedziałek, wtorek, czwartek i piątek. Sobota to regeneracja, środa i niedziela są wolne.' },
+  { t: '5 dni', d: 'Trening od poniedziałku do soboty z regeneracją w środę. Niedziela jest wolna.' },
+  { t: '6 dni', d: 'Trening codziennie poza czwartkiem, który jest dniem regeneracji.' },
+]
+
+// Scena „Dzień treningowy": krok ustawia stan planu dnia (TrainDay.astro).
+const DAY_STEPS = [
+  {
+    t: 'Sesja poranna',
+    d: 'Jedno ćwiczenie na start dnia, z kondycji albo regeneracji.',
+  },
+  {
+    t: 'Sesja główna',
+    d: 'Tu jest właściwa robota. W dwa dni na trzy zaczynasz od rzutu, a mniej więcej co trzeci dzień dostajesz dwa ćwiczenia główne zamiast jednego.',
+  },
+  {
+    t: 'Wyciszenie po treningu',
+    d: 'Sesję główną zamyka krótkie ćwiczenie na wyciszenie, na przykład rolowanie albo rozciąganie. Też ma swoje punkty.',
+  },
+  {
+    t: 'Dzień zaliczony',
+    d: 'Już pierwsze odhaczone ćwiczenie podtrzymuje serię. Gdy odhaczysz wszystkie, aplikacja zamyka dzień, a kalendarz zapisuje go jako pełny.',
+  },
+]
+
+const CARD_FACTS = [
+  { t: 'Punkty', d: 'Oznaczenie 2PKT ×30 to 60 punktów do Draft Score. Trudniejsze ćwiczenia główne mają mnożnik ×40.' },
+  { t: 'Trudność', d: 'Pięć kropek pokazuje poziom trudności, od 1 do 5.' },
+  { t: 'Brak sprzętu', d: 'Nie masz pachołków albo gumy? Zamieniasz ćwiczenie na inne z tej samej kategorii, bez sprzętu.' },
+  { t: 'Cofnięcie', d: 'Odhaczone przez pomyłkę? Cofasz zaznaczenie, a punkty wracają do stanu sprzed.' },
+]
+// Przykładowa rozwinięta karta: ćwiczenie „Cone Dribbling" z tabeli trainings (opis i kroki przełożone z wersji angielskiej w migracji).
+const CARD = {
+  title: 'Kozłowanie między pachołkami',
+  desc: 'Slalom między pachołkami to jedno z najczęstszych ćwiczeń przed draftem NBA. Uczysz się zmieniać kierunek z piłką przy pełnej prędkości. Każdy pachołek to obrońca, którego mijasz bez utraty kontroli.',
+  steps: [
+    'Ustaw 6 do 8 pachołków w linii, co 1,5 metra. Startujesz 3 metry przed pierwszym.',
+    'Wariant pierwszy: crossover przy każdym pachołku, zmiana ręki za każdym razem.',
+    'Wariant drugi: piłka między nogami przy każdym pachołku.',
+    'Pierwszy przejazd wolno, drugi na pełnej prędkości. Pięć przejazdów na wariant.',
+  ],
+}
+
+const SHOT_FACTS = [
+  { t: 'Trzy strefy', d: 'Trójki, dwójki z półdystansu i rzuty wolne. Każda strefa ma osobną statystykę.' },
+  { t: 'Cel sesji', d: 'Domyślnie 150 trójek albo 100 dwójek lub wolnych. Sesja kończy się sama, gdy dobijesz do celu.' },
+  { t: 'Bez klikania', d: 'Wolisz rzucać bez telefonu w ręce? Po serii wpisujesz trafione i pudła ręcznie.' },
+  { t: 'Po sesji', d: 'Ekran z wynikiem, nowe osiągnięcia i grafika do wysłania ekipie.' },
+]
+const REST_FACTS = [
+  { t: 'Lista', d: 'Dwanaście pozycji, od snu i stretchingu po zimny prysznic, spacer i analizę wideo.' },
+  { t: 'Recovery score', d: 'Pięć odhaczonych rzeczy to 100%.' },
+  { t: 'Seria', d: 'W dzień bez treningu jedna odhaczona rzecz podtrzymuje serię.' },
+  { t: 'Porada dnia', d: 'Codziennie jedna krótka wskazówka o śnie, nawodnieniu albo jedzeniu.' },
+]
+const DS_FACTS = [
+  { t: '1000 punktów', d: 'Przy tylu punktach w tygodniu pierścień się zamyka.' },
+  { t: 'Progi', d: 'Od 250 punktów „Zacznij serię”, od 500 „Dobry postęp”, od 750 „Świetna regularność”.' },
+  { t: 'Poniedziałek', d: 'Licznik startuje od zera w każdy poniedziałek i po awansie na nową arenę.' },
+  { t: 'Skąd punkty', d: 'Z treningu, z meczów, z sesji King of the Court i z medali za osiągnięcia.' },
+]
+
+// XP z aplikacji: trening to 10% tygodniowych punktów z treningu z sufitem 100 (trg_award_weekly_xp),
+// mecz 75 / 40, King of the Court 95 do 275. Trzymać zgodność z /ranking i /klub.
+const XP_ROWS = [
+  { label: 'Tydzień treningu z asystentem', xp: 'do +100' },
+  { label: 'Wygrany mecz', xp: '+75' },
+  { label: 'Przegrany mecz albo remis', xp: '+40' },
+  { label: 'Sesja King of the Court', xp: '+95 do +275' },
+]
+
+// Scena „Statystyki": kroki 1 i 2 pokazują statystyki rzutów, krok 3 kalendarz.
+const STATS_STEPS = [
+  {
+    t: 'Skuteczność z każdej strefy',
+    d: 'Osobno trójki, półdystans i rzuty wolne, a nad nimi wynik ogólny. Przełączasz widok na 7 dni, 30 dni albo całość.',
+  },
+  {
+    t: 'Seria i sesje',
+    d: 'Liczba dni z rzędu i liczba sesji, a niżej każda sesja z datą i wynikiem. Statystyki wyślesz ekipie jako grafikę.',
+  },
+  {
+    t: 'Kalendarz miesiąca',
+    d: 'Każdy dzień to jeden hex. Pełny, gdy zrobiłeś wszystko, błękitny, gdy tylko część. Dni z treningiem drużynowym od trenera mają osobną obwódkę.',
+  },
+]
+
+// Osiągnięcia: reguły z HomePage.jsx (checkAchievements) i lib/achievements.js.
+const STREAK_FACTS = [
+  { t: 'Early Bird', d: 'Trening odhaczony przed 7:00 rano.' },
+  { t: 'Dyscyplina', d: 'Co siedem dni z rzędu z kompletem ćwiczeń.' },
+  { t: 'Man of the Month', d: 'Co trzydzieści takich dni z rzędu.' },
+  { t: 'Comeback', d: 'Powrót do treningu po co najmniej dwóch tygodniach przerwy.' },
+  { t: 'Rzuty', d: 'Medale za łączną liczbę trafień z każdej strefy i za sesje trójek bez pudła.' },
+  { t: 'Medale', d: 'Każdy medal dokłada punkty do Draft Score: od 20 za brąz do 100 za diament.' },
+]
+
+// FAQ: treść widoczna na stronie jest tą samą, która idzie do danych FAQPage (czysty tekst, odpowiedzi samowystarczalne).
+const FAQ = [
+  {
+    q: 'Jak ułożyć plan treningowy do koszykówki?',
+    a: 'Plan treningowy koszykarza powinien łączyć rzut, kozłowanie, kondycję i regenerację w stałym rytmie tygodnia. W asystencie treningu HoopConnect wybierasz od 3 do 6 dni treningowych, ' +
+      'a aplikacja rozkłada je na tydzień i codziennie podaje gotowy zestaw: jedno ćwiczenie w sesji porannej oraz sesję główną z rzutem albo kozłowaniem i ćwiczeniem na wyciszenie.',
+  },
+  {
+    q: 'Ile razy w tygodniu trenować koszykówkę?',
+    a: 'W asystencie treningu HoopConnect wybierasz 3, 4, 5 albo 6 dni treningowych w tygodniu. Przy 3 dniach trenujesz w poniedziałek, środę i piątek, przy 4 w poniedziałek, wtorek, czwartek i piątek. ' +
+      'Przy 5 i 6 dniach jeden dzień w środku tygodnia jest dniem regeneracji. Na start aplikacja poleca 4 dni, a 6 dni tylko wtedy, gdy dobrze śpisz i jesz.',
+  },
+  {
+    q: 'Jak trenować koszykówkę samemu?',
+    a: 'Do treningu indywidualnego potrzebujesz piłki, kosza i planu. Asystent treningu w HoopConnect codziennie podaje ćwiczenia z opisem krok po kroku: rzuty z trackerem skuteczności, kozłowanie i kondycję, ' +
+      'a dla starszych graczy także siłę i czytanie gry. Jeśli nie masz sprzętu do danego ćwiczenia, zamieniasz je na inne z tej samej kategorii.',
+  },
+  {
+    q: 'Jak trenować rzut w koszykówce?',
+    a: 'W HoopConnect trening rzutu to sesja z trackerem: po każdym rzucie zaznaczasz „Trafione” albo „Pudło”, a aplikacja liczy skuteczność na żywo. Domyślna sesja to 150 rzutów za trzy albo 100 dwójek lub rzutów wolnych. ' +
+      'Wyniki trafiają do statystyk osobno dla trójek, półdystansu i rzutów wolnych, więc widzisz, czy skuteczność rośnie z tygodnia na tydzień.',
+  },
+  {
+    q: 'Czy plan treningowy jest dopasowany do wieku?',
+    a: 'Tak. W HoopConnect do 14 lat plan opiera się na rzucie i kozłowaniu. W wieku 15 i 16 lat dochodzą ćwiczenia atletyczne, a od 17 lat także siła i czytanie gry. ' +
+      'Każdy gracz dostaje na dany dzień własny zestaw ćwiczeń.',
+  },
+  {
+    q: 'Jak wygląda regeneracja po treningu koszykarskim?',
+    a: 'W planie HoopConnect są dni regeneracji z trzema lekkimi ćwiczeniami oraz dni wolne. Zakładka Regeneracja ma listę dwunastu rzeczy do odhaczenia, między innymi sen, stretching, foam rolling, spacer i zimny prysznic. ' +
+      'Pięć odhaczonych pozycji daje 100% recovery score, a w dzień bez treningu jedna wystarcza, żeby podtrzymać serię.',
+  },
+  {
+    q: 'Co to jest Draft Score?',
+    a: 'Draft Score to prywatny wskaźnik formy tygodnia w HoopConnect. Rośnie z każdym odhaczonym ćwiczeniem, meczem i sesją King of the Court, a pierścień zamyka się przy 1000 punktów. W poniedziałek startuje od zera. ' +
+      'Na koniec tygodnia 10% punktów z treningu zamienia się w stałe XP, najwyżej 100 XP. Draft Score nie trafia do publicznego rankingu.',
+  },
+  {
+    q: 'Czy asystent treningu HoopConnect jest darmowy?',
+    a: 'Tak. Asystent treningu jest częścią darmowej aplikacji HoopConnect dla graczy. Działa w przeglądarce telefonu, bez instalacji ze sklepu. Do korzystania potrzebujesz konta.',
+  },
+]
+
+// ── Dane strukturalne. Base dokłada Organization, WebSite, WebPage i BreadcrumbList.
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ.map((it) => ({ '@type': 'Question', name: it.q, acceptedAnswer: { '@type': 'Answer', text: it.a } })),
+}
+const howToSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: 'Jak ułożyć tydzień treningu koszykarskiego w HoopConnect',
+  description: 'Cztery kroki od założenia konta do codziennego zestawu ćwiczeń w asystencie treningu HoopConnect.',
+  inLanguage: 'pl-PL',
+  tool: [{ '@type': 'HowToTool', name: 'Aplikacja HoopConnect w przeglądarce telefonu' }],
+  step: PLAN_STEPS.map((s, i) => ({ '@type': 'HowToStep', position: i + 1, name: s.t, text: s.d, url: `${canonical}#plan` })),
+}
+const articleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: 'Asystent treningu HoopConnect: plan treningowy koszykarza',
+  description,
+  inLanguage: 'pl-PL',
+  url: canonical,
+  mainEntityOfPage: canonical,
+  image: new URL('/brand/horizontal.png', SITE).href,
+  datePublished: '2026-09-21',
+  dateModified: new Date().toISOString().slice(0, 10),
+  author: { '@type': 'Organization', name: BRAND.name, url: SITE },
+  publisher: { '@type': 'Organization', name: BRAND.name, url: SITE, logo: { '@type': 'ImageObject', url: new URL('/brand/horizontal.png', SITE).href } },
+  about: [
+    { '@type': 'Thing', name: 'Trening koszykarski', alternateName: ['trening indywidualny koszykarza', 'plan treningowy koszykówka'] },
+    { '@type': 'Thing', name: 'Koszykówka uliczna', alternateName: ['streetbasket', 'streetball'] },
+    {
+      '@type': 'DefinedTerm', name: 'Draft Score',
+      description: 'Prywatny, tygodniowy wskaźnik formy gracza w HoopConnect. Pierścień zamyka się przy 1000 punktów, licznik zeruje się w poniedziałek.',
+    },
+    { '@type': 'SoftwareApplication', name: BRAND.name, applicationCategory: 'SportsApplication', operatingSystem: 'Web', url: APP_URL },
+  ],
+}
+const stamp = new Intl.DateTimeFormat('pl-PL', { month: 'long', year: 'numeric' }).format(new Date())
 ---
-<Base title="Asystent treningu koszykarskiego" description={description}>
-  <article>
-    <!-- NAGŁÓWEK -->
-    <section class="section post-head">
-      <div class="wrap ph-grid">
-        <div class="ph-copy">
-          <h1>Asystent<br />treningu</h1>
-          <p class="lead">
-            Część HoopConnect, która prowadzi Twój indywidualny rozwój na boisku. Codzienne ćwiczenia,
-            progresja przez siedem aren i Draft Score, czyli tygodniowy wskaźnik formy. Poniżej pokazujemy,
-            jak to działa i za co dostajesz XP.
-          </p>
-          <div class="meta">
-            <span>7 aren</span><i></i><span>XP: stałe</span><i></i><span>Draft Score: tygodniowy</span>
-          </div>
-        </div>
-
-        <!-- Animacja: zaliczasz kolejne treningi, a Draft Score rośnie. Liczba w hexie areny. -->
-        <div class="ph-anim" aria-hidden="true">
-          <div class="anim-stack">
-            <div class="anim-hexwrap">
-              <img class="anim-hex" src="/arenas/arena-2.png" alt="" />
-              <span class="anim-hexnum" id="dsNum">120</span>
-              <span class="anim-pop" id="dsPop">+50</span>
-            </div>
-            <span class="anim-lab">Draft Score</span>
-            <div class="anim-bar"><span id="dsBar"></span></div>
-            <div class="anim-window">
-              <div class="anim-list" id="trList">
-                <div class="anim-row">
-                  <span class="anim-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-                  <span class="anim-tx"><b>Rzuty za 3</b><i>Celność</i></span>
-                  <span class="anim-pkt">+50</span>
-                </div>
-                <div class="anim-row">
-                  <span class="anim-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-                  <span class="anim-tx"><b>Kozłowanie slalom</b><i>Praca nóg</i></span>
-                  <span class="anim-pkt">+50</span>
-                </div>
-                <div class="anim-row">
-                  <span class="anim-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-                  <span class="anim-tx"><b>Bieg wahadłowy</b><i>Kondycja</i></span>
-                  <span class="anim-pkt">+50</span>
-                </div>
-              </div>
-            </div>
-          </div>
+<Base title={title} description={description} schema={[articleSchema, howToSchema, faqSchema]}>
+  <!-- ═══ 1. OTWARCIE: nagłówek, a pod nim ekran „Dziś" z apki (Draft Score i plan dnia w połowie) ═══ -->
+  <section class="page-hero">
+    <div class="wrap">
+      <h1>
+        <span class="ln"><span>Plan treningowy</span></span>
+        <span class="ln"><span class="hl">pod Twój tydzień</span></span>
+      </h1>
+      <div class="hero-after">
+        <p class="lead">Asystent treningu w HoopConnect to plan treningowy dla koszykarza, który układa się pod Twój tydzień. Wybierasz, ile dni trenujesz, a aplikacja do koszykówki ulicznej codziennie daje Ci gotowy zestaw: rzut, kozłowanie, kondycję i regenerację.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+          <a class="btn btn-ghost btn-lg" href="#plan">Jak powstaje plan</a>
         </div>
       </div>
-    </section>
-
-    <!-- CZYM JEST XP (kompaktowa plakietka) -->
-    <section class="section ruled">
-      <div class="wrap">
-        <div class="xp-plaque panel cut-tr">
-          <img class="xp-plaque-ic" src="/brand/xp.png" alt="Ikona XP" width="120" height="120" />
-          <div class="xp-plaque-tx">
-            <h2>Czym jest XP</h2>
-            <p>
-              Punkty doświadczenia (XP) to główna waluta progresu w HoopConnect. Zdobywasz je przede wszystkim za
-              granie, a one odblokowują kolejne areny i budują Twoją pozycję w rankingu. Raz zdobyte, zostają na stałe.
-            </p>
-            <a href="/ranking">Pełna rozpiska XP w Rankingu <span class="arw">→</span></a>
-          </div>
+      <figure class="train-hero hero-after">
+        <div class="day-hero" role="img" aria-label="Ekran Dziś w asystencie treningu HoopConnect: Draft Score 620 z 1000 i plan dnia z czterema ćwiczeniami, dwa już zaliczone">
+          <TrainDay mode="hero">
+            <DraftRing slot="ring" uid="hero" score={620} />
+          </TrainDay>
         </div>
+        <figcaption>Przykładowy dzień treningowy w aplikacji. Imię, ćwiczenia i liczby na tej stronie są poglądowe.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ═══ 2. W SKRÓCIE ═══ -->
+  <section class="ch brief" id="w-skrocie">
+    <div class="wrap">
+      <h2 class="rv">W skrócie</h2>
+      <dl class="facts rv">
+        {BRIEF.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+      </dl>
+      <nav class="toc rv" aria-label="Na tej stronie">
+        {TOC.map((l) => <a class="inline-link" href={l.href}>{l.label}</a>)}
+      </nav>
+    </div>
+  </section>
+
+  <!-- ═══ 3. PLAN TYGODNIA: przełącznik liczby dni z apki i rozkład tygodnia ═══ -->
+  <section class="ch" id="plan">
+    <div class="wrap split">
+      <div class="split-copy rv rv-seq">
+        <h2><span class="ln"><span>Tydzień układa</span></span> <span class="ln"><span>się sam</span></span></h2>
+        <p class="lead">Podajesz wiek i liczbę dni treningowych. Aplikacja rozkłada trening, regenerację i wolne na cały tydzień, a zestaw na dziś dobiera pod Ciebie.</p>
+        <dl class="facts">
+          {PLAN_STEPS.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+        </dl>
       </div>
-    </section>
+      <figure class="week-fig rv rv-d1">
+        <TrainWeek />
+        <figcaption>
+          <dl class="facts week-list">
+            {SCHEDULES.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+    <div class="wrap">
+      <p class="after-note rv">Do 14 lat plan stoi na rzucie i kozłowaniu. W wieku 15 i 16 lat dochodzą ćwiczenia atletyczne, od 17 lat siła i czytanie gry. Zestaw na dany dzień jest tylko Twój: po odświeżeniu zobaczysz to samo, a kolega z boiska dostanie inny. Dwa pierwsze dni po założeniu konta są zawsze treningowe.</p>
+    </div>
+  </section>
 
-    <!-- TRENING CODZIENNY -->
-    <section class="section ruled">
-      <div class="wrap">
-        <div class="tc-grid">
-          <div class="tc-copy">
-            <h2>Trening codzienny,<br />ułożony pod Ciebie</h2>
-            <p class="lead">
-              Przy zakładaniu profilu wybierasz, ile dni w tygodniu chcesz trenować. Resztą zajmuje się aplikacja:
-              każdego dnia dostajesz gotowy zestaw ćwiczeń dopasowany specjalnie pod Ciebie.
-            </p>
-            <ul class="ticks">
-              <li>Wybierasz liczbę dni treningowych i zmieniasz ją, kiedy chcesz.</li>
-              <li>Zestaw na każdy dzień układa się sam, pod Twój poziom i cel.</li>
-              <li>Dni dzielą się na treningowe, odpoczynek i wolne, plan reguluje się sam.</li>
-            </ul>
-          </div>
-          <div class="tc-day panel cut-tr">
-            <div class="tc-day-head"><span class="tc-day-t">Dziś · Środa</span><span class="tc-prog">2 / 3</span></div>
-            <div class="tc-row done">
-              <span class="anim-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-              <span class="tc-tx"><b>Rzuty za 3</b><i>Celność</i></span><span class="tc-pts">+2</span>
-            </div>
-            <div class="tc-row done">
-              <span class="anim-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-              <span class="tc-tx"><b>Kozłowanie slalom</b><i>Praca nóg</i></span><span class="tc-pts">+2</span>
-            </div>
-            <div class="tc-row">
-              <span class="anim-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-              <span class="tc-tx"><b>Trucht 20 min</b><i>Kondycja</i></span><span class="tc-pts">+1</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="week" role="img" aria-label="Przykładowy rytm tygodnia: cztery dni treningowe, odpoczynek i dni wolne">
-          <div class="day"><span class="dd">Pn</span><span class="dc t">Trening</span></div>
-          <div class="day"><span class="dd">Wt</span><span class="dc t">Trening</span></div>
-          <div class="day"><span class="dd">Śr</span><span class="dc r">Odpoczynek</span></div>
-          <div class="day"><span class="dd">Cz</span><span class="dc t">Trening</span></div>
-          <div class="day"><span class="dd">Pt</span><span class="dc t">Trening</span></div>
-          <div class="day"><span class="dd">So</span><span class="dc o">Wolne</span></div>
-          <div class="day"><span class="dd">Nd</span><span class="dc r">Odpoczynek</span></div>
-        </div>
-        <div class="week-legend">
-          <span><i class="lg t"></i>Trening</span>
-          <span><i class="lg r"></i>Odpoczynek</span>
-          <span><i class="lg o"></i>Wolne</span>
-        </div>
-
-        <div class="rest">
-          <div class="rest-copy">
-            <h3>A dzień odpoczynku?</h3>
-            <p>To nie strata, tylko część planu. Aplikacja podpowiada lekkie aktywności regeneracyjne, a odpoczynek też podtrzymuje Twoją serię. Wybierasz, co pasuje na dziś:</p>
-          </div>
-          <div class="marquee">
-            <div class="marquee-track">
-              {[...REST, ...REST].map((a) => (
-                <span class="rest-chip"><b>{a.name}</b><span>{a.min}</span></span>
-              ))}
-            </div>
-          </div>
-        </div>
+  <!-- ═══ 4. DZIEŃ TRENINGOWY: przyklejony plan dnia, krok odhacza kolejne ćwiczenia ═══ -->
+  <section class="ch" id="dzien">
+    <div class="wrap">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Dzień treningowy</span></span> <span class="ln"><span>ma dwie sesje</span></span></h2>
+        <p class="lead">Rano krótka sesja na rozruch, później sesja główna z rzutem albo kozłowaniem i wyciszeniem na koniec. Każde ćwiczenie odhaczasz osobno.</p>
       </div>
-    </section>
-
-    <!-- TRENING / XP -->
-    <section class="section ruled">
-      <div class="wrap post-body">
-        <div class="prose">
-          <h2>Jak zdobywasz XP w treningu</h2>
-          <p>
-            Trening w HoopConnect robisz indywidualnie: wykonujesz ćwiczenia z puli treningowej, a aplikacja
-            zapisuje Twoją aktywność. Na koniec tygodnia część zebranej puli zamienia się w <strong>stałe XP</strong>.
-          </p>
-          <p>
-            Ważna zasada: <strong>trening solo ma sufit 100 XP na tydzień</strong>. To celowe, bo realna gra z ludźmi
-            ma znaczyć więcej niż samotny grind. Tydzień treningu to mniej więcej tyle, co jeden do dwóch wygranych meczów.
-          </p>
-        </div>
-        <aside class="callout callout-xp panel cut-tr">
-          <h4>W skrócie</h4>
-          <ul>
-            <li><b>Trening (tydzień)</b><span class="v">do 100 <img class="xpi" src="/brand/xp.png" alt="XP" /></span></li>
-            <li><b>Wygrany mecz</b><span class="v">+75 <img class="xpi" src="/brand/xp.png" alt="XP" /></span></li>
-            <li><b>Przegrany mecz</b><span class="v">+40 <img class="xpi" src="/brand/xp.png" alt="XP" /></span></li>
-          </ul>
-          <p class="fine">Realna gra ponad trening solo. King of the Court rozliczamy osobno, wg miejsca. Pełna tabela XP w <a href="/ranking">Rankingu</a>.</p>
-        </aside>
-      </div>
-    </section>
-
-    <!-- ARENY (karuzela po 3) -->
-    <section class="section ruled">
-      <div class="wrap">
-        <div class="arenas-head">
-          <div>
-            <h2>Siedem aren,<br />od Rozgrzewki po Seraphim</h2>
-            <p class="lead">Każdy próg XP odblokowuje kolejną arenę. To Twoja tożsamość w HoopConnect, widoczna na karcie gracza i rosnąca razem z Tobą.</p>
-          </div>
-          <div class="car-nav">
-            <button class="car-btn" data-dir="-1" aria-label="Poprzednie areny"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-            <button class="car-btn" data-dir="1" aria-label="Następne areny"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+      <div class="scene" data-scene="dzien" data-step="1">
+        <div class="scene-visual">
+          <div class="day-scene" aria-hidden="true">
+            <TrainDay mode="scene" />
           </div>
         </div>
-
-        <div class="car-track" id="arenaTrack">
-          {ARENAS.map((a) => (
-            <article class="arena-card panel">
-              <div class="ac-badge">
-                {a.img
-                  ? <img src={a.img} width="260" height="260" alt={`Arena ${a.name}`} loading="lazy" />
-                  : <img src="/logo-crest.svg" width="86" height="86" alt="" class="crest" />}
-              </div>
-              <span class="ac-no">Arena {a.n}</span>
-              <h3>{a.name}</h3>
-              <span class="ac-xp">{a.xp.toLocaleString('pl-PL')} <img class="xpi" src="/brand/xp.png" alt="XP" /></span>
-              <p class="ac-note">{a.note}</p>
-            </article>
+        <ol class="steps">
+          {DAY_STEPS.map((s, i) => (
+            <li class:list={['step', { on: i === 0 }]} data-i={i + 1}>
+              <h3>{s.t}</h3>
+              <p>{s.d}</p>
+            </li>
           ))}
-          <article class="arena-card soon panel">
-            <div class="soon-orb"><span></span></div>
-            <h3>Kolejne areny</h3>
-            <span class="ac-xp">Wkrótce</span>
-            <p class="ac-note">Świat HC rośnie. Nowe areny i szczyty pojawią się wraz z kolejnymi sezonami.</p>
-          </article>
-        </div>
-
-        <div class="prose arenas-more">
-          <p>
-            Awans działa prosto: <strong>zbierasz XP, przekraczasz próg, odblokowujesz arenę</strong>. Nowa arena
-            od razu ląduje na Twojej karcie gracza, a przy okazji <strong>zeruje Draft Score</strong>, więc każdy
-            poziom to świeży start formy. Im wyżej, tym mocniejszy dowód, że regularnie wychodzisz na boisko.
-            Szczyt to Seraphim, a kolejne areny są już w drodze.
-          </p>
-        </div>
+        </ol>
       </div>
-    </section>
+      <p class="after-note rv">W dzień regeneracji zamiast dwóch sesji dostajesz trzy lżejsze ćwiczenia. Grasz w drużynie, której trener korzysta z HoopConnect? Trening drużynowy z jego harmonogramu pojawia się nad Twoim planem.</p>
+    </div>
+  </section>
 
-    <!-- DRAFT SCORE -->
-    <section class="section ruled">
-      <div class="wrap post-body">
-        <div class="prose">
-          <h2>Draft Score, Twoja aktualna forma</h2>
-          <p>
-            Obok stałego XP działa <strong>Draft Score</strong>: tygodniowy licznik formy. Zbierasz go za te same
-            rzeczy co XP. Wygrany mecz to <strong>+50</strong>, przegrany <strong>+20</strong>, a King of the Court
-            dokłada punkty zależnie od miejsca drużyny (pełna rozpiska w <a href="/ranking">Rankingu</a>).
-          </p>
-          <p>
-            Draft Score <strong>resetuje się co poniedziałek</strong> oraz po awansie na nową arenę. Dzięki temu każdy
-            tydzień to nowy start i nie musisz odrabiać zaległości sprzed miesięcy.
-          </p>
-          <p>
-            Na koniec tygodnia <strong>10% końcowego Draft Score zamienia się w stałe XP</strong>, więc Twoja forma
-            z tego tygodnia realnie popycha Cię w stronę kolejnej areny. Sam Draft Score jest prywatny i
-            <strong> nie trafia do publicznego rankingu</strong>.
-          </p>
-          <p class="tldr">
-            Najprościej: <strong>XP pokazuje drogę, którą masz już za sobą</strong>, a
-            <strong> Draft Score pokazuje, w jakiej formie jesteś teraz</strong>.
-          </p>
+  <!-- ═══ 5. KARTA ĆWICZENIA: rozwinięta karta z apki ═══ -->
+  <section class="ch" id="karta">
+    <div class="wrap split">
+      <div class="split-copy rv rv-seq">
+        <h2><span class="ln"><span>Karta mówi,</span></span> <span class="ln"><span>co robić</span></span></h2>
+        <p class="lead">Każde ćwiczenie to karta: po co je robisz, jak je wykonać krok po kroku i ile jest warte. Rozwijasz ją jednym dotknięciem.</p>
+        <dl class="facts">
+          {CARD_FACTS.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+        </dl>
+      </div>
+      <figure class="card-fig rv rv-d1" role="img" aria-label="Rozwinięta karta ćwiczenia Kozłowanie między pachołkami: 2PKT razy 40, trudność 3 z 5, opis, cztery kroki, przycisk Ukończ ćwiczenie i link zamiany ćwiczenia">
+        <TrainCard title={CARD.title} pts={2} mult={40} diff={3} open desc={CARD.desc} steps={CARD.steps} swap="Nie mam (pachołki), zmień ćwiczenie" />
+      </figure>
+    </div>
+  </section>
+
+  <!-- ═══ 6. TRENING RZUTU: tracker z apki, przyciski działają ═══ -->
+  <section class="ch" id="rzut">
+    <div class="wrap split">
+      <div class="split-copy rv rv-seq">
+        <h2><span class="ln"><span>Trening rzutu</span></span> <span class="ln"><span>co do rzutu</span></span></h2>
+        <p class="lead">Ćwiczenie rzutowe otwiera tracker. Po każdym rzucie klikasz „Trafione” albo „Pudło”, a aplikacja liczy skuteczność na żywo i wie, ile zostało do końca.</p>
+        <dl class="facts">
+          {SHOT_FACTS.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+        </dl>
+      </div>
+      <figure class="shots-fig rv rv-d1">
+        <TrainShots />
+        <figcaption>Kliknij „Trafione” albo „Pudło”. Tak liczy tracker w aplikacji.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ═══ 7. REGENERACJA: zakładka z apki, kafelki działają ═══ -->
+  <section class="ch" id="regeneracja">
+    <div class="wrap split">
+      <div class="split-copy rv rv-seq">
+        <h2><span class="ln"><span>Regeneracja</span></span> <span class="ln"><span>to też trening</span></span></h2>
+        <p class="lead">W planie są dwa rodzaje lżejszych dni. Dzień regeneracji ma trzy własne ćwiczenia, a dzień wolny odsyła Cię do zakładki Regeneracja z listą rzeczy do odhaczenia.</p>
+        <dl class="facts">
+          {REST_FACTS.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+        </dl>
+      </div>
+      <figure class="rest-fig rv rv-d1">
+        <TrainRecovery />
+        <figcaption>Odhacz kilka pozycji. Pięć daje 100% recovery score.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ═══ 8. DRAFT SCORE: pierścień ═══ -->
+  <section class="ch" id="draft-score">
+    <div class="wrap split">
+      <div class="split-copy rv rv-seq">
+        <h2><span class="ln"><span>Draft Score:</span></span> <span class="ln"><span>forma tego tygodnia</span></span></h2>
+        <p class="lead">Każde odhaczone ćwiczenie dokłada punkty do Draft Score. To Twój prywatny wskaźnik formy: widzisz go tylko Ty i nie trafia do publicznego rankingu.</p>
+        <dl class="facts">
+          {DS_FACTS.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+        </dl>
+        <a class="inline-link" href="/ranking#draft-score">Czym różni się XP od Draft Score<span class="arw">→</span></a>
+      </div>
+      <div class="ds-fig">
+        <DraftRing uid="ds" score={620} />
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 9. XP: liczby z aplikacji ═══ -->
+  <section class="ch ch-center" id="xp">
+    <div class="wrap">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Ile XP daje trening?</span></span></h2>
+        <p class="lead">Na koniec tygodnia 10% punktów z treningu zamienia się w stałe XP, najwyżej 100 XP. XP nie spada i odblokowuje kolejne areny.</p>
+      </div>
+      <table class="xpt rv">
+        <caption>Skąd bierze się XP <small>liczby z aplikacji</small></caption>
+        <thead><tr><th scope="col">Za co</th><th scope="col" class="c-xp"><img src="/brand/xp-96.webp" width="18" height="18" alt="" loading="lazy" decoding="async" />XP</th></tr></thead>
+        <tbody>
+          {XP_ROWS.map((r) => <tr><th scope="row">{r.label}</th><td class="c-xp">{r.xp}</td></tr>)}
+        </tbody>
+      </table>
+      <div class="xp-notes rv">
+        <p>Tydzień treningu to mniej więcej jeden do dwóch wygranych meczów. Tak ma być: boisko liczy się bardziej.</p>
+        <p>Po poniedziałku, przy pierwszym wejściu, aplikacja pokazuje raport tygodniowy z XP za ostatni tydzień.</p>
+      </div>
+      <div class="link-row rv">
+        <a class="inline-link" href="/ranking#xp">Pełna rozpiska XP w rankingu<span class="arw">→</span></a>
+        <a class="inline-link" href="/klub">Mecze i King of the Court w zakładce Klub<span class="arw">→</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 10. STATYSTYKI I KALENDARZ: przyklejone ekrany z apki, krok 3 zmienia statystyki na kalendarz ═══ -->
+  <section class="ch" id="statystyki">
+    <div class="wrap">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Statystyki pamiętają</span></span> <span class="ln"><span>każdy rzut</span></span></h2>
+        <p class="lead">Zakładka Statystyki zbiera wszystkie sesje rzutowe, a kalendarz pokazuje miesiąc dzień po dniu. Widzisz, czy forma rośnie.</p>
+      </div>
+      <div class="scene flip" data-scene="statystyki" data-step="1">
+        <div class="scene-visual">
+          <div class="sc-wrap" aria-hidden="true">
+            <div class="sc-a"><TrainStats streak={10} /></div>
+            <div class="sc-b"><TrainCalendar /></div>
+          </div>
         </div>
-        <aside class="callout callout-draft panel cut-tr">
-          <h4>Draft Score</h4>
-          <ul>
-            <li><b>Wygrany mecz</b><span>+50</span></li>
-            <li><b>Przegrany mecz</b><span>+20</span></li>
-          </ul>
-          <p class="fine">Reset co poniedziałek. <strong>10% sumy zamienia się w stałe XP</strong>. Prywatny, poza rankingiem. KotC wg miejsca, patrz <a href="/ranking">Ranking</a>.</p>
-        </aside>
+        <ol class="steps">
+          {STATS_STEPS.map((s, i) => (
+            <li class:list={['step', { on: i === 0 }]} data-i={i + 1}>
+              <h3>{s.t}</h3>
+              <p>{s.d}</p>
+            </li>
+          ))}
+        </ol>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- CTA -->
-    <section class="section ruled">
-      <div class="wrap cta-band">
-        <h2>Zacznij zbierać XP</h2>
-        <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+  <!-- ═══ 11. SERIA I OSIĄGNIĘCIA ═══ -->
+  <section class="ch" id="seria">
+    <div class="wrap">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Seria rośnie</span></span> <span class="ln"><span>każdego dnia</span></span></h2>
+        <p class="lead">Seria to liczba dni z rzędu, w których zrobiłeś cokolwiek z planu. Wystarczy jedna rzecz dziennie. Opuszczony dzień zaczyna liczenie od nowa.</p>
       </div>
-    </section>
-  </article>
+      <dl class="facts wide rv">
+        {STREAK_FACTS.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+      </dl>
+    </div>
+  </section>
+
+  <!-- ═══ 12. PYTANIA ═══ -->
+  <section class="ch" id="pytania">
+    <div class="wrap faq-grid">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Pytania o trening</span></span> <span class="ln"><span>koszykarski</span></span></h2>
+        <p class="lead">Krótkie odpowiedzi o planie, rzutach, regeneracji i Draft Score. Reszta jest w pełnym <a class="inline-link lower" href="/faq">FAQ</a>.</p>
+      </div>
+      <div class="qa rv rv-d1">
+        {FAQ.map((it) => (
+          <details class="qa-item">
+            <summary><span class="q">{it.q}</span><span class="chev" aria-hidden="true"></span></summary>
+            <p>{it.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 13. ZAMKNIĘCIE ═══ -->
+  <section class="ch ch-last ch-center" id="zagraj">
+    <div class="wrap">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Dzisiejszy trening</span></span> <span class="ln"><span>już czeka</span></span></h2>
+        <p class="lead">Aplikacja działa w przeglądarce telefonu, bez sklepu i bez instalacji. Podajesz wiek i liczbę dni, a pierwszy zestaw ćwiczeń masz od razu.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+          <a class="btn btn-ghost btn-lg" href="/klub">Znajdź mecz w zakładce Klub</a>
+        </div>
+        <nav class="link-row" aria-label="Zobacz też">
+          <a class="inline-link" href="/">Aplikacja do koszykówki ulicznej</a>
+          <a class="inline-link" href="/klub">Mecze i King of the Court</a>
+          <a class="inline-link" href="/ranking">Ranking graczy i XP</a>
+          <a class="inline-link" href="/faq">Wszystkie pytania</a>
+        </nav>
+        <p class="end-sig">Mniej klikania, więcej grania.</p>
+        <p class="end-note">Opis zgodny z aplikacją. Stan na {stamp}.</p>
+      </div>
+    </div>
+  </section>
 </Base>
 
+<style>
+  /* Wspólny system rozdziałów (.page-hero, .ch, .facts, .scene, .qa…) jest w global.css; tu tylko to, co własne strony. */
+  section[id] { scroll-margin-top: 84px; }
+  figure figcaption { margin-top: 18px; max-width: 46ch; font-size: 13px; line-height: 1.5; color: var(--text-3); text-align: center; }
+
+  /* 1. Otwarcie: ekran „Dziś" z apki (TrainDay.astro) z pierścieniem Draft Score w środku */
+  .train-hero { position: relative; display: grid; justify-items: center; margin-top: clamp(40px, 5vw, 64px); }
+  /* plama światła pod obiektem, rozpływa się w tło strony */
+  .train-hero::before { content: ''; position: absolute; z-index: -1; inset: -4% 0 -8%; pointer-events: none;
+    background: radial-gradient(ellipse 46% 56% at 50% 46%, rgba(24,40,74,0.95) 0%, rgba(21,33,58,0.6) 42%, rgba(14,15,18,0) 74%); }
+  .day-hero { --trs: 1.1; max-width: 100%; }
+  /* pierścień (DraftRing.astro) pomniejszony do ekranu apki */
+  .day-hero :global(.ring-wrap .ring) { width: 200px; }
+  .day-hero :global(.ring-wrap .ring .ring-tx b) { font-size: 56px; }
+  @media (max-width: 699px) {
+    .day-hero { --trs: 0.92; }
+    .day-hero :global(.ring-wrap .ring) { width: 172px; }
+    .day-hero :global(.ring-wrap .ring .ring-tx b) { font-size: 48px; }
+  }
+
+  /* 2. W skrócie: fakty w dwóch kolumnach, bez pudełek; pod spodem skróty do rozdziałów */
+  .brief { padding-top: clamp(72px, 9vw, 128px); }
+  .brief h2 { font-size: clamp(22px, 2.4vw, 30px); letter-spacing: 1.2px; color: var(--text-2); margin-bottom: 26px; }
+  .brief .facts, .facts.wide { max-width: none; gap: 20px clamp(32px, 6vw, 88px); margin-bottom: 0; }
+  @media (min-width: 860px) { .brief .facts, .facts.wide { grid-template-columns: 1fr 1fr; } }
+  .toc { margin-top: clamp(32px, 4vw, 48px); display: flex; flex-wrap: wrap; gap: 12px 28px; }
+  .link-row { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 14px 28px; }
+  .ch-center .link-row { justify-content: center; }
+  .after-note { margin-top: clamp(28px, 4vw, 48px); max-width: 68ch; font-size: clamp(16px, 1.3vw, 18px); line-height: 1.6; color: var(--text-2); }
+
+  /* 3. Plan tygodnia: rozkład (TrainWeek.astro) dopasowany do szerokości kolumny, pod spodem cztery rozkłady słowami */
+  .week-fig { --trs: 1.45; --tw-fit: calc((100vw - 2 * var(--gutter)) / 33.6); width: 100%; display: grid; justify-items: center; }
+  @supports (width: 1cqw) {
+    .week-fig { container-type: inline-size; --tw-fit: calc(100cqw / 33.6); }
+  }
+  .week-fig figcaption { margin-top: 30px; max-width: none; font-size: inherit; text-align: left; }
+  .week-list { margin-bottom: 0; }
+  .week-list > div { grid-template-columns: minmax(70px, 0.2fr) 1fr; }
+
+  /* 4. Dzień treningowy: plan dnia (TrainDay.astro). Na telefonie zostają same karty, bez drugiego ćwiczenia głównego. */
+  .day-scene { --trs: 1; max-width: 100%; }
+  @media (max-width: 899px) {
+    .day-scene { --trs: 0.88; }
+    .day-scene :global(.td-side), .day-scene :global(.td-slot), .day-scene :global(.tc.n3) { display: none; }
+    .day-scene :global(.td) { padding: 1.6em 1.6em 1.8em; }
+  }
+
+  /* 5. Karta ćwiczenia (TrainCard.astro), 6. tracker (TrainShots.astro), 7. regeneracja (TrainRecovery.astro) */
+  .card-fig, .shots-fig, .rest-fig { --trs: 1.1; display: grid; justify-items: center; }
+  .card-fig { width: min(100%, 430px); justify-self: center; }
+  .card-fig :global(.tc) { width: 100%; box-shadow: 0 30px 70px rgba(0,0,0,0.55); }
+  @media (max-width: 699px) { .card-fig, .shots-fig, .rest-fig { --trs: 0.92; } }
+
+  /* 8. Draft Score: pierścień po prawej */
+  .ds-fig { display: grid; place-items: center; }
+
+  /* 9. Tabela XP: wyniki jak na tablicy, linie tylko między wierszami (ten sam wzór, co na /ranking i /klub) */
+  .xpt { width: 100%; max-width: 720px; margin-inline: auto; border-collapse: collapse; text-align: left; }
+  .xpt caption { text-align: left; font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+    font-size: clamp(24px, 2.8vw, 34px); line-height: 1.1; color: var(--text); padding-bottom: 10px; }
+  .xpt caption small { display: block; margin-top: 6px; font-family: var(--body); font-weight: 400; text-transform: none; letter-spacing: 0;
+    font-size: 14px; line-height: 1.4; color: var(--text-3); }
+  .xpt th, .xpt td { padding: 15px 0; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+  .xpt thead th { padding: 8px 0; font-size: 11px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: var(--text-3); text-align: left; }
+  .xpt tbody th { font-weight: 400; text-align: left; color: var(--text-2); font-size: clamp(16px, 1.4vw, 18px); }
+  .xpt .c-xp { text-align: right; width: 40%; white-space: nowrap; }
+  .xpt thead .c-xp img { display: inline-block; width: 18px; height: 18px; vertical-align: -4px; margin-right: 6px; }
+  .xpt td.c-xp { font-family: var(--display); font-weight: 700; font-size: clamp(24px, 3vw, 38px); line-height: 1; color: var(--accent-hi); font-variant-numeric: tabular-nums; }
+  .xpt tbody tr:last-child th, .xpt tbody tr:last-child td { border-bottom: 0; }
+  .xp-notes { margin: clamp(28px, 4vw, 44px) auto 0; max-width: 60ch; display: grid; gap: 10px; font-size: clamp(16px, 1.3vw, 18px); line-height: 1.6; color: var(--text-2); }
+
+  /* 10. Statystyki i kalendarz: dwa ekrany w jednym miejscu, krok 3 zamienia je przez opacity i transform */
+  .sc-wrap { --trs: 1.05; width: 100%; display: grid; place-items: center; }
+  .sc-wrap > * { grid-area: 1 / 1; max-width: 100%; transition: opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+  .sc-b { opacity: 0; transform: translateY(18px); }
+  .scene[data-step="3"] .sc-a { opacity: 0; transform: translateY(-18px); }
+  .scene[data-step="3"] .sc-b { opacity: 1; transform: none; }
+  @media (max-width: 899px) {
+    .sc-wrap { --trs: 0.82; }
+    .sc-wrap :global(.st-top), .sc-wrap :global(.st-filter), .sc-wrap :global(.tk-top) { display: none; }
+  }
+
+  /* 13. Zamknięcie */
+  .end-sig { margin-top: 34px; font-family: var(--display); font-weight: 700; font-size: 14px; letter-spacing: 2.2px; text-transform: uppercase; color: var(--text-3); }
+  .end-note { margin-top: 10px; font-size: 13px; color: var(--text-3); }
+</style>
+
 <script>
-  // Karuzela aren — strzałki przewijają o „stronę" (tyle kart, ile widać).
-  const track = document.getElementById('arenaTrack')
-  if (track) {
-    const perPage = () => {
-      const card = track.querySelector('.arena-card')
-      if (!card) return 300
-      const cw = card.getBoundingClientRect().width + 16
-      return cw * Math.max(1, Math.round(track.clientWidth / cw))
-    }
-    document.querySelectorAll('.car-btn').forEach((b) => {
-      b.addEventListener('click', () => {
-        track.scrollBy({ left: Number(b.getAttribute('data-dir')) * perPage(), behavior: 'smooth' })
+  import { initCounters, initScenes, prefersReducedMotion } from '../scripts/motion'
+
+  // Liczniki (Draft Score w pierścieniach) i sceny sticky (Dzień treningowy, Statystyki). Stany scen robi CSS po data-step.
+  initCounters()
+  initScenes()
+
+  // Plan tygodnia: przycisk liczby dni przełącza rozkład (TrainWeek.astro).
+  document.querySelectorAll<HTMLElement>('.tw').forEach((tw) => {
+    const btns = Array.from(tw.querySelectorAll<HTMLButtonElement>('.tw-n'))
+    const rows = Array.from(tw.querySelectorAll<HTMLElement>('.tw-row'))
+    btns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const n = btn.dataset.n ?? '4'
+        tw.dataset.days = n
+        btns.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)))
+        rows.forEach((r) => { if (r.dataset.for === n) r.removeAttribute('aria-hidden'); else r.setAttribute('aria-hidden', 'true') })
       })
     })
-  }
+  })
 
-  // Animacja: zaliczasz kolejne treningi (check), lista zjeżdża na następny, Draft Score rośnie.
-  // Bez cofania i bez pętli — gra raz, gdy wejdzie w widok.
-  const list = document.getElementById('trList')
-  const num = document.getElementById('dsNum')
-  const bar = document.getElementById('dsBar')
-  const pop = document.getElementById('dsPop')
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (list && num && bar && pop) {
-    const rows = Array.from(list.children)
-    const wait = (ms) => new Promise((r) => setTimeout(r, ms))
-    let ds = 120
-    const bars = [40, 52, 64, 76]
-
-    const finalState = () => {
-      rows.forEach((r) => r.classList.add('done'))
-      num.textContent = String(120 + rows.length * 50)
-      bar.style.width = bars[rows.length] + '%'
-      list.style.transform = `translateY(${-(rows.length - 1) * (rows[0].offsetHeight + 12)}px)`
+  // Tracker rzutów: każdy klik dopisuje rzut do historii i przelicza liczby, jak w apce (TrainShots.astro).
+  document.querySelectorAll<HTMLElement>('.ts').forEach((ts) => {
+    const target = Number(ts.dataset.target) || 150
+    const hist = (ts.dataset.history ?? '').split('').map((c) => c === '1')
+    const el = (k: string) => ts.querySelector<HTMLElement>(`[data-ts="${k}"]`)
+    const undo = ts.querySelector<HTMLButtonElement>('[data-ts="undo"]')
+    const render = () => {
+      const att = hist.length
+      const made = hist.filter(Boolean).length
+      const set = (k: string, v: number) => { const n = el(k); if (n) n.textContent = String(v) }
+      set('att', att); set('made', made); set('miss', att - made); set('left', target - att)
+      set('pct', att ? Math.round((made / att) * 100) : 0)
+      el('bar')?.style.setProperty('--p', String(Math.min(att / target, 1)))
+      const recent = hist.slice(-12)
+      el('dots')?.replaceChildren(...recent.map((m, i) => {
+        const dot = document.createElement('span')
+        dot.className = m ? 'm' : 'x'
+        dot.style.opacity = (0.35 + (i / recent.length) * 0.65).toFixed(2)
+        return dot
+      }))
+      if (undo) undo.disabled = att === 0
     }
+    ts.querySelectorAll<HTMLButtonElement>('[data-shot]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (hist.length >= target) return
+        hist.push(btn.dataset.shot === '1')
+        render()
+        if (prefersReducedMotion()) return
+        btn.classList.remove('hit'); void btn.offsetWidth; btn.classList.add('hit')
+      })
+    })
+    undo?.addEventListener('click', () => { hist.pop(); render() })
+  })
 
-    const play = async () => {
-      const step = rows[0].offsetHeight + 12
-      for (let i = 0; i < rows.length; i++) {
-        await wait(750)
-        rows[i].classList.add('done')
-        ds += 50; num.textContent = String(ds); bar.style.width = bars[i + 1] + '%'
-        pop.classList.add('show')
-        await wait(900); pop.classList.remove('show')
-        if (i < rows.length - 1) { await wait(350); list.style.transform = `translateY(${-(i + 1) * step}px)` }
-        await wait(500)
-      }
-    }
-
-    if (reduce) { finalState() }
-    else {
-      const target = document.querySelector('.anim-stack') || list
-      let started = false
-      const start = () => { if (!started) { started = true; play() } }
-      if ('IntersectionObserver' in window) {
-        const io = new IntersectionObserver((entries) => {
-          entries.forEach((e) => { if (e.isIntersecting) { start(); io.disconnect() } })
-        }, { threshold: 0.25 })
-        io.observe(target)
-      } else { start() }
-      // Awaryjnie: gdyby obserwator nie zadziałał, odpal po chwili.
-      setTimeout(start, 1200)
-    }
-  }
+  // Regeneracja: kafelek odhacza aktywność, wynik to odhaczone / 5 (TrainRecovery.astro).
+  document.querySelectorAll<HTMLElement>('.tr').forEach((tr) => {
+    const tiles = Array.from(tr.querySelectorAll<HTMLButtonElement>('.tr-tile'))
+    const score = tr.querySelector<HTMLElement>('[data-tr="score"]')
+    const bar = tr.querySelector<HTMLElement>('[data-tr="bar"]')
+    const elite = tr.querySelector<HTMLElement>('[data-tr="elite"]')
+    tiles.forEach((tile) => {
+      tile.addEventListener('click', () => {
+        tile.setAttribute('aria-pressed', String(tile.getAttribute('aria-pressed') !== 'true'))
+        const done = tiles.filter((t) => t.getAttribute('aria-pressed') === 'true').length
+        const pct = Math.round((done / 5) * 100)
+        if (score) score.textContent = String(pct)
+        bar?.style.setProperty('--p', String(Math.min(pct, 100) / 100))
+        tr.dataset.level = pct >= 80 ? 'hi' : pct >= 50 ? 'mid' : 'lo'
+        if (elite) elite.hidden = done < 5
+      })
+    })
+  })
 </script>
-
-<style>
-  /* Nagłówek — dwie kolumny: tekst + animacja */
-  .ph-grid { display: grid; gap: clamp(32px, 5vw, 56px); align-items: center; }
-  .ph-copy h1 { margin: 0 0 22px; }
-  .ph-copy .lead { margin-bottom: 22px; }
-  .meta { display: flex; align-items: center; gap: 14px; font-family: var(--display); font-weight: 600;
-    text-transform: uppercase; letter-spacing: 1.2px; font-size: 12px; color: var(--text-3); }
-  .meta i { width: 4px; height: 4px; background: var(--line-3); border-radius: 50%; }
-  @media (min-width: 940px) { .ph-grid { grid-template-columns: 1fr 1fr; } }
-
-  /* Animacja: hexagon areny z liczbą Draft Score, pasek i lista treningów (bez ramki) */
-  .ph-anim { display: flex; justify-content: center; }
-  .anim-stack { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px;
-    width: 100%; max-width: 380px; }
-  .anim-hexwrap { position: relative; width: min(280px, 66vw); aspect-ratio: 1; display: grid; place-items: center; }
-  .anim-hex { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 18px 40px rgba(0,0,0,0.55)); }
-  .anim-hexnum { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display);
-    font-weight: 700; font-size: clamp(42px, 10vw, 54px); color: #fff; font-variant-numeric: tabular-nums;
-    text-shadow: 0 2px 18px rgba(0,0,0,0.7); letter-spacing: 0.5px; }
-  .anim-pop { position: absolute; top: 6%; left: 50%; transform: translate(-50%, 10px); font-family: var(--display);
-    font-weight: 700; font-size: 18px; color: #37E29A; text-shadow: 0 2px 12px rgba(0,0,0,0.6);
-    opacity: 0; transition: opacity .35s ease, transform .6s ease; pointer-events: none; }
-  .anim-pop.show { opacity: 1; transform: translate(-50%, -18px); }
-  .anim-lab { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: 2.2px;
-    font-size: 12px; color: #FF9E52; }
-  .anim-bar { width: 240px; max-width: 86%; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
-  .anim-bar span { display: block; height: 100%; width: 40%; border-radius: 999px;
-    background: linear-gradient(90deg, #E4702A, #FF9E52); transition: width .9s cubic-bezier(.3,.8,.3,1); }
-
-  /* Okno listy treningów — widoczny jeden, lista zjeżdża na kolejny */
-  .anim-window { width: 100%; max-width: 340px; height: 74px; overflow: hidden; }
-  .anim-list { display: flex; flex-direction: column; gap: 12px; transition: transform .55s cubic-bezier(.3,.8,.3,1); }
-  .anim-row { min-height: 74px; display: flex; align-items: center; gap: 14px; padding: 0 18px;
-    border-radius: var(--r); border: 1px solid var(--line-2); background: var(--panel);
-    transition: background .35s, border-color .35s; }
-  .anim-row.done { background: rgba(55,226,154,0.10); border-color: rgba(55,226,154,0.34); }
-  .anim-check { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); color: transparent;
-    transition: background .35s, border-color .35s, color .35s; }
-  .anim-check svg { width: 15px; height: 15px; }
-  .anim-row.done .anim-check { background: linear-gradient(135deg, #37E29A, #16A06A); border-color: rgba(55,226,154,0.6); color: #05221A; }
-  .anim-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
-  .anim-tx b { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
-    font-size: 16px; color: var(--text); }
-  .anim-row.done .anim-tx b { color: var(--text-2); text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.25); }
-  .anim-tx i { font-style: normal; font-size: 12px; color: var(--text-3); }
-  .anim-pkt { flex: none; font-family: var(--display); font-weight: 700; font-size: 17px; color: #FF9E52;
-    font-variant-numeric: tabular-nums; }
-
-  /* Ikona XP przy liczbach */
-  .xpi { display: inline-block; width: 17px; height: 17px; object-fit: contain; vertical-align: -3px; }
-
-  /* Plakietka „Czym jest XP" — kompaktowa (mniejsza niż na Rankingu) */
-  .xp-plaque { display: flex; align-items: center; gap: clamp(20px, 4vw, 40px); padding: clamp(22px, 3vw, 34px); }
-  .xp-plaque-ic { width: clamp(80px, 13vw, 116px); height: auto; flex: none; filter: drop-shadow(0 12px 28px rgba(0,0,0,0.5)); }
-  .xp-plaque-tx h2 { font-size: clamp(23px, 3vw, 30px); margin-bottom: 10px; }
-  .xp-plaque-tx p { color: var(--text-2); font-size: 15.5px; line-height: 1.6; max-width: 64ch; margin-bottom: 12px; }
-  .xp-plaque-tx a { color: var(--accent-hi); font-family: var(--display); font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.6px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
-  @media (max-width: 640px) { .xp-plaque { flex-direction: column; text-align: center; } .xp-plaque-tx p { margin-inline: auto; } }
-
-  /* Trening codzienny — copy + realny plan dnia (zamiast numerowanych boxów) */
-  .tc-grid { display: grid; gap: clamp(28px, 4vw, 52px); align-items: center; margin-bottom: clamp(28px, 4vw, 44px); }
-  @media (min-width: 900px) { .tc-grid { grid-template-columns: 1.1fr 0.9fr; } }
-  .tc-copy h2 { margin-bottom: 16px; }
-  .tc-copy .lead { margin-bottom: 22px; }
-  .ticks { list-style: none; display: flex; flex-direction: column; gap: 13px; }
-  .ticks li { position: relative; padding-left: 30px; color: var(--text-2); font-size: 15.5px; line-height: 1.5; }
-  .ticks li::before { content: ''; position: absolute; left: 0; top: 3px; width: 18px; height: 18px;
-    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%236FC3FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>') center/contain no-repeat; }
-  .tc-day { padding: 8px; }
-  .tc-day-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 12px; }
-  .tc-day-t { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; font-size: 14px; color: var(--text-2); }
-  .tc-prog { font-family: var(--display); font-weight: 700; color: var(--accent-hi); font-size: 14px; font-variant-numeric: tabular-nums; }
-  .tc-row { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--r); background: rgba(255,255,255,0.03); }
-  .tc-row + .tc-row { margin-top: 6px; }
-  .tc-row.done { background: rgba(55,226,154,0.09); }
-  .tc-row.done .anim-check { background: linear-gradient(135deg, #37E29A, #16A06A); border-color: rgba(55,226,154,0.6); color: #05221A; }
-  .tc-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-  .tc-tx b { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; font-size: 15px; color: var(--text); }
-  .tc-row.done .tc-tx b { color: var(--text-2); text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.25); }
-  .tc-tx i { font-style: normal; font-size: 12px; color: var(--text-3); }
-  .tc-pts { flex: none; font-family: var(--display); font-weight: 700; font-size: 15px; color: var(--accent-hi); font-variant-numeric: tabular-nums; }
-
-  /* Rytm tygodnia (trening codzienny) */
-  .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-  .day { display: flex; flex-direction: column; gap: 8px; text-align: center; }
-  .dd { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 12px; color: var(--text-3); }
-  .dc { border-radius: var(--r); border: 1px solid var(--line-2); padding: 15px 6px; font-family: var(--display);
-    font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; font-size: 11px; white-space: nowrap; overflow: hidden; }
-  .dc.t { background: rgba(47,145,214,0.15); border-color: rgba(126,196,247,0.42); color: var(--accent-hi); }
-  .dc.r { background: rgba(55,226,154,0.10); border-color: rgba(55,226,154,0.32); color: #7fe6b6; }
-  .dc.o { background: rgba(255,255,255,0.04); color: var(--text-3); }
-  .week-legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 14px; font-size: 13px; color: var(--text-2); }
-  .week-legend span { display: inline-flex; align-items: center; gap: 7px; }
-  .week-legend .lg { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line-2); }
-  .week-legend .lg.t { background: rgba(47,145,214,0.4); border-color: rgba(126,196,247,0.5); }
-  .week-legend .lg.r { background: rgba(55,226,154,0.35); border-color: rgba(55,226,154,0.4); }
-  .week-legend .lg.o { background: rgba(255,255,255,0.08); }
-  @media (max-width: 620px) { .dc { font-size: 0; padding: 18px 0; } }
-
-  /* Dzień odpoczynku + przesuwająca się lista aktywności (marquee) */
-  .rest { margin-top: clamp(28px, 4vw, 44px); border-top: 1px solid var(--line); padding-top: clamp(24px, 3vw, 36px); }
-  .rest-copy { max-width: 68ch; margin-bottom: 20px; }
-  .rest-copy h3 { font-size: clamp(20px, 2.4vw, 26px); margin-bottom: 10px; }
-  .rest-copy p { color: var(--text-2); font-size: 15.5px; line-height: 1.6; }
-  .marquee { overflow: hidden;
-    -webkit-mask: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
-    mask: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
-  .marquee-track { display: flex; gap: 12px; width: max-content; animation: marq 32s linear infinite; }
-  .marquee:hover .marquee-track { animation-play-state: paused; }
-  @keyframes marq { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-  .rest-chip { display: inline-flex; align-items: baseline; gap: 9px; padding: 12px 18px; border-radius: 999px;
-    border: 1px solid var(--line-2); background: var(--panel); white-space: nowrap; }
-  .rest-chip b { font-family: var(--display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
-    font-size: 15px; color: var(--text); }
-  .rest-chip span { color: var(--text-3); font-size: 12px; font-variant-numeric: tabular-nums; }
-  @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; flex-wrap: wrap; } }
-
-  .post-body { display: grid; gap: clamp(28px, 4vw, 52px); align-items: start; }
-  @media (min-width: 900px) { .post-body { grid-template-columns: 1.6fr 1fr; } }
-
-  /* Panele „w skrócie" — kolorowa ramka wyróżnia typ punktów: XP = baby blue,
-     Draft Score = pomarańczowy. Ramka techniką dwóch pseudo-elementów, żeby objąć
-     też ścięty róg. Kolor sterowany zmiennymi --frame / --accent-c per panel. */
-  .callout { padding: 24px 26px; position: sticky; top: 92px;
-    background: transparent; border: none; isolation: isolate;
-    --frame: var(--line-2); --accent-c: var(--accent-hi); }
-  .callout-xp    { --frame: #6FB7E6; --accent-c: var(--accent-hi); }
-  .callout-draft { --frame: #F2843C; --accent-c: #FF9E52; }
-  .callout::before { content: ''; position: absolute; inset: 0; z-index: -2; background: var(--frame);
-    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
-  .callout::after { content: ''; position: absolute; inset: 1.5px; z-index: -1; background: var(--panel);
-    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%); }
-  .callout h4 { text-transform: uppercase; letter-spacing: 1.6px; color: var(--accent-c); margin-bottom: 12px; }
-  .callout ul { list-style: none; display: flex; flex-direction: column; }
-  .callout li { display: flex; align-items: center; justify-content: space-between; gap: 14px;
-    padding: 13px 0; border-bottom: 1px solid var(--line); }
-  .callout li:last-child { border-bottom: none; }
-  .callout li b { font-weight: 500; color: var(--text-2); font-size: 15px; }
-  .callout li span { font-family: var(--display); font-weight: 700; font-size: 20px; color: var(--accent-c);
-    font-variant-numeric: tabular-nums; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
-  .callout .fine { margin-top: 16px; font-size: 13px; color: var(--text-3); line-height: 1.55; }
-  .callout .fine a { color: var(--accent-hi); text-decoration: underline; text-underline-offset: 3px; }
-
-  /* Areny — karuzela po 3 */
-  .arenas-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
-    margin-bottom: clamp(28px, 4vw, 44px); }
-  .arenas-head h2 { margin-bottom: 16px; }
-  .arenas-head .lead { max-width: 56ch; }
-  .car-nav { display: flex; gap: 10px; flex: none; }
-  .car-btn { width: 48px; height: 48px; display: grid; place-items: center; color: var(--text);
-    background: rgba(255,255,255,0.045); border: 1px solid var(--line-2); border-radius: var(--r);
-    cursor: pointer; transition: background .15s, border-color .15s; }
-  .car-btn:hover { background: rgba(255,255,255,0.09); border-color: var(--line-3); }
-
-  .car-track { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory;
-    padding: 4px 2px 8px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-  .car-track::-webkit-scrollbar { display: none; }
-  .arena-card { flex: 0 0 calc((100% - 32px) / 3); scroll-snap-align: start;
-    display: flex; flex-direction: column; align-items: center; text-align: center; padding: 30px 24px 26px;
-    transition: transform .2s ease, border-color .2s ease; animation: cardIn .5s ease backwards; }
-  .arena-card:hover { transform: translateY(-4px); border-color: var(--line-3); }
-  .arena-card:hover .ac-badge img { transform: scale(1.05); }
-  .ac-badge img { transition: transform .25s ease; }
-  @keyframes cardIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-  .arena-card:nth-child(2){ animation-delay:.05s } .arena-card:nth-child(3){ animation-delay:.10s }
-  .arena-card:nth-child(4){ animation-delay:.15s } .arena-card:nth-child(5){ animation-delay:.20s }
-  @media (max-width: 900px) { .arena-card { flex-basis: calc((100% - 16px) / 2); } }
-  @media (max-width: 620px) { .arena-card { flex-basis: 84%; } }
-
-  .ac-badge { width: 150px; height: 150px; display: grid; place-items: center; margin-bottom: 8px;
-    background: radial-gradient(circle at 50% 42%, rgba(255,255,255,0.07), transparent 68%); }
-  .ac-badge img { width: 100%; height: 100%; object-fit: contain; }
-  .ac-badge .crest { width: 78px; height: 78px; opacity: 0.5; }
-  .ac-no { font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 1.4px;
-    text-transform: uppercase; color: var(--text-3); }
-  .arena-card h3 { font-size: 23px; margin: 4px 0 6px; }
-  .ac-xp { font-family: var(--display); font-weight: 700; color: var(--accent-hi); font-size: 15px;
-    letter-spacing: 0.5px; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 4px; }
-  .ac-note { font-size: 13.5px; color: var(--text-2); line-height: 1.5; margin-top: 12px; }
-
-  .arena-card.soon { justify-content: center; border-style: dashed; border-color: var(--line-2); background: transparent; }
-  .soon-orb { width: 150px; height: 150px; display: grid; place-items: center; margin-bottom: 8px; }
-  .soon-orb span { width: 44px; height: 44px; border-radius: 50%;
-    background: radial-gradient(circle, var(--accent-hi), rgba(47,145,214,0.2) 60%, transparent 72%);
-    animation: soonPulse 2.4s ease-in-out infinite; }
-  @keyframes soonPulse { 0%,100% { transform: scale(0.82); opacity: 0.5; } 50% { transform: scale(1.15); opacity: 1; } }
-  .arena-card.soon .ac-xp { color: var(--text-2); }
-
-  .arenas-more { max-width: 74ch; margin-top: clamp(24px, 3vw, 36px); }
-  .tldr { margin-top: 6px; padding: 18px 20px; border-left: 2px solid var(--accent);
-    background: rgba(255,255,255,0.03); color: var(--text) !important; }
-  .cta-band { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; }
-
-  @media (prefers-reduced-motion: reduce) { .soon-orb span { animation: none; } .anim-list { transition: none; } }
-</style>

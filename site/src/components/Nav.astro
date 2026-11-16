@@ -95,10 +95,16 @@ const isActive = (href: string) => href !== '/' && here.startsWith(href)
   const toggle = document.getElementById('navtoggle') as HTMLInputElement | null
   const menu = document.getElementById('mobileMenu')
 
-  // Obrys pod paskiem dopiero po zjechaniu — na samej górze pasek „wtapia się" w hero.
-  const onScroll = () => nav?.classList.toggle('scrolled', window.scrollY > 8)
-  onScroll()
-  document.addEventListener('scroll', onScroll, { passive: true })
+  // Obrys pod paskiem dopiero po zjechaniu: na samej górze pasek „wtapia się" w hero.
+  // Wartownik 9 px u góry dokumentu + IntersectionObserver zamiast nasłuchu scrolla
+  // (odczyt scrollY w każdym zdarzeniu wymuszał przeliczenie stylu i układu).
+  if (nav && 'IntersectionObserver' in window) {
+    const top = document.createElement('div')
+    top.setAttribute('aria-hidden', 'true')
+    top.style.cssText = 'position:absolute;top:0;left:0;width:1px;height:9px;pointer-events:none'
+    document.body.prepend(top)
+    new IntersectionObserver(([en]) => nav.classList.toggle('scrolled', !en.isIntersecting)).observe(top)
+  }
 
   // Otwarte menu blokuje przewijanie strony pod spodem; klik w link zamyka menu.
   toggle?.addEventListener('change', () => { document.body.style.overflow = toggle.checked ? 'hidden' : '' })

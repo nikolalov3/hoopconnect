@@ -1,0 +1,109 @@
+---
+/**
+ * NewsletterForm: zapis na newsletter (strona /newsletter i wysuwany panel na stronie głównej).
+ * Wysyła JSON na NEWSLETTER.endpoint (kontrakt w consts.ts). Zgoda jest wymagana i zapisywana
+ * razem z adresem. Bez JS formularz się nie wyśle (przycisk jest wtedy nieaktywny), bo endpoint
+ * przyjmuje tylko JSON. Stany: bezczynny, wysyłanie, zapisane, błąd (komunikat w aria-live).
+ */
+import { NEWSLETTER } from '../consts'
+interface Props {
+  source: 'page' | 'popup'
+  uid: string
+  compact?: boolean
+}
+const { source, uid, compact = false } = Astro.props
+---
+<form class:list={['nl', { compact }]} data-nl data-source={source} data-endpoint={NEWSLETTER.endpoint} novalidate>
+  <div class="nl-row">
+    <label class="nl-lab" for={`nl-${uid}`}>Twój e-mail</label>
+    <input class="nl-in" id={`nl-${uid}`} name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false"
+      placeholder="Twój e-mail" required />
+    <button class="btn btn-primary nl-btn" type="submit" disabled>Zapisz mnie<span class="arw">→</span></button>
+  </div>
+  <!-- pułapka na boty: ukryte pole, którego człowiek nie widzi i nie wypełnia -->
+  <div class="nl-hp" aria-hidden="true"><label>Zostaw puste<input type="text" name="hp" tabindex="-1" autocomplete="off" /></label></div>
+  <label class="nl-ok">
+    <input type="checkbox" name="consent" required />
+    <span>Chcę dostawać newsletter HoopConnect. Mam 16 lat albo zgodę rodzica lub opiekuna. Wypisuję się jednym kliknięciem. <a href={NEWSLETTER.privacyUrl}>Polityka prywatności</a></span>
+  </label>
+  <p class="nl-msg" role="status" aria-live="polite"></p>
+</form>
+
+<style>
+  .nl { display: grid; gap: 14px; text-align: left; }
+  .nl-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .nl-lab { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .nl-in { flex: 1 1 220px; min-width: 0; height: 52px; padding: 0 16px; border: 1px solid var(--line-2); border-radius: var(--r);
+    background: var(--bg-2); color: var(--text); font: inherit; font-size: 16px; transition: border-color .18s ease; }
+  .nl-in::placeholder { color: var(--text-3); }
+  .nl-in:hover { border-color: var(--line-3); }
+  .nl-in:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; border-color: transparent; }
+  .nl-btn { flex: 0 0 auto; height: 52px; --pad-y: 0; align-items: center; justify-content: center; }
+  .nl-btn:disabled { opacity: 0.55; cursor: default; }
+  .nl-btn:disabled .arw { transform: none; }
+  .nl-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .nl-ok { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; font-size: 13.5px; line-height: 1.5; color: var(--text-2); cursor: pointer; }
+  .nl-ok input { appearance: none; width: 20px; height: 20px; margin: 1px 0 0; border: 1px solid var(--line-3); border-radius: 2px; background: var(--bg-2);
+    display: grid; place-content: center; cursor: pointer; transition: background .15s ease, border-color .15s ease; }
+  .nl-ok input::after { content: ''; width: 10px; height: 6px; border-left: 2px solid #EAF3FF; border-bottom: 2px solid #EAF3FF; transform: translateY(-1px) rotate(-45deg) scale(0);
+    transition: transform .15s ease; }
+  .nl-ok input:checked { background: #163D65; border-color: rgba(96,168,224,0.7); }
+  .nl-ok input:checked::after { transform: translateY(-1px) rotate(-45deg) scale(1); }
+  .nl-ok input:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+  .nl-ok a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+  .nl-msg { min-height: 1.5em; margin: 0; font-size: 14px; color: var(--text-2); }
+  .nl[data-state="ok"] .nl-msg { color: #37E29A; }
+  .nl[data-state="err"] .nl-msg { color: #F3A6A6; }
+  .nl[data-state="ok"] :is(.nl-row, .nl-ok) { display: none; }
+  .nl.compact { gap: 12px; }
+  .nl.compact .nl-in, .nl.compact .nl-btn { height: 48px; }
+  .nl.compact .nl-in { flex-basis: 150px; }
+  .nl.compact .nl-btn { --pad-x: 20px; }
+  .nl.compact .nl-ok { font-size: 12.5px; }
+  .nl.compact .nl-msg:empty { display: none; }
+  @media (max-width: 520px) { .nl-btn { flex: 1 1 100%; } }
+</style>
+
+<script>
+  // Zapis: jedna obsługa dla wszystkich formularzy na stronie. Po udanym zapisie zapamiętujemy to lokalnie,
+  // żeby wysuwany panel nie wracał (klucz hc_nl, patrz NewsletterPop.astro).
+  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+  document.querySelectorAll<HTMLFormElement>('form[data-nl]').forEach((form) => {
+    const email = form.querySelector<HTMLInputElement>('input[name="email"]')
+    const consent = form.querySelector<HTMLInputElement>('input[name="consent"]')
+    const hp = form.querySelector<HTMLInputElement>('input[name="hp"]')
+    const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]')
+    const msg = form.querySelector<HTMLElement>('.nl-msg')
+    if (!email || !consent || !btn || !msg) return
+    btn.disabled = false
+    const say = (state: string, text: string) => { form.dataset.state = state; msg.textContent = text }
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const value = email.value.trim()
+      if (!EMAIL.test(value)) { say('err', 'Wpisz poprawny adres e-mail.'); email.focus(); return }
+      if (!consent.checked) { say('err', 'Zaznacz zgodę, żeby się zapisać.'); consent.focus(); return }
+      btn.disabled = true; say('busy', 'Zapisuję…')
+      try {
+        const res = await fetch(form.dataset.endpoint || '/api/newsletter', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: value, consent: true, source: form.dataset.source || 'page', hp: hp?.value || '' }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (res.ok && data.ok !== false) {
+          say('ok', 'Gotowe. Jesteś na liście.')
+          try { localStorage.setItem('hc_nl', 'ok') } catch {}
+          form.dispatchEvent(new CustomEvent('nl:ok', { bubbles: true }))
+        } else if (data.error === 'exists') {
+          say('ok', 'Ten adres jest już na liście.')
+          try { localStorage.setItem('hc_nl', 'ok') } catch {}
+        } else if (data.error === 'invalid') {
+          say('err', 'Ten adres wygląda na błędny. Sprawdź literówki.'); btn.disabled = false
+        } else {
+          say('err', 'Nie udało się zapisać. Spróbuj jeszcze raz za chwilę.'); btn.disabled = false
+        }
+      } catch {
+        say('err', 'Brak połączenia. Spróbuj jeszcze raz.'); btn.disabled = false
+      }
+    })
+  })
+</script>

@@ -12,7 +12,8 @@ export default defineConfig({
     // Stuby (noindex do premiery) wykluczone z sitemapy, żeby GSC nie zgłaszał konfliktu.
     // lastmod = data buildu — świeży sygnał dla Google przy pierwszym skanie nowej strony.
     sitemap({
-      filter: (page) => !/\/(aktualnosci|turnieje)\/?$/.test(page),
+      // /newsletter jest w sitemapie dopiero po włączeniu zapisu (PUBLIC_NEWSLETTER=1, patrz consts.ts).
+      filter: (page) => !/\/(aktualnosci|turnieje)\/?$/.test(page) && (process.env.PUBLIC_NEWSLETTER === '1' || !/\/newsletter\/?$/.test(page)),
       serialize: (item) => ({ ...item, lastmod: new Date().toISOString() }),
     }),
   ],
