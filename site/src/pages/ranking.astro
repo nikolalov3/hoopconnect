@@ -4,7 +4,7 @@ import RankBoard from '../components/RankBoard.astro'
 import DraftRing from '../components/DraftRing.astro'
 import { RANK_URL, APP_URL } from '../consts'
 
-const title = 'Ranking graczy koszykówki 3x3'
+const title = 'Ranking graczy koszykówki ulicznej'
 const description =
   'Publiczny ranking HoopConnect: trzy tablice (XP, mecze, King of the Court), filtr po mieście ' +
   'i dokładna rozpiska, za co i ile XP dostajesz. Bez logowania.'
@@ -52,7 +52,7 @@ const FAQ = [
   },
   {
     q: 'Za co dostaję XP w HoopConnect?',
-    a: 'Za mecz 3x3 dostajesz 75 XP za wygraną i 40 XP za przegraną lub remis. Za sesję King of the Court od 95 do 275 XP, ' +
+    a: 'Za mecz (2v2, 3v3 albo 5v5) dostajesz 75 XP za wygraną i 40 XP za przegraną lub remis. Za sesję King of the Court od 95 do 275 XP, ' +
       'zależnie od miejsca Twojej drużyny. Za trening z asystentem do 100 XP tygodniowo.',
   },
   {
@@ -70,7 +70,7 @@ const FAQ = [
   },
   {
     q: 'Jak trafić do rankingu?',
-    a: 'Załóż konto w aplikacji i rozegraj mecz 3x3 albo sesję King of the Court. Po zatwierdzeniu wyniku dostajesz XP i pojawiasz się na tablicy.',
+    a: 'Załóż konto w aplikacji i rozegraj mecz albo sesję King of the Court. Po zatwierdzeniu wyniku dostajesz XP i pojawiasz się na tablicy.',
   },
 ]
 const faqSchema = {
@@ -145,7 +145,7 @@ const faqSchema = {
       </div>
       <div class="xp-tables">
         <table class="xpt rv">
-          <caption>Mecz 3x3</caption>
+          <caption>Mecz <small>2v2, 3v3 albo 5v5</small></caption>
           <thead><tr><th scope="col">Wynik</th><th scope="col" class="c-xp"><img src="/brand/xp-96.webp" width="18" height="18" alt="" />XP</th><th scope="col" class="c-ds">Draft Score</th></tr></thead>
           <tbody>
             {XP_MATCH.map((r) => <tr><th scope="row">{r.label}</th><td class="c-xp">{r.xp}</td><td class="c-ds">{r.ds}</td></tr>)}

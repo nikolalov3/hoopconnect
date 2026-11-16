@@ -15,9 +15,9 @@ export const RANK_URL = `${APP_URL}/rank`
 export const BRAND = {
   name: 'HoopConnect',
   tagline: 'Phone down, game up',
-  defaultTitle: 'HoopConnect · aplikacja do koszykówki 3x3 i treningu',
+  defaultTitle: 'HoopConnect · aplikacja do koszykówki ulicznej i treningu',
   defaultDescription:
-    'HoopConnect porządkuje koszykówkę uliczną 3x3: znajdź grę i graczy w okolicy, ' +
+    'HoopConnect porządkuje koszykówkę uliczną (streetbasket): znajdź grę i graczy w okolicy, ' +
     'rozegraj King of the Court bez chaosu, zbieraj XP i wbijaj się w rankingi. ' +
     'Aplikacja pomaga przed grą i po niej. Resztę robisz na boisku.',
 }
@@ -28,17 +28,17 @@ export const APP_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: 'HoopConnect',
-  alternateName: 'HoopConnect 3x3',
+  alternateName: ['HoopConnect streetbasket', 'HoopConnect 3x3'],
   applicationCategory: 'SportsApplication',
   applicationSubCategory: 'Basketball',
   operatingSystem: 'Web',
   url: APP_URL,
   inLanguage: 'pl-PL',
   description:
-    'Aplikacja do koszykówki ulicznej 3x3: znajdź grę i graczy w okolicy, graj King of the Court, ' +
+    'Aplikacja do koszykówki ulicznej (streetbasket): znajdź grę i graczy w okolicy, umawiaj mecze 2v2, 3v3 i 5v5, graj King of the Court, ' +
     'trenuj indywidualnie według planu dopasowanego do liczby dni w tygodniu, zbieraj XP i wbijaj się w rankingi.',
   featureList: [
-    'Znajdowanie gier i graczy 3x3 na boiskach w okolicy',
+    'Mecze 2v2, 3v3 i 5v5 oraz gracze na boiskach w okolicy',
     'King of the Court z automatycznym losowaniem trzyosobowych drużyn',
     'Indywidualny asystent treningu z codziennymi ćwiczeniami dopasowanymi do gracza',
     'Ćwiczenia regeneracyjne na dni odpoczynku',

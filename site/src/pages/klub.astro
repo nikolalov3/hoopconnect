@@ -1,79 +1,739 @@
 ---
 import Base from '../layouts/Base.astro'
-import { APP_URL, RANK_URL } from '../consts'
-const title = 'Gra 3x3 i King of the Court'
+import MatchCard from '../components/MatchCard.astro'
+import ClubCourt from '../components/ClubCourt.astro'
+import ClubStats from '../components/ClubStats.astro'
+import KotcStage from '../components/KotcStage.astro'
+import ResultFlow from '../components/ResultFlow.astro'
+import { APP_URL, RANK_URL, SITE, BRAND } from '../consts'
+
+// Narracja strony: czytelnik ma poczuć, że jego ekipa i jego mecze mają tu porządek i stawkę,
+// i otworzyć apkę, żeby założyć klub albo wejść solo w sesję King of the Court.
+const title = 'Koszykówka uliczna: mecze i King of the Court'
 const description =
-  'Zakładka Klub w HoopConnect: umawiaj mecze na boiskach w okolicy, graj King of the Court bez chaosu ' +
-  'i śledź rankingi. Aplikacja dobiera składy i zapisuje wyniki.'
+  'Klub w HoopConnect: zbierasz ekipę, umawiasz mecze koszykówki ulicznej w okolicy i grasz King of the Court. ' +
+  'Wynik potwierdza rywal, a XP zostaje na karcie.'
+const canonical = new URL(Astro.url.pathname, SITE).href
+
+// ── Dane poglądowe na obiektach, spójne ze stroną główną. Ty = Szymon (S), założyciel klubu Street Kings;
+//    rywale to HoopConnect (Kuba, Michał, Filip). Kody zawierają zero, którego generatory w apce nie używają.
+const HC = [{ l: 'K', f: true }, { l: 'M' }, { l: 'F', f: true }]
+const SK = [{ l: 'S', f: true }, { l: 'A' }, { l: 'B' }]
+const SQUAD = {
+  PG: { name: 'Szymon', l: 'S' },
+  SG: null,
+  SF: { name: 'Bartek', l: 'B' },
+  PF: { name: 'Olek', l: 'O' },
+  C: { name: 'Alex', l: 'A' },
+}
+const CLUB_CODE = 'K7M0P'
+
+// „W skrócie": fakty tuż pod otwarciem (dla ludzi i dla wyszukiwarek odpowiedzi).
+// Źródła liczb: src/pages/ClubPage.jsx, src/features/kotc/KotcSolo.jsx, migracje 20260902_kotc_solo.sql
+// i 20260904_match_rls_fix_and_recovery.sql (XP za mecz 75 / 40), 20260902e_kotc_functions.sql (sesja do 67).
+const BRIEF = [
+  { t: 'Klub', d: 'Twoja ekipa w aplikacji: do pięciu graczy, pięć pozycji i jeden kod do zapraszania.' },
+  { t: 'Mecze', d: '2v2, 3v3 i 5v5 na boiskach w okolicy. Klub gra przeciwko klubowi.' },
+  { t: 'Wynik', d: 'Wpisuje kapitan gospodarzy, potwierdza kapitan rywali. Ma na to 24 godziny.' },
+  { t: 'King of the Court', d: 'Wchodzisz solo, bez klubu. Od dziewięciu graczy aplikacja losuje trójki, a sesja trwa do 67 punktów.' },
+  { t: 'XP', d: '75 za wygrany mecz, 40 za przegrany lub remis. Od 95 do 275 za sesję King of the Court.' },
+  { t: 'Cena', d: 'Dla graczy za darmo. Aplikacja działa w przeglądarce telefonu, bez instalacji.' },
+]
+const TOC = [
+  { href: '#mecze', label: 'Mecze w okolicy' },
+  { href: '#nowy-mecz', label: 'Własny mecz' },
+  { href: '#wynik', label: 'Wynik' },
+  { href: '#sklad', label: 'Skład' },
+  { href: '#statystyki', label: 'Statystyki' },
+  { href: '#king-of-the-court', label: 'King of the Court' },
+  { href: '#xp', label: 'XP' },
+  { href: '#pytania', label: 'Pytania' },
+]
+
+// Scena „Mecze": krok zmienia stan karty meczu (klasy .mc-step-N, patrz MatchCard.astro). Te same kroki idą do HowTo.
+const MATCH_STEPS = [
+  {
+    t: 'Widzisz mecze w okolicy',
+    d: 'Otwierasz zakładkę Klub i panel Mecze. Każda karta to jeden mecz: tryb, termin, adres, odległość od Ciebie i wolne miejsca w składzie.',
+  },
+  {
+    t: 'Wchodzisz ze swoim klubem',
+    d: 'Mecz to klub kontra klub: na górze karty gospodarze, na dole rywale. Otwierasz kartę, wybierasz „Dołącz” i Twój hex zajmuje wolne miejsce. Nie masz klubu? Zakładasz własny albo wpisujesz kod ekipy.',
+  },
+  {
+    t: 'Komplet. Jest mecz.',
+    d: 'Gdy obie strony mają pełny skład, mecz dostaje status „Pełny”. Zostaje wyjść na boisko. Aplikacja zrobi Ci też grafikę meczu do wysłania ekipie.',
+  },
+]
+
+const NEW_FACTS = [
+  { t: 'Tryb', d: '2v2, 3v3 albo 5v5, czyli czterech, sześciu albo dziesięciu graczy.' },
+  { t: 'Miejsce', d: 'Stawiasz pinezkę na mapie albo bierzesz swoje położenie. Adres aplikacja dopisuje sama.' },
+  { t: 'Termin', d: 'Data, godzina i krótka notatka dla tych, którzy chcą dołączyć.' },
+  { t: 'Limity', d: 'Najwyżej trzy mecze na dzień. Między Twoimi meczami co najmniej 75 minut, w 2v2 wystarczy 45.' },
+  { t: 'Odwołanie', d: 'Bez skutków, dopóki do startu zostały ponad dwie godziny. Później, gdy rywale są już w składzie, liczy się jako walkower.' },
+]
+// Tryby z apki (MODE_SLOTS, MODE_COLOR, MODE_GAP w ClubPage.jsx): kolor trybu, liczba graczy, odstęp między meczami.
+const MODES = [
+  { m: '2v2', label: '2 na 2', color: '#9050FF', players: 'czterech graczy', gap: 45 },
+  { m: '3v3', label: '3 na 3', color: '#00CCFF', players: 'sześciu graczy', gap: 75 },
+  { m: '5v5', label: '5 na 5', color: '#FFA820', players: 'dziesięciu graczy', gap: 75 },
+]
+
+// Scena „Wynik": krok przełącza arkusz (ResultFlow.astro).
+const RESULT_STEPS = [
+  {
+    t: 'Kapitan gospodarzy wpisuje wynik',
+    d: 'Gdy minie godzina meczu, aplikacja sama podsuwa mu ekran z dwiema liczbami. Wpisuje wynik i wysyła go rywalom.',
+  },
+  {
+    t: 'Kapitan rywali ma 24 godziny',
+    d: 'Dostaje powiadomienie z wynikiem. Zgadza się, to potwierdza jednym ruchem. Nie zgadza się, to wpisuje swój wynik, mecz dostaje status sporu, a kapitanowie wyjaśniają go między sobą.',
+  },
+  {
+    t: 'Wynik zostaje',
+    d: 'Potwierdzony mecz trafia do historii obu klubów. Wygrani dostają 75 XP, przegrani 40. Bez reakcji przez dobę wynik zatwierdza się sam.',
+  },
+]
+
+const SQUAD_FACTS = [
+  { t: 'Pozycje', d: 'Rozgrywający, rzucający, skrzydłowy, silny skrzydłowy i środkowy. Jedna pozycja, jeden gracz.' },
+  { t: 'Zaproszenie', d: 'Wybierasz wolne miejsce i wysyłasz link albo pięcioznakowy kod klubu.' },
+  { t: 'Kapitan', d: 'Założyciel klubu przestawia graczy między pozycjami i decyduje o składzie.' },
+  { t: 'Karta gracza', d: 'Tapnięcie w hex otwiera kartę: arena, XP, wygrane mecze i King of the Court.' },
+]
+const STATS_FACTS = [
+  { t: 'Bilans', d: 'Wchodzą do niego tylko mecze zakończone.' },
+  { t: 'Historia', d: 'Dziesięć ostatnich meczów jako pełne karty: kto grał i jaki był wynik.' },
+]
+
+// Scena „King of the Court": krok ustawia stan sceny (KotcStage.astro). Te same kroki idą do HowTo.
+const KOTC_STEPS = [
+  {
+    t: 'Ktoś zakłada sesję, reszta wchodzi kodem',
+    d: 'Host tworzy sesję w zakładce Klub i dostaje sześcioznakowy kod. Wpisujesz go albo wybierasz sesję z listy aktywnych. Każdy wchodzi sam.',
+  },
+  {
+    t: 'Apka losuje trójki',
+    d: 'Potrzeba co najmniej dziewięciu graczy i liczby podzielnej przez trzy. Host wybiera „Losuj drużyny i zacznij”, a aplikacja dzieli Was na drużyny w kolorach. Nikt nie wybiera kumpli.',
+  },
+  {
+    t: 'Wygrany zostaje',
+    d: 'Dwie trójki grają, reszta czeka w kolejce. Przegrani schodzą, wchodzi następna drużyna. Po trzech wygranych z rzędu król też ustępuje, żeby każdy pograł.',
+  },
+  {
+    t: 'Wynik potwierdzają czekający',
+    d: 'Do ilu gracie gierkę, ustalacie na boisku. Kto wygrał, zaznaczają gracze, którzy czekają na swoją kolej. Ile potwierdzeń zamyka gierkę, ustawia host. Głosować można po trzech minutach od wejścia nowej pary.',
+  },
+  {
+    t: 'Mistrz sesji i MVP',
+    d: 'Wygrana gierka daje od 12 do 16 punktów, zależnie od serii. Sesja kończy się, gdy pierwsza drużyna dobije do 67. Aplikacja pokazuje mistrza sesji i klasyfikację, a każdy oddaje jeden głos na MVP.',
+  },
+]
+
+// XP z aplikacji (triggery trg_award_match_xp i kotc_award_xp). Trzymać zgodność z /ranking.
+const XP_MATCH = [
+  { label: 'Wygrana', xp: '+75' },
+  { label: 'Przegrana albo remis', xp: '+40' },
+]
+const XP_KOTC = [
+  { label: '1. miejsce', xp: '+275' },
+  { label: '2. miejsce', xp: '+195' },
+  { label: '3. miejsce', xp: '+145' },
+  { label: '4. miejsce', xp: '+115' },
+  { label: '5. miejsce i dalej', xp: '+95' },
+]
+
+// FAQ: treść widoczna na stronie jest tą samą, która idzie do danych FAQPage (czysty tekst, odpowiedzi samowystarczalne).
+const FAQ = [
+  {
+    q: 'Co to jest Klub w HoopConnect?',
+    a: 'Klub to zakładka aplikacji HoopConnect do grania z innymi. Zakładasz w niej klub, czyli ekipę do pięciu graczy z pozycjami, ' +
+      'umawiasz mecze 2v2, 3v3 i 5v5 na boiskach w okolicy i grasz sesje King of the Court. Zakładka ma trzy panele: Mecze, Skład i Statystyki.',
+  },
+  {
+    q: 'Jak znaleźć mecz koszykówki ulicznej w okolicy?',
+    a: 'Otwórz w aplikacji HoopConnect zakładkę Klub i panel Mecze. Zobaczysz mecze na boiskach w pobliżu z trybem, terminem, adresem i odległością. ' +
+      'Listę zawęzisz do 5, 10 albo 25 km oraz do trybu 2v2, 3v3 lub 5v5. Żeby dołączyć, otwórz kartę meczu i zajmij wolne miejsce w składzie.',
+  },
+  {
+    q: 'Czy muszę mieć drużynę, żeby zagrać?',
+    a: 'W King of the Court nie: wchodzisz solo, a aplikacja losuje trzyosobowe drużyny. Do meczów potrzebujesz klubu, bo mecz to klub kontra klub. ' +
+      'Klub założysz sam albo dołączysz do istniejącego kodem lub linkiem od ekipy.',
+  },
+  {
+    q: 'Jak założyć klub i zaprosić graczy?',
+    a: 'W zakładce Klub wybierz „Załóż Klub”, wpisz nazwę, skrót i kraj. Klub dostaje pięcioznakowy kod. Graczy zapraszasz tym kodem albo linkiem, ' +
+      'a każdy wybiera wolną pozycję: rozgrywający, rzucający, skrzydłowy, silny skrzydłowy lub środkowy. W klubie gra do pięciu graczy, a jeden gracz może być w jednym klubie naraz.',
+  },
+  {
+    q: 'Jak umówić własny mecz koszykówki ulicznej?',
+    a: 'W panelu Mecze wybierz „Stwórz mecz”. Ustaw tryb (2v2, 3v3 albo 5v5), wskaż miejsce na mapie, podaj datę i godzinę, możesz też dodać krótką notatkę. ' +
+      'Mecz pojawia się na liście u graczy w okolicy. Na jeden dzień zaplanujesz najwyżej trzy mecze, a między nimi musi być co najmniej 75 minut odstępu, w 2v2 wystarczy 45.',
+  },
+  {
+    q: 'Kto wpisuje wynik meczu i kto go potwierdza?',
+    a: 'Wynik wpisuje kapitan gospodarzy, czyli klubu, który założył mecz. Kapitan rywali dostaje powiadomienie i ma 24 godziny, żeby wynik potwierdzić albo zgłosić inny. ' +
+      'Jeśli nie zareaguje, wynik zatwierdza się sam. Gdy wyniki się różnią, mecz dostaje status sporu i kapitanowie wyjaśniają go między sobą.',
+  },
+  {
+    q: 'Jak działa King of the Court w koszykówce ulicznej?',
+    a: 'King of the Court, czyli król boiska, to pickup, w którym dwie trzyosobowe drużyny grają na jeden kosz, wygrany zostaje na boisku, a przegrany ustępuje następnej drużynie. ' +
+      'W HoopConnect do sesji wchodzisz solo kodem, od dziewięciu do osiemnastu graczy aplikacja dzieli losowo na trójki, a zwycięzcę każdej gierki potwierdzają gracze, którzy czekają na swoją kolej. ' +
+      'Sesja kończy się, gdy pierwsza drużyna zdobędzie 67 punktów. Na koniec aplikacja pokazuje mistrza sesji, a każdy oddaje jeden głos na MVP.',
+  },
+  {
+    q: 'Ile XP dostaję za mecz i za King of the Court?',
+    a: 'Za mecz z potwierdzonym wynikiem dostajesz 75 XP za wygraną i 40 XP za przegraną lub remis. Za sesję King of the Court każdy gracz dostaje XP według miejsca swojej drużyny: ' +
+      '275, 195, 145, 115 albo 95 XP. XP zostaje na stałe i liczy się do publicznego rankingu.',
+  },
+]
+
+// ── Dane strukturalne. Base dokłada Organization, WebSite, WebPage i BreadcrumbList.
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ.map((it) => ({ '@type': 'Question', name: it.q, acceptedAnswer: { '@type': 'Answer', text: it.a } })),
+}
+const howTo = (name: string, text: string, anchor: string, steps: { t: string; d: string }[]) => ({
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name,
+  description: text,
+  inLanguage: 'pl-PL',
+  tool: [{ '@type': 'HowToTool', name: 'Aplikacja HoopConnect w przeglądarce telefonu' }],
+  step: steps.map((s, i) => ({ '@type': 'HowToStep', position: i + 1, name: s.t, text: s.d, url: `${canonical}${anchor}` })),
+})
+const howToJoin = howTo(
+  'Jak dołączyć do meczu koszykówki ulicznej w HoopConnect',
+  'Trzy kroki od listy meczów w okolicy do pełnego składu w zakładce Klub aplikacji HoopConnect.',
+  '#mecze', MATCH_STEPS,
+)
+const howToKotc = howTo(
+  'Jak rozegrać sesję King of the Court w HoopConnect',
+  'Pięć kroków sesji King of the Court: kod sesji, losowanie trójek, gra o utrzymanie boiska, potwierdzanie wyników i mistrz sesji z głosem na MVP.',
+  '#king-of-the-court', KOTC_STEPS,
+)
+const articleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: 'Klub w HoopConnect: mecze koszykówki ulicznej i King of the Court',
+  description,
+  inLanguage: 'pl-PL',
+  url: canonical,
+  mainEntityOfPage: canonical,
+  image: new URL('/brand/horizontal.png', SITE).href,
+  datePublished: '2026-09-21',
+  dateModified: new Date().toISOString().slice(0, 10),
+  author: { '@type': 'Organization', name: BRAND.name, url: SITE },
+  publisher: { '@type': 'Organization', name: BRAND.name, url: SITE, logo: { '@type': 'ImageObject', url: new URL('/brand/horizontal.png', SITE).href } },
+  about: [
+    { '@type': 'Thing', name: 'Koszykówka uliczna', alternateName: ['streetbasket', 'streetball'] },
+    { '@type': 'Thing', name: 'Koszykówka 3x3' },
+    {
+      '@type': 'DefinedTerm', name: 'King of the Court',
+      description: 'Format pickupu 3x3, w którym wygrana drużyna zostaje na boisku, a przegrana ustępuje miejsca następnej.',
+    },
+    { '@type': 'SoftwareApplication', name: BRAND.name, applicationCategory: 'SportsApplication', operatingSystem: 'Web', url: APP_URL },
+  ],
+}
+const stamp = new Intl.DateTimeFormat('pl-PL', { month: 'long', year: 'numeric' }).format(new Date())
 ---
-<Base title={title} description={description}>
-  <section class="section">
-    <div class="wrap split">
-      <div class="split-copy">
-        <h1 class="ph">Klub</h1>
-        <p class="lead">
-          Tu toczy się gra. Klub łączy zawodników z boiskami: sprawdzasz, kto gra w okolicy, umawiasz mecz,
-          a inni dołączają. Aplikacja działa jak cyfrowa tablica informacyjna przy boisku.
-        </p>
+<Base title={title} description={description} schema={[articleSchema, howToJoin, howToKotc, faqSchema]}>
+  <!-- ═══ 1. OTWARCIE: nagłówek, a pod nim zakładka Klub z apki (nagłówek klubu, panele, boisko ze składem) ═══ -->
+  <section class="page-hero">
+    <div class="wrap">
+      <h1>
+        <span class="ln"><span>Twoja ekipa.</span></span>
+        <span class="ln"><span class="hl">Twój mecz.</span></span>
+      </h1>
+      <div class="hero-after">
+        <p class="lead">Klub w HoopConnect to zakładka aplikacji do koszykówki ulicznej, w której zbierasz ekipę, umawiasz mecze na boiskach w okolicy i grasz King of the Court. Wynik potwierdza rywal, a XP zostaje na Twojej karcie gracza.</p>
         <div class="cta-row">
-          <a class="btn btn-primary" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
-          <a class="btn btn-ghost" href="/ranking">Zobacz rankingi</a>
+          <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+          <a class="btn btn-ghost btn-lg" href="#king-of-the-court">Jak działa King of the Court</a>
         </div>
       </div>
-      <figure class="shot cut-tr ar-tall">
-        <img src="/brand/club.webp" width="1120" height="2000" alt="Zakładka Klub w HoopConnect, zakończony mecz 3x3" loading="eager" />
+      <figure class="klub-hero hero-after">
+        <div class="kh" role="img" aria-label="Zakładka Klub w aplikacji HoopConnect: klub Street Kings, czterech z pięciu graczy na boisku i jedno wolne miejsce do zaproszenia">
+          <div class="kh-head">
+            <span class="kh-badge">SK</span>
+            <div class="kh-id">
+              <span class="kh-country">Polska</span>
+              <b class="kh-name">Street Kings</b>
+              <span class="kh-count"><i></i><i></i><i></i><i></i><i class="off"></i>4/5 graczy</span>
+              <span class="kh-code"><b>{CLUB_CODE}</b>kod</span>
+            </div>
+          </div>
+          <div class="kh-tabs"><span>Mecze</span><span class="on">Skład</span><span>Statystyki</span></div>
+          <ClubCourt uid="h" members={SQUAD} />
+        </div>
+        <figcaption>Przykładowy klub w aplikacji. Zakładka Klub ma trzy panele: Mecze, Skład i Statystyki.</figcaption>
       </figure>
     </div>
   </section>
 
-  <section class="section ruled">
+  <!-- ═══ 2. W SKRÓCIE ═══ -->
+  <section class="ch brief" id="w-skrocie">
     <div class="wrap">
-      <div class="head">
-        <h2>King of the Court<br />pickup 3x3 bez chaosu</h2>
-        <p class="lead">Jedna osoba tworzy sesję, reszta dołącza w apce lub kodem QR. Aplikacja losuje trzyosobowe drużyny, a wygrane się liczą.</p>
+      <h2 class="rv">W skrócie</h2>
+      <dl class="facts rv">
+        {BRIEF.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+      </dl>
+      <nav class="toc rv" aria-label="Na tej stronie">
+        {TOC.map((l) => <a class="inline-link" href={l.href}>{l.label}</a>)}
+      </nav>
+    </div>
+  </section>
+
+  <!-- ═══ 3. MECZE W OKOLICY: przyklejona lista z kartą meczu, krok zmienia stan karty ═══ -->
+  <section class="ch" id="mecze">
+    <div class="wrap">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Mecze</span></span> <span class="ln"><span>w Twojej okolicy</span></span></h2>
+        <p class="lead">Panel Mecze pokazuje, kto gra na boiskach obok: tryb, termin, adres i odległość od Ciebie. Listę zawężasz do 5, 10 albo 25 km i do trybu 2v2, 3v3 lub 5v5.</p>
       </div>
-      <div class="grid grid-3">
-        <article class="feat">
-          <h3>Utwórz sesję</h3>
-          <p>Ustalasz zasady, np. grę do 11 punktów. Gracze dołączają w aplikacji lub skanując kod QR.</p>
-        </article>
-        <article class="feat">
-          <h3>Losowe składy</h3>
-          <p>Gdy zbierze się odpowiednia liczba osób, aplikacja dzieli je losowo na trzyosobowe drużyny. Koniec ustalania, kto z kim gra.</p>
-        </article>
-        <article class="feat">
-          <h3>Wyłoń króla boiska</h3>
-          <p>Rywalizacja trwa, aż drużyna osiągnie próg punktów lub zwycięstw. Liczy się forma przez całą sesję, nie jeden mecz.</p>
-        </article>
+      <div class="scene" data-scene="mecze" data-step="1">
+        <div class="scene-visual">
+          <div class="mlist" aria-hidden="true">
+            <p class="ml-label">Mecze w pobliżu</p>
+            <div class="ml-pills"><span class="on">Wszystkie</span><span>5 km</span><span>10 km</span><span>25 km</span></div>
+            <div class="ml-pills ml-modes"><span class="on">Wszystkie</span><span>2v2</span><span>3v3</span><span>5v5</span></div>
+            <MatchCard uid="km" status="open" dist="2,0 km" home={{ name: 'HoopConnect', players: HC }}
+              away={{ name: 'Street Kings', mine: true, players: [{ l: 'A' }, null, null] }} you="S" fill="B"
+              date="Sob, 29 sie · 19:30" address="Aleja 3 Maja, Stare Miasto" cta="Dołącz do meczu" ctaAlt="Twój mecz · szczegóły" />
+          </div>
+        </div>
+        <ol class="steps">
+          {MATCH_STEPS.map((s, i) => (
+            <li class:list={['step', { on: i === 0 }]} data-i={i + 1}>
+              <h3>{s.t}</h3>
+              <p>{s.d}</p>
+            </li>
+          ))}
+        </ol>
       </div>
     </div>
   </section>
 
-  <section class="section ruled">
-    <div class="wrap prose">
-      <h2>Po meczu</h2>
-      <p>
-        HoopConnect podsumowuje sesję: liczbę zwycięstw, punkty i kolejność drużyn. Najlepsi zawodnicy zdobywają
-        XP i inne wyróżnienia, a wyniki trafiają do <a href="/ranking">rankingów</a>.
-      </p>
-      <h2>Znajdź grę i graczy</h2>
-      <p>
-        Nie musisz mieć stałej ekipy. Widzisz, kto jest zainteresowany grą w okolicy, więc łatwiej zebrać skład i
-        po prostu zacząć. To rozwiązuje najczęstszy problem pickupu: „czy ktoś w ogóle przyjdzie".
-      </p>
-      <p><a href={RANK_URL} target="_blank" rel="noopener">Zobacz publiczny ranking →</a></p>
+  <!-- ═══ 4. WŁASNY MECZ: arkusz „Nowy mecz" z apki, tryby da się przełączyć ═══ -->
+  <section class="ch" id="nowy-mecz">
+    <div class="wrap split">
+      <div class="split-copy rv rv-seq">
+        <h2><span class="ln"><span>Nie ma meczu?</span></span> <span class="ln"><span>Zakładasz własny.</span></span></h2>
+        <p class="lead">Wybierasz tryb, miejsce na mapie i godzinę. Mecz trafia na listę u graczy w okolicy, a Ty od razu zajmujesz pierwsze miejsce w składzie.</p>
+        <dl class="facts">
+          {NEW_FACTS.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+        </dl>
+      </div>
+      <figure class="nm-fig rv rv-d1">
+        <div class="nm">
+          <p class="nm-title" aria-hidden="true">Nowy mecz</p>
+          <p class="nm-label" id="nmModeLabel">Tryb gry</p>
+          <div class="nm-modes" role="group" aria-labelledby="nmModeLabel">
+            {MODES.map((m) => (
+              <button class="nm-mode" type="button" aria-pressed={m.m === '3v3' ? 'true' : 'false'} style={`--mc:${m.color}`}
+                data-mode={m.m} data-players={m.players} data-gap={m.gap}>
+                <b>{m.m}</b><span>{m.label}</span>
+              </button>
+            ))}
+          </div>
+          <div aria-hidden="true">
+            <p class="nm-label">Lokalizacja</p>
+            <div class="nm-field">
+              <svg viewBox="0 0 24 30" aria-hidden="true"><path d="M12 0C7.6 0 4 3.6 4 8c0 6 8 22 8 22s8-16 8-22c0-4.4-3.6-8-8-8zm0 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
+              Błonia, Kraków
+            </div>
+            <p class="nm-label">Data i godzina</p>
+            <div class="nm-row"><div class="nm-field">01.09.2026</div><div class="nm-field">18:00</div></div>
+            <p class="nm-label">Notatka <small>(opcjonalnie)</small></p>
+            <div class="nm-field nm-note">Gramy do 21. Piłka jest.</div>
+            <span class="nm-cta">Stwórz mecz</span>
+          </div>
+        </div>
+        <figcaption class="nm-read" aria-live="polite">
+          <b id="nmMode">3v3</b>: <span id="nmPlayers">sześciu graczy</span> na boisku i co najmniej <span id="nmGap">75</span> minut odstępu między Twoimi meczami.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ═══ 5. WYNIK: przyklejone arkusze wyniku z apki, krok przełącza stan (wpisanie, potwierdzenie, mecz zakończony) ═══ -->
+  <section class="ch" id="wynik">
+    <div class="wrap">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Wynik potwierdza rywal</span></span></h2>
+        <p class="lead">Po meczu jedna strona wpisuje wynik, druga go potwierdza. Dopiero wtedy mecz jest zakończony, a XP trafia do każdego ze składu.</p>
+      </div>
+      <div class="scene flip" data-scene="wynik" data-step="1">
+        <div class="scene-visual">
+          <div class="rf-wrap" aria-hidden="true">
+            <ResultFlow home="Street Kings" away="HoopConnect" score={[21, 17]} date="Wt, 1 wrz · 18:00">
+              <MatchCard uid="kw" status="completed" playing dist="3,4 km" home={{ name: 'Street Kings', mine: true, players: SK }}
+                away={{ name: 'HoopConnect', players: HC }} score={[21, 17]} date="Wt, 1 wrz · 18:00" address="Błonia, Kraków" />
+              <p class="xp-receipts">
+                <span class="xp-item"><b>+<span data-xp="75">75</span> XP</b><small>za wygraną</small></span>
+                <span class="xp-item"><b>+<span data-xp="40">40</span> XP</b><small>za przegraną albo remis</small></span>
+              </p>
+            </ResultFlow>
+          </div>
+        </div>
+        <ol class="steps">
+          {RESULT_STEPS.map((s, i) => (
+            <li class:list={['step', { on: i === 0 }]} data-i={i + 1}>
+              <h3>{s.t}</h3>
+              <p>{s.d}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <p class="after-note rv">Kapitan to założyciel klubu, jeśli gra w tym meczu. Jeśli nie, pierwszy gracz ze składu. Rywale nie przyszli? Gospodarz oznacza walkower, a walkower nie daje XP.</p>
+    </div>
+  </section>
+
+  <!-- ═══ 6. SKŁAD: boisko z pięcioma pozycjami, przycisk pokazuje, jak kapitan przestawia graczy ═══ -->
+  <section class="ch" id="sklad">
+    <div class="wrap split">
+      <div class="split-copy rv rv-seq">
+        <h2><span class="ln"><span>Pięć pozycji.</span></span> <span class="ln"><span>Jedna ekipa.</span></span></h2>
+        <p class="lead">Panel Skład to boisko z Twoim klubem. Każdy gracz ma swoją pozycję, a wolne miejsce to gotowe zaproszenie.</p>
+        <dl class="facts">
+          {SQUAD_FACTS.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+        </dl>
+        <p class="fact">W klubie gra do <b>pięciu</b> graczy. Jeden gracz, jeden klub.</p>
+        <a class="inline-link" href="/#karta">Zobacz kartę gracza na stronie głównej<span class="arw">→</span></a>
+      </div>
+      <figure class="court-fig rv rv-d1">
+        <div class="court-obj" role="img" aria-label="Boisko ze składem klubu Street Kings: rozgrywający Szymon, wolne miejsce rzucającego, skrzydłowy Bartek, silny skrzydłowy Olek i środkowy Alex">
+          <ClubCourt uid="s" members={SQUAD} swap={['SF', 'PF']} />
+        </div>
+        <button class="btn btn-ghost" type="button" id="swapBtn" aria-pressed="false">Przestaw skład</button>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ═══ 7. STATYSTYKI: panel z apki, liczby nabijają się przy wejściu na ekran ═══ -->
+  <section class="ch" id="statystyki">
+    <div class="wrap split">
+      <div class="split-copy rv rv-seq">
+        <h2><span class="ln"><span>Klub pamięta</span></span> <span class="ln"><span>każdy mecz</span></span></h2>
+        <p class="lead">Panel Statystyki liczy bilans Twojego klubu: wygrane, przegrane i procent zwycięstw. Niżej masz ostatnie mecze ze składami i wynikiem.</p>
+        <dl class="facts">
+          {STATS_FACTS.map((f) => <div><dt>{f.t}</dt><dd>{f.d}</dd></div>)}
+        </dl>
+        <p class="fact">Twoje wygrane liczą się też w publicznym rankingu, w tablicy Mecze.</p>
+        <a class="inline-link" href="/ranking">Zobacz, jak działa ranking graczy<span class="arw">→</span></a>
+      </div>
+      <figure class="stats-fig rv rv-d1" role="img" aria-label="Panel Statystyki klubu Street Kings: 7 wygranych, 3 przegrane, 70 procent zwycięstw i ostatni mecz wygrany 21 do 17 z klubem HoopConnect">
+        <ClubStats wins={7} losses={3} count>
+          <MatchCard uid="kst" status="completed" playing home={{ name: 'Street Kings', mine: true, players: SK }}
+            away={{ name: 'HoopConnect', players: HC }} score={[21, 17]} date="Wt, 1 wrz · 18:00" address="Błonia, Kraków" />
+        </ClubStats>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ═══ 8. KING OF THE COURT: przyklejona scena sesji, pięć kroków od kodu po mistrza i MVP ═══ -->
+  <section class="ch" id="king-of-the-court">
+    <div class="wrap">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>King of the Court.</span></span> <span class="ln"><span>Wchodzisz solo.</span></span></h2>
+        <p class="lead">King of the Court to sesja pickupu 3x3 dla wszystkich, którzy są na boisku. Aplikacja losuje trójki, wygrany zostaje, a na końcu wiadomo, kto jest królem boiska. Nie potrzebujesz klubu ani gotowego składu.</p>
+      </div>
+      <div class="scene" data-scene="kotc" data-step="1">
+        <div class="scene-visual">
+          <div class="kotc-wrap" aria-hidden="true">
+            <KotcStage />
+          </div>
+        </div>
+        <ol class="steps">
+          {KOTC_STEPS.map((s, i) => (
+            <li class:list={['step', { on: i === 0 }]} data-i={i + 1}>
+              <h3>{s.t}</h3>
+              <p>{s.d}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <p class="after-note rv">W jednej sesji gra od dziewięciu do osiemnastu graczy, czyli od trzech do sześciu drużyn. W danej chwili możesz być w jednej sesji.</p>
+    </div>
+  </section>
+
+  <!-- ═══ 9. XP: liczby z aplikacji ═══ -->
+  <section class="ch ch-center" id="xp">
+    <div class="wrap">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Ile XP dostajesz</span></span> <span class="ln"><span>za grę?</span></span></h2>
+        <p class="lead">XP wpada po zatwierdzonym wyniku i zostaje na stałe. Za mecz dostaje je każdy ze składu, za sesję King of the Court każdy gracz według miejsca swojej drużyny.</p>
+      </div>
+      <div class="xp-tables">
+        <table class="xpt rv">
+          <caption>Mecz <small>2v2, 3v3 i 5v5, po potwierdzeniu wyniku</small></caption>
+          <thead><tr><th scope="col">Wynik</th><th scope="col" class="c-xp"><img src="/brand/xp-96.webp" width="18" height="18" alt="" loading="lazy" decoding="async" />XP</th></tr></thead>
+          <tbody>
+            {XP_MATCH.map((r) => <tr><th scope="row">{r.label}</th><td class="c-xp">{r.xp}</td></tr>)}
+          </tbody>
+        </table>
+        <table class="xpt rv rv-d1">
+          <caption>King of the Court <small>za sesję, według miejsca drużyny</small></caption>
+          <thead><tr><th scope="col">Miejsce</th><th scope="col" class="c-xp"><img src="/brand/xp-96.webp" width="18" height="18" alt="" loading="lazy" decoding="async" />XP</th></tr></thead>
+          <tbody>
+            {XP_KOTC.map((r) => <tr><th scope="row">{r.label}</th><td class="c-xp">{r.xp}</td></tr>)}
+          </tbody>
+        </table>
+      </div>
+      <div class="xp-notes rv">
+        <p>Walkower i mecz bez rywali nie dają XP. Zwycięzcy sesji dostają też wygraną King of the Court na karcie gracza.</p>
+        <p>Mecze i sesje liczą się również do Draft Score, czyli Twojej prywatnej formy tygodnia.</p>
+      </div>
+      <div class="link-row rv">
+        <a class="inline-link" href="/ranking#xp">Pełna rozpiska XP w rankingu<span class="arw">→</span></a>
+        <a class="inline-link" href="/asystent-treningu">Draft Score i asystent treningu<span class="arw">→</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 10. PYTANIA ═══ -->
+  <section class="ch" id="pytania">
+    <div class="wrap faq-grid">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>Pytania o Klub</span></span> <span class="ln"><span>i mecze</span></span></h2>
+        <p class="lead">Krótkie odpowiedzi o klubach, meczach i King of the Court. Reszta jest w pełnym <a class="inline-link lower" href="/faq">FAQ</a>.</p>
+      </div>
+      <div class="qa rv rv-d1">
+        {FAQ.map((it) => (
+          <details class="qa-item">
+            <summary><span class="q">{it.q}</span><span class="chev" aria-hidden="true"></span></summary>
+            <p>{it.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 11. ZAMKNIĘCIE ═══ -->
+  <section class="ch ch-last ch-center" id="zagraj">
+    <div class="wrap">
+      <div class="ch-head rv rv-seq">
+        <h2><span class="ln"><span>W składzie</span></span> <span class="ln"><span>brakuje Ciebie</span></span></h2>
+        <p class="lead">Aplikacja działa w przeglądarce telefonu, bez sklepu i bez instalacji. Zakładasz kartę gracza, wpisujesz kod klubu albo wchodzisz solo w sesję King of the Court.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+          <a class="btn btn-ghost btn-lg" href={RANK_URL} target="_blank" rel="noopener">Otwórz ranking</a>
+        </div>
+        <nav class="link-row" aria-label="Zobacz też">
+          <a class="inline-link" href="/">Aplikacja do koszykówki ulicznej</a>
+          <a class="inline-link" href="/ranking">Ranking graczy i XP</a>
+          <a class="inline-link" href="/asystent-treningu">Asystent treningu</a>
+          <a class="inline-link" href="/faq">Wszystkie pytania</a>
+        </nav>
+        <p class="end-sig">Mniej klikania, więcej grania.</p>
+        <p class="end-note">Opis zgodny z aplikacją. Stan na {stamp}.</p>
+      </div>
     </div>
   </section>
 </Base>
 
 <style>
-  .ph { margin: 22px 0 22px; }
-  .split { display: grid; gap: clamp(36px, 5vw, 64px); align-items: center; }
-  .split-copy .kicker { margin-bottom: 20px; }
-  .split-copy .lead { margin-bottom: 28px; }
-  .cta-row { display: flex; flex-wrap: wrap; gap: 14px; }
-  .head { max-width: 780px; margin-bottom: clamp(36px, 5vw, 56px); }
-  .head .kicker { margin-bottom: 20px; }
-  .head h2 { margin-bottom: 20px; }
-  @media (min-width: 940px) { .split { grid-template-columns: 1.05fr 0.95fr; } }
+  /* Wspólny system rozdziałów (.page-hero, .ch, .facts, .scene, .qa…) jest w global.css; tu tylko to, co własne strony. */
+  section[id] { scroll-margin-top: 84px; }
+
+  /* 1. Otwarcie: zakładka Klub z apki (nagłówek klubu, panele, boisko). Bez ramki telefonu, kolumna szerokości boiska. */
+  .klub-hero { position: relative; display: grid; justify-items: center; margin-top: clamp(40px, 5vw, 64px); }
+  /* plama światła pod obiektem, rozpływa się w tło strony */
+  .klub-hero::before { content: ''; position: absolute; z-index: -1; inset: -6% 0 -10%; pointer-events: none;
+    background: radial-gradient(ellipse 46% 58% at 50% 46%, rgba(24,40,74,0.95) 0%, rgba(21,33,58,0.6) 42%, rgba(14,15,18,0) 74%); }
+  .kh { --ccs: 1.18; --cc-fit: calc((100vw - 2 * var(--gutter)) / 34.3); display: grid; gap: 14px; text-align: left; }
+  .kh-head { display: flex; align-items: center; gap: 14px; padding-inline: 4px; }
+  .kh-badge { flex: none; width: 58px; height: 58px; display: grid; place-items: center;
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    background: linear-gradient(150deg, #66CCFF 0%, #1A78D0 45%, #061640 100%);
+    font-family: var(--display); font-weight: 900; font-size: 20px; letter-spacing: 1px; color: #fff; }
+  .kh-id { min-width: 0; display: grid; gap: 5px; justify-items: start; }
+  .kh-country { display: flex; align-items: center; gap: 7px; font-size: 10px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase;
+    line-height: 1; color: #6F86A6; }
+  .kh-country::before { content: ''; width: 11px; height: 8px; border-radius: 1px; background: linear-gradient(#F4F4F4 50%, #DC143C 50%); }
+  .kh-name { font-family: var(--display); font-weight: 900; font-size: 26px; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1; color: #F2F7FF; }
+  .kh-count { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+    line-height: 1; color: #6F86A6; }
+  .kh-count i { width: 6px; height: 6px; border-radius: 50%; background: #5BB8F5; }
+  .kh-count i.off { background: #6F86A6; opacity: 0.4; margin-right: 4px; }
+  .kh-code { display: inline-flex; align-items: baseline; gap: 7px; margin-top: 3px; padding: 5px 11px 5px 10px; border-radius: 8px;
+    background: rgba(0,200,255,0.06); border: 1px solid rgba(0,200,255,0.2); font-size: 8px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; line-height: 1; color: rgba(0,204,255,0.6); }
+  .kh-code b { font-family: var(--display); font-weight: 900; font-size: 13px; letter-spacing: 3px; color: #00CCFF; }
+  .kh-tabs { display: grid; grid-template-columns: repeat(3, 1fr); padding: 3px; border-radius: 999px; background: rgba(8,16,30,0.7);
+    border: 1px solid rgba(150,200,255,0.12); }
+  .kh-tabs span { padding: 9px 0; border-radius: 999px; text-align: center; font-family: var(--display); font-weight: 700; font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase; line-height: 1.2; color: #7D93B0; }
+  .kh-tabs .on { background: linear-gradient(135deg, #3B8FE8, #1E6BB0); color: #fff; }
+  .klub-hero figcaption { margin-top: 20px; max-width: 46ch; font-size: 13px; line-height: 1.5; color: var(--text-3); }
+  @media (max-width: 699px) { .kh { --ccs: 0.92; } }
+
+  /* 2. W skrócie: fakty w dwóch kolumnach, bez pudełek; pod spodem skróty do rozdziałów */
+  .brief { padding-top: clamp(72px, 9vw, 128px); }
+  .brief h2 { font-size: clamp(22px, 2.4vw, 30px); letter-spacing: 1.2px; color: var(--text-2); margin-bottom: 26px; }
+  .brief .facts { max-width: none; gap: 20px clamp(32px, 6vw, 88px); margin-bottom: 0; }
+  @media (min-width: 860px) { .brief .facts { grid-template-columns: 1fr 1fr; } }
+  .toc { margin-top: clamp(32px, 4vw, 48px); display: flex; flex-wrap: wrap; gap: 12px 28px; }
+  .link-row { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 14px 28px; }
+  .ch-center .link-row { justify-content: center; }
+
+  /* 3. Mecze: filtry jak w apce (dystans, tryb) i karta meczu; karta zmienia stan klasą .mc-step-N na scenie */
+  .mlist { --mcs: 1.25; display: grid; gap: 8px; }
+  .ml-label { margin: 0 0 2px 2px; font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: 2.8px; text-transform: uppercase;
+    line-height: 1.2; color: #6F86A6; }
+  .ml-pills { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .ml-pills span { padding: 8px 0; border-radius: 12px; text-align: center; font-family: var(--display); font-weight: 800; font-size: 12px;
+    letter-spacing: 0.5px; line-height: 1.2; border: 1px solid rgba(120,180,255,0.14); background: rgba(255,255,255,0.03); color: #6F86A6; }
+  .ml-pills .on { border-color: rgba(0,204,255,0.44); background: rgba(0,204,255,0.11); color: #55EEFF; }
+  .mlist :global(.mc) { margin-top: 6px; box-shadow: 0 30px 70px rgba(0,0,0,0.55); }
+  @media (max-width: 1099px) { .mlist { --mcs: 1.05; } }
+  @media (max-width: 899px) {
+    .mlist { --mcs: 0.92; }
+    .ml-label, .ml-modes { display: none; }
+  }
+
+  /* 4. Nowy mecz: arkusz z apki (CreateMatchSheet). Rozmiary w em, skala przez --nms. Tryby to prawdziwe przyciski. */
+  .nm-fig { --nms: 1.12; display: grid; justify-items: center; gap: 20px; }
+  .nm { font-size: calc(10px * var(--nms, 1)); width: 34.3em; max-width: 100%; padding: 2.2em 2.2em 2.4em; border-radius: 2.2em; text-align: left;
+    color: #EEF4FF; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 30px 70px rgba(0,0,0,0.55);
+    background: radial-gradient(ellipse 120% 72% at 50% -12%, rgba(250,252,255,0.30) 0%, rgba(216,225,240,0.10) 30%, transparent 60%),
+      linear-gradient(170deg, #3A404B 0%, #30353F 48%, #262B34 100%); }
+  .nm-title { margin-bottom: 1.3em; font-family: var(--display); font-weight: 900; font-size: 1.6em; letter-spacing: 0.125em; text-transform: uppercase; line-height: 1.2; }
+  .nm-label { margin-bottom: 1.1em; font-size: 0.9em; font-weight: 800; letter-spacing: 0.28em; text-transform: uppercase; line-height: 1.2; color: rgba(238,244,255,0.58); }
+  .nm-label small { font-size: 1em; font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .nm-modes { display: flex; gap: 1em; margin-bottom: 2.6em; }
+  .nm-mode { flex: 1; min-width: 0; padding: 1.4em 0; border: 0; border-radius: 1.2em; cursor: pointer; font: inherit; color: inherit;
+    background: rgba(255,255,255,0.07); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.16); }
+  .nm-mode b { display: block; font-family: var(--display); font-weight: 900; font-size: 1.8em; line-height: 1.1; color: rgba(238,244,255,0.75); }
+  .nm-mode span { display: block; margin-top: 0.35em; font-size: 0.85em; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; line-height: 1.2;
+    color: rgba(238,244,255,0.42); }
+  .nm-mode[aria-pressed="true"] { background: color-mix(in srgb, var(--mc) 15%, transparent); box-shadow: inset 0 0 0 1.5px var(--mc); }
+  .nm-mode[aria-pressed="true"] b { color: var(--mc); }
+  .nm-mode[aria-pressed="true"] span { color: color-mix(in srgb, var(--mc) 56%, transparent); }
+  .nm-field { display: flex; align-items: center; gap: 0.6em; margin-bottom: 2em; padding: 0.92em 1.08em; border-radius: 0.92em; font-size: 1.3em; font-weight: 700;
+    line-height: 1.2; color: #F2F6FF; background: rgba(255,255,255,0.07); box-shadow: inset 0 0 0 1px rgba(0,136,204,0.44); }
+  .nm-field svg { flex: none; width: 0.72em; height: 0.9em; fill: #00CCFF; }
+  .nm-row { display: flex; gap: 1em; }
+  .nm-row .nm-field { flex: 1; min-width: 0; }
+  .nm-note { font-weight: 400; color: rgba(242,246,255,0.8); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16); }
+  .nm-cta { display: block; margin-top: 0.2em; padding: 1em; border-radius: 0.8em; text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.5em;
+    letter-spacing: 0.1em; text-transform: uppercase; line-height: 1.2; color: #fff; background: linear-gradient(135deg, #5BB8F5 0%, #2E90D4 100%); }
+  .nm-read { max-width: 40ch; text-align: center; font-size: 15px; line-height: 1.55; color: var(--text-2); }
+  .nm-read b { color: var(--text); font-weight: 600; }
+  @media (max-width: 699px) { .nm-fig { --nms: 0.96; } }
+
+  /* 5. Wynik: arkusze z apki (ResultFlow.astro), w trzecim stanie karta meczu i XP */
+  .rf-wrap { --rfs: 1.2; --mcs: 1.25; width: 100%; display: grid; justify-items: center; }
+  .rf-wrap :global(.mc) { box-shadow: 0 30px 70px rgba(0,0,0,0.55); }
+  .xp-receipts { margin-top: clamp(16px, 2.4vw, 28px); display: flex; justify-content: center; gap: clamp(28px, 6vw, 64px); text-align: center; }
+  .xp-item { display: grid; gap: 4px; }
+  .xp-item b { font-family: var(--display); font-weight: 700; font-size: clamp(26px, 3vw, 40px); line-height: 1; letter-spacing: -0.01em;
+    color: var(--accent-hi); font-variant-numeric: tabular-nums; }
+  .xp-item:nth-child(2) b { color: var(--text); }
+  .xp-item small { font-size: 13px; color: var(--text-2); }
+  @media (max-width: 1099px) { .rf-wrap { --rfs: 1.02; --mcs: 1.05; } }
+  @media (max-width: 899px) { .rf-wrap { --rfs: 0.9; --mcs: 0.88; } }
+  .after-note { margin-top: clamp(12px, 2vw, 28px); max-width: 62ch; font-size: clamp(16px, 1.3vw, 18px); line-height: 1.6; color: var(--text-2); }
+
+  /* 6. Skład: boisko z apki (ClubCourt.astro); na desktopie obiekt stoi po lewej, w kodzie i na telefonie po tekście */
+  .court-fig { --ccs: 1.2; --cc-fit: calc((100vw - 2 * var(--gutter)) / 34.3); display: grid; justify-items: center; gap: 24px; }
+  @media (min-width: 940px) { .court-fig { order: -1; } }
+  @media (max-width: 699px) { .court-fig { --ccs: 0.92; } }
+
+  /* 7. Statystyki: panel z apki (ClubStats.astro) z ostatnim meczem */
+  .stats-fig { --css: 1.15; --mcs: 1.15; display: grid; justify-items: center; }
+  @media (max-width: 699px) { .stats-fig { --css: 0.96; --mcs: 0.96; } }
+
+  /* 8. King of the Court: scena (KotcStage.astro) dopasowana do szerokości kolumny */
+  .kotc-wrap { --kss: 1.3; --ks-fit: calc((100vw - 2 * var(--gutter)) / 38); width: 100%; display: grid; place-items: center; }
+  @supports (width: 1cqw) {
+    .kotc-wrap { container-type: inline-size; --ks-fit: calc(100cqw / 38); }
+  }
+
+  /* 9. Tabele XP: wyniki jak na tablicy, linie tylko między wierszami (ten sam wzór, co na /ranking) */
+  .xp-tables { display: grid; gap: clamp(36px, 5vw, 64px); max-width: 980px; margin-inline: auto; text-align: left; align-items: start; }
+  @media (min-width: 860px) { .xp-tables { grid-template-columns: 1fr 1fr; } }
+  .xpt { width: 100%; border-collapse: collapse; }
+  .xpt caption { text-align: left; font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+    font-size: clamp(24px, 2.8vw, 34px); line-height: 1.1; color: var(--text); padding-bottom: 10px; }
+  .xpt caption small { display: block; margin-top: 6px; font-family: var(--body); font-weight: 400; text-transform: none; letter-spacing: 0;
+    font-size: 14px; line-height: 1.4; color: var(--text-3); }
+  .xpt th, .xpt td { padding: 15px 0; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+  .xpt thead th { padding: 8px 0; font-size: 11px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: var(--text-3); text-align: left; }
+  .xpt tbody th { font-weight: 400; text-align: left; color: var(--text-2); font-size: clamp(16px, 1.4vw, 18px); }
+  .xpt .c-xp { text-align: right; width: 34%; white-space: nowrap; }
+  .xpt thead .c-xp img { display: inline-block; width: 18px; height: 18px; vertical-align: -4px; margin-right: 6px; }
+  .xpt td.c-xp { font-family: var(--display); font-weight: 700; font-size: clamp(26px, 3vw, 38px); line-height: 1; color: var(--accent-hi); font-variant-numeric: tabular-nums; }
+  .xpt tbody tr:last-child th, .xpt tbody tr:last-child td { border-bottom: 0; }
+  .xp-notes { margin: clamp(28px, 4vw, 44px) auto 0; max-width: 60ch; display: grid; gap: 10px; font-size: clamp(16px, 1.3vw, 18px); line-height: 1.6; color: var(--text-2); }
+
+  /* 11. Zamknięcie */
+  .end-sig { margin-top: 34px; font-family: var(--display); font-weight: 700; font-size: 14px; letter-spacing: 2.2px; text-transform: uppercase; color: var(--text-3); }
+  .end-note { margin-top: 10px; font-size: 13px; color: var(--text-3); }
 </style>
+
+<script>
+  import { countUp, initCounters, initScenes, onceVisible, prefersReducedMotion, hasIO } from '../scripts/motion'
+
+  const reduce = prefersReducedMotion()
+  const animate = !reduce && hasIO()
+
+  // Liczniki pojedyncze (panel Statystyki) i sceny sticky (Mecze, Wynik, King of the Court).
+  initCounters()
+  let xpDone = false
+  initScenes((scene, step) => {
+    const name = scene.dataset.scene
+    // Karta meczu: krok 2 = Twój hex w składzie, krok 3 = komplet (klasy z MatchCard.astro).
+    if (name === 'mecze') {
+      scene.classList.toggle('mc-step-2', step === '2')
+      scene.classList.toggle('mc-step-3', step === '3')
+    }
+    // Wynik zatwierdzony: XP nabija się raz, przy pierwszym wejściu w krok 3.
+    if (name === 'wynik' && step === '3' && animate && !xpDone) {
+      xpDone = true
+      scene.querySelectorAll<HTMLElement>('[data-xp]').forEach((x, i) => {
+        x.textContent = '0'
+        setTimeout(() => countUp(x, Number(x.dataset.xp), 900), 350 + i * 140)
+      })
+    }
+  })
+
+  // Arkusz „Wpisz wynik": liczby nabijają się od zera, gdy arkusz wjedzie na ekran. Bez JS widać wynik od razu.
+  const rf = document.querySelector<HTMLElement>('.rf')
+  if (rf && animate) {
+    const nums = Array.from(rf.querySelectorAll<HTMLElement>('[data-rf]'))
+    nums.forEach((n) => { n.textContent = '0' })
+    onceVisible(rf, () => { nums.forEach((n) => { countUp(n, Number(n.dataset.rf), 1200) }) }, 0.5)
+  }
+
+  // Panel Statystyki: pasek skuteczności wypełnia się, gdy panel wjedzie na ekran.
+  const cs = document.querySelector<HTMLElement>('.stats-fig .cs')
+  if (cs && animate) {
+    cs.classList.add('cs-pre')
+    onceVisible(cs, () => { cs.classList.remove('cs-pre') }, 0.4)
+  }
+
+  // „Nowy mecz": tryby przełączają się jak w apce; podpis pod arkuszem mówi, ilu graczy i jaki odstęp między meczami.
+  const modes = Array.from(document.querySelectorAll<HTMLButtonElement>('.nm-mode'))
+  const out = { mode: document.getElementById('nmMode'), players: document.getElementById('nmPlayers'), gap: document.getElementById('nmGap') }
+  modes.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      modes.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)))
+      if (out.mode) out.mode.textContent = btn.dataset.mode ?? ''
+      if (out.players) out.players.textContent = btn.dataset.players ?? ''
+      if (out.gap) out.gap.textContent = btn.dataset.gap ?? ''
+    })
+  })
+
+  // Skład: przycisk zamienia skrzydłowych miejscami, tak jak kapitan przestawia graczy w apce.
+  const swapBtn = document.getElementById('swapBtn')
+  const court = document.querySelector<HTMLElement>('.court-fig .cc')
+  if (swapBtn && court) {
+    swapBtn.addEventListener('click', () => {
+      const on = court.classList.toggle('cc-swapped')
+      swapBtn.setAttribute('aria-pressed', String(on))
+    })
+  }
+</script>

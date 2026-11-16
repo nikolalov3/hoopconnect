@@ -1,0 +1,159 @@
+---
+/**
+ * KotcStage: sesja King of the Court na jednej scenie (src/features/kotc/KotcSolo.jsx: Home, Lobby, Reveal, Live, End).
+ * Dziewięć hexów graczy przechodzi przez pięć stanów. Stan ustawia atrybut data-step na przodku (scena sticky):
+ *   1  lobby z kodem sesji
+ *   2  losowanie trójek (kolory z apki: Blue / Green / Red)
+ *   3  dwie drużyny na boisku, trzecia w kolejce
+ *   4  czekający potwierdzają, kto wygrał gierkę
+ *   5  mistrz sesji, klasyfikacja, XP według miejsca i głos na MVP
+ * Hexy przesuwają się wyłącznie transformem, reszta to opacity. Bez JS widać stan 1.
+ *
+ * Rozmiary w em (1em = 10px przy --kss: 1): scenę skaluje zmienna --kss na rodzicu, a --ks-fit (długość)
+ * pozwala ograniczyć ją do szerokości ekranu. Dane poglądowe. Kod sesji zawiera zero, którego generator
+ * kodów w apce nie używa, więc przykład nie trafi w prawdziwą sesję.
+ * Liczby: XP za miejsce z supabase/migrations/20260902_kotc_solo.sql (275 / 195 / 145), punkty gierek
+ * z 20260902e_kotc_functions.sql (12, 14, 16; sesja do 67).
+ */
+interface Props { code?: string }
+const { code = 'H7K0MX' } = Astro.props
+
+const TEAMS = [
+  { name: 'Blue', color: '#3B82F6', pts: 68, wins: 5, xp: 275 },
+  { name: 'Green', color: '#22C55E', pts: 40, wins: 3, xp: 195 },
+  { name: 'Red', color: '#F43F5E', pts: 26, wins: 2, xp: 145 },
+]
+// Lobby: siatka 3x3 w kolejności dołączania. t = wylosowana drużyna, i = miejsce w trójce.
+// „Ty" to S: ląduje w Blue, która wygrywa sesję.
+const PLAYERS = [
+  { l: 'K', t: 1, i: 0 }, { l: 'M', t: 0, i: 0 }, { l: 'F', t: 2, i: 0 },
+  { l: 'A', t: 2, i: 1 }, { l: 'B', t: 1, i: 1 }, { l: 'S', t: 0, i: 1, me: true },
+  { l: 'J', t: 0, i: 2 }, { l: 'O', t: 2, i: 2 }, { l: 'W', t: 1, i: 2 },
+]
+// W gierce Blue kontra Green wynik potwierdza Red: dwa głosy zamykają gierkę (domyślna liczba potwierdzeń w apce).
+const VOTERS = new Set(['F', 'A'])
+---
+<div class="ks">
+  <div class="ks-top">
+    <p class="ks-t ks-t1"><span>Kod sesji</span><b>{code}</b></p>
+    <p class="ks-t ks-t2"><span>Wylosowane drużyny</span></p>
+    <p class="ks-t ks-t5"><span>Mistrz sesji</span><b><i>{TEAMS[0].name}</i> · {TEAMS[0].pts} pkt · {TEAMS[0].wins} wygranych</b></p>
+  </div>
+
+  <div class="ks-cols">
+    {TEAMS.map((t) => <span style={`--team:${t.color}`}>{t.name}</span>)}
+  </div>
+
+  {TEAMS.map((t, n) => (
+    <div class:list={['ks-row', 'ks-left', `t${n}`]} style={`--t:${n}; --team:${t.color}`}>
+      <span class="ks-name">{t.name}</span>
+      <span class="ks-rank"><b>{n + 1}</b><i>{t.name}</i></span>
+    </div>
+  ))}
+  {TEAMS.map((t, n) => (
+    <div class:list={['ks-row', 'ks-right', `t${n}`]} style={`--t:${n}; --team:${t.color}`}>
+      {n < 2 && <span class:list={['ks-votes', { won: n === 0 }]}>{n === 0 ? '2/2' : '0/2'}</span>}
+      <span class="ks-score"><b>{t.pts} pkt</b><i>+{t.xp} XP</i></span>
+    </div>
+  ))}
+
+  <span class="ks-vs">VS</span>
+  <span class="ks-queue ks-q3">W kolejce</span>
+  <span class="ks-queue ks-q4">Potwierdzają wynik</span>
+  <span class="ks-count">9 graczy w lobby · min 9 · po 3</span>
+
+  {PLAYERS.map((p, k) => (
+    <div class:list={['ks-hex', `t${p.t}`, { me: p.me }]}
+      style={`--c0:${k % 3}; --r0:${Math.floor(k / 3)}; --t:${p.t}; --i:${p.i}; --k:${k}; --team:${TEAMS[p.t].color}`}>
+      <span class="ks-shape"><i>{p.l}{p.me && <small>Ty</small>}</i></span>
+      {VOTERS.has(p.l) && <span class="ks-check"></span>}
+      {p.me && <span class="ks-mvp">MVP</span>}
+    </div>
+  ))}
+</div>
+
+<style is:global>
+  /* Geometria (em): scena 38 x 34, pole hexów od (7, 6.4), hex 7.2, krok siatki 8.4 */
+  .ks { font-size: min(calc(10px * var(--kss, 1)), var(--ks-fit, 100px)); position: relative; width: 38em; height: 34em; flex: none;
+    color: #EEF4FF; font-family: var(--body); text-align: center; }
+  .ks-t, .ks-cols, .ks-name, .ks-rank, .ks-votes, .ks-score, .ks-vs, .ks-queue, .ks-count, .ks-check, .ks-mvp {
+    transition: opacity var(--dur-2, .64s) var(--ease, ease); }
+
+  /* Góra sceny: kod sesji (1), „Wylosowane drużyny" (2), „Mistrz sesji" (5) */
+  .ks-t { position: absolute; left: 0; right: 0; top: 0; opacity: 0; }
+  .ks-t span { display: block; font-size: 1.1em; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(238,244,255,0.5); line-height: 1.3; }
+  .ks-t b { display: block; font-family: var(--display); font-weight: 900; text-transform: uppercase; line-height: 1.05; }
+  .ks-t1 b { font-size: 3.6em; letter-spacing: 0.2em; text-indent: 0.2em; color: #5BB8F5; }
+  .ks-t2 { top: 1em; }
+  .ks-t5 span { color: #FFC940; }
+  .ks-t5 b { margin-top: 0.3em; font-size: 2em; font-weight: 700; letter-spacing: 0.04em; color: rgba(238,244,255,0.62); }
+  .ks-t5 b i { font-style: normal; font-weight: 900; color: #FFC940; }
+  .ks-t1 { opacity: 1; }
+
+  /* Nazwy drużyn nad kolumnami (2) */
+  .ks-cols { position: absolute; left: 7em; top: 4.1em; width: 24em; display: grid; grid-template-columns: repeat(3, 7.2em); column-gap: 1.2em; opacity: 0; }
+  .ks-cols span { font-family: var(--display); font-size: 1.4em; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--team); line-height: 1; }
+
+  /* Wiersz = drużyna (3 do 5). --o3: dodatkowy odstęp w układzie „na boisku" (miejsce na VS i kolejkę). */
+  .ks .t0 { --o3: 0em; }
+  .ks .t1 { --o3: 1.2em; }
+  .ks .t2 { --o3: 3.4em; }
+  .ks-row { position: absolute; top: 6.4em; height: 7.2em; width: 6.2em; display: grid; align-content: center; --oy: 0em;
+    transform: translateY(calc(var(--t) * 8.4em + var(--oy))); transition: transform var(--dur-3, .9s) var(--ease, ease); }
+  .ks-left { left: 0; justify-items: end; text-align: right; }
+  .ks-right { left: 31.8em; justify-items: start; text-align: left; }
+  .ks-row > * { grid-area: 1 / 1; opacity: 0; }
+  .ks-name { font-family: var(--display); font-size: 1.4em; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--team); }
+  .ks-rank b { display: block; font-family: var(--display); font-size: 3.4em; font-weight: 900; line-height: 0.9; color: rgba(238,244,255,0.9); }
+  .ks-rank i { display: block; margin-top: 0.2em; font-style: normal; font-family: var(--display); font-size: 1.2em; font-weight: 700; letter-spacing: 0.14em;
+    line-height: 1; text-transform: uppercase; color: var(--team); }
+  .ks-left.t0 .ks-rank b { color: #FFC940; }
+  .ks-votes { font-family: var(--display); font-size: 2em; font-weight: 900; color: rgba(238,244,255,0.34); font-variant-numeric: tabular-nums; }
+  .ks-votes.won { color: #5BB8F5; }
+  .ks-score b { display: block; font-family: var(--display); font-size: 1.7em; font-weight: 900; line-height: 1; white-space: nowrap; }
+  .ks-score i { display: block; margin-top: 0.35em; font-style: normal; font-family: var(--display); font-size: 1.45em; font-weight: 700; line-height: 1;
+    color: var(--accent-hi, #6FC3FF); white-space: nowrap; }
+
+  /* Pozycje poniżej są liczone we WŁASNYM em elementu (ma inny font-size niż scena): w komentarzu wartość w em sceny. */
+  .ks-vs { position: absolute; left: 5.83em; width: 20em; top: 11.83em; /* 7 / 24 / 14.2 */ font-family: var(--display); font-size: 1.2em; font-weight: 900;
+    letter-spacing: 0.17em; text-indent: 0.17em; line-height: 1; color: rgba(160,200,255,0.5); opacity: 0; }
+  .ks-queue { position: absolute; left: 6.36em; width: 21.82em; top: 22.14em; /* 7 / 24 / 24.35 */ font-size: 1.1em; font-weight: 700; letter-spacing: 0.2em;
+    text-indent: 0.2em; text-transform: uppercase; line-height: 1; color: rgba(238,244,255,0.42); opacity: 0; }
+  .ks-q4 { color: #5BB8F5; }
+  .ks-count { position: absolute; left: 0; right: 0; top: 26.4em; /* 31.7 */ font-size: 1.2em; font-weight: 600; letter-spacing: 0.04em; color: rgba(238,244,255,0.5); line-height: 1; }
+
+  /* Hex gracza: pole startowe to siatka 3x3 (kolumna --c0, wiersz --r0) */
+  .ks-hex { position: absolute; left: 7em; top: 6.4em; width: 7.2em; height: 7.2em; --x: var(--c0); --y: var(--r0); --oy: 0em;
+    transform: translate(calc(var(--x) * 8.4em), calc(var(--y) * 8.4em + var(--oy)));
+    transition: transform var(--dur-3, .9s) var(--ease, ease); transition-delay: calc(var(--k) * 45ms); }
+  .ks-shape { position: absolute; inset: 0; display: grid; place-items: center; background: var(--team);
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+  /* W lobby obrys jest neutralny (kryjąca nakładka); po losowaniu nakładka znika i zostaje kolor drużyny */
+  .ks-shape::before { content: ''; position: absolute; inset: 0; background: #434854;
+    transition: opacity var(--dur-2, .64s) var(--ease, ease); transition-delay: calc(var(--k) * 45ms); }
+  .ks-shape i { position: relative; width: calc(100% - 0.5em); height: calc(100% - 0.5em); display: grid; place-content: center; justify-items: center;
+    background: #1B2130; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    font-style: normal; font-family: var(--display); font-weight: 700; font-size: 2.6em; line-height: 1; color: #EEF4FF; }
+  .ks-shape i small { margin-top: 0.1em; font-family: var(--body); font-size: 0.4em; font-weight: 700; letter-spacing: 0.16em; text-indent: 0.16em; text-transform: uppercase; color: #6FC3FF; }
+  .ks-hex.me .ks-shape i { background: #16263F; }
+  .ks-check { position: absolute; right: -0.3em; top: 0.2em; width: 2.2em; height: 2.2em; border-radius: 50%; background: #5BB8F5; opacity: 0; }
+  .ks-check::before { content: ''; position: absolute; left: 0.62em; top: 0.68em; width: 0.9em; height: 0.46em;
+    border-left: 0.26em solid #06121F; border-bottom: 0.26em solid #06121F; transform: rotate(-45deg); }
+  .ks-mvp { position: absolute; left: 50%; top: -1.05em; padding: 0.2em 0.55em 0.16em; margin-left: -1.9em; width: 3.8em; border-radius: 0.3em; background: #FFC940;
+    font-family: var(--display); font-size: 1.1em; font-weight: 800; letter-spacing: 0.14em; line-height: 1; color: #151008; opacity: 0; }
+
+  /* ── Stany. Selektory po atrybucie przodka (scena sticky ustawia data-step). ── */
+  [data-step]:not([data-step="1"]) .ks-t1, [data-step]:not([data-step="1"]) .ks-count { opacity: 0; }
+  [data-step]:not([data-step="1"]) .ks-shape::before { opacity: 0; }
+
+  [data-step="2"] .ks-t2, [data-step="2"] .ks-cols { opacity: 1; }
+  [data-step="2"] .ks-hex { --x: var(--t); --y: var(--i); }
+
+  :is([data-step="3"], [data-step="4"], [data-step="5"]) .ks-hex { --x: var(--i); --y: var(--t); }
+  :is([data-step="3"], [data-step="4"]) :is(.ks-hex, .ks-row) { --oy: var(--o3); }
+  :is([data-step="3"], [data-step="4"]) :is(.ks-name, .ks-vs) { opacity: 1; }
+  [data-step="3"] .ks-q3 { opacity: 1; }
+  [data-step="4"] :is(.ks-q4, .ks-votes, .ks-check) { opacity: 1; }
+
+  [data-step="5"] :is(.ks-t5, .ks-rank, .ks-score, .ks-mvp) { opacity: 1; }
+</style>

@@ -1,0 +1,61 @@
+---
+/**
+ * ClubStats: port panelu „Statystyki" z zakładki Klub (src/pages/ClubPage.jsx: StatsPanel).
+ * Trzy liczby klubu (Wygrane / Przegrane / Win rate) i pasek skuteczności; pod spodem, w slocie,
+ * ostatnie mecze jako karty meczu (tak jak w apce). To element produktu w HTML. Dane poglądowe.
+ *
+ * Rozmiary w em (1em = 10px przy --css: 1), skalę ustawia rodzic zmienną --css.
+ * `count`: liczby dostają data-count, więc initCounters() ze strony nabija je od zera przy wejściu na ekran.
+ * Pasek wypełnia się transformem (scaleX). Strona może go wstrzymać klasą .cs-pre na .cs i puścić,
+ * gdy panel wjedzie na ekran; bez JS pasek jest od razu pełny.
+ */
+interface Props {
+  wins: number
+  losses: number
+  count?: boolean
+  label?: string
+}
+const { wins, losses, count = false, label = 'Ostatnie mecze' } = Astro.props
+const total = wins + losses
+const rate = total > 0 ? Math.round((wins / total) * 100) : 0
+const dc = (n: number) => (count ? n : undefined)
+---
+<div class="cs">
+  <div class="cs-tiles">
+    <div class="cs-tile win"><b data-count={dc(wins)}>{wins}</b><span>Wygrane</span></div>
+    <div class="cs-tile loss"><b data-count={dc(losses)}>{losses}</b><span>Przegrane</span></div>
+    <div class="cs-tile rate"><b><i data-count={dc(rate)}>{rate}</i>%</b><span>Win rate</span></div>
+  </div>
+  <div class="cs-bar">
+    <div class="cs-bar-top"><span>Skuteczność</span><b>{wins} / {total} meczów</b></div>
+    <div class="cs-track"><i style={`--r:${rate / 100}`}></i></div>
+  </div>
+  {Astro.slots.has('default') && <p class="cs-label">{label}</p>}
+  <slot />
+</div>
+
+<style is:global>
+  .cs { font-size: calc(10px * var(--css, 1)); width: 34.3em; max-width: 100%; display: grid; gap: 1.2em; color: #E0EEFF;
+    font-family: var(--body); text-align: left; }
+  .cs-tiles { display: flex; gap: 0.8em; }
+  .cs-tile { --c: #00CCFF; flex: 1; min-width: 0; padding: 1.6em 0.6em 1.5em; border-radius: 1.6em; text-align: center;
+    background: #08111E; border: 1px solid rgba(255,255,255,0.06); }
+  .cs-tile.win { --c: #00E890; }
+  .cs-tile.loss { --c: #FF5060; }
+  .cs-tile b { display: block; font-family: var(--display); font-weight: 900; font-size: 3.8em; line-height: 1; letter-spacing: -0.01em;
+    color: var(--c); font-variant-numeric: tabular-nums; }
+  .cs-tile b i { font-style: normal; }
+  .cs-tile span { display: block; margin-top: 0.7em; font-size: 0.9em; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    color: color-mix(in srgb, var(--c) 62%, transparent); }
+  .cs-bar { padding: 1.4em 1.6em 1.5em; border-radius: 1.4em; background: #08111E; border: 1px solid rgba(255,255,255,0.06); }
+  .cs-bar-top { display: flex; align-items: baseline; justify-content: space-between; gap: 1em; margin-bottom: 1em; }
+  .cs-bar-top span { font-size: 0.9em; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #6F86A6; }
+  .cs-bar-top b { font-size: 1.1em; font-weight: 700; color: #00CCFF; font-variant-numeric: tabular-nums; }
+  .cs-track { height: 0.6em; border-radius: 0.3em; background: #172840; overflow: hidden; }
+  .cs-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0088CC, #00E890);
+    transform-origin: 0 50%; transform: scaleX(var(--r, 1)); transition: transform 900ms var(--ease, ease) 250ms; }
+  .cs-pre .cs-track i { transform: scaleX(0); }
+  .cs-label { margin: 0.6em 0 -0.2em 0.2em; font-family: var(--display); font-size: 0.95em; font-weight: 700; letter-spacing: 0.28em;
+    text-transform: uppercase; color: #6F86A6; }
+  .cs > .mc { width: 100%; }
+</style>

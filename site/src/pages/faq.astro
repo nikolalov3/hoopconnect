@@ -2,9 +2,9 @@
 import Base from '../layouts/Base.astro'
 import { APP_URL, RANK_URL, COACH_OFFER_URL, APP_SCHEMA } from '../consts'
 
-const title = 'FAQ — koszykówka 3x3 i trening'
+const title = 'FAQ: koszykówka uliczna i trening'
 const description =
-  'Najczęstsze pytania o HoopConnect: jak znaleźć grę w koszykówkę 3x3 w okolicy, jak działa King of the Court, ' +
+  'Najczęstsze pytania o HoopConnect: jak znaleźć grę w koszykówkę uliczną w okolicy, jak działa King of the Court, ' +
   'asystent treningu, XP i rankingi, panel dla trenerów oraz prywatność danych.'
 
 // Jedno źródło prawdy: z tego renderujemy widoczną listę ORAZ schema FAQPage.
@@ -18,7 +18,7 @@ const GROUPS: Group[] = [
     items: [
       {
         q: 'Czym jest HoopConnect?',
-        a: 'HoopConnect to aplikacja do koszykówki ulicznej 3x3. Pomaga znaleźć grę i graczy na boiskach w okolicy, ' +
+        a: 'HoopConnect to aplikacja do koszykówki ulicznej (streetbasketu). Pomaga znaleźć grę i graczy na boiskach w okolicy, ' +
           'rozegrać King of the Court bez chaosu, trenować indywidualnie oraz zbierać XP i wbijać się w publiczne rankingi. ' +
           'Organizację bierze na siebie aplikacja, żebyś mógł skupić się na grze.',
       },
@@ -62,14 +62,14 @@ const GROUPS: Group[] = [
     heading: 'Gra i boisko',
     items: [
       {
-        q: 'Jak znaleźć grę w koszykówkę 3x3 w okolicy?',
+        q: 'Jak znaleźć grę w koszykówkę uliczną w okolicy?',
         a: 'W zakładce Klub sprawdzasz, kto gra lub planuje sesję na boiskach w pobliżu. ' +
           'Możesz dołączyć do istniejącego meczu albo utworzyć własny, a inni gracze dopiszą się w aplikacji — bez pisania po grupach na czacie.',
       },
       {
         q: 'Co to jest King of the Court i jak działa w aplikacji?',
         a: 'King of the Court (król boiska) to format, w którym drużyny rywalizują na jednym koszu, a wygrywająca zostaje na boisku. ' +
-          'W HoopConnect jedna osoba tworzy sesję i ustala zasady, gracze dołączają w apce lub skanując kod QR, a aplikacja losuje trzyosobowe drużyny i zapisuje wyniki.',
+          'W HoopConnect jedna osoba tworzy sesję i ustala zasady, gracze dołączają w apce kodem sesji albo z listy aktywnych sesji, a aplikacja losuje trzyosobowe drużyny i zapisuje wyniki.',
       },
       {
         q: 'Czy muszę mieć zebraną drużynę, żeby zagrać?',
@@ -77,9 +77,9 @@ const GROUPS: Group[] = [
           'Nie musisz ustalać, kto z kim gra — to załatwia aplikacja.',
       },
       {
-        q: 'Jak dołączyć do meczu przez kod QR?',
-        a: 'Organizator sesji pokazuje kod QR na swoim telefonie. Skanujesz go aparatem, co otwiera sesję w HoopConnect i dopisuje Cię do listy graczy. ' +
-          'To najszybszy sposób, żeby dołączyć na miejscu, przy boisku.',
+        q: 'Jak dołączyć do sesji King of the Court?',
+        a: 'Osoba, która założyła sesję, podaje sześcioznakowy kod. Wpisujesz go w zakładce Klub albo wybierasz sesję z listy aktywnych. ' +
+          'Dołączasz sam, bez drużyny. Gdy zbierze się co najmniej dziewięć osób, aplikacja losuje trzyosobowe składy.',
       },
       {
         q: 'Ile osób potrzeba, żeby zagrać w koszykówkę 3x3?',
@@ -204,7 +204,7 @@ const faqSchema = {
       <span class="kicker">FAQ</span>
       <h1>Najczęstsze pytania</h1>
       <p class="lead">
-        Wszystko o HoopConnect w jednym miejscu: gra 3x3 w okolicy, King of the Court, asystent treningu,
+        Wszystko o HoopConnect w jednym miejscu: gra w okolicy, King of the Court, asystent treningu,
         XP i rankingi oraz panel dla trenerów. Nie ma Twojego pytania?
         <a href="mailto:kontakt@hoopconnect.pl">Napisz do nas</a>.
       </p>

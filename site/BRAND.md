@@ -62,7 +62,7 @@ Po: „Widzisz, kto gra obok. Dołączasz."
 
 **4. Krótko, z puentą.**
 Rytm trzech: zdanie długie, krótsze, puenta. Nagłówki do sześciu słów. Lead do dwóch linii.
-„Ktoś zakłada sesję, reszta dołącza kodem QR. Apka losuje trójki. Koniec kłótni, kto z kim."
+„Ktoś zakłada sesję, reszta dołącza kodem sesji. Apka losuje trójki. Koniec kłótni, kto z kim."
 
 **5. To, co zostaje.**
 Nasz temat to pamięć boiska: historia, karta, arena, ranking. Mówimy o tym, co zostaje po meczu,
@@ -79,6 +79,11 @@ nie o tym, co się „dzieje w aplikacji".
 | apka (w copy luźnym), aplikacja (w nagłówkach i FAQ) | platforma, rozwiązanie, narzędzie, ekosystem |
 | gra, wygrana, wynik | aktywność, engagement, doświadczenie |
 | miasto, okolica, obok | lokalizacja, geolokalizacja |
+| koszykówka uliczna, streetbasket (kategoria aplikacji) | „aplikacja do koszykówki 3x3" jako definicja |
+
+„3x3" to nazwa formatu, nie kategorii: używamy jej przy meczu 3v3 (obok 2v2 i 5v5), przy trójkach
+King of the Court i przy turniejach. Aplikację opisujemy jako aplikację do koszykówki ulicznej
+(decyzja Mikołaja z 2026-11-16).
 
 Słowa zakazane: innowacyjny, rewolucja, wyjątkowy, odkryj, nowoczesny, kompleksowy, dedykowany,
 w dzisiejszych czasach, pasja, społeczność, funkcjonalność.
