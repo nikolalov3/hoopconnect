@@ -1,5 +1,5 @@
 ---
-import { APP_URL, COACH_OFFER_URL, BRAND, SOCIALS, NEWSLETTER } from '../consts'
+import { APP_URL, COACH_OFFER_URL, BRAND, SOCIALS, NEWSLETTER, ACCOUNT } from '../consts'
 import QRCode from 'qrcode'
 const year = new Date().getFullYear()
 // Mały QR do apki w stopce — ktoś czyta na komputerze, a gra z telefonu. Generowany w buildzie.
@@ -52,6 +52,7 @@ const qrSvg = await QRCode.toString(APP_URL, {
       <a href={COACH_OFFER_URL} target="_blank" rel="noopener">Dla trenerów</a>
       <a href="/turnieje">Turnieje</a>
       {NEWSLETTER.enabled && <a href="/newsletter">Newsletter</a>}
+      {ACCOUNT.enabled && <a href={ACCOUNT.path}>Konto</a>}
     </nav>
 
     <nav class="col">

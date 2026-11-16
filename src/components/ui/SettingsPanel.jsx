@@ -9,7 +9,7 @@ import HexAvatar from './HexAvatar'
 import PlayerCard3D from './PlayerCard3D'
 import { useCardStats } from '../../hooks/useCardStats'
 import { FRAME_CATALOG, frameSeenKey } from '../../lib/frames'
-import { useBackgroundCatalog, backgroundAsset, useOwnedBackgrounds, redeemCode } from '../../lib/cardCatalog'
+import { useBackgroundCatalog, backgroundAsset, useOwnedBackgrounds } from '../../lib/cardCatalog'
 import { validateName } from '../../lib/nameFilter'
 import { changeLanguage } from '../../i18n'   // ładuje bundle języka PRZED przełączeniem (bez mignięcia kluczy)
 import { resolveCity, cityFromCoords } from '../../lib/city'
@@ -918,19 +918,15 @@ export default function SettingsPanel({ open, onClose }) {
 
   // ── Card personalization (background + frame) ──────────────────────────────
   const bgCatalog = useBackgroundCatalog()
-  const { owned: ownedBackgrounds, reload: reloadOwned } = useOwnedBackgrounds(profile?.id, bgCatalog)
+  const { owned: ownedBackgrounds } = useOwnedBackgrounds(profile?.id, bgCatalog)
   const [personalizing, setPersonalizing] = useState(false)
   const [draftBg,    setDraftBg]    = useState(null)
   const [draftFrame, setDraftFrame] = useState('none')
   const [savingPers, setSavingPers] = useState(false)
-  const [code,     setCode]     = useState('')
-  const [codeMsg,  setCodeMsg]  = useState(null)
-  const [showCode, setShowCode] = useState(false)
 
   function openPersonalization() {
     setDraftBg(profile?.equipped_background || null)
     setDraftFrame(profile?.equipped_frame || 'none')
-    setCode(''); setCodeMsg(null); setShowCode(false)
     setPersonalizing(true)
   }
   async function savePersonalization() {
@@ -948,25 +944,6 @@ export default function SettingsPanel({ open, onClose }) {
     }
     setSavingPers(false)
   }
-  async function handleRedeem() {
-    if (!code.trim()) return
-    try {
-      const items = await redeemCode(code)
-      setCode('')
-      setCodeMsg({ ok: true, text: `Odblokowano: ${items?.[0]?.item_name || 'nagroda'}` })
-      reloadOwned()
-    } catch (e) {
-      const map = {
-        invalid_code: 'Nieprawidłowy kod', expired_code: 'Kod wygasł',
-        code_exhausted: 'Kod wyczerpany', already_redeemed: 'Kod już wykorzystany',
-        not_authenticated: 'Zaloguj się',
-      }
-      const msg = e?.message || ''
-      const key = Object.keys(map).find(k => msg.includes(k))
-      setCodeMsg({ ok: false, text: key ? map[key] : 'Nie udało się użyć kodu' })
-    }
-  }
-
   // Card shows the draft while personalizing, otherwise the saved profile values.
   const shownFrame = personalizing ? (draftFrame || 'none') : (profile?.equipped_frame || 'none')
   const shownBgId  = personalizing ? draftBg : profile?.equipped_background
@@ -1093,29 +1070,6 @@ export default function SettingsPanel({ open, onClose }) {
                   <div style={{ padding: '12px 18px 0' }}>
                     <SLabel>Ramka</SLabel>
                     <FramePicker current={draftFrame} uid={user?.id} profile={profile} onPick={setDraftFrame}/>
-                  </div>
-
-                  {/* Redeem code — tucked away: just a quiet link until tapped */}
-                  <div style={{ padding: '20px 18px 0' }}>
-                    {!showCode ? (
-                      <button onClick={() => setShowCode(true)} style={{
-                        background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
-                        color: C.dim, fontSize: 12, fontWeight: 600, fontFamily: 'inherit',
-                        WebkitTapHighlightColor: 'transparent' }}>
-                        Masz kod? →
-                      </button>
-                    ) : (
-                      <>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <input autoFocus value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="Wpisz kod"
-                            style={{ flex: 1, padding: '11px 12px', borderRadius: 10, fontSize: 13, letterSpacing: 1,
-                              border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.03)', color: C.text }}/>
-                          <button onClick={handleRedeem} style={{ padding: '11px 16px', borderRadius: 10, cursor: 'pointer',
-                            border: `1px solid ${C.border}`, background: C.bb, color: C.accent, fontWeight: 700, fontSize: 13, fontFamily: 'inherit' }}>Użyj</button>
-                        </div>
-                        {codeMsg && <p style={{ fontSize: 11, margin: '8px 0 0', color: codeMsg.ok ? '#4ade80' : '#ff6b6b' }}>{codeMsg.text}</p>}
-                      </>
-                    )}
                   </div>
 
                   <div style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 28px)' }}/>

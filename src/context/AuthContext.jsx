@@ -101,10 +101,25 @@ export function AuthProvider({ children }) {
     if (!user?.id) return
     pingLastSeen(user.id)  // initial ping (boot/login)
 
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') pingLastSeen(user.id)
+    // Karta i ramka mogą zmienić się poza apką (ustawia się je też na hoopconnect.pl/konto). Po powrocie do apki
+    // dociągamy tylko te dwa pola (jedno lekkie zapytanie, najwyżej raz na 30 s), zamiast czekać na zimny start.
+    let lastEquippedSync = Date.now()
+    const syncEquipped = async () => {
+      if (Date.now() - lastEquippedSync < 30 * 1000) return
+      lastEquippedSync = Date.now()
+      try {
+        const { data } = await supabase.from('profiles')
+          .select('equipped_frame,equipped_background').eq('id', user.id).maybeSingle()
+        if (!data) return
+        setProfile(prev => (prev && (prev.equipped_frame !== data.equipped_frame || prev.equipped_background !== data.equipped_background))
+          ? { ...prev, ...data } : prev)
+      } catch { /* sieć padła: zostaje to, co już mamy */ }
     }
-    const onFocus = () => pingLastSeen(user.id)
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') { pingLastSeen(user.id); syncEquipped() }
+    }
+    const onFocus = () => { pingLastSeen(user.id); syncEquipped() }
 
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('focus', onFocus)

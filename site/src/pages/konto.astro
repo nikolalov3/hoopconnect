@@ -1,0 +1,191 @@
+---
+/**
+ * /konto: logowanie tym samym kontem co w aplikacji, podgląd profilu i wybór tła karty oraz ramki.
+ * Strona nie jest indeksowana (prywatna) i do czasu włączenia (ACCOUNT.enabled w consts.ts) pokazuje tylko krótką zapowiedź.
+ * Cała logika: src/scripts/account.ts (UI), accountApi.ts (Supabase), cardTilt.ts (obrót karty).
+ */
+import Base from '../layouts/Base.astro'
+import PlayerCard from '../components/PlayerCard.astro'
+import { ACCOUNT, APP_URL } from '../consts'
+
+const title = 'Konto: ustaw swoją kartę'
+const description = 'Zaloguj się kontem HoopConnect i ustaw tło karty oraz ramkę profilu. Zmiana zapisuje się na koncie i działa też w aplikacji.'
+const lead = ACCOUNT.enabled
+  ? 'Zaloguj się kontem z aplikacji. Zobaczysz swoją kartę i ustawisz jej tło oraz ramkę. Zmiana zapisuje się na koncie, więc działa też w aplikacji.'
+  : 'Logowanie na stronie ruszy wkrótce. Tymczasem kartę i ramkę ustawisz w aplikacji.'
+---
+<Base title={title} description={description} noindex>
+  <section class="page-hero acc-hero">
+    <div class="wrap">
+      <h1>
+        <span class="ln"><span>Ustaw swoją</span></span>
+        <span class="ln"><span class="hl">kartę</span></span>
+      </h1>
+      <p class="lead hero-after" data-lead>{lead}</p>
+    </div>
+  </section>
+
+  {ACCOUNT.enabled ? (
+    <section class="ch acc" data-acc>
+      <div class="wrap">
+        <!-- Widoki przełącza skrypt (data-view): ładowanie, logowanie, konto, brak profilu, błąd -->
+        <div data-view="boot" class="acc-state" role="status">Ładuję konto…</div>
+
+        <div data-view="login" class="acc-login" hidden>
+          <form data-login novalidate>
+            <div class="acc-field">
+              <label for="acc-email">E-mail</label>
+              <input id="acc-email" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+            </div>
+            <div class="acc-field">
+              <label for="acc-pass">Hasło</label>
+              <input id="acc-pass" name="password" type="password" autocomplete="current-password" required />
+            </div>
+            <p class="acc-msg" data-login-msg role="alert"></p>
+            <button class="btn btn-primary btn-lg acc-wide" type="submit" data-login-btn>Zaloguj się<span class="arw">→</span></button>
+          </form>
+          <p class="acc-or"><span>albo</span></p>
+          <button class="btn btn-ghost btn-lg acc-wide" type="button" data-google>Zaloguj przez Google</button>
+          <p class="acc-help">
+            Nie masz konta? <a class="inline-link lower" href={APP_URL} target="_blank" rel="noopener">Załóż je w aplikacji</a>.
+            Nie pamiętasz hasła? Nowe ustawisz w aplikacji, na ekranie logowania.
+          </p>
+        </div>
+
+        <div data-view="account" class="acc-grid" data-account-grid hidden>
+          <div class="acc-stage-col">
+            <div class="acc-stage" data-stage>
+              <!-- Karta z apki: skrypt wypełnia ją danymi gracza i wybranym tłem i ramką -->
+              <PlayerCard name="Gracz" letter="G" arena={1} arenaName="Street Court" nextArena="City Run" pct={40} toNext={900}
+                wins={0} kotc={0} hcId="0" frame="default" uid="acc" />
+            </div>
+            <p class="acc-hint">Przeciągnij kartę, żeby ją obrócić.</p>
+          </div>
+
+          <div class="acc-panel">
+            <h2 class="acc-h">Tło karty</h2>
+            <div class="acc-tiles" data-bg-list></div>
+            <p class="acc-note" data-bg-empty hidden>Masz na razie tylko klasyczne tło.</p>
+
+            <h2 class="acc-h">Ramka</h2>
+            <div class="acc-tiles" data-frame-list></div>
+
+            <div class="acc-actions">
+              <button class="btn btn-primary" type="button" data-save disabled>Zapisz zmiany<span class="arw">→</span></button>
+              <button class="btn btn-ghost" type="button" data-reset disabled>Cofnij</button>
+            </div>
+            <p class="acc-msg" data-save-msg role="status" aria-live="polite"></p>
+
+            <h2 class="acc-h acc-h-gap">Twój profil</h2>
+            <dl class="facts acc-facts">
+              <div data-row><dt>Imię</dt><dd data-f="name"></dd></div>
+              <div data-row><dt>HC-ID</dt><dd data-f="hc"></dd></div>
+              <div data-row><dt>Miasto</dt><dd data-f="city"></dd></div>
+              <div data-row><dt>Arena</dt><dd data-f="arena"></dd></div>
+              <div data-row><dt>XP</dt><dd data-f="xp"></dd></div>
+              <div data-row><dt>Wygrane mecze</dt><dd data-f="wins"></dd></div>
+              <div data-row><dt>Wygrane King of the Court</dt><dd data-f="kotc"></dd></div>
+            </dl>
+            <p class="acc-who">Zalogowano jako <span data-email></span></p>
+            <div class="acc-actions">
+              <a class="btn btn-ghost" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+              <button class="btn btn-ghost" type="button" data-signout>Wyloguj się</button>
+            </div>
+          </div>
+        </div>
+
+        <div data-view="nopro" class="acc-state" hidden>
+          <h2 class="acc-h">Dokończ zakładanie konta w aplikacji</h2>
+          <p>To konto nie ma jeszcze profilu gracza. Otwórz aplikację, uzupełnij dane, a potem wróć tutaj.</p>
+          <div class="acc-actions acc-center">
+            <a class="btn btn-primary" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+            <button class="btn btn-ghost" type="button" data-signout>Wyloguj się</button>
+          </div>
+        </div>
+
+        <div data-view="error" class="acc-state" hidden>
+          <p data-error-msg role="alert"></p>
+          <div class="acc-actions acc-center">
+            <button class="btn btn-primary" type="button" data-retry>Spróbuj jeszcze raz</button>
+            <button class="btn btn-ghost" type="button" data-signout>Wyloguj się</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  ) : (
+    <section class="ch ch-last ch-center">
+      <div class="wrap">
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href={APP_URL} target="_blank" rel="noopener">Otwórz aplikację<span class="arw">→</span></a>
+        </div>
+      </div>
+    </section>
+  )}
+</Base>
+
+<!-- is:global: kafelki i komunikaty tworzy skrypt, a style ograniczone do komponentu ich nie obejmują -->
+<style is:global>
+  .acc [hidden] { display: none !important; }
+  /* Strona narzędziowa: nagłówek niższy niż na stronie głównej, żeby karta i wybór były od razu na ekranie */
+  .acc-hero { padding-top: clamp(28px, 4vw, 56px); padding-bottom: clamp(0px, 1vw, 12px); }
+  .acc-hero h1 { display: flex; flex-wrap: wrap; justify-content: center; column-gap: .26em; max-width: none; margin-bottom: 14px; font-size: clamp(40px, 5.4vw, 68px); }
+  .acc-hero .lead { margin-bottom: 0; font-size: clamp(16px, 1.4vw, 18px); }
+  .acc { padding-top: clamp(24px, 4vw, 56px); }
+  .acc-state { text-align: center; color: var(--text-2); max-width: 520px; margin-inline: auto; padding-block: 40px; }
+  .acc-state p { margin: 0 0 20px; line-height: 1.6; }
+
+  /* Logowanie */
+  .acc-login { max-width: 440px; margin-inline: auto; }
+  .acc-field { display: grid; gap: 8px; margin-bottom: 16px; }
+  .acc-field label { font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: var(--text-3); }
+  .acc-field input { height: 52px; padding: 0 16px; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--bg-2);
+    color: var(--text); font: inherit; font-size: 16px; transition: border-color .18s ease; }
+  .acc-field input:hover { border-color: var(--line-3); }
+  .acc-field input:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; border-color: transparent; }
+  .acc-wide { width: 100%; justify-content: center; }
+  .acc-or { display: flex; align-items: center; gap: 16px; margin: 22px 0; color: var(--text-3); font-size: 12px; letter-spacing: 1.6px; text-transform: uppercase; }
+  .acc-or::before, .acc-or::after { content: ''; flex: 1; height: 1px; background: var(--line-2); }
+  .acc-help { margin: 24px 0 0; font-size: 14px; line-height: 1.6; color: var(--text-2); text-align: center; }
+  .acc-msg { min-height: 1.5em; margin: 0 0 14px; font-size: 14px; line-height: 1.5; color: var(--text-2); }
+  .acc-msg[data-state="ok"] { color: #37E29A; }
+  .acc-msg[data-state="err"] { color: #F3A6A6; }
+  .acc-actions + .acc-msg { margin: 14px 0 0; }
+
+  /* Konto: karta po lewej (przyklejona), ustawienia po prawej */
+  .acc-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); justify-content: center; }
+  @media (min-width: 900px) { .acc-grid { grid-template-columns: minmax(340px, 420px) minmax(0, 560px); } .acc-stage-col { position: sticky; top: 96px; align-self: start; } }
+  .acc-stage { position: relative; isolation: isolate; display: flex; justify-content: center; padding: 28px 0 8px; touch-action: pan-y; cursor: grab; }
+  .acc-stage:active { cursor: grabbing; }
+  .acc-stage::before { content: ''; position: absolute; z-index: -1; inset: -6% -24% -10%; pointer-events: none;
+    background: radial-gradient(ellipse 58% 54% at 50% 52%, rgba(24,40,74,0.95) 0%, rgba(21,33,58,0.5) 46%, rgba(14,15,18,0) 76%); }
+  .acc-stage .pc3d-wrap { --pcs: 1.12; }
+  @media (max-width: 899px) { .acc-stage .pc3d-wrap { --pcs: 0.92; } }
+  .acc-hint { margin: 6px 0 0; text-align: center; font-size: 13px; color: var(--text-3); }
+
+  .acc-h { margin: 0 0 4px; font-size: clamp(22px, 2.2vw, 28px); letter-spacing: .4px; }
+  .acc-panel .acc-h + .acc-tiles { margin-top: 12px; }
+  .acc-panel .acc-tiles + .acc-h, .acc-panel .acc-note + .acc-h { margin-top: 28px; }
+  .acc-h-gap { margin-top: 44px !important; }
+  .acc-tiles { display: flex; flex-wrap: wrap; gap: 10px; }
+  .acc-tile { appearance: none; display: grid; justify-items: center; align-content: start; gap: 8px; padding: 10px 10px 9px; min-width: 88px; margin: 0;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--line-2); border-radius: var(--r); color: var(--text-2); font: inherit; cursor: pointer;
+    transition: border-color .18s ease, background .18s ease, color .18s ease; }
+  .acc-tile:hover { border-color: var(--line-3); color: var(--text); }
+  .acc-tile[aria-pressed="true"] { border-color: rgba(96,168,224,0.7); background: rgba(47,145,214,0.14); color: #EAF3FF; }
+  .acc-tile:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+  .acc-tile-l { max-width: 100px; text-align: center; font-size: 12px; font-weight: 600; line-height: 1.25; letter-spacing: .2px; }
+  .acc-bg { display: block; width: 64px; height: 92px; border-radius: 3px; background: #0a1830 center / cover no-repeat; }
+  .acc-bg-classic { background: linear-gradient(157deg, #16304f 0%, #0d1f38 46%, #0a1830 100%); }
+  .acc-hex { display: grid; place-items: center; width: 64px; height: 64px; }
+  .acc-note { margin: 12px 0 0; font-size: 13px; color: var(--text-3); }
+  .acc-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .acc-actions.acc-center { justify-content: center; }
+  .acc-actions .btn:disabled { opacity: 0.5; cursor: default; }
+  .acc-facts { margin: 16px 0 0; max-width: none; }
+  .acc-who { margin: 20px 0 0; font-size: 13px; color: var(--text-3); }
+  .acc-who span { color: var(--text-2); overflow-wrap: anywhere; }
+</style>
+
+<script>
+  import '../scripts/account'
+</script>

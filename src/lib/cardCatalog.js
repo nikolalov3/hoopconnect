@@ -6,7 +6,9 @@
  * - backgroundAsset: resolve an equipped background id -> asset_path for render.
  * - useOwnedBackgrounds: the items a user may equip (everyone's defaults + their
  *   own user_unlocks rows).
- * - redeemCode: call the redeem_code() RPC (grants an item from a code).
+ *
+ * Items are not unlocked by typing a code in the app: ownership (user_unlocks) is granted server-side,
+ * e.g. after a purchase on hoopconnect.pl, and the app only offers what the player owns.
  *
  * Frames still come from lib/frames.js (equipped_frame) — unchanged.
  */
@@ -48,7 +50,6 @@ export function backgroundAsset(catalog, id) {
 // Background items a user may equip: catalog defaults + their unlocks.
 export function useOwnedBackgrounds(userId, catalog) {
   const [ownedIds, setOwnedIds] = useState([])
-  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     if (!userId) { setOwnedIds([]); return }
@@ -57,14 +58,8 @@ export function useOwnedBackgrounds(userId, catalog) {
       .then(r => { if (!cancelled) setOwnedIds((r.data || []).map(x => x.item_id)) })
       .catch(() => {})
     return () => { cancelled = true }
-  }, [userId, reloadKey])
+  }, [userId])
 
   const owned = catalog.filter(i => i.is_default || ownedIds.includes(i.id))
-  return { owned, reload: () => setReloadKey(k => k + 1) }
-}
-
-export async function redeemCode(code) {
-  const { data, error } = await supabase.rpc('redeem_code', { p_code: (code || '').trim() })
-  if (error) throw error
-  return data  // [{ item_id, item_type, item_name }]
+  return { owned }
 }

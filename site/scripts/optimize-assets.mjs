@@ -4,6 +4,7 @@
 //   arenas/web/arena-N.webp    360 px   karuzela aren na stronie głównej
 //   frames/earlyaccess.webp    384 px   ramka hexa (karta gracza, karta meczu)
 //   brand/xp-96.webp            96 px   ikonka XP w tabelach
+//   frames/diamond_s1.webp, frames/ff.webp  384 px  ramki profilu na stronie konta (źródła w public/ apki)
 // Uruchom po podmianie oryginału: `npm run assets` (albo `npm run assets -- --force`).
 // Leci też przed buildem (prebuild) i nigdy nie wywala builda: przy błędzie zostają pliki z repo.
 import { mkdir, stat } from 'node:fs/promises'
@@ -20,6 +21,10 @@ for (let n = 1; n <= 6; n++) {
 }
 jobs.push({ src: 'earlyaccess.png', out: 'frames/earlyaccess.webp', size: 384, quality: 88 })
 jobs.push({ src: 'brand/xp.png', out: 'brand/xp-96.webp', size: 96, quality: 90 })
+// Ramki z apki (strona konta, /konto): źródła leżą w public/ apki (poziom wyżej niż site/), więc gdy ich nie ma
+// w środowisku builda, skrypt je pomija, a w repo zostają wcześniej wygenerowane pliki.
+jobs.push({ src: '../../public/ramkas1diax.png', out: 'frames/diamond_s1.webp', size: 384, quality: 88 })
+jobs.push({ src: '../../public/ff.png', out: 'frames/ff.webp', size: 384, quality: 88 })
 
 const mtime = async (p) => { try { return (await stat(p)).mtimeMs } catch { return 0 } }
 

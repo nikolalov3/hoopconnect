@@ -12,6 +12,21 @@ export const SOCIALS = {
 }
 export const RANK_URL = `${APP_URL}/rank`
 
+// Konto na stronie (/konto): logowanie tym samym kontem co w aplikacji, podgląd profilu i wybór tła karty oraz ramki.
+// Dane idą wprost do Supabase (klucz anon jest publiczny z założenia, ochronę robi RLS, tak jak w apce).
+// Na produkcji funkcja jest ukryta, dopóki nie ma PUBLIC_ACCOUNT=1 oraz PUBLIC_SUPABASE_URL i PUBLIC_SUPABASE_ANON_KEY
+// (Vercel → Environment Variables projektu strony). Lokalnie (astro dev) działa od razu, jeśli site/.env ma te dwa klucze.
+// Przed włączeniem na produkcji: w Supabase → Authentication → URL Configuration → Redirect URLs dopisz
+// https://www.hoopconnect.pl/konto/ i https://hoopconnect.pl/konto/ (potrzebne do logowania przez Google).
+const SB_URL = (import.meta.env.PUBLIC_SUPABASE_URL as string | undefined) ?? ''
+const SB_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined) ?? ''
+export const ACCOUNT = {
+  enabled: Boolean(import.meta.env.DEV) || (import.meta.env.PUBLIC_ACCOUNT === '1' && Boolean(SB_URL && SB_KEY)),
+  supabaseUrl: SB_URL,
+  supabaseKey: SB_KEY,
+  path: '/konto/',
+}
+
 // Newsletter (zapis przez Resend). Front jest gotowy, zaplecze jeszcze nie: dopóki nie ma endpointu,
 // formularz i wysuwany panel są widoczne tylko lokalnie (astro dev). Na produkcji włącza je zmienna
 // środowiskowa PUBLIC_NEWSLETTER=1 (Vercel → Environment Variables), ustawiana po podpięciu Resend.
@@ -70,4 +85,5 @@ export const NAV: { label: string; href: string; soon?: boolean; external?: bool
   { label: 'Ranking', href: '/ranking' },
   { label: 'FAQ', href: '/faq' },
   { label: 'Dla trenerów', href: COACH_OFFER_URL, external: true },
+  ...(ACCOUNT.enabled ? [{ label: 'Konto', href: ACCOUNT.path }] : []),
 ]

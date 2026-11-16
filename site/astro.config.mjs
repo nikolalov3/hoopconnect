@@ -13,7 +13,8 @@ export default defineConfig({
     // lastmod = data buildu — świeży sygnał dla Google przy pierwszym skanie nowej strony.
     sitemap({
       // /newsletter jest w sitemapie dopiero po włączeniu zapisu (PUBLIC_NEWSLETTER=1, patrz consts.ts).
-      filter: (page) => !/\/(aktualnosci|turnieje)\/?$/.test(page) && (process.env.PUBLIC_NEWSLETTER === '1' || !/\/newsletter\/?$/.test(page)),
+      // /konto to strona prywatna (noindex), nigdy w sitemapie.
+      filter: (page) => !/\/(aktualnosci|turnieje|konto)\/?$/.test(page) && (process.env.PUBLIC_NEWSLETTER === '1' || !/\/newsletter\/?$/.test(page)),
       serialize: (item) => ({ ...item, lastmod: new Date().toISOString() }),
     }),
   ],

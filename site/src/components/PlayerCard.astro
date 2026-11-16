@@ -30,16 +30,18 @@ interface Props {
   frame?: 'default' | 'none'
   uid: string           // unikalne id gradientu SVG
   lazy?: boolean        // karta poniżej pierwszego ekranu: grafiki doładowują się przy scrollu
+  background?: string   // adres obrazu tła karty (apka: card_items.asset_path); bez niego karta wygląda jak dotąd
 }
 // Tilt spoczynkowy bierze się z --rx0/--ry0 ustawianych przez rodzica (np. hover prostuje kartę).
-const { name, letter, arena, arenaName, nextArena, pct, toNext, wins, kotc, hcId, frame = 'default', uid, lazy = false } = Astro.props
+const { name, letter, arena, arenaName, nextArena, pct, toNext, wins, kotc, hcId, frame = 'default', uid, lazy = false, background } = Astro.props
 const load = lazy ? 'lazy' : undefined
 const p = Math.max(6, Math.min(100, pct))
 ---
 <div class="pc3d-wrap">
   <div class="pc3d-card">
     <div class="pc3d-sh" aria-hidden="true"><i class="pc3d-sil"></i></div>
-    <div class="pc3d-face pc3d-sil">
+    <div class:list={['pc3d-face', 'pc3d-sil', { 'pc3d-hasbg': !!background }]}>
+      {background && <div class="pc3d-bg" style={`background-image:url("${background}")`}></div>}
       <div class="pc3d-holo"></div>
       <div class="pc3d-spec"></div>
       <div class="pc3d-slot"></div>
@@ -117,10 +119,18 @@ const p = Math.max(6, Math.min(100, pct))
     background: linear-gradient(157deg, #16304f 0%, #0d1f38 46%, #0a1830 100%); border: 1px solid rgba(150,200,255,.28); }
   .pc3d-face::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
     background: linear-gradient(180deg, rgba(150,205,255,.16), transparent); pointer-events: none; }
+  /* Tło karty (opcjonalne): obraz + gradientowa nakładka, żeby tekst był czytelny; karta z tłem ma cieplejszy połysk */
+  .pc3d-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; background-repeat: no-repeat; }
+  .pc3d-bg::after { content: ''; position: absolute; inset: 0;
+    background: linear-gradient(158deg, rgba(236,72,153,.30) 0%, rgba(168,60,224,.30) 46%, rgba(30,8,50,.66) 100%); }
   .pc3d-holo { position: absolute; inset: 0; pointer-events: none; z-index: 4; mix-blend-mode: screen; opacity: .5;
     background: linear-gradient(calc(118deg + var(--ry)*1.6deg),
       rgba(0,240,220,0) 8%, rgba(120,200,255,.42) 30%, rgba(190,130,255,.42) 46%,
       rgba(255,150,210,.30) 56%, rgba(120,255,220,.34) 72%, rgba(0,240,220,0) 92%); }
+  .pc3d-hasbg .pc3d-holo { opacity: .58;
+    background: linear-gradient(calc(118deg + var(--ry)*1.6deg),
+      rgba(255,120,210,0) 8%, rgba(255,120,210,.42) 28%, rgba(190,110,255,.46) 46%,
+      rgba(255,185,120,.34) 60%, rgba(120,220,255,.30) 74%, rgba(255,120,210,0) 92%); }
   .pc3d-spec { position: absolute; inset: 0; pointer-events: none; z-index: 5; mix-blend-mode: screen;
     background: radial-gradient(120% 80% at calc(50% + var(--ry)*1.5%) calc(38% - var(--rx)*1.4%),
       rgba(255,255,255,.4), rgba(255,255,255,.05) 40%, transparent 60%); }
@@ -162,6 +172,9 @@ const p = Math.max(6, Math.min(100, pct))
         rgba(0,240,220,0) 8%, rgba(120,200,255,.42) 30%, rgba(190,130,255,.42) 46%,
         rgba(255,150,210,.30) 56%, rgba(120,255,220,.34) 72%, rgba(0,240,220,0) 92%);
       transform: rotate(var(--ha)) scaleY(calc((max(sin(var(--ha)), -1 * sin(var(--ha))) * 300 + max(cos(var(--ha)), -1 * cos(var(--ha))) * 452) / 560)); }
+    .pc3d-hasbg .pc3d-holo { background: linear-gradient(0deg,
+      rgba(255,120,210,0) 8%, rgba(255,120,210,.42) 28%, rgba(190,110,255,.46) 46%,
+      rgba(255,185,120,.34) 60%, rgba(120,220,255,.30) 74%, rgba(255,120,210,0) 92%); }
     .pc3d-spec { inset: auto; left: -67px; top: -45.24px; width: 434px; height: 434px;
       background: radial-gradient(360px 361.6px at 50% 50%, rgba(255,255,255,.4), rgba(255,255,255,.05) 40%, transparent 60%);
       transform: translate(calc(var(--ry) * 4.5px), calc(var(--rx) * -6.328px)); }
